@@ -1430,5 +1430,378 @@ window.renderMyanmar2DModule=window.__V126_MYANMAR_RENDER;
 window.__V126_MYANMAR_BLOCK_RENDER=function(){return '';};
 })();
 </script>
-</body>
+<script id="V128_MYANMAR_2D_PAIR_AUDIT_UPGRADE">
+(function(){
+/* V128 — Myanmar 2D pair integrity upgrade.
+   Rules: one unordered pair only (17 === 71 for quota purposes); choose the better orientation;
+   no reverse duplicate; top-digit cross-pair may appear once only; doubles allowed only when pair score >=90;
+   selected pairs are displayed numerically ascending; no formula bodies or card layout are changed. */
+const M={top:2,pairs:5,doubleGate:90};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pairKey=p=>{const s=String(p??'').padStart(2,'0');return s.length===2?[s[0],s[1]].sort().join(''):s;};
+const pairNum=p=>Number(String(p??'').padStart(2,'0'))||0;
+function parseMyanmar(text){
+ const lines=String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean),out=[],errors=[];
+ for(const raw of lines){
+  const line=raw.replace(/\s+/g,' ').trim();
+  const m=line.match(/^🗓\s*(.+?)\s*:\s*(\d{2}|××|xx)\s*--\s*(\d{2}|××|xx)$/i);
+  if(!m){if(/🗓/.test(line))errors.push(line);continue;}
+  const date=m[1].trim(), mk=m[2].toLowerCase()==='xx'?'××':m[2], ek=m[3].toLowerCase()==='xx'?'××':m[3];
+  const pv=v=>/^\d{2}$/.test(v)?{value:v,tens:+v[0],units:+v[1]}:null;
+  out.push({date,noon:pv(mk),evening:pv(ek),_seq:out.length});
+ }
+ return {records:out,errors};
+}
+function tsDate(s){const m=String(s||'').match(/^(\d{1,2})\s+([^\s]+)\s*(\d{2,4})$/);if(!m)return 0;const mm={'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};const mon=mm[m[2].replace(/\.+$/,'')+'.'];if(!mon)return 0;let y=+m[3];if(y<100)y+=2500;if(y>=2400)y-=543;return new Date(y,mon-1,+m[1]).getTime();}
+function fmtDate(s){const t=tsDate(s);if(!t)return String(s||'');const d=new Date(t);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
+function rows(records,session){return records.filter(r=>r&&r[session]).map(r=>r[session]);}
+function rate(a,d,w){const x=a.slice(-Math.min(w,a.length));if(!x.length)return 50;return 100*x.filter(r=>r.tens===d||r.units===d).length/x.length;}
+function pos(a,d){const x=a.slice(-30);if(!x.length)return 50;let h=0,n=0;for(const r of x){n+=2;if(r.tens===d)h++;if(r.units===d)h++;}return n?100*h/n:50;}
+function trans(a,d){if(a.length<2)return 50;let den=0,hit=0;for(let i=1;i<a.length;i++){if(a[i-1].tens===d||a[i-1].units===d){den++;if(a[i].tens===d||a[i].units===d)hit++;}}return den?100*hit/den:50;}
+function gap(a,d){for(let i=a.length-1;i>=0;i--)if(a[i].tens===d||a[i].units===d)return a.length-1-i;return a.length;}
+function digitRank(a){return Array.from({length:10},(_,d)=>{const r3=rate(a,d,3),r6=rate(a,d,6),r9=rate(a,d,9),r15=rate(a,d,15),r30=rate(a,d,30),recent=.42*r3+.28*r6+.18*r9+.12*r15,long=.55*r30+.45*rate(a,d,45),p=pos(a,d),tr=trans(a,d),g=gap(a,d),fresh=Math.max(0,100-Math.min(100,g*7));return{digit:d,score:.30*recent+.14*long+.20*p+.16*tr+.12*fresh+.08*r6};}).sort((a,b)=>b.score-a.score||a.digit-b.digit);}
+function rawPairScore(a,x,y){const recent=a.slice(-18),mid=a.slice(-45),hits=z=>z.filter(r=>r.tens===x&&r.units===y).length;const f3=hits(a.slice(-3))/Math.max(1,Math.min(3,a.length))*100,f6=hits(a.slice(-6))/Math.max(1,Math.min(6,a.length))*100,f9=hits(a.slice(-9))/Math.max(1,Math.min(9,a.length))*100,f18=hits(recent)/Math.max(1,recent.length)*100,f45=hits(mid)/Math.max(1,mid.length)*100;let den=0,tr=0;for(let i=1;i<a.length;i++)if(a[i-1].tens===x||a[i-1].units===x){den++;if(a[i].tens===x&&a[i].units===y)tr++;}const transition=den?100*tr/den:50,sample=hits(mid),scarcity=sample===0?-5:sample===1?-1.5:0,score=.30*f3+.22*f6+.14*f9+.16*f18+.08*f45+.07*transition+.03*(sample>=2?100:50)+scarcity;return{pair:`${x}${y}`,score,rate45:f45,rate18:f18,rate9:f9,transition};}
+function pairCandidates(a,target){const out=[];for(let b=0;b<10;b++){if(b===target){const q=rawPairScore(a,target,target);if(q.score>=M.doubleGate)out.push({...q,double:true});continue;}const ab=rawPairScore(a,target,b),ba=rawPairScore(a,b,target);const best=ab.score>=ba.score?ab:ba;out.push({...best,orientation:best.pair===ab.pair?'forward':'reverse',reverseScore:best.pair===ab.pair?ba.score:ab.score,double:false});}return out.sort((a,b)=>b.score-a.score||pairNum(a.pair)-pairNum(b.pair));}
+function choose(a){const ranked=digitRank(a),top=ranked.slice(0,M.top),by={};const used=new Set();for(const t of top){by[t.digit]=[];const pool=pairCandidates(a,t.digit);for(const p of pool){const key=pairKey(p.pair);if(used.has(key))continue;by[t.digit].push(p);used.add(key);if(by[t.digit].length===M.pairs)break;}if(by[t.digit].length<M.pairs){for(let b=0;b<10&&by[t.digit].length<M.pairs;b++){if(b===t.digit)continue;const key=pairKey(`${t.digit}${b}`);if(used.has(key))continue;const p=pairCandidates(a,t.digit).find(x=>pairKey(x.pair)===key);if(p){by[t.digit].push(p);used.add(key);}}}}return{top,pairsByTarget:by};}
+function allDay(n,e){const ns=digitRank(n),es=digitRank(e),map=[];for(let d=0;d<10;d++){const n1=ns.find(x=>x.digit===d)?.score||50,e1=es.find(x=>x.digit===d)?.score||50;map.push({digit:d,score:.48*n1+.48*e1+.04*Math.min(n1,e1)-.04*Math.abs(n1-e1)});}map.sort((a,b)=>b.score-a.score||a.digit-b.digit);const top=map.slice(0,M.top),by={},used=new Set(),merged=n.concat(e);for(const t of top){by[t.digit]=[];for(const p of pairCandidates(merged,t.digit)){const key=pairKey(p.pair);if(used.has(key))continue;by[t.digit].push(p);used.add(key);if(by[t.digit].length===M.pairs)break;}}return{top,pairsByTarget:by};}
+function rank(arr){const ordered=(Array.isArray(arr)?arr:[]).slice().sort((a,b)=>pairNum(a.pair)-pairNum(b.pair)||b.score-a.score);const byScore=ordered.slice().sort((a,b)=>b.score-a.score||pairNum(a.pair)-pairNum(b.pair)),rm=new Map();if(byScore[0])rm.set(pairKey(byScore[0].pair),'rank-gold');if(byScore[1])rm.set(pairKey(byScore[1].pair),'rank-silver');if(byScore[2])rm.set(pairKey(byScore[2].pair),'rank-rosegold');return ordered.map(x=>({...x,rankClass:rm.get(pairKey(x.pair))||''}));}
+function card(c,idx){const d1=c.top[0]?.digit??'',d2=c.top[1]?.digit??'',all=rank([...(c.pairsByTarget[d1]||[]),...(c.pairsByTarget[d2]||[])]).sort((a,b)=>pairNum(a.pair)-pairNum(b.pair)||b.score-a.score),row1=all.slice(0,5),row2=all.slice(5,10),id=`myanmar-v128-${idx}`,next=`${fmtDate(c.date)} · ${c.time} · ${c.label}`;return `<div class="prediction-card score-card" id="${id}" data-card-key="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">🇲🇲</div><div class="card-info"><small>${esc(next)}</small><b>MYANMAR 2D</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ บ้านเงินกอง ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','MYANMAR 2D')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div class="hero-circle">${d1}</div><span class="hero-label">เด่น</span></div><div class="hero-digit-badge hero-silver"><div class="hero-circle">${d2}</div><span class="hero-label">รอง</span></div></div><div class="pairs-grid-container"><div class="pair-row-inline">${row1.map(x=>`<div class="floating-pill ${x.rankClass||''}">${esc(x.pair)}</div>`).join('')}</div><div class="pair-row-inline">${row2.map(x=>`<div class="floating-pill ${x.rankClass||''}">${esc(x.pair)}</div>`).join('')}</div></div></div>`;}
+function render(text){try{const parsed=parseMyanmar(text);if(!parsed.records.length)return null;const recs=parsed.records.slice().sort((a,b)=>tsDate(a.date)-tsDate(b.date)||a._seq-b._seq),n=rows(recs,'noon'),e=rows(recs,'evening');let latest=recs[recs.length-1]?.date||'';const d=tsDate(latest);if(d){const x=new Date(d);x.setDate(x.getDate()+1);while(x.getDay()===0||x.getDay()===6)x.setDate(x.getDate()+1);const mm=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];latest=`${String(x.getDate()).padStart(2,'0')} ${mm[x.getMonth()]} ${x.getFullYear()+543}`;}const nc=choose(n),ec=choose(e),ac=allDay(n,e),date=latest||recs[recs.length-1].date;const audit={version:'V128.0',records:recs.length,rounds:3,topDigitsPerCard:2,pairsPerDigit:5,totalPairsPerCard:10,unorderedPairDedup:true,reversePairSuppressed:true,crossTopDigitPairSingleQuota:true,doublePairGate:'>=90 score',displayAscending:true,errors:parsed.errors.length};window.__V128_MYANMAR_AUDIT__=audit;return [card({...nc,date,time:'12.01 P.M.',label:'မွန်းတည့်အကြိမ်'},1),card({...ec,date,time:'4.30 P.M.',label:'ညနေအကြိမ်'},2),card({...ac,date,time:'12.01 P.M. + 4.30 P.M.',label:'တစ်နေ့လုံး'},3)].join('');}catch(err){window.__V128_MYANMAR_RENDER_ERROR__=String(err);return null;}}
+window.__V128_MYANMAR_RENDER=render;window.__V127_MYANMAR_RENDER=render;window.__V126_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;
+const oldRun=window.runEngineCore;if(typeof oldRun==='function'){window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(/🗓\s*.+?:\s*\d{2}\s*--\s*\d{2}/.test(t)){const h=render(t),r=document.getElementById('result');if(h){if(r)r.innerHTML=h;return;}if(r)r.innerHTML='<div class="errorbox"><b>Myanmar 2D render error</b><br>'+esc(window.__V128_MYANMAR_RENDER_ERROR__||'unknown')+'</div>';return;}return oldRun.apply(this,arguments);};}
+window.__V128_MYANMAR_PAIR_AUDIT__=Object.freeze({scope:'Myanmar2DOnly',unorderedPairIdentity:true,reversePairForbidden:true,crossTopDigitsOnePairMax:true,doublePairMinScore:90,perDigitQuota:5,topDigits:2,displaySort:'globalAscending_2x5',cardLayoutPreserved:true});
+})();
+</script>
+<script id="V129_MYANMAR_HEAVY_PRECISION_AUDIT">
+(function(){
+/* V129 — Myanmar 2D only. Heavy precision rebuild.
+   No other lottery/stock path is changed.
+   Core rules: 2 standout digits; top digit owns row 1, second digit owns row 2;
+   5 unique pairs per digit; 10 unique unordered pairs total; reverse pairs collapse;
+   rank 1/2/3 receive 2 pairs each; doubles require >=90 confidence; pair display asc.
+   Selection is chronological/OOS-aware and never uses the current target result. */
+const C={windows:[12,20,30,45,60,90,120],minTrain:45,adaptTests:48,pairsPerDigit:5,topDigits:2,doubleGate:90};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pkey=p=>{const s=String(p??'').padStart(2,'0');return s.length===2?[s[0],s[1]].sort().join(''):s};
+const pnum=p=>Number(String(p??'').padStart(2,'0'))||0;
+const contains=(r,d)=>r&&((r.tens===d)||(r.units===d));
+const unordered=(r)=>r?`${Math.min(r.tens,r.units)}${Math.max(r.tens,r.units)}`:'';
+const sm=(h,n,a=1)=>((h+a)/(Math.max(0,n)+2*a))*100;
+function parse(text){
+ const lines=String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean),records=[],errors=[];
+ for(const raw of lines){
+  const line=raw.replace(/\s+/g,' ').trim(),m=line.match(/^🗓\s*(.+?)\s*:\s*(\d{2}|××|xx)\s*--\s*(\d{2}|××|xx)$/i);
+  if(!m){if(/🗓/.test(line))errors.push(raw);continue;}
+  const pv=v=>/^\d{2}$/.test(v)?{value:v,tens:+v[0],units:+v[1]}:null;
+  records.push({date:m[1].trim(),noon:pv(m[2].toLowerCase()==='xx'?'××':m[2]),evening:pv(m[3].toLowerCase()==='xx'?'××':m[3]),_seq:records.length});
+ }
+ return {records,errors};
+}
+function dateMs(s){
+ const m=String(s||'').match(/^(\d{1,2})\s+([^\s]+)\s*(\d{2,4})$/);if(!m)return 0;
+ const mm={'ม.ค':1,'ก.พ':2,'มี.ค':3,'เม.ย':4,'พ.ค':5,'มิ.ย':6,'ก.ค':7,'ส.ค':8,'ก.ย':9,'ต.ค':10,'พ.ย':11,'ธ.ค':12};let mon=mm[m[2].replace(/\.+$/,'')];if(!mon)return 0;let y=+m[3];if(y<100)y+=2500;if(y>=2400)y-=543;return new Date(y,mon-1,+m[1]).getTime();
+}
+function nextDate(records){
+ const v=records.filter(r=>dateMs(r.date)>0).slice().sort((a,b)=>dateMs(a.date)-dateMs(b.date)||a._seq-b._seq),t=v.length?dateMs(v[v.length-1].date):0;if(!t)return '';
+ const d=new Date(t);d.setDate(d.getDate()+1);while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);
+ const mm=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${String(d.getDate()).padStart(2,'0')} ${mm[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+function freqDigits(a,w){const z=a.slice(-Math.min(w,a.length)),c=Array(10).fill(0);z.forEach(r=>{c[r.tens]++;c[r.units]++});return c;}
+function topByFreq(a,w){const c=freqDigits(a,w);return Array.from({length:10},(_,d)=>[c[d],d]).sort((x,y)=>y[0]-x[0]||x[1]-y[1]).slice(0,2).map(x=>x[1]);}
+function pairCounts(a,w){const z=a.slice(-Math.min(w,a.length)),c=new Map();z.forEach(r=>{const k=unordered(r);if(k)c.set(k,(c.get(k)||0)+1)});return c;}
+function simplePairSet(a,w,top){
+ const c=pairCounts(a,w),arr=[];for(const [k,v] of c){if(k[0]===k[1])continue;if(top&&!(top.includes(+k[0])||top.includes(+k[1])))continue;arr.push([v,k]);}
+ arr.sort((x,y)=>y[0]-x[0]||pnum(x[1])-pnum(y[1]));return arr.slice(0,10).map(x=>x[1]);
+}
+function adaptiveWeights(a,kind){
+ const vals=C.windows.map(w=>({w,score:windowOOS(a,w,kind)}));const base=kind==='digit'?.36:.18;const raw=vals.map(x=>Math.exp(Math.max(-1.2,Math.min(1.2,(x.score-base)*4))));const z=raw.reduce((s,x)=>s+x,0)||1;return vals.map((x,i)=>({w:x.w,weight:raw[i]/z,quality:x.score}));
+}
+function windowOOS(a,w,kind){
+ if(a.length<C.minTrain+3)return kind==='digit'?.36:.18;const start=Math.max(C.minTrain,a.length-C.adaptTests),end=a.length;let hit=0,n=0;
+ for(let i=start;i<end;i++){const tr=a.slice(0,i),actual=a[i];if(kind==='digit'){const t=topByFreq(tr,w);if(t.some(d=>contains(actual,d)))hit++;}
+ else{const t=topByFreq(tr,w),ps=simplePairSet(tr,w,t);if(ps.includes(unordered(actual)))hit++;}n++;}
+ return n?hit/n:base;
+}
+function digitStats(a,d,aw){
+ const rates=[],weighted=aw.reduce((s,q)=>{const z=a.slice(-Math.min(q.w,a.length));const r=sm(z.filter(r=>contains(r,d)).length,z.length*2,1);rates.push(r);return s+q.weight*r},0);
+ const z=a.slice(-Math.min(30,a.length));const pt=sm(z.filter(r=>r.tens===d).length,z.length,1),pu=sm(z.filter(r=>r.units===d).length,z.length,1),pos=(pt+pu)/2;
+ let den=0,hit=0;for(let i=1;i<a.length;i++)if(contains(a[i-1],d)){den++;if(contains(a[i],d))hit++;}const transition=den?sm(hit,den,3):50;
+ const gap=(()=>{for(let i=a.length-1;i>=0;i--)if(contains(a[i],d))return a.length-1-i;return a.length})();const fresh=Math.max(0,100-gap*7);
+ const stability=Math.max(0,100-Math.min(60,(Math.max(...rates)-Math.min(...rates))*1.7));
+ return {score:.55*weighted+.16*pos+.10*transition+.07*fresh+.12*stability,weighted,pos,transition,fresh,stability};
+}
+function rawPair(a,x,y,pw){
+ const k=`${x}${y}`,uk=pkey(k),rates=[],weighted=pw.reduce((s,q)=>{const z=a.slice(-Math.min(q.w,a.length));const h=z.filter(r=>unordered(r)===uk).length;const r=sm(h,z.length,1);rates.push(r);return s+q.weight*r},0);
+ const recent=a.slice(-15),rh=recent.filter(r=>unordered(r)===uk).length;
+ const orientZ=a.slice(-120),f=orientZ.filter(r=>r.tens===x&&r.units===y).length,r=orientZ.filter(r=>r.tens===y&&r.units===x).length;
+ const orient=Math.max(f,r), orientRate=sm(orient,orientZ.length,1);
+ let den=0,hit=0;for(let i=1;i<a.length;i++){if(contains(a[i-1],x)||contains(a[i-1],y)){den++;if(unordered(a[i])===uk)hit++;}}
+ const conditional=den?sm(hit,den,1):50;
+ const gap=(()=>{for(let i=a.length-1;i>=0;i--)if(unordered(a[i])===uk)return a.length-1-i;return a.length})();
+ const fresh=Math.max(0,100-gap*8), stability=Math.max(0,100-Math.min(65,(Math.max(...rates)-Math.min(...rates))*2.2));
+ const evidenceCount=a.slice(-120).filter(r=>unordered(r)===uk).length;
+ const doubleConfidence=x===y?(.72*weighted+.18*stability+.10*conditional):0;
+ const score=.52*weighted+.12*rh*8+.10*orientRate+.10*conditional+.08*fresh+.08*stability;
+ return {pair:k,score:Math.max(0,Math.min(100,score)),weighted,conditional,orientation:orientRate,recent:rh,fresh,stability,evidenceCount,doubleConfidence};
+}
+function scorePairs(a,top,pw){
+ const out=[];for(let x=0;x<10;x++)for(let y=x;y<10;y++){
+  const q=rawPair(a,x,y,pw);if(x===y&&q.doubleConfidence<C.doubleGate)continue;
+  // Pair relevance is soft: top-digit membership helps, but never manufactures evidence.
+  q.relevance=(top.includes(x)||top.includes(y))?1:.82;q.score*=q.relevance;out.push(q);
+ }
+ return out.sort((a,b)=>b.score-a.score||pnum(a.pair)-pnum(b.pair));
+}
+function chooseTop(a,aw){
+ const d=Array.from({length:10},(_,d)=>({digit:d,...digitStats(a,d,aw)}));
+ // Pair-support is a secondary evidence family computed without knowing the chosen top digits.
+ const pw=adaptiveWeights(a,'pair'),pairs=scorePairs(a,[],pw);
+ d.forEach(x=>{const support=pairs.filter(p=>p.pair.includes(String(x.digit))).slice(0,4);x.pairSupport=support.length?support.reduce((s,p)=>s+p.score,0)/support.length:0;x.score=.74*x.score+.26*x.pairSupport;});
+ return d.sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,2);
+}
+function allocate(a,top,pw){
+ const t0=top[0].digit,t1=top[1].digit,scored=scorePairs(a,[t0,t1],pw);
+ // Exact 5+5 assignment via small DP; every unordered pair is usable only once.
+ let states=new Map([['0,0',{value:0,sel:[]}]]);
+ for(const p of scored){const next=new Map(states);for(const [key,state] of states){const [a0,b0]=key.split(',').map(Number);
+   if((p.pair.includes(String(t0)))&&a0<5){const nk=`${a0+1},${b0}`,nv=state.value+p.score;if(!next.has(nk)||next.get(nk).value<nv)next.set(nk,{value:nv,sel:state.sel.concat([{...p,target:t0}])});}
+   if((p.pair.includes(String(t1)))&&b0<5){const nk=`${a0},${b0+1}`,nv=state.value+p.score;if(!next.has(nk)||next.get(nk).value<nv)next.set(nk,{value:nv,sel:state.sel.concat([{...p,target:t1}])});}
+ }states=next;if(states.has('5,5')&&scored.indexOf(p)>30)break;}
+ let sel=states.get('5,5')?.sel||[];
+ const used=new Set(sel.map(x=>pkey(x.pair)));
+ // Deterministic fill if an unusual data shape prevents the exact DP state.
+ for(const p of scored){if(sel.length>=10)break;if(used.has(pkey(p.pair)))continue;const target=p.pair.includes(String(t0))?t0:(p.pair.includes(String(t1))?t1:null);if(target===null)continue;sel.push({...p,target});used.add(pkey(p.pair));}
+ const by={[t0]:[],[t1]:[]};sel.forEach(p=>{if(by[p.target])by[p.target].push(p)});
+ Object.values(by).forEach(a=>a.sort((x,y)=>pnum(x.pair)-pnum(y.pair)||y.score-x.score));
+ return {by,all:sel};
+}
+function rankPairs(all){
+ const ranked=all.slice().sort((a,b)=>b.score-a.score||pnum(a.pair)-pnum(b.pair));const rankMap=new Map();ranked.slice(0,6).forEach((p,i)=>rankMap.set(pkey(p.pair),i<2?'rank-gold':i<4?'rank-silver':'rank-rosegold'));return all.map(p=>({...p,rankClass:rankMap.get(pkey(p.pair))||''}));
+}
+function card(c,idx,date){
+ const d1=c.top[0].digit,d2=c.top[1].digit,rr=rankPairs(c.pairs.all),m=new Map(rr.map(x=>[pkey(x.pair),x]));
+ const owned=(digit)=>c.pairs.by[digit].filter(x=>String(x.pair).includes(String(digit))).map(x=>m.get(pkey(x.pair))).filter(Boolean).sort((a,b)=>pnum(a.pair)-pnum(b.pair)||b.score-a.score);
+ let row1=owned(d1).slice(0,5),row2=owned(d2).slice(0,5);
+ const used=new Set([...row1,...row2].map(x=>pkey(x.pair)));
+ // Never allow a pair to appear in the wrong digit row. Fill only with candidates that actually contain the row owner.
+ const fill=(row,digit)=>{for(const x of rr){if(row.length>=5)break;const k=pkey(x.pair);if(used.has(k)||!String(x.pair).includes(String(digit)))continue;row.push(x);used.add(k);}};
+ fill(row1,d1);fill(row2,d2);
+ // Hard invariant: every pair in row 1 contains the top digit; every pair in row 2 contains the second digit.
+ row1=row1.filter(x=>String(x.pair).includes(String(d1))).sort((a,b)=>pnum(a.pair)-pnum(b.pair)||b.score-a.score);
+ row2=row2.filter(x=>String(x.pair).includes(String(d2))).sort((a,b)=>pnum(a.pair)-pnum(b.pair)||b.score-a.score);
+ // V131 HARD RANK CONTRACT: the final 10 visible pairs, after row ownership is fixed,
+ // must contain exactly 2 Gold (#1), 2 Silver (#2), and 2 Rose-gold (#3).
+ // Ranking is applied to the final visible set so no earlier filtering can erase a color.
+ const rankRow=row=>{const a=row.slice().sort((x,y)=>Number(y.score||0)-Number(x.score||0)||pnum(x.pair)-pnum(y.pair));const m=new Map();if(a[0])m.set(pkey(a[0].pair),'rank-gold');if(a[1])m.set(pkey(a[1].pair),'rank-silver');if(a[2])m.set(pkey(a[2].pair),'rank-rosegold');return row.map(x=>({...x,rankClass:m.get(pkey(x.pair))||''}));};
+ row1=rankRow(row1);row2=rankRow(row2);
+ const id=`myanmar-v131-${idx}`,next=`${date} · ${c.time} · ${c.label}`;
+ return `<div class="prediction-card score-card" id="${id}" data-card-key="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">🇲🇲</div><div class="card-info"><small>${esc(next)}</small><b>MYANMAR 2D</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ บ้านเงินกอง ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','MYANMAR 2D')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div class="hero-circle">${d1}</div><span class="hero-label">เด่น</span></div><div class="hero-digit-badge hero-silver"><div class="hero-circle">${d2}</div><span class="hero-label">รอง</span></div></div><div class="pairs-grid-container"><div class="pair-row-inline">${row1.map(x=>`<div class="floating-pill ${x.rankClass||''}">${esc(x.pair)}</div>`).join('')}</div><div class="pair-row-inline">${row2.map(x=>`<div class="floating-pill ${x.rankClass||''}">${esc(x.pair)}</div>`).join('')}</div></div></div>`;
+}
+function render(text){
+ try{
+  const parsed=parse(text),recs=parsed.records.filter(r=>r.noon||r.evening).sort((a,b)=>dateMs(a.date)-dateMs(b.date)||a._seq-b._seq);
+  if(!recs.length)return null;
+  const n=recs.map(r=>r.noon).filter(Boolean),e=recs.map(r=>r.evening).filter(Boolean),all=[];recs.forEach(r=>{if(r.noon)all.push(r.noon);if(r.evening)all.push(r.evening);});
+  const make=a=>{const aw=adaptiveWeights(a,'digit'),top=chooseTop(a,aw),pw=adaptiveWeights(a,'pair'),pairs=allocate(a,top,pw);return {top,pairs,aw,pw};};
+  const nc=make(n),ec=make(e),ac=make(all),date=nextDate(recs);
+  const audit={version:'V129.0',scope:'Myanmar2DOnly',records:recs.length,noon:n.length,evening:e.length,rounds:3,topDigitsPerCard:2,pairsPerDigit:5,totalPairsPerCard:10,unorderedPairDedup:true,reversePairSuppressed:true,rank1Pairs:2,rank2Pairs:2,rank3Pairs:2,doubleGate:90,display:'topDigit=row1;secondDigit=row2;ascendingWithinRow',adaptiveWindows:C.windows};
+  window.__V129_MYANMAR_AUDIT__=audit;
+  window.__V129_MYANMAR_DEBUG__={noon:{top:nc.top,pairs:nc.pairs.all},evening:{top:ec.top,pairs:ec.pairs.all},allDay:{top:ac.top,pairs:ac.pairs.all}};
+  return [card({...nc,time:'12.01 P.M.',label:'မွန်းတည့်အကြိမ်'},1,date),card({...ec,time:'4.30 P.M.',label:'ညနေအကြိမ်'},2,date),card({...ac,time:'12.01 P.M. + 4.30 P.M.',label:'တစ်နေ့လုံး'},3,date)].join('');
+ }catch(err){window.__V129_MYANMAR_RENDER_ERROR__=String(err);return null;}
+}
+window.__V129_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;
+const previousRun=window.runEngineCore;if(typeof previousRun==='function'){window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(/🗓\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(t)){const h=render(t),r=document.getElementById('result');if(h){if(r)r.innerHTML=h;return;}if(r)r.innerHTML='<div class="errorbox"><b>Myanmar 2D audit render error</b><br>'+esc(window.__V129_MYANMAR_RENDER_ERROR__||'unknown')+'</div>';return;}return previousRun.apply(this,arguments);};}
+})();
+</script>
+<script id="V131_MYANMAR_RANK_GOVERNOR">
+(function(){
+ const old=window.runEngineCore;
+ if(typeof old!=='function')return;
+ window.runEngineCore=async function(){
+  const t=document.getElementById('bulkInput')?.value||'';
+  const isM=/🗓\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(t);
+  if(!isM)return old.apply(this,arguments);
+  const h=typeof window.__V129_MYANMAR_RENDER==='function'?window.__V129_MYANMAR_RENDER(t):null;
+  const r=document.getElementById('result');
+  if(h&&r){r.innerHTML=h;return h;}
+  if(r)r.innerHTML='<div class="errorbox"><b>Myanmar 2D render error</b></div>';
+ };
+ window.__V131_MYANMAR_RANK_RULES__=Object.freeze({scope:'Myanmar2DOnly',topDigitRow:'row1',secondDigitRow:'row2',pairOrder:'ascending',reversePairForbidden:true,rank1Pairs:2,rank2Pairs:2,rank3Pairs:2,doubleGate:90});
+})();
+</script>
+<script id="V132_MYANMAR_2D_FINAL_RANK_ROW_GOVERNOR">
+(function(){
+/* V132 FINAL — Myanmar 2D only.
+   Hard output contract: row1 belongs only to standout digit, row2 only to secondary digit;
+   exactly 10 pairs; Gold 2 / Silver 2 / Rose-gold 2 / Normal 4; ascending within each row;
+   unordered reverse pairs are not duplicated. Other lottery/stock paths are untouched. */
+const esc132=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pairKey132=p=>{const s=String(p??'').padStart(2,'0');return s.length===2?[s[0],s[1]].sort().join(''):s};
+function harden(html){
+ if(typeof html!=='string'||!html)return html;
+ const box=document.createElement('div');box.innerHTML=html;
+ const cards=[...box.querySelectorAll('.prediction-card')];
+ cards.forEach(card=>{
+   const rows=[...card.querySelectorAll('.pair-row-inline')];
+   if(rows.length<2)return;
+   const d=[...card.querySelectorAll('.hero-circle')].slice(0,2).map(x=>String(x.textContent||'').trim());
+   if(d.length<2)return;
+   const used=new Set();
+   rows.forEach((row,ri)=>{
+     const owner=d[ri], pills=[...row.querySelectorAll('.floating-pill')];
+     // Remove any accidental duplicate unordered pair inside the same row.
+     const keep=[];
+     for(const pill of pills){
+       const k=pairKey132(pill.textContent.trim());
+       if(!k||used.has(k))continue;
+       if(!k.includes(owner))continue;
+       used.add(k);keep.push(pill);
+     }
+     keep.sort((a,b)=>Number(a.textContent.trim())-Number(b.textContent.trim()));
+     row.replaceChildren(...keep);
+   });
+   // The upstream allocator is expected to produce 5+5. If it ever leaks a wrong-owner pair,
+   // do not move a pair across rows; instead keep the valid owner-specific output deterministic.
+   const all=[...rows.flatMap(r=>[...r.querySelectorAll('.floating-pill')])];
+   if(all.length!==10)return;
+   // Rank exactly the final visible set. Preserve the existing score order if the upstream
+   // renderer supplied rank classes; otherwise use deterministic pair order.
+   const existing=all.map((p,i)=>({p,i,rank:p.classList.contains('rank-gold')?0:p.classList.contains('rank-silver')?1:p.classList.contains('rank-rosegold')?2:9}));
+   let ranked=existing.slice().sort((a,b)=>a.rank-b.rank||a.i-b.i);
+   // Hard color quota: exactly 2 / 2 / 2.
+   const rankMap=new Map();
+   ranked.slice(0,2).forEach(x=>rankMap.set(x.p,'rank-gold'));
+   ranked.slice(2,4).forEach(x=>rankMap.set(x.p,'rank-silver'));
+   ranked.slice(4,6).forEach(x=>rankMap.set(x.p,'rank-rosegold'));
+   all.forEach(p=>{p.classList.remove('rank-gold','rank-silver','rank-rosegold');const c=rankMap.get(p);if(c)p.classList.add(c);});
+   window.__V132_MYANMAR_LAST_CARD_CHECK__={total:all.length,gold:all.filter(p=>p.classList.contains('rank-gold')).length,silver:all.filter(p=>p.classList.contains('rank-silver')).length,rosegold:all.filter(p=>p.classList.contains('rank-rosegold')).length,normal:all.filter(p=>!p.classList.contains('rank-gold')&&!p.classList.contains('rank-silver')&&!p.classList.contains('rank-rosegold')).length};
+ });
+ return box.innerHTML;
+}
+function isMyanmarInput(t){return /🗓\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(String(t||''));}
+function render132(text){
+ try{
+   const base=window.__V129_MYANMAR_RENDER;
+   if(typeof base!=='function')return null;
+   return harden(base(text));
+ }catch(e){window.__V132_MYANMAR_RENDER_ERROR__=String(e);return null;}
+}
+window.__V132_MYANMAR_RENDER=render132;
+window.renderMyanmar2DModule=render132;
+const prev=window.runEngineCore;
+if(typeof prev==='function'){
+ window.runEngineCore=async function(){
+   const t=document.getElementById('bulkInput')?.value||'';
+   if(isMyanmarInput(t)){
+     const h=render132(t),r=document.getElementById('result');
+     if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b></div>';
+     return;
+   }
+   return prev.apply(this,arguments);
+ };
+}
+window.__V132_MYANMAR_LOCK__=Object.freeze({scope:'Myanmar2DOnly',row1:'top digit only',row2:'second digit only',pairsPerRow:5,totalPairs:10,gold:2,silver:2,rosegold:2,normal:4,reversePairForbidden:true,ascendingWithinRow:true,otherMarketsUntouched:true});
+})();
+</script>
+<script id="V133_MYANMAR_HARD_FINAL_GOVERNOR">
+(function(){
+/* V133 — Myanmar 2D only. FINAL HARD CONTRACT.
+   Owner separation is performed before ranking/colors:
+   row 1 = standout digit only; row 2 = secondary digit only.
+   Each row exactly 5 unique unordered pairs. 1st/2nd/3rd rank = exactly 2 pairs each.
+   Doubles are allowed only when their confidence gate is >=90 in the upstream scorer.
+   Other lottery/stock render paths are never touched. */
+const v133Esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v133Key=p=>{let s=String(p??'').replace(/\D/g,'').padStart(2,'0').slice(-2);return s[0]<=s[1]?s:s[1]+s[0]};
+const v133Num=p=>Number(String(p??'').replace(/\D/g,'').padStart(2,'0'))||0;
+function v133IsMyanmar(t){return /🗓\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(String(t||''));}
+function v133PairOwner(pair,d1,d2){
+ const s=String(pair??'').replace(/\D/g,'').padStart(2,'0').slice(-2),a=s[0],b=s[1];
+ const has1=a===String(d1)||b===String(d1),has2=a===String(d2)||b===String(d2);
+ if(has1&&!has2)return 1;if(has2&&!has1)return 2;
+ if(has1&&has2)return 1; // a cross-pair belongs to the standout row, never both rows
+ return 0;
+}
+function v133ScoreHint(p){
+ if(p.classList.contains('rank-gold'))return 3;
+ if(p.classList.contains('rank-silver'))return 2;
+ if(p.classList.contains('rank-rosegold'))return 1;
+ return 0;
+}
+function v133RebuildCard(card,idx){
+ const heroes=[...card.querySelectorAll('.hero-circle')].slice(0,2).map(x=>String(x.textContent||'').trim()).filter(x=>/^\d$/.test(x));
+ if(heroes.length<2)return false;
+ const d1=heroes[0],d2=heroes[1],rows=[...card.querySelectorAll('.pair-row-inline')];
+ if(rows.length<2)return false;
+ const source=[...card.querySelectorAll('.floating-pill')].map((p,i)=>({p,i,pair:String(p.textContent||'').replace(/\D/g,'').padStart(2,'0').slice(-2),hint:v133ScoreHint(p)}));
+ const unique=new Map();
+ source.forEach(x=>{const k=v133Key(x.pair);if(/^\d{2}$/.test(x.pair)&&(!unique.has(k)||x.hint>unique.get(k).hint))unique.set(k,x);});
+ const all=[...unique.values()];
+ const by={1:[],2:[]};
+ all.forEach(x=>{const o=v133PairOwner(x.pair,d1,d2);if(o)by[o].push(x);});
+ // Stable owner-specific ordering: numeric ascending first; score hint only breaks exact numeric ties.
+ Object.values(by).forEach(a=>a.sort((x,y)=>v133Num(x.pair)-v133Num(y.pair)||y.hint-x.hint));
+ // The upstream renderer should already have 5+5. If a legacy/stale renderer leaked a pair,
+ // recover missing slots only from the existing visible candidates; never invent a prediction.
+ // Cross-pairs are assigned to the standout row so they cannot consume the secondary row twice.
+ if(by[1].length>5)by[1]=by[1].slice(0,5);
+ if(by[2].length>5)by[2]=by[2].slice(0,5);
+ if(by[1].length!==5||by[2].length!==5){
+   window.__V133_MYANMAR_AUDIT__={ok:false,card:idx,reason:'owner-specific candidates below 5; no fabricated pairs used',row1:by[1].length,row2:by[2].length};
+   return false;
+ }
+ // Rank independently inside each owner row: exactly 1 Gold + 1 Silver + 1 Rose-gold per row.
+ const rankRow=(items)=>{const ranked=items.slice().sort((a,b)=>v133ScoreHint(b.p)-v133ScoreHint(a.p)||v133Num(a.pair)-v133Num(b.pair));const rm=new Map();if(ranked[0])rm.set(v133Key(ranked[0].pair),'rank-gold');if(ranked[1])rm.set(v133Key(ranked[1].pair),'rank-silver');if(ranked[2])rm.set(v133Key(ranked[2].pair),'rank-rosegold');return items.map(x=>{const y={...x};y.rankClass=rm.get(v133Key(x.pair))||'';return y;});};
+ by[1]=rankRow(by[1]);by[2]=rankRow(by[2]);
+ const write=(row,items)=>row.replaceChildren(...items.map(x=>{const el=x.p.cloneNode(true);el.textContent=x.pair;el.classList.remove('rank-gold','rank-silver','rank-rosegold');const rc=x.rankClass||'';if(rc)el.classList.add(rc);return el;}));
+ write(rows[0],by[1]);write(rows[1],by[2]);
+ const pills=[...card.querySelectorAll('.floating-pill')];
+ window.__V133_MYANMAR_LAST_CARD_CHECK__={card:idx,topDigit:d1,secondDigit:d2,row1:pills.slice(0,5).map(x=>x.textContent.trim()),row2:pills.slice(5,10).map(x=>x.textContent.trim()),total:pills.length,gold:pills.filter(x=>x.classList.contains('rank-gold')).length,silver:pills.filter(x=>x.classList.contains('rank-silver')).length,rosegold:pills.filter(x=>x.classList.contains('rank-rosegold')).length,normal:pills.filter(x=>!x.classList.contains('rank-gold')&&!x.classList.contains('rank-silver')&&!x.classList.contains('rank-rosegold')).length};
+ return true;
+}
+function v133Harden(html){
+ if(typeof html!=='string'||!html)return html;
+ const box=document.createElement('div');box.innerHTML=html;
+ const cards=[...box.querySelectorAll('.prediction-card')];
+ let ok=cards.length===3;
+ cards.forEach((c,i)=>{if(!v133RebuildCard(c,i+1))ok=false;});
+ window.__V133_MYANMAR_CONTRACT__=Object.freeze({scope:'Myanmar2DOnly',cards:3,row1Owner:'standout',row2Owner:'secondary',pairsPerRow:5,totalPairs:10,reversePairForbidden:true,ascendingWithinRow:true,rank1Pairs:2,rank2Pairs:2,rank3Pairs:2,colorQuota:{gold:2,silver:2,rosegold:2,normal:4},rankScope:'perRow_one_each',doubleConfidenceMin:90,ok});
+ return ok?box.innerHTML:html;
+}
+function v133Render(text){
+ try{const base=window.__V129_MYANMAR_RENDER;if(typeof base!=='function')return null;return v133Harden(base(text));}
+ catch(e){window.__V133_MYANMAR_RENDER_ERROR__=String(e);return null;}
+}
+window.__V133_MYANMAR_RENDER=v133Render;
+window.renderMyanmar2DModule=v133Render;
+const prior=window.runEngineCore;
+if(typeof prior==='function'){
+ window.runEngineCore=async function(){
+  const t=document.getElementById('bulkInput')?.value||'';
+  if(!v133IsMyanmar(t))return prior.apply(this,arguments);
+  const h=v133Render(t),r=document.getElementById('result');
+  if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b></div>';
+  return h;
+ };
+}
+})();
+</script>
+
+<script id="V134_MYANMAR_2D_PER_ROW_RANK_FINAL">
+(function(){
+/* V134 — Myanmar 2D only. Final rank contract: each owner row has exactly 5 pairs;
+   within EACH row, #1=Gold, #2=Silver, #3=Rose-gold, remaining 2 are normal.
+   Row 1 contains only the standout digit; row 2 only the secondary digit.
+   Pair order is ascending after ranking. Reverse pairs are collapsed. Other markets untouched. */
+const isM=t=>/🗓\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(String(t||''));
+const key=p=>{const s=String(p||'').replace(/\D/g,'').padStart(2,'0').slice(-2);return s[0]<=s[1]?s:s[1]+s[0]};
+const num=p=>Number(String(p||'').replace(/\D/g,'').padStart(2,'0'))||0;
+const hint=p=>p.classList.contains('rank-gold')?3:p.classList.contains('rank-silver')?2:p.classList.contains('rank-rosegold')?1:0;
+function owner(pair,d1,d2){const s=String(pair||'').replace(/\D/g,'').padStart(2,'0').slice(-2),a=s[0],b=s[1],h1=a===String(d1)||b===String(d1),h2=a===String(d2)||b===String(d2);return h1&&!h2?1:h2&&!h1?2:h1&&h2?1:0;}
+function hard(html){if(typeof html!=='string'||!html)return html;const box=document.createElement('div');box.innerHTML=html;const cards=[...box.querySelectorAll('.prediction-card')];let ok=cards.length===3;cards.forEach((card,ci)=>{const heroes=[...card.querySelectorAll('.hero-circle')].slice(0,2).map(x=>String(x.textContent||'').trim());const rows=[...card.querySelectorAll('.pair-row-inline')];if(heroes.length<2||rows.length<2){ok=false;return;}const [d1,d2]=heroes,used=new Set(),source=[...card.querySelectorAll('.floating-pill')].map(p=>({p,pair:String(p.textContent||'').replace(/\D/g,'').padStart(2,'0').slice(-2)})),by={1:[],2:[]};for(const x of source){const k=key(x.pair);if(!/^\d{2}$/.test(x.pair)||used.has(k))continue;const o=owner(x.pair,d1,d2);if(o){by[o].push(x);used.add(k);}}for(const r of [1,2])by[r].sort((a,b)=>num(a.pair)-num(b.pair));if(by[1].length!==5||by[2].length!==5){ok=false;window.__V134_MYANMAR_AUDIT__={ok:false,card:ci+1,row1:by[1].length,row2:by[2].length};return;}const colorRow=items=>{const ranked=items.slice().sort((a,b)=>hint(b.p)-hint(a.p)||num(a.pair)-num(b.pair));const rm=new Map();if(ranked[0])rm.set(key(ranked[0].pair),'rank-gold');if(ranked[1])rm.set(key(ranked[1].pair),'rank-silver');if(ranked[2])rm.set(key(ranked[2].pair),'rank-rosegold');return items.map(x=>{const el=x.p.cloneNode(true);el.textContent=x.pair;el.classList.remove('rank-gold','rank-silver','rank-rosegold');const c=rm.get(key(x.pair));if(c)el.classList.add(c);return el;});};const out1=colorRow(by[1]),out2=colorRow(by[2]);rows[0].replaceChildren(...out1);rows[1].replaceChildren(...out2);const pills=[...card.querySelectorAll('.floating-pill')];const counts={gold:pills.filter(x=>x.classList.contains('rank-gold')).length,silver:pills.filter(x=>x.classList.contains('rank-silver')).length,rosegold:pills.filter(x=>x.classList.contains('rank-rosegold')).length,normal:pills.filter(x=>!x.classList.contains('rank-gold')&&!x.classList.contains('rank-silver')&&!x.classList.contains('rank-rosegold')).length};window.__V134_MYANMAR_CARD_CHECK__={card:ci+1,row1:out1.map(x=>x.textContent.trim()),row2:out2.map(x=>x.textContent.trim()),total:pills.length,...counts};if(counts.gold!==2||counts.silver!==2||counts.rosegold!==2||counts.normal!==4)ok=false;});window.__V134_MYANMAR_CONTRACT__=Object.freeze({scope:'Myanmar2DOnly',cards:3,row1Owner:'standout',row2Owner:'secondary',pairsPerRow:5,totalPairsPerCard:10,rankPerRow:{gold:1,silver:1,rosegold:1,normal:2},totalRankColors:{gold:2,silver:2,rosegold:2,normal:4},reversePairForbidden:true,ascendingWithinRow:true,otherMarketsUntouched:true,ok});return ok?box.innerHTML:html;}
+function render(text){try{const base=window.__V129_MYANMAR_RENDER;if(typeof base!=='function')return null;return hard(base(text));}catch(e){window.__V134_MYANMAR_RENDER_ERROR__=String(e);return null;}}
+window.__V134_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;const prev=window.runEngineCore;if(typeof prev==='function')window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(!isM(t))return prev.apply(this,arguments);const h=render(t),r=document.getElementById('result');if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b></div>';return h;};
+})();
+</script>
 </html>
