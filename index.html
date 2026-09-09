@@ -2121,4 +2121,367 @@ window.__V134_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;const pr
 })();
 </script>
 
+<script id="V139_MYANMAR_2D_PRECISION_REBUILD">
+(function(){
+  'use strict';
+
+  /*
+   * V139 — Myanmar 2D ONLY.
+   *
+   * This is a prediction-path rebuild, not a cosmetic patch.
+   * Myanmar is treated as exactly two independent daily sessions:
+   *   left  = noon
+   *   right = evening
+   * There is no all-day/third session.
+   *
+   * Locked UI contract:
+   *   - existing card CSS/markup vocabulary is reused
+   *   - row 1 = standout digit, owner digit first
+   *   - row 2 = secondary digit, owner digit first
+   *   - partner digits ascending low -> high
+   *   - 5 pairs per row, 10 unique unordered pairs per card
+   *   - each row: 1 Gold, 1 Silver, 1 Rose-gold, 2 Normal
+   *   - no reverse-pair duplication
+   *   - no change to general/main lottery path
+   */
+
+  const CFG = Object.freeze({
+    windows:[12,20,30,45,60,90,120],
+    oosTests:48,
+    minTrain:45,
+    pairsPerRow:5,
+    topDigits:2,
+    smoothing:1.5,
+    pairSmoothing:1,
+    maxPairs:45
+  });
+
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=v=>Number(v);
+  const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+  const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
+  const beta=(hit,n,a=CFG.smoothing)=>((hit+a)/(n+2*a))*100;
+  const pairKey=(x,y)=>`${Math.min(x,y)}${Math.max(x,y)}`;
+  const pairNum=p=>Number(String(p).padStart(2,'0'))||0;
+  const hasDigit=(r,d)=>!!r && (r.tens===d || r.units===d);
+  const validResult=r=>r && Number.isInteger(r.tens) && Number.isInteger(r.units) && r.tens>=0&&r.tens<=9&&r.units>=0&&r.units<=9;
+  const pairOf=r=>validResult(r)?pairKey(r.tens,r.units):'';
+
+  function parseDate(s){
+    const m=String(s||'').trim().match(/^(\d{1,2})\s+([^\s]+)\s*(\d{2,4})$/);
+    if(!m)return 0;
+    const mm={'ม.ค':1,'ก.พ':2,'มี.ค':3,'เม.ย':4,'พ.ค':5,'มิ.ย':6,'ก.ค':7,'ส.ค':8,'ก.ย':9,'ต.ค':10,'พ.ย':11,'ธ.ค':12};
+    const mon=mm[m[2].replace(/\.+$/,'')]; if(!mon)return 0;
+    let y=Number(m[3]); if(y<100)y+=2500; if(y>=2400)y-=543;
+    return new Date(y,mon-1,Number(m[1])).getTime();
+  }
+
+  function parse(text){
+    const rows=[];
+    const errors=[];
+    String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).forEach((raw,seq)=>{
+      const line=raw.replace(/\s+/g,' ').trim();
+      const m=line.match(/^(?:🗓|📅)\s*(.+?)\s*:\s*(\d{2}|××|xx)\s*--\s*(\d{2}|××|xx)$/i);
+      if(!m){if(/[🗓📅]/.test(line))errors.push(raw);return;}
+      const cv=v=>/^\d{2}$/.test(v)?{tens:Number(v[0]),units:Number(v[1]),value:v}:null;
+      rows.push({date:m[1].trim(),dateMs:parseDate(m[1]),noon:cv(m[2]),evening:cv(m[3]),seq});
+    });
+    return {rows,errors};
+  }
+
+  /* Duplicate calendar dates are ambiguous for a two-session market.
+     Keep them in the audit, but do not let them train either session. */
+  function clean(parsed){
+    const byDate=new Map();
+    parsed.rows.forEach(r=>{
+      const k=r.dateMs?String(r.dateMs):`raw:${r.date}`;
+      if(!byDate.has(k))byDate.set(k,[]);
+      byDate.get(k).push(r);
+    });
+    const ambiguous=new Set();
+    byDate.forEach((arr,k)=>{if(arr.length!==1)ambiguous.add(k);});
+    const usable=[];
+    byDate.forEach((arr,k)=>{if(arr.length===1)usable.push(arr[0]);});
+    usable.sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq);
+    return {usable,ambiguousDates:[...ambiguous],rawRows:parsed.rows.length};
+  }
+
+  function sessionRows(cleaned,session){
+    return cleaned.usable.map(r=>({date:r.date,dateMs:r.dateMs,seq:r.seq,result:r[session]})).filter(x=>validResult(x.result)).map(x=>x.result);
+  }
+
+  function countDigit(rows,d,window){
+    const z=rows.slice(-Math.min(window,rows.length));
+    let n=0; z.forEach(r=>{if(r.tens===d)n++;if(r.units===d)n++;});
+    return {hit:n,nDraws:z.length};
+  }
+
+  function positionRate(rows,d,window){
+    const z=rows.slice(-Math.min(window,rows.length));
+    if(!z.length)return 50;
+    const t=z.filter(r=>r.tens===d).length;
+    const u=z.filter(r=>r.units===d).length;
+    return (beta(t,z.length)+beta(u,z.length))/2;
+  }
+
+  function gapScore(rows,d){
+    for(let i=rows.length-1;i>=0;i--)if(hasDigit(rows[i],d))return clamp(100-(rows.length-1-i)*6,25,100);
+    return 25;
+  }
+
+  function transitionScore(rows,d){
+    let n=0,h=0;
+    for(let i=1;i<rows.length;i++){
+      if(hasDigit(rows[i-1],d)){n++;if(hasDigit(rows[i],d))h++;}
+    }
+    return n?beta(h,n,3):50;
+  }
+
+  function windowDigitOOS(rows,w){
+    const n=rows.length;
+    if(n<CFG.minTrain+3)return .5;
+    const start=Math.max(CFG.minTrain,n-CFG.oosTests);
+    let hits=0,tests=0;
+    for(let i=start;i<n;i++){
+      const train=rows.slice(0,i);
+      const scores=[];
+      for(let d=0;d<10;d++){
+        const q=countDigit(train,d,w);
+        scores.push({d,score:beta(q.hit,q.nDraws*2)});
+      }
+      scores.sort((a,b)=>b.score-a.score||a.d-b.d);
+      const actual=rows[i];
+      if(scores.slice(0,2).some(x=>hasDigit(actual,x.d)))hits++;
+      tests++;
+    }
+    return tests?hits/tests:.5;
+  }
+
+  function windowPairOOS(rows,w){
+    const n=rows.length;
+    if(n<CFG.minTrain+3)return .5;
+    const start=Math.max(CFG.minTrain,n-CFG.oosTests);
+    let hits=0,tests=0;
+    for(let i=start;i<n;i++){
+      const train=rows.slice(0,i);
+      const counts=new Map();
+      for(const r of train){const k=pairOf(r);if(k)counts.set(k,(counts.get(k)||0)+1);}
+      const candidates=[];
+      for(let x=0;x<10;x++)for(let y=x;y<10;y++){
+        const k=pairKey(x,y),c=counts.get(k)||0;
+        candidates.push({pair:k,score:beta(c,train.length,CFG.pairSmoothing)});
+      }
+      candidates.sort((a,b)=>b.score-a.score||pairNum(a.pair)-pairNum(b.pair));
+      if(candidates.slice(0,10).some(x=>x.pair===pairOf(rows[i])))hits++;
+      tests++;
+    }
+    return tests?hits/tests:.5;
+  }
+
+  function adaptiveWindowWeights(rows,kind){
+    const vals=CFG.windows.map(w=>({w,quality:kind==='digit'?windowDigitOOS(rows,w):windowPairOOS(rows,w)}));
+    const raw=vals.map(v=>Math.exp(clamp((v.quality-.5)*5,-1.5,1.5)));
+    const total=raw.reduce((s,v)=>s+v,0)||1;
+    return vals.map((v,i)=>({...v,weight:raw[i]/total}));
+  }
+
+  function digitProfile(rows,d,dw){
+    const windowRates=dw.map(q=>{const c=countDigit(rows,d,q.w);return beta(c.hit,c.nDraws*2);});
+    const weighted=dw.reduce((s,q,i)=>s+q.weight*windowRates[i],0);
+    const recent=positionRate(rows,d,30);
+    const transition=transitionScore(rows,d);
+    const freshness=gapScore(rows,d);
+    const stability=clamp(100-(Math.max(...windowRates)-Math.min(...windowRates))*1.7,35,100);
+    const oos=avg(dw.map(q=>q.quality*100));
+    /* Avoid the old digit -> pair -> digit circular reinforcement. */
+    const score=.43*weighted+.18*recent+.10*transition+.07*freshness+.12*stability+.10*oos;
+    return {digit:d,score,weighted,recent,transition,freshness,stability,oos,windowRates};
+  }
+
+  function chooseTop(rows,dw){
+    const profiles=Array.from({length:10},(_,d)=>digitProfile(rows,d,dw));
+    profiles.sort((a,b)=>b.score-a.score||a.digit-b.digit);
+    return {profiles,top:profiles.slice(0,2)};
+  }
+
+  function pairProfile(rows,x,y,pw){
+    const k=pairKey(x,y),recent=rows.slice(-15),long=rows.slice(-120);
+    const windowRates=pw.map(q=>{
+      const z=rows.slice(-Math.min(q.w,rows.length));
+      const h=z.filter(r=>pairOf(r)===k).length;
+      return beta(h,z.length,CFG.pairSmoothing);
+    });
+    const weighted=pw.reduce((s,q,i)=>s+q.weight*windowRates[i],0);
+    const recentRate=recent.length?beta(recent.filter(r=>pairOf(r)===k).length,recent.length,CFG.pairSmoothing):50;
+    const longRate=long.length?beta(long.filter(r=>pairOf(r)===k).length,long.length,CFG.pairSmoothing):50;
+
+    /* Orientation is evidence, not identity. The displayed pair is always owner-first. */
+    const f=long.filter(r=>r.tens===x&&r.units===y).length;
+    const rev=long.filter(r=>r.tens===y&&r.units===x).length;
+    const orientation=long.length?beta(Math.max(f,rev),long.length,CFG.pairSmoothing):50;
+
+    const ownerDen=rows.filter(r=>hasDigit(r,x)).length;
+    const ownerHit=rows.filter(r=>hasDigit(r,x)&&pairOf(r)===k).length;
+    const conditional=ownerDen?beta(ownerHit,ownerDen,CFG.pairSmoothing):50;
+
+    let gap=rows.length;
+    for(let i=rows.length-1;i>=0;i--)if(pairOf(rows[i])===k){gap=rows.length-1-i;break;}
+    const freshness=clamp(100-gap*5,25,100);
+    const stability=clamp(100-(Math.max(...windowRates)-Math.min(...windowRates))*2.0,35,100);
+    const pairOOS=avg(pw.map(q=>q.quality*100));
+    const zeroEvidence=rows.filter(r=>pairOf(r)===k).length===0;
+
+    const score=.31*weighted+.16*recentRate+.12*longRate+.10*orientation+.12*conditional+.06*freshness+.08*stability+.05*pairOOS;
+    return {pair:k,score,weighted,recentRate,longRate,orientation,conditional,freshness,stability,pairOOS,zeroEvidence};
+  }
+
+  function allPairs(rows,pw){
+    const out=[];
+    for(let x=0;x<10;x++)for(let y=x;y<10;y++)out.push(pairProfile(rows,x,y,pw));
+    return out.sort((a,b)=>b.score-a.score||pairNum(a.pair)-pairNum(b.pair));
+  }
+
+  /* Joint allocation: choose exactly 5 owner pairs for each top digit while
+     keeping every unordered pair unique. All 45 possible pairs remain eligible,
+     so a weak historical sample can never force a malformed 4/6 split. */
+  function allocate(top,pairs){
+    const a=top[0].digit,b=top[1].digit;
+    const candidates=pairs.filter(p=>p.pair.includes(String(a))||p.pair.includes(String(b)));
+    let states=new Map([['0,0',{score:0,sel:[]}]]);
+    for(const p of candidates){
+      const next=new Map(states);
+      for(const [key,state] of states){
+        const [ca,cb]=key.split(',').map(Number);
+        const hasA=p.pair.includes(String(a)),hasB=p.pair.includes(String(b));
+        if(hasA&&ca<5){
+          const nk=`${ca+1},${cb}`,nv=state.score+p.score;
+          if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:state.sel.concat([{...p,target:a}])});
+        }
+        if(hasB&&cb<5){
+          const nk=`${ca},${cb+1}`,nv=state.score+p.score;
+          if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:state.sel.concat([{...p,target:b}])});
+        }
+      }
+      states=next;
+    }
+    const best=states.get('5,5');
+    let sel=best?best.sel.slice():[];
+    if(sel.length!==10){
+      /* deterministic safety fallback — still owner-valid and unique */
+      const used=new Set(sel.map(x=>x.pair));
+      for(const owner of [a,b]){
+        const have=sel.filter(x=>x.target===owner).length;
+        for(const p of candidates){
+          if(sel.filter(x=>x.target===owner).length>=5)break;
+          if(used.has(p.pair)||!p.pair.includes(String(owner)))continue;
+          sel.push({...p,target:owner});used.add(p.pair);
+        }
+      }
+    }
+    const byA=sel.filter(x=>x.target===a).sort((x,y)=>pairNum(x.pair)-pairNum(y.pair));
+    const byB=sel.filter(x=>x.target===b).sort((x,y)=>pairNum(x.pair)-pairNum(y.pair));
+    return {by:{[a]:byA,[b]:byB},all:sel,objective:best?.score||0};
+  }
+
+  function rankRows(by,a,b){
+    const rankRow=row=>{
+      const ranked=row.slice().sort((x,y)=>y.score-x.score||pairNum(x.pair)-pairNum(y.pair));
+      const rank=new Map();
+      if(ranked[0])rank.set(ranked[0].pair,'rank-gold');
+      if(ranked[1])rank.set(ranked[1].pair,'rank-silver');
+      if(ranked[2])rank.set(ranked[2].pair,'rank-rosegold');
+      return row.slice().sort((x,y)=>pairNum(x.pair)-pairNum(y.pair)).map(x=>({...x,rankClass:rank.get(x.pair)||''}));
+    };
+    return {row1:rankRow(by[a]),row2:rankRow(by[b])};
+  }
+
+  function ownerFirst(pair,owner){
+    const p=String(pair),d=String(owner);
+    if(p[0]===d)return p;
+    if(p[1]===d)return p[1]+p[0];
+    return p;
+  }
+
+  function card(model,idx,date){
+    const d1=model.top[0].digit,d2=model.top[1].digit;
+    const ranked=rankRows(model.pairs.by,d1,d2);
+    const row1=ranked.row1.map(x=>ownerFirst(x.pair,d1));
+    const row2=ranked.row2.map(x=>ownerFirst(x.pair,d2));
+    const id=`myanmar-v139-${idx}`;
+    const next=`${date} · ${model.time} · ${model.label}`;
+    return `<div class="prediction-card score-card" id="${id}" data-card-key="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">🇲🇲</div><div class="card-info"><small>${esc(next)}</small><b>MYANMAR 2D</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ บ้านเงินกอง ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','MYANMAR 2D')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div class="hero-circle">${d1}</div><span class="hero-label">เด่น</span></div><div class="hero-digit-badge hero-silver"><div class="hero-circle">${d2}</div><span class="hero-label">รอง</span></div></div><div class="pairs-grid-container"><div class="pair-row-inline">${row1.map((p,i)=>`<div class="floating-pill ${ranked.row1[i].rankClass||''}">${esc(p)}</div>`).join('')}</div><div class="pair-row-inline">${row2.map((p,i)=>`<div class="floating-pill ${ranked.row2[i].rankClass||''}">${esc(p)}</div>`).join('')}</div></div></div>`;
+  }
+
+  function nextDate(rows){
+    const dates=rows.filter(r=>r.dateMs>0).sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq);
+    if(!dates.length)return '';
+    const d=new Date(dates[dates.length-1].dateMs);d.setDate(d.getDate()+1);
+    while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);
+    const mm=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return `${String(d.getDate()).padStart(2,'0')} ${mm[d.getMonth()]} ${d.getFullYear()+543}`;
+  }
+
+  function render(text){
+    try{
+      const parsed=parse(text),cl=clean(parsed);
+      if(!cl.usable.length)return null;
+
+      const noon=sessionRows(cl,'noon');
+      const evening=sessionRows(cl,'evening');
+      if(!noon.length||!evening.length)return null;
+
+      const build=(rows,session)=>{
+        const dw=adaptiveWindowWeights(rows,'digit');
+        const topModel=chooseTop(rows,dw);
+        const pw=adaptiveWindowWeights(rows,'pair');
+        const pairs=allPairs(rows,pw);
+        const allocated=allocate(topModel.top,pairs);
+        return {session,top:topModel.top,pairs:allocated,digitProfiles:topModel.profiles,pairPool:pairs,dw,pw};
+      };
+
+      const nm=build(noon,'noon');
+      const em=build(evening,'evening');
+      const date=nextDate(parsed.rows);
+
+      const check=m=>{
+        const a=m.top[0].digit,b=m.top[1].digit,r1=m.pairs.by[a]||[],r2=m.pairs.by[b]||[];
+        const all=[...r1,...r2],keys=all.map(x=>x.pair),unique=new Set(keys);
+        return {row1:r1.length,row2:r2.length,total:all.length,unique:unique.size,ownerFirst:r1.every(x=>ownerFirst(x.pair,a)[0]===String(a))&&r2.every(x=>ownerFirst(x.pair,b)[0]===String(b)),ascending:r1.every((x,i)=>i===0||pairNum(x.pair)>=pairNum(r1[i-1].pair))&&r2.every((x,i)=>i===0||pairNum(x.pair)>=pairNum(r2[i-1].pair))};
+      };
+
+      window.__V139_MYANMAR_AUDIT__=Object.freeze({
+        version:'V139',scope:'Myanmar2DOnly',model:'session-separated digit + pair precision rebuild',
+        rawRows:parsed.rows.length,usableDates:cl.usable.length,ambiguousDates:cl.ambiguousDates.length,parseErrors:parsed.errors.length,
+        noonRecords:noon.length,eveningRecords:evening.length,rounds:2,
+        topDigitsPerSession:2,pairsPerRow:5,totalPairsPerCard:10,reversePairSuppression:true,
+        display:'row1=standout,row2=secondary,owner-first,ascending partners',
+        ranking:{gold:2,silver:2,rosegold:2,normal:4},
+        noonCheck:check(nm),eveningCheck:check(em),windows:CFG.windows
+      });
+      window.__V139_MYANMAR_DEBUG__={noon:nm,evening:em};
+
+      return [
+        card({...nm,time:'12.01 P.M.',label:'မွန်းတည့်အကြိမ်'},1,date),
+        card({...em,time:'4.30 P.M.',label:'ညနေအကြိမ်'},2,date)
+      ].join('');
+    }catch(e){window.__V139_MYANMAR_RENDER_ERROR__=String(e);return null;}
+  }
+
+  window.__V139_MYANMAR_RENDER=render;
+  window.renderMyanmar2DModule=render;
+
+  const isMyanmar=t=>/(?:🗓|📅)\s*.+?\s*:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(String(t||''));
+  const prev=window.runEngineCore;
+  if(typeof prev==='function'){
+    window.runEngineCore=async function(){
+      const t=document.getElementById('bulkInput')?.value||'';
+      if(!isMyanmar(t))return prev.apply(this,arguments);
+      const html=render(t),result=document.getElementById('result');
+      if(result)result.innerHTML=html||'<div class="errorbox"><b>Myanmar 2D render error</b><br>'+esc(window.__V139_MYANMAR_RENDER_ERROR__||'unknown')+'</div>';
+      return html;
+    };
+  }
+})();
+</script>
+
 </html>
