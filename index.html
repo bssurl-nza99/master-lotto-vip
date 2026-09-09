@@ -3269,89 +3269,59 @@ window.__V151_CONFIG__=Object.freeze({...CFG,targetPositions:['top tens','top un
 </script>
 
 <script>
-/* V153 MATHEMATICAL EXHAUSTION — FULL WALK-FORWARD / SEMANTIC SATURATION
-   Backend-only selector support. UI, cards, names, dates, markets and Myanmar
-   are untouched. Mathematical search is exhaustive over distinct output
-   behaviours (semantic signatures) up to saturation/dead-end, rather than a
-   fixed beam. Every target is strictly t -> t+1 and scores only 4 targetable
-   positions; hundreds are excluded. */
+/* V154 FAST MATHEMATICAL EXHAUSTION — SAME KPI, CACHED WALK-FORWARD
+   Performance correction for real browser use. Keeps the same target KPI and
+   chronological OOS semantics, but avoids rebuilding the same prefixes and
+   uses bounded semantic saturation appropriate for small per-market histories. */
 (function(){'use strict';
-const CFG=Object.freeze({version:'V153',minTrain:14,innerMin:10,maxDepth:3,maxStates:12000,topCandidates:32,minEval:10,upgradeEdge:0.03,stabilityPenalty:0.025,regimePenalty:0.018});
+const CFG=Object.freeze({version:'V154_FAST',minTrain:14,innerMin:8,maxDepth:2,maxStates:900,topCandidates:16,minEval:10,upgradeEdge:0.03,stabilityPenalty:0.025,regimePenalty:0.018});
 const clamp=x=>Math.max(0,Math.min(1,Number(x)||0));
 const safe10=x=>{x=Math.trunc(Number(x)||0);return((x%10)+10)%10;};
 const valid=r=>r&&/^\d{3}$/.test(String(r.n3||''))&&/^\d{2}$/.test(String(r.n2||''));
 const digits=r=>{const a=String(r.n3),b=String(r.n2);return[+a[0],+a[1],+a[2],+b[0],+b[1]];};
 const target4=r=>{const a=String(r.n3),b=String(r.n2);return[+a[1],+a[2],+b[0],+b[1]];};
-const hit2=(p,r)=>{const t=new Set(target4(r));return t.has(p[0])||t.has(p[1]);};
+const hit2=(p,r)=>{if(!p||p.length<2)return false;const t=new Set(target4(r));return t.has(p[0])||t.has(p[1]);};
 const ordered=rs=>(Array.isArray(rs)?rs:[]).filter(valid).slice().sort((a,b)=>(Number(a.timestamp)||0)-(Number(b.timestamp)||0)||(Number(a.sequence)||0)-(Number(b.sequence)||0));
 const uniqPair=p=>{if(!p||p.length<2)return null;const a=safe10(p[0]),b=safe10(p[1]);return a===b?null:[a,b];};
 function atomValues(r){const [h,t,u,bt,bu]=digits(r),s3=safe10(h+t+u),s2=safe10(bt+bu);return [h,t,u,bt,bu,s3,s2,safe10(h+t),safe10(t+u),safe10(h+u),safe10(t+bt),safe10(u+bu),safe10(h+bt),safe10(u+bt),safe10(h-t),safe10(t-u),safe10(bt-bu),safe10(Math.abs(h-t)),safe10(Math.abs(t-u)),safe10(Math.abs(bt-bu)),safe10(h*t),safe10(t*u),safe10(bt*bu),safe10(s3*s2),safe10(h+bt),safe10(t+bu),safe10(h+u+bt),safe10(t+u+bu)];}
 const ATOMS=['H','T','U','BT','BU','S3','S2','H+T','T+U','H+U','T+BT','U+BU','H+BT','U+BT','H-T','T-U','BT-BU','|H-T|','|T-U|','|BT-BU|','H*T','T*U','BT*BU','S3*S2','H+BT','T+BU','H+U+BT','T+U+BU'];
 const OPS=['+','-','abs-','*','avg','min','max','xor'];
 function op(a,b,o){switch(o){case'+':return safe10(a+b);case'-':return safe10(a-b);case'abs-':return safe10(Math.abs(a-b));case'*':return safe10(a*b);case'avg':return safe10(Math.floor((a+b)/2));case'min':return Math.min(a,b);case'max':return Math.max(a,b);case'xor':return safe10((a^b));default:return 0;}}
-function signature(vals){return vals.join('');}
-function makeState(vals,expr,depth){return{vals,expr,depth};}
+const vecSig=v=>v.join('');
 function buildStates(data){
-  /* Semantic exhaustive search: equivalent formulas producing the same vector
-     over the entire available history are merged. This removes expression
-     duplication while preserving every distinct mathematical behaviour. */
   const n=data.length,seen=new Map(),states=[];
-  const add=(vals,expr,d)=>{const sig=signature(vals);if(seen.has(sig))return false;const st=makeState(vals,expr,d);seen.set(sig,st);states.push(st);return states.length<CFG.maxStates;};
-  for(let i=0;i<ATOMS.length;i++)add(data.map(r=>atomValues(r)[i]),ATOMS[i],0);
+  const av=data.map(atomValues);
+  const add=(vals,expr,depth)=>{const sig=vecSig(vals);if(seen.has(sig))return null;const st={vals,expr,depth};seen.set(sig,st);states.push(st);return st;};
+  for(let i=0;i<ATOMS.length;i++)add(av.map(x=>x[i]),ATOMS[i],0);
   let frontier=states.slice();
-  for(let depth=1;depth<=CFG.maxDepth && frontier.length;depth++){
+  for(let depth=1;depth<=CFG.maxDepth&&frontier.length&&states.length<CFG.maxStates;depth++){
     const next=[];
-    outer:for(const a of frontier){for(const b of states.slice()){
-      for(const o of OPS){
-        const vals=new Array(n);for(let k=0;k<n;k++)vals[k]=op(a.vals[k],b.vals[k],o);
-        if(add(vals,'('+a.expr+o+b.expr+')',depth)){next.push(seen.get(signature(vals)));if(states.length>=CFG.maxStates)break outer;}
+    outer:for(const a of frontier){
+      for(const b of states){
+        for(const o of OPS){
+          const vals=new Array(n);for(let k=0;k<n;k++)vals[k]=op(a.vals[k],b.vals[k],o);
+          const st=add(vals,'('+a.expr+o+b.expr+')',depth);if(st)next.push(st);
+          if(states.length>=CFG.maxStates)break outer;
+        }
       }
-    }}
+    }
     frontier=next;
   }
   return states;
 }
-function scoreState(st,data,start){let h=0,n=0;for(let i=start;i<data.length-1;i++){if(new Set(target4(data[i+1])).has(st.vals[i]))h++;n++;}return n?h/n:0;}
-function stability(st,data,start){const m=start+Math.floor((data.length-1-start)/2);let a=0,an=0,b=0,bn=0;for(let i=start;i<data.length-1;i++){const ok=new Set(target4(data[i+1])).has(st.vals[i]);if(i<m){an++;if(ok)a++;}else{bn++;if(ok)b++;}}return 1-Math.abs((an?a/an:0)-(bn?b/bn:0));}
-function regimeStability(st,data,start){const n=data.length-1-start;if(n<6)return .5;const q=Math.max(2,Math.floor(n/3)),rs=[];for(let z=0;z<3;z++){let h=0,k=0;const lo=start+z*q,hi=z===2?data.length-1:Math.min(data.length-1,lo+q);for(let i=lo;i<hi;i++){k++;if(new Set(target4(data[i+1])).has(st.vals[i]))h++;}if(k)rs.push(h/k);}return rs.length?1-(Math.max(...rs)-Math.min(...rs)):.5;}
-function rankStates(data){
-  const start=Math.max(0,data.length-CFG.innerMin-1), pool=[];
-  const states=buildStates(data);
-  for(const st of states){const rate=scoreState(st,data,start),stab=stability(st,data,start),reg=regimeStability(st,data,start);const complexity=st.depth/CFG.maxDepth;const score=rate-.025*(1-stab)-CFG.regimePenalty*(1-reg)-.004*complexity;pool.push({st,rate,stab,reg,score});}
-  pool.sort((a,b)=>b.score-a.score||a.st.depth-b.st.depth);
-  return pool.slice(0,CFG.topCandidates);
-}
-function candidate(train){
-  if(train.length<CFG.minTrain)return null;const ranked=rankStates(train);let best=null;
-  for(let i=0;i<ranked.length;i++)for(let j=i+1;j<ranked.length;j++){
-    const a=ranked[i],b=ranked[j],p=[a.st.vals[train.length-1],b.st.vals[train.length-1]];if(p[0]===p[1])continue;
-    const balance=1-Math.abs(a.rate-b.rate),score=.48*((a.rate+b.rate)/2)+.22*((a.stab+b.stab)/2)+.15*((a.reg+b.reg)/2)+.10*balance+.05*Math.min(1,(a.st.n+b.st.n)/(2*train.length));
-    if(!best||score>best.score)best={pair:p,score,formulas:[a.st.expr,b.st.expr],formulaRates:[a.rate,b.rate],formulaStability:[a.stab,b.stab],formulaRegime:[a.reg,b.reg],states:ranked.length};
-  }
-  return best;
-}
-function fullOOS(data){
-  const d=ordered(data),origins=[];let h=0,n=0;
-  for(let i=CFG.minTrain;i<d.length;i++){const tr=d.slice(0,i),c=candidate(tr);if(!c)continue;const ok=hit2(c.pair,d[i]);if(ok)h++;n++;origins.push({i,pair:c.pair,hit:ok,formulas:c.formulas});}
-  return{tests:n,hit:n?h/n*100:0,origins,coverage:d.length?Math.max(0,n/(d.length-CFG.minTrain))*100:0};
-}
+function rate(st,data,start){let h=0,n=0;for(let i=start;i<data.length-1;i++){n++;if(new Set(target4(data[i+1])).has(st.vals[i]))h++;}return n?h/n:0;}
+function stab(st,data,start){const m=start+Math.floor((data.length-1-start)/2);let a=0,an=0,b=0,bn=0;for(let i=start;i<data.length-1;i++){const ok=new Set(target4(data[i+1])).has(st.vals[i]);if(i<m){an++;if(ok)a++;}else{bn++;if(ok)b++;}}return 1-Math.abs((an?a/an:0)-(bn?b/bn:0));}
+function reg(st,data,start){const n=data.length-1-start;if(n<6)return .5;const q=Math.max(2,Math.floor(n/3)),rs=[];for(let z=0;z<3;z++){let h=0,k=0,lo=start+z*q,hi=z===2?data.length-1:Math.min(data.length-1,lo+q);for(let i=lo;i<hi;i++){k++;if(new Set(target4(data[i+1])).has(st.vals[i]))h++;}if(k)rs.push(h/k);}return rs.length?1-(Math.max(...rs)-Math.min(...rs)):.5;}
+function rankStates(data){const start=Math.max(0,data.length-CFG.innerMin-1),states=buildStates(data),pool=[];for(const st of states){const r=rate(st,data,start),s=stab(st,data,start),g=reg(st,data,start),score=r-CFG.stabilityPenalty*(1-s)-CFG.regimePenalty*(1-g)-.004*(st.depth/CFG.maxDepth);pool.push({st,rate:r,stab:s,reg:g,score});}pool.sort((a,b)=>b.score-a.score||a.st.depth-b.st.depth);return pool.slice(0,CFG.topCandidates);}
+const cache=new Map();
+function candidate(train){if(train.length<CFG.minTrain)return null;const key=train.map(r=>String(r.timestamp||'')+'|'+String(r.sequence||'')+'|'+r.n3+'|'+r.n2).join(';');if(cache.has(key))return cache.get(key);const ranked=rankStates(train);let best=null;for(let i=0;i<ranked.length;i++)for(let j=i+1;j<ranked.length;j++){const a=ranked[i],b=ranked[j],p=[a.st.vals[train.length-1],b.st.vals[train.length-1]];if(p[0]===p[1])continue;const score=.48*((a.rate+b.rate)/2)+.22*((a.stab+b.stab)/2)+.15*((a.reg+b.reg)/2)+.10*(1-Math.abs(a.rate-b.rate))+.05*Math.min(1,(a.st.n+b.st.n)/(2*train.length));if(!best||score>best.score)best={pair:p,score,formulas:[a.st.expr,b.st.expr],formulaRates:[a.rate,b.rate],formulaStability:[a.stab,b.stab],formulaRegime:[a.reg,b.reg],states:ranked.length};}cache.set(key,best);return best;}
+function fullOOS(data){const d=ordered(data),origins=[];let h=0,n=0;for(let i=CFG.minTrain;i<d.length;i++){const c=candidate(d.slice(0,i));if(!c)continue;const ok=hit2(c.pair,d[i]);if(ok)h++;n++;origins.push({i,pair:c.pair,hit:ok,formulas:c.formulas});}return{tests:n,hit:n?h/n*100:0,origins,coverage:d.length?Math.max(0,n/(d.length-CFG.minTrain))*100:0};}
 function recentOOS(data){const d=ordered(data),start=Math.max(CFG.minTrain,d.length-12);let h=0,n=0;for(let i=start;i<d.length;i++){const c=candidate(d.slice(0,i));if(!c)continue;n++;if(hit2(c.pair,d[i]))h++;}return{tests:n,hit:n?h/n*100:0};}
 function currentPairOOS(data,p){const d=ordered(data),q=uniqPair(p);if(!q)return{tests:0,hit:0};let h=0,n=0;for(let i=CFG.minTrain;i<d.length;i++){n++;if(hit2(q,d[i]))h++;}return{tests:n,hit:n?h/n*100:0};}
-function probeSupport(data,p){const d=ordered(data),cur=d[d.length-1];if(!cur||!p)return 0;const h=String(cur.n3)[0],anchor=Math.abs(7-(+h))%10;let pool=[-2,-1,0,1,2].map(x=>(anchor+x+10)%10);if(pool.some(x=>p.includes(x)))pool=[-3,-2,-1,0,1,2,3].map(x=>(anchor+x+10)%10);const clean=pool.filter(x=>!p.includes(x));return p.filter(x=>clean.includes(x)).length/Math.max(1,p.length);}
-function select(records,base){
-  const d=ordered(records);if(d.length<CFG.minTrain+1)return base;const current=uniqPair(base&&base.best2),math=candidate(d),all=fullOOS(d),recent=recentOOS(d),curOOS=current?currentPairOOS(d,current):{tests:0,hit:0};
-  let chosen=current||math?.pair||null,mode='V153_MATH_SUPPORT';
-  if(math&&all.tests>=CFG.minEval){const lift=all.hit-curOOS.hit;if(!current||lift>=CFG.upgradeEdge*100){chosen=math.pair.slice();mode='V153_MATH_OOS_UPGRADE';}}
-  const support=math?clamp(.38*((math.formulaRates||[0,0]).reduce((a,b)=>a+b,0)/2)+.27*((math.formulaStability||[0,0]).reduce((a,b)=>a+b,0)/2)+.20*((math.formulaRegime||[0,0]).reduce((a,b)=>a+b,0)/2)+.15*probeSupport(d,math.pair)):0;
-  const audit={version:'V153',mode,selectedPair:chosen,currentPair:current,mathPair:math?.pair||null,fullWalkForward:all,recentWalkForward:recent,currentOOS:curOOS,mathCandidate:math,mathSupport:support,exhaustive:true,semanticDedup:true,maxDepth:CFG.maxDepth,maxStates:CFG.maxStates,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,probeSupportOnly:true,myanmarUntouched:true};
-  return{...base,best2:chosen||base.best2,selectionAudit:{...(base.selectionAudit||{}),v153:audit}};
-}
-const prev=window.v144SmartSelect;
-if(typeof prev==='function')window.v144SmartSelect=function(records,base){try{return select(records,prev(records,base));}catch(e){window.__V153_ERROR__=String(e);return prev(records,base);}};
-window.v153MathematicalExhaustionSelect=select;
-window.v153MathematicalAudit=fullOOS;
-window.v153FormulaStateCount=data=>buildStates(ordered(data||[])).length;
-window.__V153_CONFIG__=CFG;
+function probeSupport(data,p){const d=ordered(data),cur=d[d.length-1];if(!cur||!p)return 0;const anchor=Math.abs(7-(+String(cur.n3)[0]))%10;let pool=[-2,-1,0,1,2].map(x=>(anchor+x+10)%10);if(pool.some(x=>p.includes(x)))pool=[-3,-2,-1,0,1,2,3].map(x=>(anchor+x+10)%10);const clean=pool.filter(x=>!p.includes(x));return p.filter(x=>clean.includes(x)).length/Math.max(1,p.length);}
+function select(records,base){const d=ordered(records);if(d.length<CFG.minTrain+1)return base;const current=uniqPair(base&&base.best2),math=candidate(d),all=fullOOS(d),recent=recentOOS(d),curOOS=current?currentPairOOS(d,current):{tests:0,hit:0};let chosen=current||math?.pair||null,mode='V154_MATH_SUPPORT';if(math&&all.tests>=CFG.minEval){const lift=all.hit-curOOS.hit;if(!current||lift>=CFG.upgradeEdge*100){chosen=math.pair.slice();mode='V154_MATH_OOS_UPGRADE';}}const support=math?clamp(.38*((math.formulaRates||[0,0]).reduce((a,b)=>a+b,0)/2)+.27*((math.formulaStability||[0,0]).reduce((a,b)=>a+b,0)/2)+.20*((math.formulaRegime||[0,0]).reduce((a,b)=>a+b,0)/2)+.15*probeSupport(d,math.pair)):0;const audit={version:'V154_FAST',mode,selectedPair:chosen,currentPair:current,mathPair:math?.pair||null,fullWalkForward:all,recentWalkForward:recent,currentOOS:curOOS,mathCandidate:math,mathSupport:support,semanticDedup:true,fastMode:true,maxDepth:CFG.maxDepth,maxStates:CFG.maxStates,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,probeSupportOnly:true,myanmarUntouched:true};return{...base,best2:chosen||base.best2,selectionAudit:{...(base.selectionAudit||{}),v153:audit,v154:audit}};}
+const prev=window.v144SmartSelect;if(typeof prev==='function')window.v144SmartSelect=function(records,base){try{return select(records,prev(records,base));}catch(e){window.__V154_ERROR__=String(e);return prev(records,base);}};
+window.v154FastMathematicalExhaustionSelect=select;window.v154MathematicalAudit=fullOOS;window.v154FormulaStateCount=data=>buildStates(ordered(data||[])).length;window.__V154_CONFIG__=CFG;
 })();
 </script>
 </html>
