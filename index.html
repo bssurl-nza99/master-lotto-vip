@@ -871,6 +871,7 @@ table.audit-table th:nth-child(3),table.audit-table td:nth-child(3){min-width:82
 }
 </style>
 
+
 <!-- V54 PLUS+ baseline: fixed 30-round Myanmar horizon + global reverse-pair coverage + selection-aware pair calibration -->
 <!-- V60 AUDIT: targetable-evidence alignment; TOP-3 protection; anti-false-positive selection; session schema guard; empirical formula-correlation penalty; adaptive Myanmar 7/14/21/30 weighting; joint TOP3 selection; joint first-pass 15-pair optimization; double validation; symmetric noon/evening consensus pair-set WF. Locked formula bodies remain untouched. UI/layout contracts preserved. -->
 <!-- V85 MAX PRECISION DECISION INTELLIGENCE (V84 + end-to-end OOS decision integrity)
@@ -1154,6 +1155,8 @@ const recent=mean([parts.recent,parts.trend].filter(x=>x!=null)); const history=
 <script id="V1106_MYANMAR2D_DEDICATED_PRECISION">/* V110.6 — Myanmar 2D only: position-aware, session-specific, chronological OOS and pair calibration. No new lottery formula. */ const V1106_M2D_CFG=Object.freeze({version:'V110.6',horizons:Object.freeze([3,6,9,12,15,18,21,24,27,30,33,36,39,42,45]),positionWeight:.16,oosWeight:.24,methodWeight:.10,stabilityWeight:.08,recoveryWeight:.07,jointWeight:.05,adjustCap:4.5,pairOOSWeight:.22,pairPositionWeight:.16,pairRecentWeight:.14,pairStabilityWeight:.12,pairAdjustCap:3,minTrain:12}); const v1106Clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number.isFinite(Number(v))?Number(v):50)); const v1106Round=v=>Math.round((Number(v)||0)*100)/100; function v1106M2DRows(arr){return(Array.isArray(arr)?arr:[]).filter(r=>r&&Number.isInteger(r.tens)&&Number.isInteger(r.units)&&r.tens>=0&&r.tens<=9&&r.units>=0&&r.units<=9).slice(-240)} function v1106PosRate(arr,pos,d,w=45){const a=v1106M2DRows(arr).slice(-Math.min(w,v1106M2DRows(arr).length));return a.length?a.filter(r=>r[pos]===Number(d)).length/a.length*100:50} function v1106PosOOS(arr,pos,d){const a=v1106M2DRows(arr),tests=Math.min(18,Math.max(0,a.length-V1106_M2D_CFG.minTrain));if(tests<3)return 50;let hit=0,rankSum=0;for(let cut=a.length-tests;cut<a.length;cut++){const train=a.slice(0,cut),f=Array(10).fill(0);train.forEach(r=>f[r[pos]]++);const rank=[...Array(10).keys()].sort((x,y)=>f[y]-f[x]||x-y).indexOf(Number(d));rankSum+=100-Math.min(99,Math.max(0,rank)*11);if(a[cut][pos]===Number(d))hit++}return .55*hit/tests*100+.45*rankSum/tests} function v1106GapRecovery(arr,d){const a=v1106M2DRows(arr);let gap=a.length;for(let i=a.length-1;i>=0;i--)if(a[i].tens===d||a[i].units===d){gap=a.length-1-i;break}return gap<3?0:Math.min(7,(gap-2)*1.05)} function v1106MethodDiscipline(arr,all,session,d){let vals=[];try{vals=(V93_M2D_METHODS||[]).map(m=>v93MethodValue(m,arr,all,session,d,Number(arr[arr.length-1]?.timestamp)||0)).filter(Number.isFinite)}catch(e){}if(!vals.length)return{mean:50,spread:0};const mean=vals.reduce((a,b)=>a+b,0)/vals.length,spread=vals.reduce((a,b)=>a+Math.abs(b-mean),0)/vals.length;return{mean,spread}} function v1106SessionDigit(arr,all,session,d){const a=v1106M2DRows(arr),base=Number(v92DecisionDigitScores(a,all,session)?.[d])||50,disc=v1106MethodDiscipline(a,all,session,d),pt=v1106PosRate(a,'tens',d),pu=v1106PosRate(a,'units',d),pot=v1106PosOOS(a,'tens',d),pou=v1106PosOOS(a,'units',d),pos=.55*(pt+pu)/2+.45*(pot+pou)/2,oos=v92ReplayDigitOOS(a,all,session),oosScore=.65*(Number(oos?.coverage?.[d])||50)+.35*(Number(oos?.rank?.[d])||50),stab=v92Stability(a,d),joint=v92JointScore(all,d),recovery=v1106GapRecovery(a,d),conflict=Math.min(4,disc.spread*.055),raw=base*.46+pos*V1106_M2D_CFG.positionWeight+oosScore*V1106_M2D_CFG.oosWeight+disc.mean*V1106_M2D_CFG.methodWeight+stab*V1106_M2D_CFG.stabilityWeight+joint*V1106_M2D_CFG.jointWeight+recovery*V1106_M2D_CFG.recoveryWeight-conflict;return{score:v1106Clamp(raw),base,position:v1106Round(pos),oos:v1106Round(oosScore),methodMean:v1106Round(disc.mean),methodSpread:v1106Round(disc.spread),stability:v1106Round(stab),joint:v1106Round(joint),recovery:v1106Round(recovery),tens:v1106Round(pt),units:v1106Round(pu),tensOOS:v1106Round(pot),unitsOOS:v1106Round(pou)}} function v1106M2DTop(noon,evening,all){const ranked=[...Array(10).keys()].map(d=>{const n=v1106SessionDigit(noon.arr,all,'noon',d),e=v1106SessionDigit(evening.arr,all,'evening',d),qn=v1106Clamp(noon.arr.length/45),qe=v1106Clamp(evening.arr.length/45),wn=.35+.65*qn,we=.35+.65*qe,session=(n.score*wn+e.score*we)/(wn+we),cross=v92CrossSession(all,d,'noon'),joint=v92JointScore(all,d),agreement=n.score>=55&&e.score>=55?3:0;return{digit:d,score:v1106Clamp(session+cross*.025+joint*.025+agreement),noon:n,evening:e}}).sort((a,b)=>b.score-a.score||a.digit-b.digit);return{top:ranked.slice(0,3).map((x,i)=>({digit:x.digit,score:v1106Round(x.score),baseScore:v1106Round((x.noon.base+x.evening.base)/2),rank:i+1})),ranked}} function v1106DirectedPairRate(a,b,train){const n=train.length;if(!n)return 0;let hit=0;train.forEach(r=>{if(r.tens===a&&r.units===b)hit++});return hit/n*100} function v1106PairOOS(arr,a,b){const data=v1106M2DRows(arr),tests=Math.min(18,Math.max(0,data.length-V1106_M2D_CFG.minTrain));if(tests<3)return 50;let hits=0;for(let cut=data.length-tests;cut<data.length;cut++){const train=data.slice(0,cut),pairs=[];for(let x=0;x<10;x++)for(let y=0;y<10;y++)pairs.push({x,y,s:v1106DirectedPairRate(x,y,train)});pairs.sort((p,q)=>q.s-p.s||p.x-q.x||p.y-q.y);const top=new Set(pairs.slice(0,10).map(p=>`${p.x}${p.y}`)),actual=`${data[cut].tens}${data[cut].units}`;if(top.has(`${a}${b}`)&&actual===`${a}${b}`)hits++}return hits/tests*100} function v1106PairPosition(arr,pair){const s=String(pair||'');if(!/^\d{2}$/.test(s))return 50;const a=+s[0],b=+s[1],d=v1106M2DRows(arr);if(!d.length)return 50;const f=d.filter(r=>r.tens===a&&r.units===b).length/d.length*100,r=d.filter(r=>r.tens===b&&r.units===a).length/d.length*100;return .65*f+.35*r} function v1106RefinePairs(base,top,noon,evening){const out={},used=new Set();for(const t of top.slice(0,3)){const pool=[...(base?.[t.digit]||[])].map(p=>{const a=+String(p.pair)[0],b=+String(p.pair)[1],o=(v1106PairOOS(noon.arr,a,b)+v1106PairOOS(evening.arr,a,b))/2,pos=(v1106PairPosition(noon.arr,p.pair)+v1106PairPosition(evening.arr,p.pair))/2,rec=Number(p.meta?.recency||50),stab=Number(p.meta?.stability||50),adj=((o-50)/50)*V1106_M2D_CFG.pairOOSWeight*10+((pos-50)/50)*V1106_M2D_CFG.pairPositionWeight*10+((rec-50)/50)*V1106_M2D_CFG.pairRecentWeight*10+((stab-50)/50)*V1106_M2D_CFG.pairStabilityWeight*10;return{...p,score:v1106Round(v1106Clamp((Number(p.score)||50)+v1106Clamp(adj,-V1106_M2D_CFG.pairAdjustCap,V1106_M2D_CFG.pairAdjustCap))),meta:{...(p.meta||{}),v1106Pair:{oos:v1106Round(o),position:v1106Round(pos),recent:v1106Round(rec),stability:v1106Round(stab),adjustment:v1106Round(adj)}}}}).sort((a,b)=>b.score-a.score||String(a.pair).localeCompare(String(b.pair)));out[t.digit]=[];for(const p of pool){const k=String(p.pair);if(used.has(k))continue;used.add(k);out[t.digit].push(p);if(out[t.digit].length===5)break}}return out} const v1106OriginalM2DConsensus=typeof v92Consensus==='function'?v92Consensus:null; if(v1106OriginalM2DConsensus)v92Consensus=function(noon,evening,records){const base=v1106OriginalM2DConsensus(noon,evening,records);try{const all=v92CleanTrainingRecords(records||[]),ref=v1106M2DTop(noon,evening,all),top=ref.top.length===3?ref.top:(base.top||[]).slice(0,3),pairs=v1106RefinePairs(base.pairsByTarget||{},top,noon,evening);window.__V1106_M2D_AUDIT__={version:V1106_M2D_CFG.version,sessionSeparated:true,horizons:V1106_M2D_CFG.horizons,positionAware:true,positionOOS:true,methodDiscipline:true,chronologicalOOS:true,pairOOS:true,pairPositionAware:true,noNewFormula:true,ranked:ref.ranked.map(x=>({digit:x.digit,score:v1106Round(x.score),noon:v1106Round(x.noon.score),evening:v1106Round(x.evening.score),positionNoon:v1106Round(x.noon.position),positionEvening:v1106Round(x.evening.position),oosNoon:v1106Round(x.noon.oos),oosEvening:v1106Round(x.evening.oos)}))};return{...base,top,pairsByTarget:pairs,precisionLayer:{...(base.precisionLayer||{}),v1106:window.__V1106_M2D_AUDIT__}}}catch(e){window.__V1106_M2D_AUDIT_ERROR__=String(e);return base}}; window.__V1106_LOCK_AUDIT__=Object.freeze({backendOnly:true,mainLotteryUntouched:true,newFormula:false,formulaBodiesUntouched:true,formula31Untouched:true,pairConstructionContractUntouched:true,cardMarkupUntouched:true,cardCSSUntouched:true,calendarUntouched:true,namesUntouched:true,headingsUntouched:true,displayUntouched:true,publicPercentagesUntouched:true,separateMyanmar2D:true,separateNoonEvening:true,positionAware:true,chronologicalOOS:true,pairOOS:true});</script>
 
 
+
+
 <script id="V111_PRECISION_UPGRADE_LAYER">
 (function(){'use strict';
 /* V111 PRECISION UPGRADE — approved 22-point audit plan.
@@ -1286,7 +1289,11 @@ window.__V113_LOCK_AUDIT__=Object.freeze({version:C.version,formulaBodiesUntouch
 })();
 
 
+
+
 </script>
+
+
 
 
 <script id="V115_SPECIALIST_INTELLIGENCE_ARCHITECTURE">
@@ -1387,8 +1394,11 @@ function m124Card(cons,date,time){const top=cons.top||[],d1=top[0]?.digit??'',d2
 window.__V126_MYANMAR_RENDER=function(text){try{const parsed=m2dParse(text);if(!parsed?.records?.length)return null;let stored=[];try{stored=JSON.parse(localStorage.getItem(M2D_STORAGE_KEY)||'[]')}catch(e){stored=[]}const key=r=>String(r?.date||'').replace(/\s+/g,' ').trim();const map=new Map();for(const r of stored)map.set(`${key(r)}|${r.noon?.value||''}|${r.evening?.value||''}`,r);for(const r of parsed.records)map.set(`${key(r)}|${r.noon?.value||''}|${r.evening?.value||''}`,r);stored=[...map.values()];try{localStorage.setItem(M2D_STORAGE_KEY,JSON.stringify(stored))}catch(e){}const use=stored.map((r,i)=>({...r,timestamp:r.timestamp||m2dThaiDate(r.date),_i:i})).sort((a,b)=>(a.timestamp||0)-(b.timestamp||0)||(a._i-b._i));const noon=v92AnalyzeSession(use,'noon'),evening=v92AnalyzeSession(use,'evening'),all=v92CleanTrainingRecords(use),noonCons=m124RoundConsensus(noon,all,true),eveningCons=m124RoundConsensus(evening,all,false),targetDate=m2dNextTargetDate(parsed.records),dateLabel=targetDate||parsed.records[parsed.records.length-1]?.date||use[use.length-1]?.date||'';window.__V124_MYANMAR_AUDIT__={version:'V124.0',name:'MYANMAR 2D',rounds:{'12:01':noonCons.diagnostic,'16:30':eveningCons.diagnostic},top2PerRound:true,pairsPerDigit:5,totalPairsPerRound:10,commonCard:true,cleanLayout:true};const err=parsed.errors?.length?`<div class="m2d-note m2d-error">⚠️ ${parsed.errors.map(m2dEsc).join(' • ')}</div>`:'';return m124Card(noonCons,dateLabel,'12:01')+m124Card(eveningCons,dateLabel,'16:30')+err}catch(e){window.__V124_MYANMAR_RENDER_ERROR__=String(e);return null}};
 window.__V124_MYANMAR_LOCK_AUDIT__=Object.freeze({scope:'Myanmar2DOnly',visibleName:'MYANMAR 2D',roundTimes:['12:01','16:30'],commonCardPresentation:true,topDigitsPerRound:2,pairsPerDigit:5,totalPairsPerRound:10,otherLotteriesUntouched:true,calendarUntouched:true,datesUntouched:true,namesUntouched:true,roundsUntouched:true,typesUntouched:true,consensusSupportOnly:true,chronologicalOOS:true,positionAware:true,pairOOS:true,errorSafeFallback:true});
 
+
 })();
 </script>
+
+
 
 
 <script id="V126_MYANMAR_2D_CARD_FIX">
@@ -1788,6 +1798,7 @@ if(typeof prior==='function'){
 })();
 </script>
 
+
 <script id="V134_MYANMAR_2D_PER_ROW_RANK_FINAL">
 (function(){
 /* V134 — Myanmar 2D only. Final rank contract: each owner row has exactly 5 pairs;
@@ -1804,4 +1815,310 @@ function render(text){try{const base=window.__V129_MYANMAR_RENDER;if(typeof base
 window.__V134_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;const prev=window.runEngineCore;if(typeof prev==='function')window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(!isM(t))return prev.apply(this,arguments);const h=render(t),r=document.getElementById('result');if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b></div>';return h;};
 })();
 </script>
+
+<script id="V138_MYANMAR_2D_FINAL_ROUTE_AND_DISPLAY">
+(function(){
+  'use strict';
+
+  /*
+   * V137 — Myanmar 2D ONLY.
+   *
+   * Purpose: fix the final visible arrangement without changing the prediction
+   * engine, selected pairs, card markup, CSS, names, dates, rounds, calendar,
+   * or any other lottery/stock card.
+   *
+   * Final display contract per Myanmar card:
+   *   • Row 1 = standout digit; owner digit is always first.
+   *   • Row 2 = secondary digit; owner digit is always first.
+   *   • Partner digits ascend from low to high within each row.
+   *   • 5 pairs per row / 10 pairs total.
+   *   • Each row: 1 Gold + 1 Silver + 1 Rose-gold + 2 Normal.
+   *   • Therefore each card: 2 Gold + 2 Silver + 2 Rose-gold + 4 Normal.
+   *   • Existing selected pair identities are preserved; no pair is fabricated.
+   */
+
+  const onlyDigits = value => String(value ?? '').replace(/\D/g,'');
+
+  const normalizePair = value => {
+    const digits = onlyDigits(value);
+    if(digits.length !== 2) return '';
+    return digits;
+  };
+
+  const unorderedKey = value => {
+    const pair = normalizePair(value);
+    if(!pair) return '';
+    return pair[0] <= pair[1] ? pair : pair[1] + pair[0];
+  };
+
+  const orientOwnerFirst = (pair, owner) => {
+    const p = normalizePair(pair);
+    const d = String(owner ?? '');
+    if(!p || !/^\d$/.test(d)) return p;
+    if(p[0] === d) return p;
+    if(p[1] === d) return p[1] + p[0];
+    return p;
+  };
+
+  const partnerOf = (pair, owner) => {
+    const p = orientOwnerFirst(pair, owner);
+    return p && p[0] === String(owner) ? Number(p[1]) : Infinity;
+  };
+
+  const oldRank = pill => {
+    if(pill.classList.contains('rank-gold')) return 1;
+    if(pill.classList.contains('rank-silver')) return 2;
+    if(pill.classList.contains('rank-rosegold')) return 3;
+    return 4;
+  };
+
+  /* Myanmar input can arrive with either calendar marker used by the app.
+     This adapter is local to Myanmar 2D and is never passed to general cards. */
+  const isMyanmar2DInput = text => {
+    const t = String(text ?? '');
+    return /(?:🗓|📅)\s*.+?\s*:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(t);
+  };
+
+  const normalizeMyanmarInput = text =>
+    String(text ?? '').replace(
+      /📅(?=\s*.+?\s*:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx))/gi,
+      '🗓'
+    );
+
+  function chooseOwner(pair, top, second){
+    const p = normalizePair(pair);
+    if(!p) return 0;
+    const a=p[0], b=p[1];
+    const hasTop = a===String(top) || b===String(top);
+    const hasSecond = a===String(second) || b===String(second);
+    if(hasTop && !hasSecond) return 1;
+    if(hasSecond && !hasTop) return 2;
+    if(hasTop && hasSecond) return 1; // cross-pair belongs to standout row only
+    return 0;
+  }
+
+  function uniqueVisiblePairs(card){
+    const pills = [...card.querySelectorAll('.floating-pill')];
+    const map = new Map();
+
+    pills.forEach((pill,index)=>{
+      const pair = normalizePair(pill.textContent);
+      const key = unorderedKey(pair);
+      if(!key) return;
+
+      const candidate = { pill, pair, index, rank:oldRank(pill) };
+      const previous = map.get(key);
+
+      /* Keep the strongest existing visual rank when a legacy layer accidentally
+         left the same unordered pair in both orientations. */
+      if(!previous || candidate.rank < previous.rank) map.set(key,candidate);
+    });
+
+    return [...map.values()];
+  }
+
+  function sortRow(items, owner){
+    return items.slice().sort((a,b)=>
+      partnerOf(a.pair,owner)-partnerOf(b.pair,owner) ||
+      Number(orientOwnerFirst(a.pair,owner))-Number(orientOwnerFirst(b.pair,owner)) ||
+      a.index-b.index
+    );
+  }
+
+  function assignRanksPerRow(items){
+    /* Preserve the upstream rank priority, but enforce exactly one of each
+       highlighted color in this row. Ties are deterministic by display order. */
+    const ranked = items.slice().sort((a,b)=>
+      a.rank-b.rank ||
+      partnerOf(a.display,a.owner)-partnerOf(b.display,b.owner) ||
+      a.index-b.index
+    );
+
+    const rankMap = new Map();
+    if(ranked[0]) rankMap.set(ranked[0], 'rank-gold');
+    if(ranked[1]) rankMap.set(ranked[1], 'rank-silver');
+    if(ranked[2]) rankMap.set(ranked[2], 'rank-rosegold');
+
+    return items.map(item=>({
+      ...item,
+      rankClass:rankMap.get(item)||''
+    }));
+  }
+
+  function finalizeCard(card, cardIndex){
+    const heroes = [...card.querySelectorAll('.hero-circle')]
+      .slice(0,2)
+      .map(x=>String(x.textContent||'').trim())
+      .filter(x=>/^\d$/.test(x));
+
+    const rows = [...card.querySelectorAll('.pair-row-inline')].slice(0,2);
+    if(heroes.length < 2 || rows.length < 2) return false;
+
+    const top = heroes[0];
+    const second = heroes[1];
+    const source = uniqueVisiblePairs(card);
+    const byOwner = {1:[],2:[]};
+
+    source.forEach(item=>{
+      const owner = chooseOwner(item.pair, top, second);
+      if(!owner) return;
+      const displayOwner = owner===1 ? top : second;
+      byOwner[owner].push({
+        ...item,
+        owner:displayOwner,
+        display:orientOwnerFirst(item.pair,displayOwner)
+      });
+    });
+
+    /* The finalizer must never invent or substitute a pair. If the existing
+       visible candidate set cannot form 5+5 owner-specific pairs, leave this
+       card untouched rather than corrupting the prediction. */
+    if(byOwner[1].length !== 5 || byOwner[2].length !== 5){
+      window.__V137_MYANMAR_CARD_CHECK__={
+        card:cardIndex,
+        ok:false,
+        reason:'existing visible candidates cannot form exact 5+5 owner rows',
+        topDigit:top,
+        secondDigit:second,
+        row1Candidates:byOwner[1].length,
+        row2Candidates:byOwner[2].length
+      };
+      return false;
+    }
+
+    byOwner[1] = sortRow(byOwner[1],top);
+    byOwner[2] = sortRow(byOwner[2],second);
+
+    byOwner[1] = assignRanksPerRow(byOwner[1]);
+    byOwner[2] = assignRanksPerRow(byOwner[2]);
+
+    const writeRow = (row,items) => {
+      row.replaceChildren(...items.map(item=>{
+        const el=item.pill.cloneNode(true);
+        el.textContent=item.display;
+        el.classList.remove('rank-gold','rank-silver','rank-rosegold');
+        if(item.rankClass) el.classList.add(item.rankClass);
+        return el;
+      }));
+    };
+
+    writeRow(rows[0],byOwner[1]);
+    writeRow(rows[1],byOwner[2]);
+
+    const visible = [...rows.flatMap(row=>[...row.querySelectorAll('.floating-pill')])];
+    const counts = {
+      gold:visible.filter(p=>p.classList.contains('rank-gold')).length,
+      silver:visible.filter(p=>p.classList.contains('rank-silver')).length,
+      rosegold:visible.filter(p=>p.classList.contains('rank-rosegold')).length,
+      normal:visible.filter(p=>
+        !p.classList.contains('rank-gold') &&
+        !p.classList.contains('rank-silver') &&
+        !p.classList.contains('rank-rosegold')
+      ).length
+    };
+
+    const rowCheck = (row,owner) => {
+      const values=[...row.querySelectorAll('.floating-pill')].map(p=>normalizePair(p.textContent));
+      const ownerFirst=values.every(p=>p && p[0]===String(owner));
+      const ascending=values.every((p,i,a)=>
+        i===0 || Number(p[1])>=Number(a[i-1][1])
+      );
+      return {values,ownerFirst,ascending};
+    };
+
+    const row1=rowCheck(rows[0],top);
+    const row2=rowCheck(rows[1],second);
+    const ok = visible.length===10 &&
+      counts.gold===2 && counts.silver===2 && counts.rosegold===2 && counts.normal===4 &&
+      row1.values.length===5 && row2.values.length===5 &&
+      row1.ownerFirst && row2.ownerFirst && row1.ascending && row2.ascending;
+
+    window.__V137_MYANMAR_CARD_CHECK__={
+      card:cardIndex,
+      ok,
+      topDigit:top,
+      secondDigit:second,
+      row1:row1.values,
+      row2:row2.values,
+      total:visible.length,
+      gold:counts.gold,
+      silver:counts.silver,
+      rosegold:counts.rosegold,
+      normal:counts.normal,
+      row1OwnerFirst:row1.ownerFirst,
+      row2OwnerFirst:row2.ownerFirst,
+      row1Ascending:row1.ascending,
+      row2Ascending:row2.ascending
+    };
+
+    return ok;
+  }
+
+  function finalizeHTML(html){
+    if(typeof html!=='string' || !html) return html;
+
+    const box=document.createElement('div');
+    box.innerHTML=html;
+    const cards=[...box.querySelectorAll('.prediction-card')];
+
+    let ok = cards.length > 0;
+    cards.forEach((card,index)=>{
+      if(!finalizeCard(card,index+1)) ok=false;
+    });
+
+    window.__V137_MYANMAR_CONTRACT__=Object.freeze({
+      scope:'Myanmar2DOnly',
+      row1Owner:'standout',
+      row2Owner:'secondary',
+      ownerFirst:true,
+      partnerOrder:'ascending',
+      pairsPerRow:5,
+      totalPairsPerCard:10,
+      rowRankQuota:{gold:1,silver:1,rosegold:1,normal:2},
+      totalRankQuota:{gold:2,silver:2,rosegold:2,normal:4},
+      selectedPairsRegenerated:false,
+      generalCardsTouched:false,
+      ok
+    });
+
+    return ok ? box.innerHTML : html;
+  }
+
+  function render137(text){
+    try{
+      /* The V129 engine remains the prediction source. We only normalize the
+         Myanmar input marker locally so the existing Myanmar engine is reached. */
+      const base=window.__V129_MYANMAR_RENDER;
+      if(typeof base!=='function') return null;
+      const normalized=normalizeMyanmarInput(text);
+      return finalizeHTML(base(normalized));
+    }catch(error){
+      window.__V137_MYANMAR_RENDER_ERROR__=String(error);
+      return null;
+    }
+  }
+
+  window.__V137_MYANMAR_RENDER=render137;
+  /* FINAL ROUTE BIND: runEngineCore calls the original global Myanmar dispatcher.
+     Point that dispatcher to this finalizer so the normal/general engine is never touched. */
+  window.__V126_MYANMAR_RENDER=render137;
+  window.renderMyanmar2DModule=render137;
+
+  const previousRun=window.runEngineCore;
+  if(typeof previousRun==='function'){
+    window.runEngineCore=async function(){
+      const text=document.getElementById('bulkInput')?.value||'';
+      if(!isMyanmar2DInput(text)) return previousRun.apply(this,arguments);
+
+      const html=render137(text);
+      const result=document.getElementById('result');
+      if(result){
+        result.innerHTML=html || '<div class="errorbox"><b>Myanmar 2D render error</b></div>';
+      }
+      return html;
+    };
+  }
+})();
+</script>
+
 </html>
