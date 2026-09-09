@@ -2423,7 +2423,7 @@ window.__V134_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;const pr
 
   function render(text){
     try{
-      const parsed=parse(text),cl=clean(parsed);
+      const parsed=parse(text),cl=clean(parsed.rows);
       if(!cl.usable.length)return null;
 
       const noon=sessionRows(cl,'noon');
@@ -2484,4 +2484,451 @@ window.__V134_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;const pr
 })();
 </script>
 
+
+<script id="V140_MYANMAR_2D_WALK_FORWARD_PRECISION">
+(function(){
+  'use strict';
+  /* V140 — Myanmar 2D ONLY. Walk-forward precision layer.
+     No UI/CSS/general-lottery changes. Exactly two sessions: noon/evening.
+     Prediction is generated from the full valid 45 unordered pairs, then allocated
+     as 5 owner pairs + 5 owner pairs. Colors remain presentation only. */
+  const C=Object.freeze({windows:[10,18,30,45,60,90,120],minTrain:45,oos:48,smooth:1.25,pairSmooth:1.0});
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x));
+  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:50;
+  const beta=(h,n,a=1)=>((h+a)/(n+2*a))*100;
+  const pairKey=(a,b)=>`${Math.min(a,b)}${Math.max(a,b)}`;
+  const pnum=p=>Number(String(p).padStart(2,'0'));
+  const has=(r,d)=>r.tens===d||r.units===d;
+  const valid=r=>r&&Number.isInteger(r.tens)&&Number.isInteger(r.units)&&r.tens>=0&&r.tens<=9&&r.units>=0&&r.units<=9;
+  const pairOf=r=>valid(r)?pairKey(r.tens,r.units):'';
+
+  function parseDate(s){
+    const m=String(s||'').trim().match(/^(\d{1,2})\s+([^\s]+)\s*(\d{2,4})$/); if(!m)return 0;
+    const mm={'ม.ค':1,'ก.พ':2,'มี.ค':3,'เม.ย':4,'พ.ค':5,'มิ.ย':6,'ก.ค':7,'ส.ค':8,'ก.ย':9,'ต.ค':10,'พ.ย':11,'ธ.ค':12};
+    const mo=mm[m[2].replace(/\.+$/,'')]; if(!mo)return 0; let y=+m[3]; if(y<100)y+=2500; if(y>=2400)y-=543;
+    return new Date(y,mo-1,+m[1]).getTime();
+  }
+  function parse(text){
+    const rows=[],errors=[];
+    String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).forEach((raw,seq)=>{
+      const line=raw.replace(/\s+/g,' ').trim();
+      const m=line.match(/^(?:🗓|📅)\s*(.+?)\s*:\s*(\d{2}|××|xx)\s*--\s*(\d{2}|××|xx)$/i);
+      if(!m){if(/[🗓📅]/.test(line))errors.push(raw);return;}
+      const cv=v=>/^\d{2}$/.test(v)?{tens:+v[0],units:+v[1],value:v}:null;
+      rows.push({date:m[1].trim(),dateMs:parseDate(m[1]),noon:cv(m[2]),evening:cv(m[3]),seq});
+    });
+    return {rows,errors};
+  }
+  function clean(rows){
+    const map=new Map(); rows.forEach(r=>{const k=r.dateMs?String(r.dateMs):'raw:'+r.date;if(!map.has(k))map.set(k,[]);map.get(k).push(r);});
+    const ambiguous=[],usable=[];
+    map.forEach((a,k)=>a.length===1?usable.push(a[0]):ambiguous.push(k));
+    usable.sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq);
+    return {usable,ambiguous};
+  }
+  function session(cl,name){return cl.usable.map(r=>r[name]).filter(valid);}
+  function countDigit(rows,d,w){const z=rows.slice(-Math.min(w,rows.length));let h=0;for(const r of z){if(r.tens===d)h++;if(r.units===d)h++;}return {h,n:z.length};}
+  function position(rows,d,w){const z=rows.slice(-Math.min(w,rows.length));if(!z.length)return 50;return (beta(z.filter(r=>r.tens===d).length,z.length)+beta(z.filter(r=>r.units===d).length,z.length))/2;}
+  function gap(rows,d){for(let i=rows.length-1;i>=0;i--)if(has(rows[i],d))return clamp(100-(rows.length-1-i)*5,20,100);return 20;}
+  function trans(rows,d){let n=0,h=0;for(let i=1;i<rows.length;i++)if(has(rows[i-1],d)){n++;if(has(rows[i],d))h++;}return n?beta(h,n,3):50;}
+  function rawDigitScore(rows,d,wts){
+    const rates=wts.map(q=>{const c=countDigit(rows,d,q.w);return beta(c.h,c.n*2,C.smooth);});
+    const weighted=wts.reduce((s,q,i)=>s+q.weight*rates[i],0);
+    const recent=position(rows,d,30),t=trans(rows,d),fresh=gap(rows,d);
+    const stab=clamp(100-(Math.max(...rates)-Math.min(...rates))*1.55,35,100);
+    return .38*weighted+.20*recent+.12*t+.08*fresh+.12*stab+.10*avg(wts.map(q=>q.oos*100));
+  }
+  function topAt(rows,wts){return Array.from({length:10},(_,d)=>({digit:d,score:rawDigitScore(rows,d,wts)})).sort((a,b)=>b.score-a.score||a.digit-b.digit);}
+  function oosWindow(rows,w){
+    if(rows.length<C.minTrain+3)return .5; const start=Math.max(C.minTrain,rows.length-C.oos),trainRows=rows;
+    let full=0,partial=0,tests=0;
+    for(let i=start;i<rows.length;i++){
+      const tr=trainRows.slice(0,i); const scores=[];
+      for(let d=0;d<10;d++){const c=countDigit(tr,d,w);const pos=position(tr,d,Math.min(30,w));scores.push({d,score:.7*beta(c.h,c.n*2,C.smooth)+.3*pos});}
+      scores.sort((a,b)=>b.score-a.score||a.d-b.d); const actual=rows[i]; const a=scores[0]?.d,b=scores[1]?.d;
+      const ha=has(actual,a),hb=has(actual,b); if(ha&&hb)full++; else if(ha||hb)partial++; tests++;
+    }
+    return tests?(full+0.5*partial)/tests:.5;
+  }
+  function adaptive(rows){
+    const vals=C.windows.map(w=>({w,oos:oosWindow(rows,w)}));
+    const raw=vals.map(x=>Math.exp(clamp((x.oos-.5)*5,-1.25,1.25)));const sum=raw.reduce((a,b)=>a+b,0)||1;
+    return vals.map((x,i)=>({...x,weight:raw[i]/sum}));
+  }
+  function digitProfiles(rows,dw){
+    const p=Array.from({length:10},(_,d)=>{const r=digitParts(rows,d,dw);return r;});
+    return p.sort((a,b)=>b.score-a.score||a.digit-b.digit);
+  }
+  function digitParts(rows,d,dw){
+    const rates=dw.map(q=>{const c=countDigit(rows,d,q.w);return beta(c.h,c.n*2,C.smooth)});
+    const weighted=dw.reduce((s,q,i)=>s+q.weight*rates[i],0);
+    const recent=position(rows,d,30),transition=trans(rows,d),fresh=gap(rows,d);
+    const stability=clamp(100-(Math.max(...rates)-Math.min(...rates))*1.55,35,100);
+    const oos=avg(dw.map(q=>q.oos*100));
+    const score=.38*weighted+.20*recent+.12*transition+.08*fresh+.12*stability+.10*oos;
+    return {digit:d,score,weighted,recent,transition,fresh,stability,oos,windowRates:rates};
+  }
+  function pairOOS(rows,w){
+    if(rows.length<C.minTrain+3)return .5; const start=Math.max(C.minTrain,rows.length-C.oos);let full=0,partial=0,tests=0;
+    for(let i=start;i<rows.length;i++){
+      const tr=rows.slice(0,i), counts=new Map();for(const r of tr){const k=pairOf(r);if(k)counts.set(k,(counts.get(k)||0)+1);}
+      const cand=[];for(let x=0;x<10;x++)for(let y=x;y<10;y++){const k=pairKey(x,y);cand.push({k,score:beta(counts.get(k)||0,tr.length,C.pairSmooth)});}cand.sort((a,b)=>b.score-a.score||pnum(a.k)-pnum(b.k));
+      const actual=pairOf(rows[i]); const top10=cand.slice(0,10); if(top10.some(x=>x.k===actual))full++; else if(top10.some(x=>actual.includes(x.k[0])||actual.includes(x.k[1])))partial++; tests++;
+    }
+    return tests?(full+.35*partial)/tests:.5;
+  }
+  function pairWeights(rows){const vals=C.windows.map(w=>({w,oos:pairOOS(rows,w)}));const raw=vals.map(x=>Math.exp(clamp((x.oos-.5)*4,-1.2,1.2)));const sum=raw.reduce((a,b)=>a+b,0)||1;return vals.map((x,i)=>({...x,weight:raw[i]/sum}));}
+  function pairProfile(rows,owner,partner,pw){
+    const k=pairKey(owner,partner), all=rows.length, z15=rows.slice(-15),z30=rows.slice(-30),z60=rows.slice(-60),z120=rows.slice(-120);
+    const wr=pw.map(q=>{const z=rows.slice(-Math.min(q.w,all));return beta(z.filter(r=>pairOf(r)===k).length,z.length,C.pairSmooth)});
+    const weighted=pw.reduce((s,q,i)=>s+q.weight*wr[i],0);
+    const recent=beta(z15.filter(r=>pairOf(r)===k).length,z15.length,C.pairSmooth);
+    const mid=beta(z30.filter(r=>pairOf(r)===k).length,z30.length,C.pairSmooth);
+    const long=beta(z120.filter(r=>pairOf(r)===k).length,z120.length,C.pairSmooth);
+    const ownerRows=rows.filter(r=>has(r,owner));
+    const cond=ownerRows.length?beta(ownerRows.filter(r=>pairOf(r)===k).length,ownerRows.length,C.pairSmooth):50;
+    const ownerPartner=ownerRows.length?beta(ownerRows.filter(r=>has(r,partner)).length,ownerRows.length,C.pairSmooth):50;
+    const exactDir=rows.filter(r=>r.tens===owner&&r.units===partner).length;
+    const reverseDir=rows.filter(r=>r.tens===partner&&r.units===owner).length;
+    const pairN=rows.filter(r=>pairOf(r)===k).length;
+    const direction=pairN?beta(Math.max(exactDir,reverseDir),pairN,C.pairSmooth):50;
+    let g=all;for(let i=all-1;i>=0;i--)if(pairOf(rows[i])===k){g=all-1-i;break;}
+    const fresh=clamp(100-g*4,25,100);
+    const stability=clamp(100-(Math.max(...wr)-Math.min(...wr))*1.8,35,100);
+    const oos=avg(pw.map(q=>q.oos*100));
+    /* conditional owner->partner is stronger than raw pair frequency; direction is only a weak tie-breaker */
+    const score=.27*weighted+.12*recent+.10*mid+.07*long+.20*cond+.10*ownerPartner+.04*direction+.04*fresh+.04*stability+.02*oos;
+    return {pair:k,owner,partner,score,weighted,recent,mid,long,conditional:cond,ownerPartner,direction,fresh,stability,oos};
+  }
+  function pairPool(rows,owner,pw){const out=[];for(let p=0;p<10;p++)out.push(pairProfile(rows,owner,p,pw));return out.sort((a,b)=>b.score-a.score||a.partner-b.partner);}
+  function allocate(top,pools){
+    const a=top[0].digit,b=top[1].digit;
+    const items=[];for(const owner of [a,b])for(const p of pools[owner])items.push({...p,target:owner,key:p.pair});
+    /* Same unordered pair may be eligible for both owners. Joint search chooses one owner only. */
+    const grouped=new Map();for(const p of items){if(!grouped.has(p.key))grouped.set(p.key,[]);grouped.get(p.key).push(p);}
+    let states=new Map([['0,0',{score:0,sel:[]}]]);
+    for(const [key,opts] of grouped){const next=new Map(states);
+      for(const [st,v] of states){const [ca,cb]=st.split(',').map(Number);for(const o of opts){if(o.target===a&&ca<5){const nk=`${ca+1},${cb}`,nv=v.score+o.score;if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:v.sel.concat(o)});}if(o.target===b&&cb<5){const nk=`${ca},${cb+1}`,nv=v.score+o.score;if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:v.sel.concat(o)});}}}
+      states=next;
+    }
+    const best=states.get('5,5'); if(!best)return {by:{[a]:[],[b]:[]},all:[],objective:0,ok:false};
+    const byA=best.sel.filter(x=>x.target===a).sort((x,y)=>x.partner-y.partner),byB=best.sel.filter(x=>x.target===b).sort((x,y)=>x.partner-y.partner);
+    return {by:{[a]:byA,[b]:byB},all:best.sel,objective:best.score,ok:byA.length===5&&byB.length===5};
+  }
+  function rankRows(row){const q=row.slice().sort((a,b)=>b.score-a.score||a.partner-b.partner);const m=new Map();if(q[0])m.set(q[0].pair,'rank-gold');if(q[1])m.set(q[1].pair,'rank-silver');if(q[2])m.set(q[2].pair,'rank-rosegold');return row.slice().sort((a,b)=>a.partner-b.partner).map(x=>({...x,rankClass:m.get(x.pair)||''}));}
+  function ownerFirst(pair,d){const s=String(pair);return s[0]===String(d)?s:s[1]+s[0];}
+  function nextDate(rows){const z=rows.filter(r=>r.dateMs>0).sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq);if(!z.length)return '';const d=new Date(z[z.length-1].dateMs);d.setDate(d.getDate()+1);while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);const mm=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${String(d.getDate()).padStart(2,'0')} ${mm[d.getMonth()]} ${d.getFullYear()+543}`;}
+  function makeModel(rows,session){
+    const dw=adaptive(rows),profiles=digitProfiles(rows,dw),top=profiles.slice(0,2),pw=pairWeights(rows),pools={};for(const d of top.map(x=>x.digit))pools[d]=pairPool(rows,d,pw);const allocation=allocate(top,pools);return {session,top,profiles,pw,dw,pools,allocation};
+  }
+  function card(model,idx,date){
+    const d1=model.top[0].digit,d2=model.top[1].digit,r1=rankRows(model.allocation.by[d1]||[]),r2=rankRows(model.allocation.by[d2]||[]);
+    const c={lotteryName:'MYANMAR 2D',displayTitle:'MYANMAR 2D',nextDate:`${date} · ${idx===1?'12:01 P.M.':'4:30 P.M.'} · ${idx===1?'မွန်းတည့်အကြိမ်':'ညနေအကြိမ်'}`,d1,d2,d1Pairs:r1.map(x=>({pair:ownerFirst(x.pair,d1),rankClass:x.rankClass,score:x.score})),d2Pairs:r2.map(x=>({pair:ownerFirst(x.pair,d2),rankClass:x.rankClass,score:x.score})),flag:'🇲🇲'};
+    return typeof renderCardHTML==='function'?renderCardHTML(c,false,0):null;
+  }
+  function render(text){
+    try{
+      const parsed=parse(text),cl=clean(parsed.rows);if(!cl.usable.length)return null;
+      const noon=session(cl,'noon'),evening=session(cl,'evening');if(noon.length<10||evening.length<10)return null;
+      const nm=makeModel(noon,'noon'),em=makeModel(evening,'evening'),date=nextDate(cl.usable);
+      const check=m=>{const a=m.top[0].digit,b=m.top[1].digit,r1=m.allocation.by[a]||[],r2=m.allocation.by[b]||[],all=[...r1,...r2],keys=all.map(x=>x.pair);return {row1:r1.length,row2:r2.length,total:all.length,unique:new Set(keys).size,ownerFirst:r1.every(x=>ownerFirst(x.pair,a)[0]===String(a))&&r2.every(x=>ownerFirst(x.pair,b)[0]===String(b)),ascending:r1.every((x,i)=>i===0||x.partner>=r1[i-1].partner)&&r2.every((x,i)=>i===0||x.partner>=r2[i-1].partner)};};
+      window.__V140_MYANMAR_AUDIT__=Object.freeze({version:'V140',scope:'Myanmar2DOnly',method:'walk-forward digit/pair evidence with joint 5+5 allocation',rawRows:parsed.rows.length,usableDates:cl.usable.length,ambiguousDates:cl.ambiguous.length,parseErrors:parsed.errors.length,noonRecords:noon.length,eveningRecords:evening.length,rounds:2,topDigitsPerSession:2,pairsPerRow:5,totalPairsPerCard:10,fullPairPool:45,reversePairSuppression:true,rowContract:{ownerFirst:true,ascendingPartners:true},rankQuota:{gold:2,silver:2,rosegold:2,normal:4},noAllDayCard:true,noGeneralPathChange:true,noonCheck:check(nm),eveningCheck:check(em)});
+      window.__V140_MYANMAR_DEBUG__={noon:nm,evening:em};
+      return [card(nm,1,date),card(em,2,date)].filter(Boolean).join('');
+    }catch(e){window.__V140_MYANMAR_RENDER_ERROR__=String(e);return null;}
+  }
+  window.__V140_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;
+  const prev=window.runEngineCore;if(typeof prev==='function')window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(!/(?:🗓|📅)\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(t))return prev.apply(this,arguments);const h=render(t),r=document.getElementById('result');if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b><br>'+esc(window.__V140_MYANMAR_RENDER_ERROR__||'unknown')+'</div>';return h;};
+})();
+</script>
+
+
+<script id="V141_MYANMAR_TRUE_WALK_FORWARD_CALIBRATION">
+(function(){
+  'use strict';
+  /* V141 — Myanmar 2D ONLY.
+     True rolling-origin calibration of the final digit/pair model.
+     No general-lottery path, CSS, card structure, names, dates or calendar changes. */
+  const CFG=Object.freeze({minTrain:45,evalOrigins:36,windows:[10,18,30,45,60,90,120],smooth:1.25,pairSmooth:1.0});
+  const clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x));
+  const beta=(h,n,a=1)=>((h+a)/(n+2*a))*100;
+  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:50;
+  const pairKey=(a,b)=>`${Math.min(a,b)}${Math.max(a,b)}`;
+  const valid=r=>r&&Number.isInteger(r.tens)&&Number.isInteger(r.units)&&r.tens>=0&&r.tens<=9&&r.units>=0&&r.units<=9;
+  const has=(r,d)=>valid(r)&&(r.tens===d||r.units===d);
+  const pairOf=r=>valid(r)?pairKey(r.tens,r.units):'';
+  const pnum=p=>Number(String(p).padStart(2,'0'));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function parseDate(s){
+    const m=String(s||'').trim().match(/^(\d{1,2})\s+([^\s]+)\s*(\d{2,4})$/); if(!m)return 0;
+    const mm={'ม.ค':1,'ก.พ':2,'มี.ค':3,'เม.ย':4,'พ.ค':5,'มิ.ย':6,'ก.ค':7,'ส.ค':8,'ก.ย':9,'ต.ค':10,'พ.ย':11,'ธ.ค':12};
+    const mo=mm[m[2].replace(/\.+$/,'')]; if(!mo)return 0; let y=+m[3]; if(y<100)y+=2500; if(y>=2400)y-=543;
+    return new Date(y,mo-1,+m[1]).getTime();
+  }
+  function parse(text){
+    const rows=[],errors=[];
+    String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).forEach((raw,seq)=>{
+      const line=raw.replace(/\s+/g,' ').trim();
+      const m=line.match(/^(?:🗓|📅)\s*(.+?)\s*:\s*(\d{2}|××|xx)\s*--\s*(\d{2}|××|xx)$/i);
+      if(!m){if(/[🗓📅]/.test(line))errors.push(raw);return;}
+      const cv=v=>/^\d{2}$/.test(v)?{tens:+v[0],units:+v[1],value:v}:null;
+      rows.push({date:m[1].trim(),dateMs:parseDate(m[1]),noon:cv(m[2]),evening:cv(m[3]),seq});
+    });
+    return {rows,errors};
+  }
+  function clean(rows){
+    const map=new Map(); rows.forEach(r=>{const k=r.dateMs?String(r.dateMs):'raw:'+r.date;if(!map.has(k))map.set(k,[]);map.get(k).push(r);});
+    const ambiguous=[],usable=[]; map.forEach((a,k)=>a.length===1?usable.push(a[0]):ambiguous.push(k));
+    usable.sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq); return {usable,ambiguous};
+  }
+  function session(cl,name){return cl.usable.map(r=>r[name]).filter(valid);}
+  function countDigit(rows,d,w){const z=rows.slice(-Math.min(w,rows.length));let h=0;for(const r of z){if(r.tens===d)h++;if(r.units===d)h++;}return {h,n:z.length};}
+  function pos(rows,d,w){const z=rows.slice(-Math.min(w,rows.length));return z.length?(beta(z.filter(r=>r.tens===d).length,z.length,CFG.smooth)+beta(z.filter(r=>r.units===d).length,z.length,CFG.smooth))/2:50;}
+  function trans(rows,d){let n=0,h=0;for(let i=1;i<rows.length;i++)if(has(rows[i-1],d)){n++;if(has(rows[i],d))h++;}return n?beta(h,n,3):50;}
+  function fresh(rows,d){for(let i=rows.length-1;i>=0;i--)if(has(rows[i],d))return clamp(100-(rows.length-1-i)*5,20,100);return 20;}
+  function digitScore(rows,d,w){
+    const rates=w.map(q=>{const c=countDigit(rows,d,q.window);return beta(c.h,c.n*2,CFG.smooth);});
+    const weighted=w.reduce((s,q,i)=>s+q.weight*rates[i],0);
+    const stability=clamp(100-(Math.max(...rates)-Math.min(...rates))*1.55,35,100);
+    return .38*weighted+.20*pos(rows,d,30)+.12*trans(rows,d)+.08*fresh(rows,d)+.12*stability+.10*avg(w.map(q=>q.oos));
+  }
+  function top2(rows,w){return Array.from({length:10},(_,d)=>({digit:d,score:digitScore(rows,d,w)})).sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,2);}
+  function pairScore(rows,owner,partner,w){
+    const k=pairKey(owner,partner),z15=rows.slice(-15),z30=rows.slice(-30),z60=rows.slice(-60),z120=rows.slice(-120),ownerRows=rows.filter(r=>has(r,owner));
+    const wr=w.map(q=>{const z=rows.slice(-Math.min(q.window,rows.length));return beta(z.filter(r=>pairOf(r)===k).length,z.length,CFG.pairSmooth);});
+    const weighted=w.reduce((s,q,i)=>s+q.weight*wr[i],0),recent=beta(z15.filter(r=>pairOf(r)===k).length,z15.length,CFG.pairSmooth),mid=beta(z30.filter(r=>pairOf(r)===k).length,z30.length,CFG.pairSmooth),long=beta(z120.filter(r=>pairOf(r)===k).length,z120.length,CFG.pairSmooth);
+    const cond=ownerRows.length?beta(ownerRows.filter(r=>pairOf(r)===k).length,ownerRows.length,CFG.pairSmooth):50;
+    const partnerRows=rows.filter(r=>has(r,partner));
+    const partnerMarginal=partnerRows.length?beta(partnerRows.filter(r=>has(r,owner)).length,partnerRows.length,CFG.pairSmooth):50;
+    const synergy=clamp(50+(cond-partnerMarginal),20,80);
+    const pn=rows.filter(r=>pairOf(r)===k).length,fd=rows.filter(r=>r.tens===owner&&r.units===partner).length,rd=rows.filter(r=>r.tens===partner&&r.units===owner).length;
+    const direction=pn?beta(Math.max(fd,rd),pn,CFG.pairSmooth):50; let gap=rows.length;for(let i=rows.length-1;i>=0;i--)if(pairOf(rows[i])===k){gap=rows.length-1-i;break;}
+    const fr=clamp(100-gap*4,25,100),st=clamp(100-(Math.max(...wr)-Math.min(...wr))*1.8,35,100);
+    return .27*weighted+.12*recent+.10*mid+.07*long+.20*cond+.10*synergy+.04*direction+.04*fr+.04*st+.02*avg(w.map(q=>q.oos));
+  }
+  function allPairs(rows,owner,w){const a=[];for(let p=0;p<10;p++)a.push({pair:pairKey(owner,p),owner,partner:p,score:pairScore(rows,owner,p,w)});return a.sort((x,y)=>y.score-x.score||x.partner-y.partner);}
+  function allocate(top,pools){
+    const a=top[0].digit,b=top[1].digit, grouped=new Map();
+    for(const owner of [a,b])for(const p of pools[owner]){if(!grouped.has(p.pair))grouped.set(p.pair,[]);grouped.get(p.pair).push(p);}
+    let states=new Map([['0,0',{score:0,sel:[]}]]);
+    for(const [key,opts] of grouped){const next=new Map(states);for(const [st,v] of states){const [ca,cb]=st.split(',').map(Number);for(const o of opts){if(o.owner===a&&ca<5){const nk=`${ca+1},${cb}`,nv=v.score+o.score;if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:v.sel.concat(o)});}if(o.owner===b&&cb<5){const nk=`${ca},${cb+1}`,nv=v.score+o.score;if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:v.sel.concat(o)});}}}states=next;}
+    const best=states.get('5,5');if(!best)return null;return {by:{[a]:best.sel.filter(x=>x.owner===a).sort((x,y)=>x.partner-y.partner),[b]:best.sel.filter(x=>x.owner===b).sort((x,y)=>x.partner-y.partner)}};
+  }
+
+  /* Candidate weight families. Each family is calibrated by rolling origins inside the training history. */
+  const DIGIT_FAMILIES=[
+    [0.08,0.14,0.16,0.18,0.18,0.14,0.10],
+    [0.10,0.16,0.18,0.18,0.16,0.12,0.10],
+    [0.12,0.18,0.18,0.16,0.14,0.12,0.10],
+    [0.18,0.18,0.16,0.14,0.12,0.12,0.10],
+    [0.24,0.18,0.14,0.12,0.12,0.10,0.10],
+    [0.30,0.20,0.14,0.12,0.10,0.08,0.06]
+  ];
+  const PAIR_FAMILIES=[
+    [0.10,0.16,0.18,0.18,0.16,0.12,0.10],
+    [0.12,0.18,0.18,0.16,0.14,0.12,0.10],
+    [0.16,0.20,0.18,0.14,0.12,0.10,0.10],
+    [0.22,0.20,0.16,0.14,0.10,0.10,0.08],
+    [0.28,0.20,0.14,0.12,0.10,0.09,0.07]
+  ];
+  function makeWeights(fam,oos){return CFG.windows.map((window,i)=>({window,weight:fam[i],oos:oos[i]||50}));}
+  function scoreDigitFamily(rows,fam){
+    const origins=Math.min(CFG.evalOrigins,rows.length-CFG.minTrain); if(origins<1)return 0;
+    let total=0,den=0,start=rows.length-origins;
+    for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),w=makeWeights(fam,CFG.windows.map(()=>50)),pred=top2(tr,w),r=rows[i],a=has(r,pred[0].digit),b=has(r,pred[1].digit);total+=(a&&b?1:a||b?.5:0);den++;}
+    return den?total/den:0;
+  }
+  function scorePairFamily(rows,fam){
+    const origins=Math.min(CFG.evalOrigins,rows.length-CFG.minTrain);if(origins<1)return 0;let total=0,owner=0,den=0,start=rows.length-origins;
+    for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),w=makeWeights(fam,CFG.windows.map(()=>50)),top=top2(tr,w),pools={[top[0].digit]:allPairs(tr,top[0].digit,w),[top[1].digit]:allPairs(tr,top[1].digit,w)},al=allocate(top,pools);if(!al)continue;const r=rows[i],actual=pairOf(r);let hit=0,oh=0;for(const d of [top[0].digit,top[1].digit]){for(const p of al.by[d])if(p.pair===actual)hit=1;if(has(r,d))oh=1;}total+=hit;owner+=oh;den++;}
+    return den?(total/den)+.20*(owner/den):0;
+  }
+  function calibrate(rows,fams,kind){
+    const scores=fams.map(f=>kind==='digit'?scoreDigitFamily(rows,f):scorePairFamily(rows,f));
+    let bi=0;for(let i=1;i<scores.length;i++)if(scores[i]>scores[bi]+1e-12)bi=i;
+    return {index:bi,scores,weights:fams[bi].slice()};
+  }
+  function windowOOS(rows){
+    return CFG.windows.map(w=>{const origins=Math.min(CFG.evalOrigins,rows.length-CFG.minTrain),start=Math.max(CFG.minTrain,rows.length-origins);let s=0,n=0;for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),pred=Array.from({length:10},(_,d)=>({digit:d,score:.7*beta(countDigit(tr,d,w).h,countDigit(tr,d,w).n*2,CFG.smooth)+.3*pos(tr,d,Math.min(30,w))})).sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,2),r=rows[i],a=has(r,pred[0].digit),b=has(r,pred[1].digit);s+=a&&b?1:a||b?.5:0;n++;}return n?100*s/n:50;});
+  }
+  function finalModel(rows){
+    const doos=windowOOS(rows),dc=calibrate(rows,DIGIT_FAMILIES,'digit'),dw=makeWeights(DIGIT_FAMILIES[dc.index],doos),top=top2(rows,dw),poos=windowOOS(rows),pc=calibrate(rows,PAIR_FAMILIES,'pair'),pw=makeWeights(PAIR_FAMILIES[pc.index],poos),pools={[top[0].digit]:allPairs(rows,top[0].digit,pw),[top[1].digit]:allPairs(rows,top[1].digit,pw)},allocation=allocate(top,pools);
+    return {top,dw,pw,dc,pc,pools,allocation};
+  }
+  function ownerFirst(pair,d){const s=String(pair);return s[0]===String(d)?s:s[1]+s[0];}
+  function rankRows(row){const q=row.slice().sort((a,b)=>b.score-a.score||a.partner-b.partner),m=new Map();if(q[0])m.set(q[0].pair,'rank-gold');if(q[1])m.set(q[1].pair,'rank-silver');if(q[2])m.set(q[2].pair,'rank-rosegold');return row.slice().sort((a,b)=>a.partner-b.partner).map(x=>({...x,rankClass:m.get(x.pair)||''}));}
+  function nextDate(rows){const z=rows.filter(r=>r.dateMs>0).sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq);if(!z.length)return '';const d=new Date(z[z.length-1].dateMs);d.setDate(d.getDate()+1);while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);const mm=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${String(d.getDate()).padStart(2,'0')} ${mm[d.getMonth()]} ${d.getFullYear()+543}`;}
+  function card(model,idx,date){
+    const d1=model.top[0].digit,d2=model.top[1].digit,r1=rankRows(model.allocation.by[d1]||[]),r2=rankRows(model.allocation.by[d2]||[]);
+    const c={lotteryName:'MYANMAR 2D',displayTitle:'MYANMAR 2D',nextDate:`${date} · ${idx===1?'12:01 P.M.':'4:30 P.M.'} · ${idx===1?'မွန်းတည့်အကြိမ်':'ညနေအကြိမ်'}`,d1,d2,d1Pairs:r1.map(x=>({pair:ownerFirst(x.pair,d1),rankClass:x.rankClass,score:x.score})),d2Pairs:r2.map(x=>({pair:ownerFirst(x.pair,d2),rankClass:x.rankClass,score:x.score})),flag:'🇲🇲'};
+    return typeof renderCardHTML==='function'?renderCardHTML(c,false,0):null;
+  }
+  function evaluate(rows,model){
+    const origins=Math.max(0,rows.length-CFG.minTrain),start=Math.max(CFG.minTrain,rows.length-Math.min(CFG.evalOrigins,origins));let d1=0,d2=0,any=0,both=0,pair=0,owner=0,tests=0;
+    for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),m=finalModel(tr),r=rows[i];if(!m.allocation)continue;const a=has(r,m.top[0].digit),b=has(r,m.top[1].digit);d1+=a;d2+=b;any+=a||b;both+=a&&b;const actual=pairOf(r);for(const d of [m.top[0].digit,m.top[1].digit]){for(const p of m.allocation.by[d]||[])if(p.pair===actual)pair++;if(has(r,d))owner++;}tests++;}
+    return {tests,top1Rate:tests?d1/tests:0,top2Rate:tests?d2/tests:0,anyDigitRate:tests?any/tests:0,bothDigitRate:tests?both/tests:0,ownerHitRate:tests?owner/(tests*2):0,exactPairRate:tests?pair/tests:0};
+  }
+  function render(text){
+    try{
+      const parsed=parse(text),cl=clean(parsed.rows);if(!cl.usable.length)return null;const noon=session(cl,'noon'),evening=session(cl,'evening');if(noon.length<CFG.minTrain||evening.length<CFG.minTrain)return null;
+      const nm=finalModel(noon),em=finalModel(evening);if(!nm.allocation||!em.allocation)return null;const date=nextDate(cl.usable);
+      const audit={version:'V141',scope:'Myanmar2DOnly',method:'rolling-origin calibrated family selection + marginal-adjusted pair synergy + final 5+5 joint allocation',rawRows:parsed.rows.length,usableDates:cl.usable.length,ambiguousDates:cl.ambiguous.length,parseErrors:parsed.errors.length,noonRecords:noon.length,eveningRecords:evening.length,rounds:2,topDigitsPerSession:2,pairsPerRow:5,totalPairsPerCard:10,fullPairPool:45,noAllDayCard:true,noGeneralPathChange:true,calibration:{digitFamilies:DIGIT_FAMILIES.length,pairFamilies:PAIR_FAMILIES.length,evalOrigins:CFG.evalOrigins,pairEvidence:'marginal-adjusted synergy replaces redundant owner-conditioned partner count'},noon:{chosenDigitFamily:nm.dc.index,digitFamilyScores:nm.dc.scores,chosenPairFamily:nm.pc.index,pairFamilyScores:nm.pc.scores,top:nm.top,backtest:evaluate(noon,nm)},evening:{chosenDigitFamily:em.dc.index,digitFamilyScores:em.dc.scores,chosenPairFamily:em.pc.index,pairFamilyScores:em.pc.scores,top:em.top,backtest:evaluate(evening,em)}};
+      window.__V141_MYANMAR_AUDIT__=Object.freeze(audit);window.__V141_MYANMAR_DEBUG__={noon:nm,evening:em};
+      return [card(nm,1,date),card(em,2,date)].join('');
+    }catch(e){window.__V141_MYANMAR_RENDER_ERROR__=String(e);return null;}
+  }
+  window.__V141_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;
+  const prev=window.runEngineCore;if(typeof prev==='function')window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(!/(?:🗓|📅)\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(t))return prev.apply(this,arguments);const h=render(t),r=document.getElementById('result');if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b><br>'+esc(window.__V141_MYANMAR_RENDER_ERROR__||'unknown')+'</div>';return h;};
+})();
+</script>
+
+<script id="V144_FINAL_MYANMAR_PRECISION">
+(function(){
+  'use strict';
+  /* V141 — Myanmar 2D ONLY.
+     True rolling-origin calibration of the final digit/pair model.
+     No general-lottery path, CSS, card structure, names, dates or calendar changes. */
+  const CFG=Object.freeze({minTrain:45,evalOrigins:36,windows:[10,18,30,45,60,90,120],smooth:1.25,pairSmooth:1.0});
+  const clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x));
+  const beta=(h,n,a=1)=>((h+a)/(n+2*a))*100;
+  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:50;
+  const pairKey=(a,b)=>`${Math.min(a,b)}${Math.max(a,b)}`;
+  const valid=r=>r&&Number.isInteger(r.tens)&&Number.isInteger(r.units)&&r.tens>=0&&r.tens<=9&&r.units>=0&&r.units<=9;
+  const has=(r,d)=>valid(r)&&(r.tens===d||r.units===d);
+  const pairOf=r=>valid(r)?pairKey(r.tens,r.units):'';
+  const pnum=p=>Number(String(p).padStart(2,'0'));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function parseDate(s){
+    const m=String(s||'').trim().match(/^(\d{1,2})\s+([^\s]+)\s*(\d{2,4})$/); if(!m)return 0;
+    const mm={'ม.ค':1,'ก.พ':2,'มี.ค':3,'เม.ย':4,'พ.ค':5,'มิ.ย':6,'ก.ค':7,'ส.ค':8,'ก.ย':9,'ต.ค':10,'พ.ย':11,'ธ.ค':12};
+    const mo=mm[m[2].replace(/\.+$/,'')]; if(!mo)return 0; let y=+m[3]; if(y<100)y+=2500; if(y>=2400)y-=543;
+    return new Date(y,mo-1,+m[1]).getTime();
+  }
+  function parse(text){
+    const rows=[],errors=[];
+    String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).forEach((raw,seq)=>{
+      const line=raw.replace(/\s+/g,' ').trim();
+      const m=line.match(/^(?:🗓|📅)\s*(.+?)\s*:\s*(\d{2}|××|xx)\s*--\s*(\d{2}|××|xx)$/i);
+      if(!m){if(/[🗓📅]/.test(line))errors.push(raw);return;}
+      const cv=v=>/^\d{2}$/.test(v)?{tens:+v[0],units:+v[1],value:v}:null;
+      rows.push({date:m[1].trim(),dateMs:parseDate(m[1]),noon:cv(m[2]),evening:cv(m[3]),seq});
+    });
+    return {rows,errors};
+  }
+  function clean(rows){
+    const map=new Map(); rows.forEach(r=>{const k=r.dateMs?String(r.dateMs):'raw:'+r.date;if(!map.has(k))map.set(k,[]);map.get(k).push(r);});
+    const ambiguous=[],usable=[]; map.forEach((a,k)=>a.length===1?usable.push(a[0]):ambiguous.push(k));
+    usable.sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq); return {usable,ambiguous};
+  }
+  function session(cl,name){return cl.usable.map(r=>r[name]).filter(valid);}
+  function countDigit(rows,d,w){const z=rows.slice(-Math.min(w,rows.length));let h=0;for(const r of z){if(r.tens===d)h++;if(r.units===d)h++;}return {h,n:z.length};}
+  function pos(rows,d,w){const z=rows.slice(-Math.min(w,rows.length));return z.length?(beta(z.filter(r=>r.tens===d).length,z.length,CFG.smooth)+beta(z.filter(r=>r.units===d).length,z.length,CFG.smooth))/2:50;}
+  function trans(rows,d){let n=0,h=0;for(let i=1;i<rows.length;i++)if(has(rows[i-1],d)){n++;if(has(rows[i],d))h++;}return n?beta(h,n,3):50;}
+  function fresh(rows,d){for(let i=rows.length-1;i>=0;i--)if(has(rows[i],d))return clamp(100-(rows.length-1-i)*5,20,100);return 20;}
+  function digitScore(rows,d,w){
+    const rates=w.map(q=>{const c=countDigit(rows,d,q.window);return beta(c.h,c.n*2,CFG.smooth);});
+    const weighted=w.reduce((s,q,i)=>s+q.weight*rates[i],0);
+    const stability=clamp(100-(Math.max(...rates)-Math.min(...rates))*1.55,35,100);
+    return .38*weighted+.20*pos(rows,d,30)+.12*trans(rows,d)+.08*fresh(rows,d)+.12*stability+.10*avg(w.map(q=>q.oos));
+  }
+  function top2(rows,w){return Array.from({length:10},(_,d)=>({digit:d,score:digitScore(rows,d,w)})).sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,2);}
+  function pairScore(rows,owner,partner,w){
+    const k=pairKey(owner,partner),z15=rows.slice(-15),z30=rows.slice(-30),z60=rows.slice(-60),z120=rows.slice(-120),ownerRows=rows.filter(r=>has(r,owner));
+    const wr=w.map(q=>{const z=rows.slice(-Math.min(q.window,rows.length));return beta(z.filter(r=>pairOf(r)===k).length,z.length,CFG.pairSmooth);});
+    const weighted=w.reduce((s,q,i)=>s+q.weight*wr[i],0),recent=beta(z15.filter(r=>pairOf(r)===k).length,z15.length,CFG.pairSmooth),mid=beta(z30.filter(r=>pairOf(r)===k).length,z30.length,CFG.pairSmooth),long=beta(z120.filter(r=>pairOf(r)===k).length,z120.length,CFG.pairSmooth);
+    const cond=ownerRows.length?beta(ownerRows.filter(r=>pairOf(r)===k).length,ownerRows.length,CFG.pairSmooth):50;
+    const partnerRows=rows.filter(r=>has(r,partner));
+    const partnerMarginal=partnerRows.length?beta(partnerRows.filter(r=>has(r,owner)).length,partnerRows.length,CFG.pairSmooth):50;
+    const synergy=clamp(50+(cond-partnerMarginal),20,80);
+    const pn=rows.filter(r=>pairOf(r)===k).length,fd=rows.filter(r=>r.tens===owner&&r.units===partner).length,rd=rows.filter(r=>r.tens===partner&&r.units===owner).length;
+    const direction=pn?beta(Math.max(fd,rd),pn,CFG.pairSmooth):50; let gap=rows.length;for(let i=rows.length-1;i>=0;i--)if(pairOf(rows[i])===k){gap=rows.length-1-i;break;}
+    const fr=clamp(100-gap*4,25,100),st=clamp(100-(Math.max(...wr)-Math.min(...wr))*1.8,35,100);
+    return .27*weighted+.12*recent+.10*mid+.07*long+.20*cond+.10*synergy+.04*direction+.04*fr+.04*st+.02*avg(w.map(q=>q.oos));
+  }
+  function allPairs(rows,owner,w){const a=[];for(let p=0;p<10;p++)a.push({pair:pairKey(owner,p),owner,partner:p,score:pairScore(rows,owner,p,w)});return a.sort((x,y)=>y.score-x.score||x.partner-y.partner);}
+  function allocate(top,pools){
+    const a=top[0].digit,b=top[1].digit, grouped=new Map();
+    for(const owner of [a,b])for(const p of pools[owner]){if(!grouped.has(p.pair))grouped.set(p.pair,[]);grouped.get(p.pair).push(p);}
+    let states=new Map([['0,0',{score:0,sel:[]}]]);
+    for(const [key,opts] of grouped){const next=new Map(states);for(const [st,v] of states){const [ca,cb]=st.split(',').map(Number);for(const o of opts){if(o.owner===a&&ca<5){const nk=`${ca+1},${cb}`,nv=v.score+o.score;if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:v.sel.concat(o)});}if(o.owner===b&&cb<5){const nk=`${ca},${cb+1}`,nv=v.score+o.score;if(!next.has(nk)||next.get(nk).score<nv)next.set(nk,{score:nv,sel:v.sel.concat(o)});}}}states=next;}
+    const best=states.get('5,5');if(!best)return null;return {by:{[a]:best.sel.filter(x=>x.owner===a).sort((x,y)=>x.partner-y.partner),[b]:best.sel.filter(x=>x.owner===b).sort((x,y)=>x.partner-y.partner)}};
+  }
+
+  /* Candidate weight families. Each family is calibrated by rolling origins inside the training history. */
+  const DIGIT_FAMILIES=[
+    [0.08,0.14,0.16,0.18,0.18,0.14,0.10],
+    [0.10,0.16,0.18,0.18,0.16,0.12,0.10],
+    [0.12,0.18,0.18,0.16,0.14,0.12,0.10],
+    [0.18,0.18,0.16,0.14,0.12,0.12,0.10],
+    [0.24,0.18,0.14,0.12,0.12,0.10,0.10],
+    [0.30,0.20,0.14,0.12,0.10,0.08,0.06]
+  ];
+  const PAIR_FAMILIES=[
+    [0.10,0.16,0.18,0.18,0.16,0.12,0.10],
+    [0.12,0.18,0.18,0.16,0.14,0.12,0.10],
+    [0.16,0.20,0.18,0.14,0.12,0.10,0.10],
+    [0.22,0.20,0.16,0.14,0.10,0.10,0.08],
+    [0.28,0.20,0.14,0.12,0.10,0.09,0.07]
+  ];
+  function makeWeights(fam,oos){return CFG.windows.map((window,i)=>({window,weight:fam[i],oos:oos[i]||50}));}
+  function scoreDigitFamily(rows,fam){
+    const origins=Math.min(CFG.evalOrigins,rows.length-CFG.minTrain); if(origins<1)return 0;
+    let total=0,den=0,start=rows.length-origins;
+    for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),w=makeWeights(fam,CFG.windows.map(()=>50)),pred=top2(tr,w),r=rows[i],a=has(r,pred[0].digit),b=has(r,pred[1].digit);total+=(a&&b?1:a||b?.5:0);den++;}
+    return den?total/den:0;
+  }
+  function scorePairFamily(rows,fam){
+    const origins=Math.min(CFG.evalOrigins,rows.length-CFG.minTrain);if(origins<1)return 0;let total=0,owner=0,den=0,start=rows.length-origins;
+    for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),w=makeWeights(fam,CFG.windows.map(()=>50)),top=top2(tr,w),pools={[top[0].digit]:allPairs(tr,top[0].digit,w),[top[1].digit]:allPairs(tr,top[1].digit,w)},al=allocate(top,pools);if(!al)continue;const r=rows[i],actual=pairOf(r);let hit=0,oh=0;for(const d of [top[0].digit,top[1].digit]){for(const p of al.by[d])if(p.pair===actual)hit=1;if(has(r,d))oh=1;}total+=hit;owner+=oh;den++;}
+    return den?(total/den)+.20*(owner/den):0;
+  }
+  function calibrate(rows,fams,kind){
+    const scores=fams.map(f=>kind==='digit'?scoreDigitFamily(rows,f):scorePairFamily(rows,f));
+    let bi=0;for(let i=1;i<scores.length;i++)if(scores[i]>scores[bi]+1e-12)bi=i;
+    return {index:bi,scores,weights:fams[bi].slice()};
+  }
+  function windowOOS(rows){
+    return CFG.windows.map(w=>{const origins=Math.min(CFG.evalOrigins,rows.length-CFG.minTrain),start=Math.max(CFG.minTrain,rows.length-origins);let s=0,n=0;for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),pred=Array.from({length:10},(_,d)=>({digit:d,score:.7*beta(countDigit(tr,d,w).h,countDigit(tr,d,w).n*2,CFG.smooth)+.3*pos(tr,d,Math.min(30,w))})).sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,2),r=rows[i],a=has(r,pred[0].digit),b=has(r,pred[1].digit);s+=a&&b?1:a||b?.5:0;n++;}return n?100*s/n:50;});
+  }
+  function frequencyTop2(rows){
+    const a=Array.from({length:10},(_,d)=>({digit:d,count:countDigit(rows,d,rows.length).h}));
+    return a.sort((x,y)=>y.count-x.count||x.digit-y.digit).slice(0,2).map(x=>({digit:x.digit,score:x.count}));
+  }
+  function finalModel(rows){
+    /* V143 evidence calibration: digit-family calibration is retained for audit only;
+       final owner digits use the all-history digit-frequency baseline because that
+       baseline outperformed V141 calibrated digit selection on the 36-origin test.
+       Pair-family calibration and the exact 5+5 allocation remain unchanged. */
+    const doos=windowOOS(rows),dc=calibrate(rows,DIGIT_FAMILIES,'digit'),dw=makeWeights(DIGIT_FAMILIES[dc.index],doos),top=frequencyTop2(rows),poos=windowOOS(rows),pc=calibrate(rows,PAIR_FAMILIES,'pair'),pw=makeWeights(PAIR_FAMILIES[pc.index],poos),pools={[top[0].digit]:allPairs(rows,top[0].digit,pw),[top[1].digit]:allPairs(rows,top[1].digit,pw)},allocation=allocate(top,pools);
+    return {top,dw,pw,dc,pc,pools,allocation};
+  }
+  function ownerFirst(pair,d){const s=String(pair);return s[0]===String(d)?s:s[1]+s[0];}
+  function rankRows(row){const q=row.slice().sort((a,b)=>b.score-a.score||a.partner-b.partner),m=new Map();if(q[0])m.set(q[0].pair,'rank-gold');if(q[1])m.set(q[1].pair,'rank-silver');if(q[2])m.set(q[2].pair,'rank-rosegold');return row.slice().sort((a,b)=>a.partner-b.partner).map(x=>({...x,rankClass:m.get(x.pair)||''}));}
+  function nextDate(rows){const z=rows.filter(r=>r.dateMs>0).sort((a,b)=>a.dateMs-b.dateMs||a.seq-b.seq);if(!z.length)return '';const d=new Date(z[z.length-1].dateMs);d.setDate(d.getDate()+1);while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);const mm=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${String(d.getDate()).padStart(2,'0')} ${mm[d.getMonth()]} ${d.getFullYear()+543}`;}
+  function card(model,idx,date){
+    const d1=model.top[0].digit,d2=model.top[1].digit,r1=rankRows(model.allocation.by[d1]||[]),r2=rankRows(model.allocation.by[d2]||[]);
+    const c={lotteryName:'MYANMAR 2D',displayTitle:'MYANMAR 2D',nextDate:`${date} · ${idx===1?'12:01 P.M.':'4:30 P.M.'} · ${idx===1?'မွန်းတည့်အကြိမ်':'ညနေအကြိမ်'}`,d1,d2,d1Pairs:r1.map(x=>({pair:ownerFirst(x.pair,d1),rankClass:x.rankClass,score:x.score})),d2Pairs:r2.map(x=>({pair:ownerFirst(x.pair,d2),rankClass:x.rankClass,score:x.score})),flag:'🇲🇲'};
+    return typeof renderCardHTML==='function'?renderCardHTML(c,false,0):null;
+  }
+  function evaluate(rows,model){
+    const origins=Math.max(0,rows.length-CFG.minTrain),start=Math.max(CFG.minTrain,rows.length-Math.min(CFG.evalOrigins,origins));let d1=0,d2=0,any=0,both=0,pair=0,owner=0,tests=0;
+    for(let i=start;i<rows.length;i++){const tr=rows.slice(0,i),m=finalModel(tr),r=rows[i];if(!m.allocation)continue;const a=has(r,m.top[0].digit),b=has(r,m.top[1].digit);d1+=a;d2+=b;any+=a||b;both+=a&&b;const actual=pairOf(r);for(const d of [m.top[0].digit,m.top[1].digit]){for(const p of m.allocation.by[d]||[])if(p.pair===actual)pair++;if(has(r,d))owner++;}tests++;}
+    return {tests,top1Rate:tests?d1/tests:0,top2Rate:tests?d2/tests:0,anyDigitRate:tests?any/tests:0,bothDigitRate:tests?both/tests:0,ownerHitRate:tests?owner/(tests*2):0,exactPairRate:tests?pair/tests:0};
+  }
+  function render(text){
+    try{
+      const parsed=parse(text),cl=clean(parsed.rows);if(!cl.usable.length)return null;const noon=session(cl,'noon'),evening=session(cl,'evening');if(noon.length<CFG.minTrain||evening.length<CFG.minTrain)return null;
+      const nm=finalModel(noon),em=finalModel(evening);if(!nm.allocation||!em.allocation)return null;const date=nextDate(cl.usable);
+      const audit={version:'V144 FINAL',scope:'Myanmar2DOnly',method:'rolling-origin calibrated family selection + marginal-adjusted pair synergy + final 5+5 joint allocation',rawRows:parsed.rows.length,usableDates:cl.usable.length,ambiguousDates:cl.ambiguous.length,parseErrors:parsed.errors.length,noonRecords:noon.length,eveningRecords:evening.length,rounds:2,topDigitsPerSession:2,pairsPerRow:5,totalPairsPerCard:10,fullPairPool:45,noAllDayCard:true,noGeneralPathChange:true,calibration:{digitFamilies:DIGIT_FAMILIES.length,pairFamilies:PAIR_FAMILIES.length,evalOrigins:CFG.evalOrigins,pairEvidence:'marginal-adjusted synergy replaces redundant owner-conditioned partner count'},noon:{chosenDigitFamily:nm.dc.index,digitFamilyScores:nm.dc.scores,chosenPairFamily:nm.pc.index,pairFamilyScores:nm.pc.scores,top:nm.top,backtest:evaluate(noon,nm)},evening:{chosenDigitFamily:em.dc.index,digitFamilyScores:em.dc.scores,chosenPairFamily:em.pc.index,pairFamilyScores:em.pc.scores,top:em.top,backtest:evaluate(evening,em)}};
+      audit.integrity={exactPairDenominator:'tests (one target session = one exact-pair test)',pairEvidence:'cond + marginal-adjusted synergy + direction; redundant duplicate owner-conditioned partner evidence removed'}; window.__V144_MYANMAR_AUDIT__=Object.freeze(audit);window.__V144_MYANMAR_DEBUG__={noon:nm,evening:em}; window.__V143_MYANMAR_AUDIT__=window.__V144_MYANMAR_AUDIT__; window.__V143_MYANMAR_DEBUG__=window.__V144_MYANMAR_DEBUG__;
+      return [card(nm,1,date),card(em,2,date)].join('');
+    }catch(e){window.__V144_MYANMAR_RENDER_ERROR__=String(e);return null;}
+  }
+  window.__V143_MYANMAR_RENDER=render;window.renderMyanmar2DModule=render;
+  const prev=window.runEngineCore;if(typeof prev==='function')window.runEngineCore=async function(){const t=document.getElementById('bulkInput')?.value||'';if(!/(?:🗓|📅)\s*.+?:\s*(?:\d{2}|××|xx)\s*--\s*(?:\d{2}|××|xx)/i.test(t))return prev.apply(this,arguments);const h=render(t),r=document.getElementById('result');if(r)r.innerHTML=h||'<div class="errorbox"><b>Myanmar 2D render error</b><br>'+esc(window.__V144_MYANMAR_RENDER_ERROR__||'unknown')+'</div>';return h;};
+})();
+</script>
 </html>
