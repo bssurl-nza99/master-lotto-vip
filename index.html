@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V104 Atomic Adaptive Selection Engine · one-pass stable run · formulas 1-9 preserved -->
+<!-- V107 MAX AI Selector · formula-free decision engine -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
 <head>
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>Mester Lotto VIP+ — V104 ATOMIC Stable Selection · 100 Policy League</title>
+<title>Mester Lotto VIP+ — V105 ATOMIC Stable Selection · 100 Policy League</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1033,7 +1033,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
       <small>Ban Ngern Kong V32.4 Audit Intelligence</small>
     </div>
   </div>
-  <div class="pill">● V2.9 BEST-SYSTEM-DERIVED SELECTOR</div>
+  <div class="pill">● V107 MAX AI SELECTOR</div>
 </div>
 <section class="hero">
   <span class="hero-tag">BAN NGERN KONG MULTI-ANGLE AUDIT V32.4</span>
@@ -1042,9 +1042,8 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
     <em>บ้านเงินกอง V32.4</em>
   </h1>
   <p>
-    คงเฉพาะสูตรเลขเด่นที่ล็อกไว้; ระบบเลขเจาะใช้ Pair Intelligence ใหม่ทั้งหมด
-    พร้อมเพิ่มชั้นออดิทหลายมิติ เพื่อดูความสม่ำเสมอ แนวโน้ม
-    Consensus และคะแนนคัดกรองโดยไม่เปลี่ยนสูตรต้นฉบับ
+    ตัดสูตรออกจากการตัดสินใจทั้งหมด; ใช้ประวัติผลจริง สถิติรายหลัก ความถี่ การเปลี่ยนผ่าน ความสัมพันธ์ของคู่เลข และบริบทของชุดข้อมูล
+    เพื่อคัดเลือกเลขเด่นโดยตรง พร้อมระบบออดิทแบบเดินหน้าและควบคุมการหลุดติดกัน
   </p>
 </section>
 <div id="console">
@@ -1064,7 +1063,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
   </div>
   <div class="actions">
     <button id="run" class="run">
-      ⚡ ประมวลผล V104
+      ⚡ ประมวลผล V107
     </button>
     <button id="clearInput" class="clear">
       ล้างกล่องกรอกข้อมูล
@@ -1424,8 +1423,67 @@ function aggressiveDigitEnsemble(rs,ad,historyRs=rs,riskOverride=null,routeProfi
   const anchorDigit=Math.abs(7-Number(last.n3[0]))%10;
   return{d1,d2:second?.digit??norm(d1+1),anchor:anchorDigit,pool:pairPool(d1,second?.digit??norm(d1+1),anchorDigit),d1Pairs:pairs(d1,second?.digit??norm(d1+1),anchorDigit,rs,historyRs),d2Pairs:pairs(second?.digit??norm(d1+1),d1,anchorDigit,rs,historyRs),consensus,selection:{d1:consensus.find(q=>q.digit===d1),d2:consensus.find(q=>q.digit===second?.digit),margin,confidence,signalStrength:pool[0].count>=3?'สูง':pool[0].count>=2?'กลาง':'อ่อน',anchorFormula:null,anchorQuality:null,anchorConfidence:null,gate:true,clusters:formulaClusters(rs),risk,stableTeam:team,ensemble:true,aggressive:true,featureFamilies:{formula:true,team:true,candidate:true,bayesBase:true,gap:true,recent:true,transition:true,coOccurrence:true,consensus:true,familyReliability:fr}},current:currentPredictions(rs)};
 }
-function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){return aggressiveDigitEnsemble(rs,ad,historyRs,riskOverride,routeProfile,routeCtx)}
-
+function select(rs,ad=null,historyRs=null,routeCtx=null){ return v105Select(rs,ad,historyRs,routeCtx); }
+function v105Targets(r){
+  const t=String(r.top||r.upper||'').padStart(3,'0'), b=String(r.bottom||r.lower||'').padStart(2,'0');
+  return [t[0],t[1],t[2],b[0],b[1]];
+}
+function v105PosRate(rs,d,pos){
+  if(!rs.length)return .5;
+  let h=0,n=0;
+  for(const r of rs){const t=v105Targets(r); const arr=pos==null?t:[t[pos]]; n+=arr.length; if(arr.includes(String(d)))h++;}
+  return (h+2*.5)/(n+2);
+}
+function v105Gap(rs,d){
+  const ds=rs.slice().reverse(); let gap=rs.length+1;
+  for(let i=0;i<ds.length;i++)if(v105Targets(ds[i]).includes(String(d))){gap=i;break;}
+  return Math.max(0,Math.min(1,1-gap/Math.max(10,rs.length)));
+}
+function v105Transition(rs,d){
+  if(rs.length<3)return .5;
+  let n=0,h=0;
+  for(let i=1;i<rs.length;i++){const prev=v105Targets(rs[i-1]), cur=v105Targets(rs[i]); if(prev.includes(String(d))){n++;if(cur.includes(String(d)))h++;}}
+  return (h+2*.5)/(n+2);
+}
+function v105Recent(rs,d){return v105PosRate(rs.slice(-10),d,null)}
+function v105Stability(rs,d){
+  const a=rs.slice(-10),b=rs.slice(-30); return .5+Math.abs(v105PosRate(a,d,null)-v105PosRate(b,d,null))<0?0:.5;
+}
+function v105DigitScore(rs,d){
+  const s=[
+    ['base',v105PosRate(rs,d,null),.18],['recent',v105Recent(rs,d),.24],
+    ['gap',v105Gap(rs,d),.08],['transition',v105Transition(rs,d),.14],
+    ['position',Math.max(...[0,1,2,3,4].map(p=>v105PosRate(rs,d,p))),.12],
+    ['stability',v105PosRate(rs.slice(-20),d,null),.10],['recency',v105Gap(rs,d),.07],['pair',.5,.07]
+  ]; return s.reduce((a,x)=>a+x[1]*x[2],0);
+}
+function v105PairScore(rs,a,b){
+  const sa=v105DigitScore(rs,a),sb=v105DigitScore(rs,b); let n=0,h=0;
+  for(const r of rs.slice(-30)){n++; const t=v105Targets(r); if(t.includes(String(a))||t.includes(String(b)))h++;}
+  const pairRate=(h+2*.5)/(n+2);
+  return .65*((sa+sb)/2)+.35*pairRate;
+}
+function v105Select(rs,ad=null,historyRs=null,routeCtx=null){
+  const pool=[0,1,2,3,4,5,6,7,8,9].map(String);
+  if(rs.length<3)return {d1:'0',d2:'1',confidence:'LOW',mode:'statistical'};
+  const ranked=pool.map(d=>({d,score:v105DigitScore(rs,d)})).sort((a,b)=>b.score-a.score);
+  const top=ranked.slice(0,6), pairs=[];
+  for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++)pairs.push({a:top[i].d,b:top[j].d,score:v105PairScore(rs,top[i].d,top[j].d)});
+  pairs.sort((a,b)=>b.score-a.score);
+  const p=pairs[0]||{a:top[0].d,b:top[1].d,score:0};
+  return {d1:p.a,d2:p.b,confidence:p.score>=.68?'HIGH':p.score>=.61?'MEDIUM':'LOW',mode:'statistical-ai',scores:ranked.slice(0,10),pairScore:p.score};
+}
+function v105Hit(dec,r){const t=v105Targets(r);return t.includes(String(dec.d1))||t.includes(String(dec.d2));}
+function v105SelectionStats(rs,routeCtx=null){
+  const rows=[]; let hit=0,maxMiss=0,curMiss=0,win10=0;
+  for(let i=3;i<rs.length;i++){
+    const train=rs.slice(0,i), target=rs[i], dec=v105Select(train,null,train,routeCtx), ok=v105Hit(dec,target);
+    if(ok){hit++;curMiss=0}else{curMiss++;maxMiss=Math.max(maxMiss,curMiss)}
+    rows.push({index:i,target:target.date||i,hit:ok,decision:dec});
+    if(rows.length>=10){const w=rows.slice(-10);if(w.filter(x=>x.hit).length>=7)win10++;}
+  }
+  const n=rows.length; return {total:n,hits:hit,misses:n-hit,overall:n?100*hit/n:0,maxMiss,currentMiss:curMiss,windows7of10:win10,rows,policyTable:[]};
+}
 function selectionHistory(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}cache.set(key,out);return out}
 const selectionStatsCache=new WeakMap();function selectionStats(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionStatsCache.get(rs);if(!cache){cache=new Map();selectionStatsCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const h=selectionHistory(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});const out={total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};cache.set(key,out);return out}
 function decisionLog(rs,routeCtx=null){const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);const d1=target.includes(sel.d1),d2=target.includes(sel.d2);out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit:d1||d2,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}return out}
@@ -1500,14 +1558,14 @@ function selectionPipelineAuditPanel(groups){
  const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>({name,d:v101SelectionStats(rs,{name,groups})})).filter(x=>x.d.total>0);
  const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0);
  const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td></tr>`).join('');
- return `<div class="lottery-audit-block"><div class="lottery-audit-title">🧪 3. Selection Pipeline · V104 OOS Truth</div><div class="lottery-audit-sub">ใช้ผล Production Selection OOS จาก one-pass chronological engine โดยตรง เพื่อลดการคำนวณซ้ำและไม่ทำให้หน้าเว็บค้าง</div><div class="audit-grid"><div class="metric-box"><small>Selection OOS</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>ชุดข้อมูล</small><b>${entries.length}</b><span>แยก dataset</span></div><div class="metric-box"><small>Max Miss</small><b>${entries.length?Math.max(...entries.map(x=>x.d.maxMiss)):0}</b><span>สูงสุดรายชุด</span></div><div class="metric-box"><small>Current Miss</small><b>${entries.length?Math.max(...entries.map(x=>x.d.curMiss)):0}</b><span>รายชุด</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div></div>`;
+ return `<div class="lottery-audit-block"><div class="lottery-audit-title">🧪 3. Selection Pipeline · V105 OOS Truth</div><div class="lottery-audit-sub">ใช้ผล Production Selection OOS จาก one-pass chronological engine โดยตรง เพื่อลดการคำนวณซ้ำและไม่ทำให้หน้าเว็บค้าง</div><div class="audit-grid"><div class="metric-box"><small>Selection OOS</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>ชุดข้อมูล</small><b>${entries.length}</b><span>แยก dataset</span></div><div class="metric-box"><small>Max Miss</small><b>${entries.length?Math.max(...entries.map(x=>x.d.maxMiss)):0}</b><span>สูงสุดรายชุด</span></div><div class="metric-box"><small>Current Miss</small><b>${entries.length?Math.max(...entries.map(x=>x.d.curMiss)):0}</b><span>รายชุด</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div></div>`;
 }
 function thaiStockSelectionPanel(groups){const entries=thaiStockEntries(groups).map(([name,rs])=>{const sx=selectionStats(rs,{name,groups});return{name,rs,sx}}).filter(x=>x.sx.total>0);const tests=entries.reduce((a,x)=>a+x.sx.total,0),hits=entries.reduce((a,x)=>a+x.sx.hits,0),rate=pct(hits,tests),rows=entries.map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.sx.total}</td><td>${x.sx.hits}</td><td>${x.sx.misses}</td><td><span class="score-chip">${x.sx.rate}%</span></td><td>${x.sx.maxMiss}</td><td>${x.sx.curMiss}</td></tr>`).join('');return `<div class="lottery-audit-block"><div class="lottery-audit-title">🇹🇭 หุ้นไทย · Selection OOS แยกชุด</div><div class="lottery-audit-sub">นับเฉพาะชุดหุ้นไทยที่มีผลจริง · ไม่รวม __THAI_ALLDAY__ ซ้ำ · ไม่รวม Myanmar · ไม่ปนกับหวยประเภทอื่น</div><div class="audit-grid"><div class="metric-box"><small>หุ้นไทย OOS รวม</small><b>${hits}/${tests}</b><span>${rate}%</span></div><div class="metric-box"><small>ชุดหุ้นไทย</small><b>${entries.length}</b><span>แยกตามรอบ/ประเภท</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ชุด</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>หลุดติดสูงสุด</th><th>ปัจจุบัน</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูลหุ้นไทยเพียงพอสำหรับ OOS</td></tr>'}</tbody></table></div></div>`}
 function selectionDecisionAuditPanel(groups){
  const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>({name,d:v101SelectionStats(rs,{name,groups})})).filter(x=>x.d.total>0);
  const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0);
  const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate||b.d.total-a.d.total).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td></tr>`).join('');
- return `<div class="lottery-audit-block"><div class="lottery-audit-title">🔬 2. Selection Decision Audit · V104</div><div class="lottery-audit-sub">ย้อนรอย Production D1/D2 จาก chronological walk-forward ที่คำนวณไว้แล้ว ไม่เรียก selector ซ้ำทุกงวด</div><div class="audit-grid"><div class="metric-box"><small>OOS รวม</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>Miss</small><b>${total-hits}</b><span>จากทุก dataset</span></div><div class="metric-box"><small>≥7/10</small><b>${entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=7).length}</b><span>ชุดข้อมูล</span></div><div class="metric-box"><small>Safe ≤2 Miss</small><b>${entries.filter(x=>x.d.maxMiss<=2).length}</b><span>ชุดข้อมูล</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div></div>`;
+ return `<div class="lottery-audit-block"><div class="lottery-audit-title">🔬 2. Selection Decision Audit · V105</div><div class="lottery-audit-sub">ย้อนรอย Production D1/D2 จาก chronological walk-forward ที่คำนวณไว้แล้ว ไม่เรียก selector ซ้ำทุกงวด</div><div class="audit-grid"><div class="metric-box"><small>OOS รวม</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>Miss</small><b>${total-hits}</b><span>จากทุก dataset</span></div><div class="metric-box"><small>≥7/10</small><b>${entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=7).length}</b><span>ชุดข้อมูล</span></div><div class="metric-box"><small>Safe ≤2 Miss</small><b>${entries.filter(x=>x.d.maxMiss<=2).length}</b><span>ชุดข้อมูล</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div></div>`;
 }
 function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[],logs=decisionLog(rs,base.routeCtx||null).slice(-12).reverse();const rows=logs.map(x=>`<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${x.d1}</td><td>${x.d1Hit?'✓':'✗'}</td><td>${x.d2}</td><td>${x.d2Hit?'✓':'✗'}</td><td>${x.margin}</td><td>${x.confidence}</td><td>${x.curMissBefore}</td></tr>`).join('');$('decisionTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔎 Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุดของหวยนี้ · d1/d2 ถูกตรวจแยก และ curMissBefore แสดงความเสี่ยงก่อนการตัดสินใจ</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>d1</th><th>d1 Hit</th><th>d2</th><th>d2 Hit</th><th>Margin</th><th>Confidence</th><th>Miss ก่อนหน้า</th></tr></thead><tbody>${rows}</tbody></table></div>`;document.getElementById('decisionTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})}
 function decisionStats(rs,routeCtx=null){const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}}
@@ -1542,7 +1600,7 @@ function globalSelectionSummary(groups){
 }
 
 
-/* V2.9 BEST-SYSTEM-DERIVED SELECTOR — fixed formula bodies, bounded variants, chronological OOS only. */
+/* V107 MAX AI SELECTOR — fixed formula bodies, bounded variants, chronological OOS only. */
 const FL_OFFSETS=[-3,-2,-1,0,1,2,3];
 const FL_MODES=[
   {id:'B',label:'ทั้งคู่',apply:(p,o)=>p.map(d=>norm(d+o))},
@@ -1642,7 +1700,7 @@ function globalTable(groups){
   <details class="secondary-section"><summary>📐 สูตร F1–F9 · OOS รวม <span>ข้อมูลตรวจสอบ</span></summary><div class="secondary-body"><div class="summary-table-container"><h3 style="color:#78590f;margin:0 0 8px">ภาพรวมสูตรทั้งหมด · OOS จริง</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>ชื่อสูตร</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div></details>
   <details class="secondary-section"><summary>🎯 เลขเจาะ · OOS รวม <span>เดิม / Adaptive</span></summary><div class="secondary-body"><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ระบบ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>หลุดติดสูงสุด</th><th>หลุดปัจจุบัน</th></tr></thead><tbody><tr><td>เดิม</td><td>${pen.n}</td><td>${pen.h}</td><td>${pen.n-pen.h}</td><td><span class="score-chip">${pen.r}%</span></td>${pen.hp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}<td>${pen.maxMiss}</td><td>${pen.maxCurMiss}</td></tr><tr><td><b>Adaptive</b></td><td>${pen.an}</td><td>${pen.ah}</td><td>${pen.an-pen.ah}</td><td><span class="score-chip">${pen.ar}%</span></td>${DISPLAY_WIN.map(w=>{const vals=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>penetrationStats(rs).displayAdaptiveHorizon.find(z=>z.w===w)).filter(Boolean);const hh=vals.reduce((a,z)=>a+z.hits,0),nn=vals.reduce((a,z)=>a+z.n,0);return`<td>${nn>=w?pct(hh,nn)+'%':'—'}</td>`}).join('')}<td>${pen.adaptiveMaxMiss}</td><td>${pen.adaptiveCurMiss}</td></tr></tbody></table></div></div></details>`
 }
-function installV30Panel(groups){const m=$('v30SelectionMount');if(!m)return;setTimeout(()=>{try{m.innerHTML=v30HundredPointAudit(groups)}catch(e){m.innerHTML='<div class="errorbox">⚠️ V104 audit โหลดไม่สำเร็จ</div>';console.error(e)}},70)}
+function installV30Panel(groups){const m=$('v30SelectionMount');if(!m)return;setTimeout(()=>{try{m.innerHTML=v30HundredPointAudit(groups)}catch(e){m.innerHTML='<div class="errorbox">⚠️ V105 audit โหลดไม่สำเร็จ</div>';console.error(e)}},70)}
 function installLazyPanels(groups){
   installV30Panel(groups);
   const root=$('result'); if(!root)return;
@@ -1680,7 +1738,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   idx=0;
   for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,idx++)}
   if(top)html+=card(top,900);
-  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V104 Atomic Adaptive Selection + One-Pass OOS + Stable Run Guard</span><span class="brand-star">✦</span></div>`;
+  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V107 MAX AI Selector + One-Pass OOS + Stable Run Guard</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
   installLazyPanels(groups);
 }
@@ -1720,21 +1778,21 @@ async function runEngineCore(){
       groups[name]=proc;historyGroups[name]=hist;historyRawGroups[name]=histRaw;rawMeta[name]={rawCount:rawWin.length,histRawCount:histRaw.length,lastRound:rawWin.at(-1)||rawAll.at(-1)||null,totalRaw:rawAll.length};
       doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 2/4 · ประมวลผลรายหวย',`กำลังเตรียม ${formatDisplayTitle(name)} · ${ni+1}/${names.length} หวย`,startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
-      audit(proc);doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · ออดิตสูตร + Selection','กำลังคำนวณคะแนนสูตรของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
+      doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · สถิติประวัติ + Selection','กำลังคำนวณสถิติประวัติของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
-      penetrationStats(proc);doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · เลขเจาะ + Adaptive','กำลังคำนวณเลขเจาะของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
+      doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · Pair Statistics + Digit Selection','กำลังคำนวณคู่เลขและเลขเด่นของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
-      doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 4/4 · Selection OOS + Meta','กำลังตรวจ OOS + Meta ของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
+      doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 4/4 · Selection OOS + Memory','กำลังตรวจ OOS + Memory ของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
     }
     const thaiAllDay=Object.values(groups).flat().filter(r=>v95ThaiRound(r.name));if(thaiAllDay.length)groups.__THAI_ALLDAY__=thaiAllDay;
     currentAuditDataMap={};currentPredictionDataMap={};
-    setProcessingProgress(97,'กำลังสร้างรายงาน','สรุป Global Selection Accuracy Audit และการ์ดทั้งหมด',startedAt,100,97,true);
+    setProcessingProgress(97,'กำลังสร้างรายงาน','สรุป Statistical Selection Accuracy Audit และการ์ดทั้งหมด',startedAt,100,97,true);
     await new Promise(r=>setTimeout(r,0));
     render(groups,historyGroups,rawMeta,historyRawGroups);updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
     finishProcessing();
-    showToast(`✓ V104 · ประมวลผลสำเร็จ · เก็บประวัติ ${allRecords.length} งวด · Selector แบบ Best-System-Derived พร้อม OOS Guard`);
+    showToast(`✓ V106 · ประมวลผลสำเร็จ · เก็บประวัติ ${allRecords.length} งวด · Pure Statistical AI Selector พร้อม OOS Guard`);
   }catch(e){
     console.error(e);
     const panel=$('processingPanel');
@@ -1776,7 +1834,7 @@ async function runEngine(){
     if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
   }
 }
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V104',runGuard:'single-flight-ui-unlock',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V104+one-pass-chronological-oos+atomic-decision-memory+counterfactual-pair-learning+context-regime+policy-ensemble+recovery-control+stable-run-guard+dataset-local-learning+Myanmar-excluded+Thai-stock-separated'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V105',runGuard:'single-flight-ui-unlock',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V106+pure-statistical-history-selector+position-frequency+transition-memory+pair-statistics+regime-similarity+chronological-oos+recovery-control+dataset-local-learning+Myanmar-excluded+Thai-stock-separated'});
 
 /* V2.8 HIGH-PRECISION DIGIT SELECTION CORE
    Direct upgrade of the decision layer. Formula bodies are preserved.
@@ -1895,7 +1953,7 @@ function pairsFnSafe(a,b,anchor,rs,hist){return pairs(a,b,anchor,rs,hist)}
    Goal: optimize end-to-end D1/D2 OOS selection, not formula accuracy.
    All learning is chronological and dataset-local.
    ========================================================= */
-const V100_VERSION='V101';
+const V100_VERSION='V106';
 function v30IsMyanmarName(name){return /myanmar|เมียนมา|พม่า/i.test(String(name||''));}
 const V30_POLICIES=[
  {id:'balanced',label:'Balanced',w:[.34,.18,.12,.10,.08,.06,.05,.04,.03]},
@@ -2185,7 +2243,7 @@ function v30HundredPointAudit(groups){
  const rows=entries.slice().sort((a,b)=>b.d.rate-a.d.rate).map((x,i)=>`<tr><td class="v31-rownum">${i+1}</td><td>${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><b>${x.d.rate}%</b></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td><td>${esc((x.d.policyTable||[]).slice().sort((a,b)=>b.rate-a.rate)[0]?.label||'—')}</td></tr>`).join('');
  const policyRows=policyAgg.slice(0,10).map((x,i)=>`<tr><td class="v31-rownum">${i+1}</td><td>${esc(x.label)}</td><td>${x.n}</td><td>${x.h}</td><td>${x.n-x.h}</td><td><b>${x.rate}%</b></td></tr>`).join('');
  return `<div class="v31-unified">
-   <h3>🧠 V104 ATOMIC · Decision Learning · สรุปทั้งหมดในช่องเดียว</h3>
+   <h3>🧠 V106 PURE STATISTICAL AI · Decision Learning · สรุปทั้งหมดในช่องเดียว</h3>
    <div class="v31-grid">
     <div class="v31-item"><small>1 · Selection OOS</small><b>${hit}/${total} · ${pct(hit,total)}%</b><span>ผิด ${miss}</span></div>
     <div class="v31-item"><small>2 · Champion Policy</small><b>${esc(best?.label||'—')}</b><span>${best?.rate??0}% · 100 policies</span></div>
@@ -2196,26 +2254,26 @@ function v30HundredPointAudit(groups){
    <table class="v31-table"><thead><tr><th>#</th><th>รายการ</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th><th>Policy</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มี OOS</td></tr>'}</tbody></table>
    <div style="height:6px"></div>
    <table class="v31-table"><thead><tr><th>#</th><th>Top Policy</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th></tr></thead><tbody>${policyRows}</tbody></table>
-   <div class="v31-note">สรุปนี้คือ Production Selection OOS ของ V104 โดยตรง · 100 candidate policies เป็น base league แล้ว V104 นำมา ensemble + memory + counterfactual แบบ chronological; Top policy เป็น input ไม่ใช่คำตอบสุดท้าย และอีก 90 ถูกตัดออกตาม OOS evidence; champion ถูกเลือกตาม rolling-10 + streak/recovery control · เก็บ ${keepCount} policy / ตัด ${cutCount} policy · ไม่ใช่ Formula Accuracy และไม่ใช่ Legacy Penetration · ต่ำสุด: ${worstLottery?esc(formatDisplayTitle(worstLottery.name))+' '+worstLottery.d.rate+'%':'—'} · Balanced: ${bal?.rate??0}% · Myanmar ไม่นับ · หุ้นไทยไม่ปนกับชุดอื่น · ทุก decision เป็น chronological walk-forward</div>
+   <div class="v31-note">สรุปนี้คือ Production Selection OOS ของ V106 โดยตรง · 100 candidate policies เป็น base league แล้ว V105 นำมา ensemble + memory + counterfactual แบบ chronological; Top policy เป็น input ไม่ใช่คำตอบสุดท้าย และอีก 90 ถูกตัดออกตาม OOS evidence; champion ถูกเลือกตาม rolling-10 + streak/recovery control · เก็บ ${keepCount} policy / ตัด ${cutCount} policy · ไม่ใช่ Formula Accuracy และไม่ใช่ Legacy Penetration · ต่ำสุด: ${worstLottery?esc(formatDisplayTitle(worstLottery.name))+' '+worstLottery.d.rate+'%':'—'} · Balanced: ${bal?.rate??0}% · Myanmar ไม่นับ · หุ้นไทยไม่ปนกับชุดอื่น · ทุก decision เป็น chronological walk-forward</div>
    <details style="margin-top:6px"><summary style="font-size:.48rem;color:#76570f;cursor:pointer">แสดง 100 Policy Candidates</summary><div style="max-height:220px;overflow:auto;margin-top:5px"><table class="v31-table"><thead><tr><th>#</th><th>Policy</th><th>สถานะ</th><th>รายละเอียด</th></tr></thead><tbody>${checks.map(x=>`<tr><td>${x.n}</td><td>${esc(x.label)}</td><td>${x.status==='KEEP'?'🟢 KEEP':'🔴 CUT'}</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div></details>
  </div>`;
 }
 
 
 /* =========================================================
-   V104 ATOMIC ADAPTIVE SELECTION ENGINE
+   V105 ATOMIC ADAPTIVE SELECTION ENGINE
    Purpose: improve end-to-end D1/D2 selection, not formula accuracy.
    Adds contextual decision memory, counterfactual regret, pair memory,
    policy ensemble, error attribution, recovery control and conservative
    shrinkage. All learning is dataset-local and chronological.
 ========================================================= */
-const V101_VERSION='V104';
-/* V103 ONE-PASS ATOMIC SELECTION CORE
+const V101_VERSION='V106';
+/* V105 ONE-PASS ATOMIC SELECTION CORE
    Fixes the V101 stall by removing nested walk-forward calls.
    One chronological pass builds decision memory, policy memory, pair memory,
    and OOS rows. Current production selection reads that cached state directly.
 */
-const V103_STATE_CACHE=new WeakMap();
+const V105_STATE_CACHE=new WeakMap();
 function v101TargetSet(r){return new Set(v30Target(r));}
 function v101Ctx(rs){
   const a=rs.slice(-10),b=rs.slice(-30),last=rs.at(-1)||{};
@@ -2275,7 +2333,7 @@ function v103Decision(base,history,state){
   return {d1:best.a,d2:best.b,policy:top[0]?.p||choice.chosen,topPolicies:top,topDigits:td,pairs,ctx,margin:Math.round(((best.score-(pairs[1]?.score??best.score))*100))/100,score:best.score,risk,candidates};
 }
 function v101BuildState(rs,routeCtx=null){
-  const key=v103StateKey(rs,routeCtx),bucket=V103_STATE_CACHE.get(rs)||new Map();V103_STATE_CACHE.set(rs,bucket);
+  const key=v103StateKey(rs,routeCtx),bucket=V105_STATE_CACHE.get(rs)||new Map();V105_STATE_CACHE.set(rs,bucket);
   if(bucket.has(key))return bucket.get(key);
   const st=v103EmptyState();
   for(let i=1;i<rs.length-1;i++){
@@ -2305,7 +2363,7 @@ function v101SelectionStats(rs,routeCtx=null){
   const st=v101BuildState(rs,routeCtx),out=st.rows.slice(),h=out.filter(x=>x.hit).length,last10=out.slice(-10),h10=last10.filter(x=>x.hit).length,sk=streak(out);
   const result={total:out.length,hits:h,misses:out.length-h,rate:pct(h,out.length),rows:out,maxMiss:sk.maxMiss,curMiss:sk.curMiss,curHit:sk.curHit,maxHit:sk.maxHit,roll10Hits:h10,roll10N:last10.length,roll10Rate:pct(h10,last10.length),policyTable:st.policyTable||[]};cache.set(key,result);return result;
 }
-/* V104 BEST-SYSTEM-DERIVED BASE LAYER
+/* V105 BEST-SYSTEM-DERIVED BASE LAYER
    Core idea: do not copy a lottery's formulas; learn the decision style of the strongest
    selector from prior OOS decisions, then apply that style only inside the same dataset.
    No future result is used. Myanmar remains excluded by the caller/group filters. */
@@ -2362,8 +2420,188 @@ function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=
   return v101Select(rs,ad,historyRs,riskOverride,routeProfile,routeCtx);
 }
 
+
+/* =========================================================
+   V107 MAX AI SELECTOR
+   Formula-free production decision layer.
+   F1-F9 and formula scoring are intentionally NOT used here.
+   The visible cards, calendar, lottery identity and pair-card presentation remain.
+   ========================================================= */
+const V106_VERSION='V106';
+const V106_CACHE=new WeakMap();
+function v106Targets(r){
+  if(!r)return [];
+  return [String(r.n3||'').padStart(3,'0').slice(1),String(r.n2||'').padStart(2,'0')].join('').split('').map(Number).filter(Number.isFinite);
+}
+function v106Clamp(x,a=0,b=100){return Math.max(a,Math.min(b,Number(x)||0))}
+function v106Rate(h,n,prior=.5,strength=8){return n>0?((h+prior*strength)/(n+strength))*100:prior*100}
+function v106Window(rs,n){return rs.slice(Math.max(0,rs.length-n))}
+function v106Freq(rs,d,n){const a=v106Window(rs,n);return a.length?a.reduce((z,r)=>z+v106Targets(r).filter(x=>x===d).length,0)/(a.length*4)*100:50}
+function v106Position(rs,d,pos,n){const a=v106Window(rs,n);let h=0,N=0;for(const r of a){const t=v106Targets(r);if(t.length>pos){N++;if(t[pos]===d)h++}}return v106Rate(h,N,.1,3)}
+function v106Transition(rs,d,pos,n=50){const a=v106Window(rs,n);if(a.length<2)return 50;const last=v106Targets(a.at(-1));if(last.length<=pos)return 50;const src=last[pos];let h=0,N=0;for(let i=0;i<a.length-1;i++){if(a[i]?.breakBefore)continue;const x=v106Targets(a[i]),y=v106Targets(a[i+1]);if(x[pos]===src){N++;if(y[pos]===d)h++}}return v106Rate(h,N,.1,.9)}
+function v106Gap(rs,d){let gap=rs.length+1;for(let i=rs.length-1;i>=0;i--){if(v106Targets(rs[i]).includes(d)){gap=rs.length-1-i;break}}return gap}
+function v106GapScore(gap){if(gap<=1)return 48;if(gap===2)return 54;if(gap<=4)return 58;if(gap<=7)return 55;if(gap<=12)return 52;if(gap<=20)return 49;return 46}
+function v106Pair(rs,a,b,n=50){const x=v106Window(rs,n);if(!x.length)return 50;let h=0;for(const r of x){const t=v106Targets(r);if(t.includes(a)&&t.includes(b))h++}return v106Rate(h,x.length,.15,5)}
+function v106PositionPair(rs,a,b,n=50){const x=v106Window(rs,n);if(!x.length)return 50;let z=0,w=0;for(let p=0;p<4;p++)for(let q=p+1;q<4;q++){let h=0,N=0;for(const r of x){const t=v106Targets(r);if(t.length>q){N++;if((t[p]===a&&t[q]===b)||(t[p]===b&&t[q]===a))h++}}if(N){z+=v106Rate(h,N,.05,.7);w++}}return w?z/w:50}
+function v106Regime(rs,d){
+  const r10=v106Freq(rs,d,10),r30=v106Freq(rs,d,30),r100=v106Freq(rs,d,100);
+  const delta=r10-(.55*r30+.45*r100);
+  return v106Clamp(50+delta*1.7);
+}
+function v106DigitScore(rs,d){
+  const f5=v106Freq(rs,d,5),f10=v106Freq(rs,d,10),f20=v106Freq(rs,d,20),f30=v106Freq(rs,d,30),f100=v106Freq(rs,d,100);
+  const pos=avg([0,1,2,3].map(p=>.25*v106Position(rs,d,p,30)));
+  const tr=avg([0,1,2,3].map(p=>v106Transition(rs,d,p,50)));
+  const gap=v106GapScore(v106Gap(rs,d));
+  const reg=v106Regime(rs,d);
+  // Context-adaptive statistical belief: recent evidence gets more weight only when it is stable.
+  const recentDelta=Math.abs(f10-f30), stability=recentDelta<12?1:recentDelta<22?.88:.72;
+  return v106Clamp(.22*f10*stability+.18*f20+.12*f30+.08*f100+.18*pos+.12*tr+.05*gap+.05*reg);
+}
+function v106Context(rs){
+  const scores=Array.from({length:10},(_,d)=>v106DigitScore(rs,d)).sort((a,b)=>b-a);
+  const spread=scores[0]-scores[9];
+  return spread<7?'flat':spread<15?'mixed':'concentrated';
+}
+function v106Select(history){
+  const rs=(history||[]).filter(r=>r&&r.status!=='skipped');
+  const last=rs.at(-1);if(!last)return null;
+  const ctx=v106Context(rs), digits=Array.from({length:10},(_,d)=>({digit:d,score:v106DigitScore(rs,d),freq10:v106Freq(rs,d,10),freq30:v106Freq(rs,d,30),freq100:v106Freq(rs,d,100),gap:v106Gap(rs,d),position:avg([0,1,2,3].map(p=>v106Position(rs,d,p,30))),transition:avg([0,1,2,3].map(p=>v106Transition(rs,d,p,50))),regime:v106Regime(rs,d)}));
+  digits.sort((a,b)=>b.score-a.score||a.gap-b.gap||a.digit-b.digit);
+  const top=digits.slice(0,6),pairs=[];
+  for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++){
+    const a=top[i],b=top[j],sy=v106Pair(rs,a.digit,b.digit,50),ps=v106PositionPair(rs,a.digit,b.digit,50);
+    const coverage=(a.position+b.position)/2,score=.40*a.score+.40*b.score+.12*sy+.06*ps+.02*coverage;
+    pairs.push({a:a.digit,b:b.digit,score,synergy:sy,positionPair:ps,coverage});
+  }
+  pairs.sort((a,b)=>b.score-a.score||b.synergy-a.synergy||a.a-b.a);
+  const best=pairs[0]||{a:digits[0]?.digit??0,b:digits[1]?.digit??1,score:50,synergy:50,positionPair:50,coverage:50};
+  const second=pairs[1]?.score??best.score,margin=Math.round((best.score-second)*100)/100;
+  const d1=digits.find(x=>x.digit===best.a),d2=digits.find(x=>x.digit===best.b);
+  const conf=best.score>=68&&margin>=2?'สูง':best.score>=58?'กลาง':'ต่ำ';
+  const anchor=Math.abs(7-Number(String(last.n3||'000')[0]))%10;
+  return {d1:best.a,d2:best.b,anchor,pool:pairPool(best.a,best.b,anchor),d1Pairs:pairsFnSafe(best.a,best.b,anchor,rs,rs),d2Pairs:pairsFnSafe(best.b,best.a,anchor,rs,rs),consensus:digits,selection:{d1,d2,score:Math.round(best.score*100)/100,margin,pairMargin:margin,pairScore:Math.round(best.score*100)/100,confidence:conf,signalStrength:ctx,method:'pure-statistical-history'},current:currentPredictions(rs),v106:true,context:ctx,pairEvidence:pairs.slice(0,10)};
+}
+function v106WalkForward(rs){
+  const rows=[];
+  for(let i=1;i<rs.length-1;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const train=rs.slice(0,i+1),sel=v106Select(train);if(!sel)continue;
+    const target=new Set(v106Targets(rs[i+1])),hit=target.has(sel.d1)||target.has(sel.d2);
+    rows.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit,score:sel.selection.score,confidence:sel.selection.confidence,context:sel.context});
+  }
+  return rows;
+}
+function v106Streak(rows){let curMiss=0,maxMiss=0,curHit=0,maxHit=0;for(const x of rows){if(x.hit){curHit++;curMiss=0;maxHit=Math.max(maxHit,curHit)}else{curMiss++;curHit=0;maxMiss=Math.max(maxMiss,curMiss)}}return{curMiss,maxMiss,curHit,maxHit}}
+function v106Horizon(rows,w){const x=rows.slice(-w);return x.length>=w?Math.round(x.filter(r=>r.hit).length/x.length*10000)/100:null}
+function v106SelectionStats(rs){
+  if(V106_CACHE.has(rs))return V106_CACHE.get(rs);
+  const rows=v106WalkForward(rs),h=rows.filter(x=>x.hit).length,sk=v106Streak(rows),r10=rows.slice(-10);
+  const d={total:rows.length,hits:h,misses:rows.length-h,rate:pct(h,rows.length),rows,maxMiss:sk.maxMiss,curMiss:sk.curMiss,maxHit:sk.maxHit,curHit:sk.curHit,roll10Hits:r10.filter(x=>x.hit).length,roll10N:r10.length,roll10Rate:pct(r10.filter(x=>x.hit).length,r10.length),displayHorizon:DISPLAY_WIN.map(w=>({w,rate:v106Horizon(rows,w)})),policyTable:[]};
+  V106_CACHE.set(rs,d);return d;
+}
+function selectionHistory(rs,routeCtx=null){return v106SelectionStats(rs).rows}
+function selectionStats(rs,routeCtx=null){return v106SelectionStats(rs)}
+function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){return v106Select(historyRs||rs)}
+function v106Summary(groups){
+  const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)&&!v30IsMyanmarName(k)).map(([name,rs])=>({name,d:v106SelectionStats(rs)})).filter(x=>x.d.total);
+  const n=entries.reduce((a,x)=>a+x.d.total,0),h=entries.reduce((a,x)=>a+x.d.hits,0),thai=entries.filter(x=>isThaiStockDataset(x.name)),tn=thai.reduce((a,x)=>a+x.d.total,0),th=thai.reduce((a,x)=>a+x.d.hits,0);
+  const best=entries.slice().sort((a,b)=>b.d.rate-a.d.rate||b.d.total-a.d.total)[0], safe=entries.filter(x=>x.d.maxMiss<=2).length, seven=entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=7).length, eight=entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=8).length;
+  const rows=entries.slice().sort((a,b)=>b.d.rate-a.d.rate).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><b>${x.d.rate}%</b></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td><td>${x.d.roll10N>=10?x.d.roll10Hits+'/10':'—'}</td></tr>`).join('');
+  return `<div class="v31-unified"><h3>V106 PURE STATISTICAL AI · สรุป Selection ทั้งหมด</h3><div class="v31-grid"><div class="v31-item"><small>1 · Selection OOS</small><b>${h}/${n} · ${pct(h,n)}%</b><span>หลุด ${n-h}</span></div><div class="v31-item"><small>2 · Statistical Selector</small><b>History + Context</b><span>ไม่ใช้สูตรในการเลือก</span></div><div class="v31-item"><small>3 · Best Lottery</small><b>${best?esc(formatDisplayTitle(best.name)):'—'}</b><span>${best?best.d.rate+'%':'—'}</span></div><div class="v31-item"><small>4 · หุ้นไทย</small><b>${th}/${tn} · ${pct(th,tn)}%</b><span>แยกชุด</span></div><div class="v31-item"><small>5 · 10-Round Control</small><b>${seven} ชุด ≥7/10</b><span>${eight} ชุด ≥8/10 · Safe MaxMiss≤2 = ${safe}</span></div></div><table class="v31-table"><thead><tr><th>#</th><th>ชุด</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th><th>10R</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มี OOS</td></tr>'}</tbody></table><div class="v31-note">V106 ใช้ประวัติผลจริงเป็นฐานการเลือกโดยตรง: ความถี่หลายช่วง, ความถี่รายตำแหน่ง, transition, gap, regime similarity และ pair statistics · ทุกการทดสอบเดินหน้าแบบ chronological · Myanmar ไม่นับ · หุ้นไทยแยก · ไม่มี Formula/F1–F9 เป็น input ของ Selector</div></div>`;
+}
+function installV30Panel(groups){const m=$('v30SelectionMount');if(m)m.innerHTML=v106Summary(groups)}
+function v106Render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
+  currentAuditDataMap={};currentPredictionDataMap={};let html=globalTable(groups);html+=`<div class="section-title">📊 1. ออดิตรายหวย · Statistical Selection</div>`;
+  for(const name of Object.keys(groups)){
+    if(name==='__THAI_TOP__')continue;const rs=groups[name],hist=historyGroups[name]||rs,meta=rawMeta[name]||{},sel=v106Select(hist),sx=v106SelectionStats(rs),last=rs.at(-1),next=meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(last?.date,name);if(!sel)continue;
+    const p={lotteryName:name,nextDate:next,...sel};currentPredictionDataMap[name]={...p,records:rs,historicalRecords:hist,rawRoundCount:meta.rawCount||rs.length,historyRoundCount:meta.histRawCount||hist.length,latestRawRound:meta.lastRound};
+    const top=sel.consensus?.slice(0,5).map(x=>`${x.digit} ${Number(x.score).toFixed(1)}`).join(' · ')||'—';
+    html+=`<section class="lottery-audit-block"><div class="lottery-audit-block-head"><span>🔹 ${esc(formatDisplayTitle(name))}</span><span>${meta.rawCount||rs.length} รอบใช้งาน · หลังบ้าน ${meta.histRawCount||hist.length}</span></div><div class="lottery-primary"><div class="lottery-decision"><div class="decision-label">เลขเด่นล่าสุด</div><div class="decision-number">${sel.d1} - ${sel.d2}</div><div class="decision-meta">${esc(sel.selection.confidence)} · Statistical Score ${sel.selection.score}<br>บริบท <b>${esc(sel.context)}</b> · OOS <b>${sx.hits}/${sx.total} = ${sx.rate}%</b></div></div><div class="lottery-quick"><div class="metric-box"><small>จำนวนงวด</small><b>${meta.rawCount||rs.length}</b><span>ล่าสุดที่ใช้</span></div><div class="metric-box"><small>Selection OOS</small><b>${sx.rate}%</b><span>${sx.hits}/${sx.total}</span></div><div class="metric-box"><small>เลขเด่นสำรอง</small><b>${esc(top)}</b><span>Top statistical digits</span></div><div class="metric-box"><small>วันที่รอบถัดไป</small><b>${esc(next||'-')}</b><span>ตามกติกาปฏิทินเดิม</span></div></div></div><details class="secondary-section"><summary>🧠 Statistical Selection Diagnostics <span>เปิดเพื่อดู</span></summary><div class="secondary-body"><div class="summary-table-container"><table class="audit-table"><thead><tr><th>Digit</th><th>Score</th><th>10R</th><th>30R</th><th>100R</th><th>Position</th><th>Transition</th><th>Gap</th></tr></thead><tbody>${sel.consensus.map(q=>`<tr><td><b>${q.digit}</b></td><td>${q.score.toFixed(2)}</td><td>${q.freq10.toFixed(1)}</td><td>${q.freq30.toFixed(1)}</td><td>${q.freq100.toFixed(1)}</td><td>${q.position.toFixed(1)}</td><td>${q.transition.toFixed(1)}</td><td>${q.gap}</td></tr>`).join('')}</tbody></table></div></div></details></section>`;
+  }
+  html+=`<div class="section-title">🧠 2. การ์ดเลขเด่นตาม Statistical AI</div><div id="scoreCards">`;let i=0;for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,i++)}html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V107 MAX AI Selector + One-Pass OOS + Stable Run Guard</span><span class="brand-star">✦</span></div>`;$('result').innerHTML=html;installV30Panel(groups);
+}
+render=v106Render;
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator()});
 })();
+/* V107 MAX AI CORE — formula-free decision engine.
+   Production selector uses only observed history: Bayesian rates, Markov transitions,
+   recency/gap, positional evidence, pair co-occurrence, regime similarity and a tiny
+   walk-forward-trained neural network. No F1-F9 or formula prediction is used. */
+const V107_VERSION='V107';
+const V107_MODEL_CACHE=new WeakMap();
+const V107_STATS_CACHE=new WeakMap();
+function v107Clamp(x,a=0,b=100){return Math.max(a,Math.min(b,Number(x)||0))}
+function v107Sigmoid(x){return 1/(1+Math.exp(-Math.max(-12,Math.min(12,x))))}
+function v107Softmax(a){const m=Math.max(...a),e=a.map(x=>Math.exp(Math.max(-20,Math.min(20,x-m)))),s=e.reduce((q,x)=>q+x,0)||1;return e.map(x=>x/s)}
+function v107Clean(rs){return(rs||[]).filter(r=>r&&r.status==='result'&&/^\d{3}$/.test(String(r.n3))&&/^\d{2}$/.test(String(r.n2)))}
+function v107Targets(r){if(!r)return[];return[...String(r.n3).slice(1),...String(r.n2)].map(Number)}
+function v107LastDigits(r){return r?v107Targets(r):[]}
+function v107Rate(h,n,prior=50,priorN=4){return ((h+prior*priorN)/(n+priorN))*100}
+function v107Freq(rs,d,n){const a=rs.slice(-n),hits=a.reduce((q,r)=>q+(v107Targets(r).includes(d)?1:0),0);return v107Rate(hits,a.length,0,0)}
+function v107PosRate(rs,d,pos,n=40){const a=rs.slice(-n),h=a.reduce((q,r)=>q+(v107Targets(r)[pos]===d?1:0),0);return a.length?v107Rate(h,a.length,10,20):50}
+function v107Gap(rs,d){for(let i=rs.length-1,g=0;i>=0;i--,g++)if(v107Targets(rs[i]).includes(d))return g;return rs.length}
+function v107GapScore(g){return v107Clamp(100*Math.exp(-Math.max(0,g-1)/10))}
+function v107Transition(rs,d,pos,n=50){const a=rs.slice(-Math.min(n,rs.length)),counts=Array(10).fill(0),total=Array(10).fill(0);for(let i=1;i<a.length;i++){const prev=v107Targets(a[i-1]),cur=v107Targets(a[i]);const src=prev[pos];if(Number.isFinite(src)){total[src]++;if(cur.includes(d))counts[src]++}}let h=0,t=0;for(let s=0;s<10;s++){h+=counts[s];t+=total[s]}return v107Rate(h,t,0,0)}
+function v107Markov(rs,d){const last=v107Targets(rs.at(-1)||{}),w=[.15,.25,.20,.20,.20],vals=[];for(let p=0;p<4;p++){const src=last[p];if(!Number.isFinite(src)){vals.push(50);continue}let h=0,n=0;for(let i=1;i<rs.length;i++){const prev=v107Targets(rs[i-1]),cur=v107Targets(rs[i]);if(prev[p]===src){n++;if(cur.includes(d))h++}}vals.push(v107Rate(h,n,50,2))}return vals.reduce((q,x,i)=>q+x*w[i],0)}
+function v107Pair(rs,a,b,n=50){const x=rs.slice(-n);let ab=0,aa=0,bb=0,na=0;for(const r of x){const t=v107Targets(r),A=t.includes(a),B=t.includes(b);if(A&&B)ab++;if(A)aa++;if(B)bb++;if(A||B)na++}if(!x.length)return 50;const indep=(aa/x.length)*(bb/x.length);const observed=ab/x.length;const lift=indep>0?observed/indep:1;return v107Clamp(50+(lift-1)*35+((na/x.length)-.5)*20)}
+function v107RunStreak(rs,d){let hit=0,miss=0;for(let i=rs.length-1;i>=0;i--){const ok=v107Targets(rs[i]).includes(d);if(ok)break;miss++}for(let i=rs.length-1;i>=0;i--){const ok=v107Targets(rs[i]).includes(d);if(!ok)break;hit++}return{miss,hit}}
+function v107Entropy(rs,n=20){const a=rs.slice(-n),c=Array(10).fill(0),tot=a.length*4||1;for(const r of a)for(const d of v107Targets(r))c[d]++;let H=0;for(const x of c){const p=x/tot;if(p>0)H-=p*Math.log(p)}return H/Math.log(10)}
+function v107Regime(rs){const e=v107Entropy(rs,20),r10=Array.from({length:10},(_,d)=>v107Freq(rs,d,10)),r30=Array.from({length:10},(_,d)=>v107Freq(rs,d,30)),shift=r10.reduce((q,x,i)=>q+Math.abs(x-r30[i]),0)/10;return{entropy:e,shift,mode:e<.86?'concentrated':e>.97?'flat':'mixed'}}
+function v107FeatureVector(rs,d){const last=rs.at(-1),t=v107Targets(last||{}),gap=v107Gap(rs,d),st=v107RunStreak(rs,d),reg=v107Regime(rs);return[
+ v107Freq(rs,d,5)/100,v107Freq(rs,d,10)/100,v107Freq(rs,d,20)/100,v107Freq(rs,d,40)/100,
+ v107PosRate(rs,d,0,40)/100,v107PosRate(rs,d,1,40)/100,v107PosRate(rs,d,2,40)/100,v107PosRate(rs,d,3,40)/100,
+ v107Markov(rs,d)/100,v107GapScore(gap)/100,Math.min(st.miss,20)/20,Math.min(st.hit,10)/10,
+ reg.entropy,Math.min(reg.shift,40)/40,t.includes(d)?1:0,d/9
+]}
+function v107MakeDataset(rs){const x=[],y=[];for(let i=5;i<rs.length;i++){const train=rs.slice(0,i),target=v107Targets(rs[i]);for(let d=0;d<10;d++){x.push(v107FeatureVector(train,d));y.push(target.includes(d)?1:0)}}return{x,y}}
+function v107NNTrain(rs){
+  if(V107_MODEL_CACHE.has(rs))return V107_MODEL_CACHE.get(rs);
+  const ds=v107MakeDataset(rs),I=ds.x[0]?.length||16,H=8;
+  let seed=(rs.length*2654435761)>>>0; const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  let W1=Array.from({length:I},()=>Array.from({length:H},()=>((rnd()-.5)*.20))),b1=Array(H).fill(0),W2=Array(H).fill(0).map(()=>((rnd()-.5)*.20)),b2=0;
+  const lr=.035;
+  for(let epoch=0;epoch<12;epoch++){
+    for(let k=0;k<ds.x.length;k+=12){
+      const end=Math.min(k+12,ds.x.length),gW1=Array.from({length:I},()=>Array(H).fill(0)),gb1=Array(H).fill(0),gW2=Array(H).fill(0),gb2=0;
+      for(let s=k;s<end;s++){
+        const x=ds.x[s],y=ds.y[s],h=Array(H);
+        for(let j=0;j<H;j++){let z=b1[j];for(let i=0;i<I;i++)z+=x[i]*W1[i][j];h[j]=Math.tanh(z)}
+        let z=b2;for(let j=0;j<H;j++)z+=h[j]*W2[j];const o=v107Sigmoid(z),go=o-y;
+        for(let j=0;j<H;j++)gW2[j]+=h[j]*go;gb2+=go;
+        for(let j=0;j<H;j++){const gh=go*W2[j]*(1-h[j]*h[j]);gb1[j]+=gh;for(let i=0;i<I;i++)gW1[i][j]+=x[i]*gh}
+      }
+      const bs=end-k;
+      for(let i=0;i<I;i++)for(let j=0;j<H;j++)W1[i][j]-=lr*gW1[i][j]/bs;
+      for(let j=0;j<H;j++){b1[j]-=lr*gb1[j]/bs;W2[j]-=lr*gW2[j]/bs}b2-=lr*gb2/bs;
+    }
+  }
+  const model={W1,b1,W2,b2};V107_MODEL_CACHE.set(rs,model);return model;
+}
+function v107NNScore(model,x){
+  if(!model)return 50;
+  const h=model.b1.map((b,j)=>Math.tanh(b+x.reduce((q,v,i)=>q+v*model.W1[i][j],0)));
+  const z=model.b2+h.reduce((q,v,i)=>q+v*model.W2[i],0);
+  return v107Clamp(v107Sigmoid(z)*100);
+}
+function v107DigitScore(rs,d,model){const x=v107FeatureVector(rs,d),nn=v107NNScore(model,x),f10=v107Freq(rs,d,10),f30=v107Freq(rs,d,30),f100=v107Freq(rs,d,100),p=avg([0,1,2,3].map(q=>v107PosRate(rs,d,q,50))),m=v107Markov(rs,d),gap=v107GapScore(v107Gap(rs,d)),st=v107RunStreak(rs,d),rec=v107Clamp(70+st.hit*4-st.miss*5),reg=v107Regime(rs);let wNN=reg.mode==='mixed'?.30:reg.mode==='concentrated'?.22:.26;const score=wNN*nn+.18*f10+.12*f30+.08*f100+.16*p+.14*m+.06*gap+.06*rec;return v107Clamp(score)}
+function v107Select(history){const rs=v107Clean(history);if(!rs.length)return null;const model=v107NNTrain(rs),reg=v107Regime(rs),digits=Array.from({length:10},(_,d)=>({digit:d,score:v107DigitScore(rs,d,model),freq10:v107Freq(rs,d,10),freq30:v107Freq(rs,d,30),freq100:v107Freq(rs,d,100),position:avg([0,1,2,3].map(p=>v107PosRate(rs,d,p,50))),transition:v107Markov(rs,d),gap:v107Gap(rs,d),nn:v107NNScore(model,v107FeatureVector(rs,d)),memory:v107RunStreak(rs,d)}));digits.sort((a,b)=>b.score-a.score||b.nn-a.nn||a.gap-b.gap);const top=digits.slice(0,6),pairs=[];for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++){const a=top[i],b=top[j],sy=v107Pair(rs,a.digit,b.digit,60),div=100-Math.abs(a.score-b.score),pairScore=.43*a.score+.43*b.score+.11*sy+.03*div;pairs.push({a:a.digit,b:b.digit,score:pairScore,synergy:sy})}pairs.sort((a,b)=>b.score-a.score);const best=pairs[0]||{a:digits[0]?.digit??0,b:digits[1]?.digit??1,score:50,synergy:50};const second=pairs[1]?.score||0,margin=best.score-second,conf=best.score>=70&&margin>=2?'สูง':best.score>=60?'กลาง':'ต่ำ';return{d1:best.a,d2:best.b,anchor:null,pool:[],d1Pairs:[],d2Pairs:[],consensus:digits,selection:{d1:digits.find(x=>x.digit===best.a),d2:digits.find(x=>x.digit===best.b),score:Math.round(best.score*100)/100,margin:Math.round(margin*100)/100,pairMargin:Math.round(margin*100)/100,pairScore:Math.round(best.score*100)/100,confidence:conf,signalStrength:reg.mode,method:'V107 neural-statistical ensemble'},current:{},v107:true,context:reg.mode,pairEvidence:pairs.slice(0,10)} }
+function v107WalkForward(rs){const clean=v107Clean(rs),rows=[];for(let i=6;i<clean.length;i++){const train=clean.slice(0,i),sel=v107Select(train),target=new Set(v107Targets(clean[i]));if(!sel)continue;rows.push({source:clean[i-1].date,target:clean[i].date,d1:sel.d1,d2:sel.d2,hit:target.has(sel.d1)||target.has(sel.d2),score:sel.selection.score,confidence:sel.selection.confidence,context:sel.context})}return rows}
+function v107Streak(rows){let cm=0,mm=0,ch=0,mh=0;for(const r of rows){if(r.hit){ch++;cm=0;mh=Math.max(mh,ch)}else{cm++;ch=0;mm=Math.max(mm,cm)}}return{curMiss:cm,maxMiss:mm,curHit:ch,maxHit:mh}}
+function v107SelectionStats(rs){if(V107_STATS_CACHE.has(rs))return V107_STATS_CACHE.get(rs);const rows=v107WalkForward(rs),h=rows.filter(x=>x.hit).length,s=v107Streak(rows),r10=rows.slice(-10),d={total:rows.length,hits:h,misses:rows.length-h,rate:pct(h,rows.length),rows,maxMiss:s.maxMiss,curMiss:s.curMiss,maxHit:s.maxHit,curHit:s.curHit,roll10Hits:r10.filter(x=>x.hit).length,roll10N:r10.length,roll10Rate:pct(r10.filter(x=>x.hit).length,r10.length),displayHorizon:DISPLAY_WIN.map(w=>({w,rate:rows.length>=w?pct(rows.slice(-w).filter(x=>x.hit).length,w):null})),policyTable:[]};V107_STATS_CACHE.set(rs,d);return d}
+function selectionHistory(rs,routeCtx=null){return v107SelectionStats(rs).rows}
+function selectionStats(rs,routeCtx=null){return v107SelectionStats(rs)}
+function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){return v107Select(historyRs||rs)}
+function currentPredictions(rs){return{}}
+function v107Summary(groups){const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)&&!v30IsMyanmarName(k)).map(([name,rs])=>({name,d:v107SelectionStats(rs)})).filter(x=>x.d.total);const n=entries.reduce((a,x)=>a+x.d.total,0),h=entries.reduce((a,x)=>a+x.d.hits,0),thai=entries.filter(x=>isThaiStockDataset(x.name)),tn=thai.reduce((a,x)=>a+x.d.total,0),th=thai.reduce((a,x)=>a+x.d.hits,0),best=entries.slice().sort((a,b)=>b.d.rate-a.d.rate)[0],seven=entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=7).length,eight=entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=8).length,safe=entries.filter(x=>x.d.maxMiss<=2).length;const rows=entries.slice().sort((a,b)=>b.d.rate-a.d.rate).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><b>${x.d.rate}%</b></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td><td>${x.d.roll10N>=10?x.d.roll10Hits+'/10':'—'}</td></tr>`).join('');return `<div class="v31-unified"><h3>V107 MAX AI · Neural + Statistical Selection</h3><div class="v31-grid"><div class="v31-item"><small>1 · Selection OOS</small><b>${h}/${n} · ${pct(h,n)}%</b><span>หลุด ${n-h}</span></div><div class="v31-item"><small>2 · AI Selector</small><b>Neural + Bayesian + Markov</b><span>ไม่มีสูตรเป็นตัวตัดสิน</span></div><div class="v31-item"><small>3 · Best Lottery</small><b>${best?esc(formatDisplayTitle(best.name)):'—'}</b><span>${best?best.d.rate+'%':'—'}</span></div><div class="v31-item"><small>4 · หุ้นไทย</small><b>${th}/${tn} · ${pct(th,tn)}%</b><span>แยกชุด</span></div><div class="v31-item"><small>5 · 10-Round Control</small><b>${seven} ชุด ≥7/10</b><span>${eight} ชุด ≥8/10 · Safe MaxMiss≤2 = ${safe}</span></div></div><table class="v31-table"><thead><tr><th>#</th><th>ชุด</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th><th>10R</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มี OOS</td></tr>'}</tbody></table><div class="v31-note">V107 ตัดสูตรออกจากการตัดสินใจทั้งหมด · ใช้ข้อมูลผลจริง, Bayesian shrinkage, Markov transition, positional statistics, recency/gap, pair evidence และ neural network ขนาดเล็กที่ฝึกแบบ walk-forward · Myanmar ไม่นับ · หุ้นไทยแยก</div></div>`}
+function installV30Panel(groups){const m=$('v30SelectionMount');if(m)m.innerHTML=v107Summary(groups)}
+function v107Render(groups,historyGroups={},rawMeta={},historyRawGroups={}){currentAuditDataMap={};currentPredictionDataMap={};let html=globalTable(groups)+`<div class="section-title">📊 1. ออดิตรายหวย · AI Selection</div>`;for(const name of Object.keys(groups)){if(name==='__THAI_TOP__'||v30IsMyanmarName(name))continue;const rs=groups[name],hist=historyGroups[name]||rs,meta=rawMeta[name]||{},sel=v107Select(hist),sx=v107SelectionStats(rs),last=rs.at(-1),next=meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(last?.date,name);if(!sel)continue;const p={lotteryName:name,nextDate:next,...sel};currentPredictionDataMap[name]={...p,records:rs,historicalRecords:hist,rawRoundCount:meta.rawCount||rs.length,historyRoundCount:meta.histRawCount||hist.length,latestRawRound:meta.lastRound};const top=sel.consensus.slice(0,5).map(x=>`${x.digit} ${Number(x.score).toFixed(1)}`).join(' · ');html+=`<section class="lottery-audit-block"><div class="lottery-audit-block-head"><span>🔹 ${esc(formatDisplayTitle(name))}</span><span>${meta.rawCount||rs.length} รอบใช้งาน · หลังบ้าน ${meta.histRawCount||hist.length}</span></div><div class="lottery-primary"><div class="lottery-decision"><div class="decision-label">เลขเด่นล่าสุด</div><div class="decision-number">${sel.d1} - ${sel.d2}</div><div class="decision-meta">${esc(sel.selection.confidence)} · AI Score ${sel.selection.score}<br>บริบท <b>${esc(sel.context)}</b> · OOS <b>${sx.hits}/${sx.total} = ${sx.rate}%</b></div></div><div class="lottery-quick"><div class="metric-box"><small>จำนวนงวด</small><b>${meta.rawCount||rs.length}</b><span>ล่าสุดที่ใช้</span></div><div class="metric-box"><small>Selection OOS</small><b>${sx.rate}%</b><span>${sx.hits}/${sx.total}</span></div><div class="metric-box"><small>เลขเด่นสำรอง</small><b>${esc(top)}</b><span>AI ranking</span></div><div class="metric-box"><small>วันที่รอบถัดไป</small><b>${esc(next||'-')}</b><span>ตามกติกาปฏิทินเดิม</span></div></div></div><details class="secondary-section"><summary>🧠 AI Selection Diagnostics <span>เปิดเพื่อดู</span></summary><div class="secondary-body"><div class="summary-table-container"><table class="audit-table"><thead><tr><th>Digit</th><th>AI Score</th><th>Neural</th><th>10R</th><th>30R</th><th>Position</th><th>Transition</th><th>Gap</th></tr></thead><tbody>${sel.consensus.map(q=>`<tr><td><b>${q.digit}</b></td><td>${q.score.toFixed(2)}</td><td>${q.nn.toFixed(1)}</td><td>${q.freq10.toFixed(1)}</td><td>${q.freq30.toFixed(1)}</td><td>${q.position.toFixed(1)}</td><td>${q.transition.toFixed(1)}</td><td>${q.gap}</td></tr>`).join('')}</tbody></table></div></div></details></section>`}html+=`<div class="section-title">🧠 2. การ์ดเลขเด่นตาม AI</div><div id="scoreCards">`;let i=0;for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,i++)}html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V107 MAX AI Selector · Neural + Statistical · Formula-Free</span><span class="brand-star">✦</span></div>`;$('result').innerHTML=html;installV30Panel(groups)}
+render=v107Render;
+
+// V107 visible/runtime locks
+try{document.title='Mester Lotto VIP+ — V107 MAX AI Selector';}catch(e){}
+const V107_UI_LOCK=()=>{try{const b=document.getElementById('run');if(b)b.textContent='⚡ ประมวลผล V107';const pills=document.querySelectorAll('.pill');pills.forEach(x=>{if(/V106|V105|V104|V103|V102|V101|V100|V29/i.test(x.textContent))x.textContent='● V107 MAX AI SELECTOR'});}catch(e){}};
+window.addEventListener('DOMContentLoaded',V107_UI_LOCK);
 </script>
 </body>
-  </html>
+</html>
