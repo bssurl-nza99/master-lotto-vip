@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V2.1 System Clean UI + Runtime Fix + Selection Pipeline Trace: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
+<!-- V2.2 Selection Audit Trace + Conditional Survival: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
 <head>
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>Mester Lotto VIP+ — V2.1 System Clean UI + Runtime Fix</title>
+<title>Mester Lotto VIP+ — V2.2 Selection Audit Trace + Conditional Survival</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1009,7 +1009,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
       <small>Ban Ngern Kong V32.4 Audit Intelligence</small>
     </div>
   </div>
-  <div class="pill">● V2.1 FORMULA ROUTING STACK</div>
+  <div class="pill">● V2.2 FORMULA ROUTING STACK</div>
 </div>
 <section class="hero">
   <span class="hero-tag">BAN NGERN KONG MULTI-ANGLE AUDIT V32.4</span>
@@ -1040,7 +1040,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
   </div>
   <div class="actions">
     <button id="run" class="run">
-      ⚡ ประมวลผล V2.1
+      ⚡ ประมวลผล V2.2
     </button>
     <button id="clearInput" class="clear">
       ล้างกล่องกรอกข้อมูล
@@ -1314,9 +1314,10 @@ function selectionHistory(rs,routeCtx=null){const key=routeCtx?.name||'__none__'
 const selectionStatsCache=new WeakMap();function selectionStats(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionStatsCache.get(rs);if(!cache){cache=new Map();selectionStatsCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const h=selectionHistory(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});const out={total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};cache.set(key,out);return out}
 function decisionLog(rs,routeCtx=null){const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);const d1=target.includes(sel.d1),d2=target.includes(sel.d2);out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit:d1||d2,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}return out}
 function selectionDecisionAudit(rs,routeCtx=null){const h=decisionLog(rs,routeCtx),last=rs.at(-1)||null,rows=h.slice(-12).reverse(),hitCount=h.filter(x=>x.pairHit).length,marginAvg=h.length?Math.round(avg(h.map(x=>Number(x.margin||0)))*100)/100:null,conf={สูง:h.filter(x=>x.confidence==='สูง').length,กลาง:h.filter(x=>x.confidence==='กลาง').length,ต่ำ:h.filter(x=>x.confidence==='ต่ำ').length};return{total:h.length,hits:hitCount,rate:pct(hitCount,h.length),marginAvg,confidence:conf,last,rows}}
-/* V2.1 SELECTION PIPELINE TRACE — diagnostic only; production formulas/selection are untouched.
-   Measures where a correct formula signal disappears: all formulas -> routed Main3 -> Candidate Board -> Top6 -> Top4 -> D1/D2.
-   Each row is strictly walk-forward: train through source, then evaluate only the next target. */
+/* V2.2 SELECTION AUDIT TRACE — conditional survival diagnostic only; production formulas/selection untouched.
+   Critical distinction: unconditional stage rates can hide where a GOOD signal is discarded.
+   This version measures survival CONDITIONAL on a formula signal being correct for the next target.
+   OOS remains chronological: train through source, evaluate only the next target. */
 const selectionPipelineCache=new WeakMap();
 function selectionPipelineHistory(rs,routeCtx=null){
   const key=routeCtx?.name||'__none__';
@@ -1329,69 +1330,73 @@ function selectionPipelineHistory(rs,routeCtx=null){
     const ad=audit(train), cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0;
     const routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null;
     const active=routeProfile?.main3?.length?routeProfile.main3.map(x=>x.f):FORMULAS.slice();
-    const targetDigits=[...target.n3.slice(1),...target.n2].map(Number);
-    const allFormulaDigits=new Set(), activeFormulaDigits=new Set(), formulaRows=[];
+    const targetDigits=[...new Set([...target.n3.slice(1),...target.n2].map(Number))];
+    const targetSet=new Set(targetDigits), allFormulaDigits=new Set(), activeFormulaDigits=new Set(), formulaRows=[];
     for(const f of FORMULAS){
       const pred=execFormula(f,train.at(-1),train.at(-2));
       if(!pred)continue;
       const digits=[...new Set(pred.map(Number).filter(Number.isFinite))];
       digits.forEach(d=>allFormulaDigits.add(d));
       if(active.includes(f))digits.forEach(d=>activeFormulaDigits.add(d));
-      formulaRows.push({f,pred:digits,hit:digits.some(d=>targetDigits.includes(d)),active:active.includes(f)});
+      formulaRows.push({f,pred:digits,hit:digits.some(d=>targetSet.has(d)),active:active.includes(f)});
     }
+    const correctFormulaDigits=[...allFormulaDigits].filter(d=>targetSet.has(d)).sort((a,b)=>a-b);
+    const correctActiveDigits=[...activeFormulaDigits].filter(d=>targetSet.has(d)).sort((a,b)=>a-b);
     const c=candidateBoard(train,ad,train,routeProfile,routeCtx);
-    const top6=c.slice(0,6).map(q=>q.digit), top4=c.slice(0,4).map(q=>q.digit);
+    const candidateDigits=c.map(q=>Number(q.digit)).filter(Number.isFinite);
+    const top6=candidateDigits.slice(0,6), top4=candidateDigits.slice(0,4);
     const sel=select(train,ad,train,selectionRiskFromHistory(out),routeProfile,routeCtx);
-    const final=[sel.d1,sel.d2];
-    const contains=(arr,set)=>arr.some(d=>set.has(d));
-    const finalHit=final.some(d=>targetDigits.includes(d));
-    const targetPos={topTens:Number(target.n3[1]),topUnits:Number(target.n3[2]),bottomTens:Number(target.n2[0]),bottomUnits:Number(target.n2[1])};
+    const final=[sel.d1,sel.d2].map(Number);
+    const intersects=(arr,set)=>arr.some(d=>set.has(Number(d)));
+    const candidateCorrect=intersects(candidateDigits,new Set(correctFormulaDigits));
+    const top6Correct=intersects(top6,new Set(correctFormulaDigits));
+    const top4Correct=intersects(top4,new Set(correctFormulaDigits));
+    const finalCorrect=intersects(final,new Set(correctFormulaDigits));
+    const finalHit=intersects(final,targetSet);
     out.push({
-      source:train.at(-1).date,target:target.date,targetDigits, targetPos,
-      formulas:formulaRows,activeFormulas:active,
-      allFormulaDigits:[...allFormulaDigits].sort((a,b)=>a-b),activeFormulaDigits:[...activeFormulaDigits].sort((a,b)=>a-b),
-      candidate:c.map(q=>({digit:q.digit,score:Math.round(Number(q.score||0)*100)/100,count:q.count||0,support:Math.round(Number(q.support||0)*100)/100,independentSupport:Math.round(Number(q.independentSupport||0)*100)/100,gate:!!q.gate,formulas:q.formulas||[],evidence:q.evidence||[]})),
-      top6,top4,final,
-      allFormulaCorrect:contains([...allFormulaDigits],new Set(targetDigits)),
-      activeFormulaCorrect:contains([...activeFormulaDigits],new Set(targetDigits)),
-      candidateSurvives:contains(c.map(q=>q.digit),new Set(targetDigits)),
-      top6Survives:contains(top6,new Set(targetDigits)),
-      top4Survives:contains(top4,new Set(targetDigits)),
-      finalHit,
-      d1Hit:targetDigits.includes(sel.d1),d2Hit:targetDigits.includes(sel.d2),
-      anchorFormula:sel.selection?.anchorFormula||null,
-      confidence:sel.selection?.confidence||'ต่ำ',margin:sel.selection?.margin??0,
-      routingTop4:routeProfile?.top4?.map(x=>x.f)||[]
+      source:train.at(-1).date,target:target.date,targetDigits,targetPos:{topTens:Number(target.n3[1]),topUnits:Number(target.n3[2]),bottomTens:Number(target.n2[0]),bottomUnits:Number(target.n2[1])},
+      formulas:formulaRows,activeFormulas:active,allFormulaDigits:[...allFormulaDigits].sort((a,b)=>a-b),activeFormulaDigits:[...activeFormulaDigits].sort((a,b)=>a-b),
+      correctFormulaDigits,correctActiveDigits,candidate:c.map(q=>({digit:q.digit,score:Math.round(Number(q.score||0)*100)/100,count:q.count||0,support:Math.round(Number(q.support||0)*100)/100,independentSupport:Math.round(Number(q.independentSupport||0)*100)/100,gate:!!q.gate,formulas:q.formulas||[],evidence:q.evidence||[]})),
+      candidateDigits,top6,top4,final,
+      allFormulaCorrect:correctFormulaDigits.length>0,activeFormulaCorrect:correctActiveDigits.length>0,
+      candidateSurvives:candidateCorrect,top6Survives:top6Correct,top4Survives:top4Correct,finalCorrect,finalHit,
+      d1Hit:targetSet.has(sel.d1),d2Hit:targetSet.has(sel.d2),
+      anchorFormula:sel.selection?.anchorFormula||null,confidence:sel.selection?.confidence||'ต่ำ',margin:sel.selection?.margin??0,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]
     });
   }
   cache.set(key,out);return out;
 }
-function pipelineRate(rows,key){const n=rows.length,h=rows.filter(x=>x[key]).length;return{n,h,rate:pct(h,n)}}
+function conditionalRate(rows,condition,key){const a=rows.filter(condition);const h=a.filter(x=>x[key]).length;return{n:a.length,h,rate:pct(h,a.length)}}
 function selectionPipelineStats(rs,routeCtx=null){
-  const h=selectionPipelineHistory(rs,routeCtx),keys=['allFormulaCorrect','activeFormulaCorrect','candidateSurvives','top6Survives','top4Survives','finalHit'];
-  const stages=keys.map(k=>({key:k,...pipelineRate(h,k)}));
-  const final=h.filter(x=>x.finalHit).length;
-  return{rows:h,tests:h.length,finalHits:final,finalRate:pct(final,h.length),stages,latest:h.slice(-12).reverse()};
+  const h=selectionPipelineHistory(rs,routeCtx);
+  const anyFormula=conditionalRate(h,x=>x.allFormulaCorrect,'allFormulaCorrect');
+  const activeFormula=conditionalRate(h,x=>x.activeFormulaCorrect,'activeFormulaCorrect');
+  const fromAny=[
+    {key:'candidateSurvives',label:'Correct Signal → Candidate',...conditionalRate(h,x=>x.allFormulaCorrect,'candidateSurvives')},
+    {key:'top6Survives',label:'Candidate → Top 6',...conditionalRate(h,x=>x.candidateSurvives,'top6Survives')},
+    {key:'top4Survives',label:'Top 6 → Top 4',...conditionalRate(h,x=>x.top6Survives,'top4Survives')},
+    {key:'finalCorrect',label:'Top 4 → Final D1/D2',...conditionalRate(h,x=>x.top4Survives,'finalCorrect')},
+    {key:'finalHit',label:'Final D1/D2 → Target Hit',...conditionalRate(h,x=>x.top4Survives,'finalHit')}
+  ];
+  return{rows:h,tests:h.length,formulaSignal:anyFormula,activeSignal:activeFormula,stages:fromAny,finalHits:h.filter(x=>x.finalHit).length,finalRate:pct(h.filter(x=>x.finalHit).length,h.length),latest:h.slice(-12).reverse()};
 }
 function selectionPipelineAuditPanel(groups){
   const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>{const d=selectionPipelineStats(rs,{name,groups});return{name,d}}).filter(x=>x.d.tests>0);
-  const keys=[
-    ['allFormulaCorrect','1 สูตรใด ๆ ถูก'],['activeFormulaCorrect','Main 3 มีเลขถูก'],['candidateSurvives','Candidate Board'],['top6Survives','Top 6'],['top4Survives','Top 4'],['finalHit','Final D1/D2']
-  ];
-  const totalRows=entries.reduce((n,x)=>n+x.d.tests,0);
-  const totalFinal=entries.reduce((n,x)=>n+x.d.finalHits,0);
-  const agg=keys.map(([k,label])=>{const n=entries.reduce((a,x)=>a+x.d.stages.find(z=>z.key===k)?.n||0,0),h=entries.reduce((a,x)=>a+x.d.stages.find(z=>z.key===k)?.h||0,0);return{label,n,h,rate:pct(h,n)}});
-  const rows=entries.slice().sort((a,b)=>a.d.finalRate-b.d.finalRate||b.d.tests-a.d.tests).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.tests}</td>${x.d.stages.map(z=>`<td>${z.h}/${z.n} · ${z.rate}%</td>`).join('')}<td><button class="add-card-btn" onclick="showPipelineTrace('${encodeURIComponent(x.name)}')">ดู Pipeline</button></td></tr>`).join('');
-  return `<div class="lottery-audit-block"><div class="lottery-audit-title">🧪 3. Selection Pipeline Trace · จุดที่เลขถูกหาย</div><div class="lottery-audit-sub">OOS เดินตามเวลาเดิม: สูตรทั้งหมด → Main 3 → Candidate Board → Top 6 → Top 4 → D1/D2 · เป็น Diagnostic เท่านั้น ไม่เปลี่ยนการเลือกจริง</div><div class="audit-grid">${agg.map((x,i)=>`<div class="metric-box"><small>${x.label}</small><b>${x.rate}%</b><span>${x.h}/${x.n} เคส</span></div>`).join('')}</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th>${agg.map(x=>`<th>${x.label}</th>`).join('')}<th>Trace</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div><div class="lottery-audit-sub" style="margin-top:8px">รวมทุกหวย: Final ${totalFinal}/${totalRows} · ${pct(totalFinal,totalRows)}% · ถ้าอัตราลดลงแรงระหว่างสองขั้น ให้ตรวจ scoring/weight ของขั้นนั้นก่อนแตะสูตร F1–F9</div></div><div id="pipelineTracePanel"></div>`;
+  const totalRows=entries.reduce((n,x)=>n+x.d.tests,0),totalFinal=entries.reduce((n,x)=>n+x.d.finalHits,0),signalRows=entries.reduce((n,x)=>n+x.d.formulaSignal.n,0);
+  const agg=[
+    ['Formula signal ถูก','formulaSignal'],['Correct → Candidate','stages[0]'],['Candidate → Top 6','stages[1]'],['Top 6 → Top 4','stages[2]'],['Top 4 → Final','stages[3]'],['Final → Target','stages[4]']
+  ].map(([label,path])=>{const vals=entries.map(x=>{const parts=path.split('.');let z=x.d;for(const q of parts)z=z?.[q];return z||{n:0,h:0,rate:'0.00'}});const n=vals.reduce((a,z)=>a+(z.n||0),0),h=vals.reduce((a,z)=>a+(z.h||0),0);return{label,n,h,rate:pct(h,n)}});
+  const rows=entries.slice().sort((a,b)=>a.d.finalRate-b.d.finalRate||b.d.tests-a.d.tests).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.tests}</td>${x.d.stages.map(z=>`<td>${z.h}/${z.n} · ${z.rate}%</td>`).join('')}<td>${x.d.finalRate}%</td><td><button class="add-card-btn" onclick="showPipelineTrace('${encodeURIComponent(x.name)}')">ดู Pipeline</button></td></tr>`).join('');
+  return `<div class="lottery-audit-block"><div class="lottery-audit-title">🧪 3. V2.2 Selection Pipeline Trace · วัด “เลขถูก” รอดแต่ละชั้น</div><div class="lottery-audit-sub"><b>สำคัญ:</b> รอบนี้ใช้ Conditional Survival — คิดเฉพาะงวดที่ F1–F9 มีเลขที่ตรงเป้าหมายก่อน แล้ววัดว่าเลขนั้นรอด Candidate → Top 6 → Top 4 → D1/D2 หรือไม่ · Diagnostic เท่านั้น ไม่เปลี่ยนการเลือกจริง</div><div class="audit-grid">${agg.map(x=>`<div class="metric-box"><small>${x.label}</small><b>${x.rate}%</b><span>${x.h}/${x.n} เคส</span></div>`).join('')}</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th>${agg.slice(1).map(x=>`<th>${x.label}</th>`).join('')}<th>Final OOS</th><th>Trace</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div><div class="lottery-audit-sub" style="margin-top:8px">รวมทุกหวย: Formula มีเลขถูก ${signalRows}/${totalRows} · Final Hit ${totalFinal}/${totalRows} · ${pct(totalFinal,totalRows)}% · ถ้าค่า Conditional Survival ตกแรง ให้แก้ชั้นที่ตกก่อนแตะสูตร F1–F9</div></div><div id="pipelineTracePanel"></div>`;
 }
 function showPipelineTrace(encoded){
   const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}
   const d=selectionPipelineStats(base.records||[],base.routeCtx||null),rows=d.latest.map(x=>{
     const stage=(arr)=>arr.map(v=>`<span class="score-chip">${v}</span>`).join(' ');
     const formulaHits=x.formulas.filter(f=>f.hit).map(f=>f.f).join(', ')||'—';
-    return `<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${esc(formulaHits)}</td><td>${stage(x.activeFormulaDigits)}</td><td>${stage(x.top6)}</td><td>${stage(x.top4)}</td><td><b>${x.final[0]}</b>, <b>${x.final[1]}</b></td><td>${x.finalHit?'✓':'✗'}</td><td>${x.anchorFormula||'—'}</td></tr>`;
+    return `<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${esc(formulaHits)}</td><td>${stage(x.correctFormulaDigits)}</td><td>${stage(x.candidateDigits.slice(0,6))}</td><td>${stage(x.top4)}</td><td><b>${x.final[0]}</b>, <b>${x.final[1]}</b></td><td>${x.finalHit?'✓':'✗'}</td><td>${x.anchorFormula||'—'}</td></tr>`;
   }).join('');
-  $('pipelineTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔬 Pipeline Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุด · สูตรที่ถูกแสดงเฉพาะสูตรที่ทายเลขเป้าหมายได้ในรอบนั้น · ใช้ตรวจว่าเลขถูกตกหล่นตรงชั้นใด</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>สูตรที่ถูก</th><th>Main 3 digits</th><th>Top 6</th><th>Top 4</th><th>Final D1/D2</th><th>Hit</th><th>Anchor</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  $('pipelineTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔬 V2.2 Pipeline Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุด · แสดง “เลขจากสูตรที่ถูกจริง” แยกจาก Candidate/Top 6/Top 4/Final เพื่อดูจุดที่สัญญาณดีถูกทิ้ง</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>สูตรที่ถูก</th><th>Correct digits</th><th>Candidate Top 6</th><th>Top 4</th><th>Final D1/D2</th><th>Hit</th><th>Anchor</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   document.getElementById('pipelineTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
@@ -1425,7 +1430,7 @@ function globalSelectionSummary(groups){
 }
 
 
-/* V2.1 FORMULA ROUTING STACK — fixed formula bodies, bounded variants, chronological OOS only. */
+/* V2.2 FORMULA ROUTING STACK — fixed formula bodies, bounded variants, chronological OOS only. */
 const FL_OFFSETS=[-3,-2,-1,0,1,2,3];
 const FL_MODES=[
   {id:'B',label:'ทั้งคู่',apply:(p,o)=>p.map(d=>norm(d+o))},
@@ -1563,7 +1568,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   idx=0;
   for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,idx++)}
   if(top)html+=card(top,900);
-  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.1 System Clean UI + Runtime Fix</span><span class="brand-star">✦</span></div>`;
+  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.2 Selection Audit Trace + Conditional Survival</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
   installLazyPanels(groups);
 }
@@ -1615,14 +1620,14 @@ async function runEngine(){
     await new Promise(r=>setTimeout(r,0));
     render(groups,historyGroups,rawMeta,historyRawGroups);updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    showToast(`✓ V2.1 · ประมวลผลล่าสุด 30 งวด/หวย · เก็บประวัติ ${allRecords.length} งวด · Engine ใช้ Historical สูงสุด 100 งวด · Formula Research Stack 3-Level พร้อม Frozen Final Holdout`);
+    showToast(`✓ V2.2 · ประมวลผลล่าสุด 30 งวด/หวย · เก็บประวัติ ${allRecords.length} งวด · Engine ใช้ Historical สูงสุด 100 งวด · Formula Research Stack 3-Level พร้อม Frozen Final Holdout`);
   }catch(e){
     console.error(e);showToast('⚠️ ประมวลผลไม่สำเร็จ กรุณาตรวจข้อมูลอีกครั้ง');
   }finally{
     const panel=$('processingPanel');if(panel&&$('run').disabled){$('run').disabled=false;$('run').removeAttribute('aria-busy')}
   }
 }
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V2.1',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.1+selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V2.2',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.2+conditional-selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator()});
 })();
 </script>
