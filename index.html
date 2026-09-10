@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V102 Atomic Adaptive Selection Engine · stable run · formulas 1-9 preserved -->
+<!-- V104 Atomic Adaptive Selection Engine · one-pass stable run · formulas 1-9 preserved -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
 <head>
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>Mester Lotto VIP+ — V102 ATOMIC Stable Selection · 100 Policy League</title>
+<title>Mester Lotto VIP+ — V104 ATOMIC Stable Selection · 100 Policy League</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1064,7 +1064,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
   </div>
   <div class="actions">
     <button id="run" class="run">
-      ⚡ ประมวลผล V102
+      ⚡ ประมวลผล V104
     </button>
     <button id="clearInput" class="clear">
       ล้างกล่องกรอกข้อมูล
@@ -1497,27 +1497,18 @@ function selectionPipelineStats(rs,routeCtx=null){
   return{rows:h,tests:h.length,formulaSignal:anyFormula,activeSignal:activeFormula,stages:fromAny,finalHits:h.filter(x=>x.finalHit).length,finalRate:pct(h.filter(x=>x.finalHit).length,h.length),latest:h.slice(-12).reverse()};
 }
 function selectionPipelineAuditPanel(groups){
-  const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>{const d=selectionPipelineStats(rs,{name,groups});return{name,d}}).filter(x=>x.d.tests>0);
-  const totalRows=entries.reduce((n,x)=>n+x.d.tests,0),totalFinal=entries.reduce((n,x)=>n+x.d.finalHits,0),signalRows=entries.reduce((n,x)=>n+x.d.formulaSignal.n,0);
-  const agg=[
-    ['Formula signal ถูก','formulaSignal'],['Correct → Candidate','stages[0]'],['Candidate → Top 6','stages[1]'],['Top 6 → Top 4','stages[2]'],['Top 4 → Final','stages[3]'],['Final → Target','stages[4]']
-  ].map(([label,path])=>{const vals=entries.map(x=>{const parts=path.split('.');let z=x.d;for(const q of parts)z=z?.[q];return z||{n:0,h:0,rate:'0.00'}});const n=vals.reduce((a,z)=>a+(z.n||0),0),h=vals.reduce((a,z)=>a+(z.h||0),0);return{label,n,h,rate:pct(h,n)}});
-  const rows=entries.slice().sort((a,b)=>a.d.finalRate-b.d.finalRate||b.d.tests-a.d.tests).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.tests}</td>${x.d.stages.map(z=>`<td>${z.h}/${z.n} · ${z.rate}%</td>`).join('')}<td>${x.d.finalRate}%</td><td><button class="add-card-btn" onclick="showPipelineTrace('${encodeURIComponent(x.name)}')">ดู Pipeline</button></td></tr>`).join('');
-  return `<div class="lottery-audit-block"><div class="lottery-audit-title">🧪 3. V2.2 Selection Pipeline Trace · วัด “เลขถูก” รอดแต่ละชั้น</div><div class="lottery-audit-sub"><b>สำคัญ:</b> รอบนี้ใช้ Conditional Survival — คิดเฉพาะงวดที่ F1–F9 มีเลขที่ตรงเป้าหมายก่อน แล้ววัดว่าเลขนั้นรอด Candidate → Top 6 → Top 4 → D1/D2 หรือไม่ · Diagnostic เท่านั้น ไม่เปลี่ยนการเลือกจริง</div><div class="audit-grid">${agg.map(x=>`<div class="metric-box"><small>${x.label}</small><b>${x.rate}%</b><span>${x.h}/${x.n} เคส</span></div>`).join('')}</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th>${agg.slice(1).map(x=>`<th>${x.label}</th>`).join('')}<th>Final OOS</th><th>Trace</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div><div class="lottery-audit-sub" style="margin-top:8px">รวมทุกหวย: Formula มีเลขถูก ${signalRows}/${totalRows} · Final Hit ${totalFinal}/${totalRows} · ${pct(totalFinal,totalRows)}% · ถ้าค่า Conditional Survival ตกแรง ให้แก้ชั้นที่ตกก่อนแตะสูตร F1–F9</div></div><div id="pipelineTracePanel"></div>`;
+ const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>({name,d:v101SelectionStats(rs,{name,groups})})).filter(x=>x.d.total>0);
+ const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0);
+ const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td></tr>`).join('');
+ return `<div class="lottery-audit-block"><div class="lottery-audit-title">🧪 3. Selection Pipeline · V104 OOS Truth</div><div class="lottery-audit-sub">ใช้ผล Production Selection OOS จาก one-pass chronological engine โดยตรง เพื่อลดการคำนวณซ้ำและไม่ทำให้หน้าเว็บค้าง</div><div class="audit-grid"><div class="metric-box"><small>Selection OOS</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>ชุดข้อมูล</small><b>${entries.length}</b><span>แยก dataset</span></div><div class="metric-box"><small>Max Miss</small><b>${entries.length?Math.max(...entries.map(x=>x.d.maxMiss)):0}</b><span>สูงสุดรายชุด</span></div><div class="metric-box"><small>Current Miss</small><b>${entries.length?Math.max(...entries.map(x=>x.d.curMiss)):0}</b><span>รายชุด</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div></div>`;
 }
-function showPipelineTrace(encoded){
-  const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}
-  const d=selectionPipelineStats(base.records||[],base.routeCtx||null),rows=d.latest.map(x=>{
-    const stage=(arr)=>arr.map(v=>`<span class="score-chip">${v}</span>`).join(' ');
-    const formulaHits=x.formulas.filter(f=>f.hit).map(f=>f.f).join(', ')||'—';
-    return `<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${esc(formulaHits)}</td><td>${stage(x.correctFormulaDigits)}</td><td>${stage(x.candidateDigits.slice(0,6))}</td><td>${stage(x.top4)}</td><td><b>${x.final[0]}</b>, <b>${x.final[1]}</b></td><td>${x.finalHit?'✓':'✗'}</td><td>${x.anchorFormula||'—'}</td></tr>`;
-  }).join('');
-  $('pipelineTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔬 V2.2 Pipeline Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุด · แสดง “เลขจากสูตรที่ถูกจริง” แยกจาก Candidate/Top 6/Top 4/Final เพื่อดูจุดที่สัญญาณดีถูกทิ้ง</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>สูตรที่ถูก</th><th>Correct digits</th><th>Candidate Top 6</th><th>Top 4</th><th>Final D1/D2</th><th>Hit</th><th>Anchor</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  document.getElementById('pipelineTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
 function thaiStockSelectionPanel(groups){const entries=thaiStockEntries(groups).map(([name,rs])=>{const sx=selectionStats(rs,{name,groups});return{name,rs,sx}}).filter(x=>x.sx.total>0);const tests=entries.reduce((a,x)=>a+x.sx.total,0),hits=entries.reduce((a,x)=>a+x.sx.hits,0),rate=pct(hits,tests),rows=entries.map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.sx.total}</td><td>${x.sx.hits}</td><td>${x.sx.misses}</td><td><span class="score-chip">${x.sx.rate}%</span></td><td>${x.sx.maxMiss}</td><td>${x.sx.curMiss}</td></tr>`).join('');return `<div class="lottery-audit-block"><div class="lottery-audit-title">🇹🇭 หุ้นไทย · Selection OOS แยกชุด</div><div class="lottery-audit-sub">นับเฉพาะชุดหุ้นไทยที่มีผลจริง · ไม่รวม __THAI_ALLDAY__ ซ้ำ · ไม่รวม Myanmar · ไม่ปนกับหวยประเภทอื่น</div><div class="audit-grid"><div class="metric-box"><small>หุ้นไทย OOS รวม</small><b>${hits}/${tests}</b><span>${rate}%</span></div><div class="metric-box"><small>ชุดหุ้นไทย</small><b>${entries.length}</b><span>แยกตามรอบ/ประเภท</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ชุด</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>หลุดติดสูงสุด</th><th>ปัจจุบัน</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูลหุ้นไทยเพียงพอสำหรับ OOS</td></tr>'}</tbody></table></div></div>`}
-function selectionDecisionAuditPanel(groups){const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>{const d=selectionDecisionAudit(rs,{name,groups});return{name,rs,d}}).filter(x=>x.d.total>0);const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0),high=entries.reduce((n,x)=>n+x.d.confidence.สูง,0),mid=entries.reduce((n,x)=>n+x.d.confidence.กลาง,0),low=entries.reduce((n,x)=>n+x.d.confidence.ต่ำ,0);const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate||b.d.total-a.d.total).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.total-x.d.hits}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.marginAvg==null?'—':x.d.marginAvg}</td><td>${x.d.confidence.สูง}</td><td>${x.d.confidence.กลาง}</td><td>${x.d.confidence.ต่ำ}</td><td><button class="add-card-btn" onclick="showDecisionTrace('${encodeURIComponent(x.name)}')">ดู Trace</button></td></tr>`).join('');return`<div class="lottery-audit-block"><div class="lottery-audit-title">🔬 2. Selection Decision Audit · ย้อนรอยการตัดสินใจ OOS</div><div class="lottery-audit-sub">ตรวจจากลำดับเวลาเดิม: สูตร → Candidate Board → d1/d2 → ผลจริง โดยไม่ใช้ผลอนาคตในการตัดสินใจ</div><div class="audit-grid"><div class="metric-box"><small>OOS รวม</small><b>${total}</b><span>ทุกหวยที่มี OOS</span></div><div class="metric-box"><small>Selection Hit</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>Confidence สูง</small><b>${high}</b><span>จากทุก decision</span></div><div class="metric-box"><small>กลาง / ต่ำ</small><b>${mid} / ${low}</b><span>ใช้ตรวจ calibration</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>Margin เฉลี่ย</th><th>สูง</th><th>กลาง</th><th>ต่ำ</th><th>Trace</th></tr></thead><tbody>${rows}</tbody></table></div></div><div id="decisionTracePanel"></div>`}
+function selectionDecisionAuditPanel(groups){
+ const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>({name,d:v101SelectionStats(rs,{name,groups})})).filter(x=>x.d.total>0);
+ const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0);
+ const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate||b.d.total-a.d.total).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td></tr>`).join('');
+ return `<div class="lottery-audit-block"><div class="lottery-audit-title">🔬 2. Selection Decision Audit · V104</div><div class="lottery-audit-sub">ย้อนรอย Production D1/D2 จาก chronological walk-forward ที่คำนวณไว้แล้ว ไม่เรียก selector ซ้ำทุกงวด</div><div class="audit-grid"><div class="metric-box"><small>OOS รวม</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>Miss</small><b>${total-hits}</b><span>จากทุก dataset</span></div><div class="metric-box"><small>≥7/10</small><b>${entries.filter(x=>x.d.roll10N>=10&&x.d.roll10Hits>=7).length}</b><span>ชุดข้อมูล</span></div><div class="metric-box"><small>Safe ≤2 Miss</small><b>${entries.filter(x=>x.d.maxMiss<=2).length}</b><span>ชุดข้อมูล</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูล OOS</td></tr>'}</tbody></table></div></div>`;
+}
 function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[],logs=decisionLog(rs,base.routeCtx||null).slice(-12).reverse();const rows=logs.map(x=>`<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${x.d1}</td><td>${x.d1Hit?'✓':'✗'}</td><td>${x.d2}</td><td>${x.d2Hit?'✓':'✗'}</td><td>${x.margin}</td><td>${x.confidence}</td><td>${x.curMissBefore}</td></tr>`).join('');$('decisionTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔎 Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุดของหวยนี้ · d1/d2 ถูกตรวจแยก และ curMissBefore แสดงความเสี่ยงก่อนการตัดสินใจ</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>d1</th><th>d1 Hit</th><th>d2</th><th>d2 Hit</th><th>Margin</th><th>Confidence</th><th>Miss ก่อนหน้า</th></tr></thead><tbody>${rows}</tbody></table></div>`;document.getElementById('decisionTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})}
 function decisionStats(rs,routeCtx=null){const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}}
 function decisionMemorySummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>decisionMemory(rs)),n=xs.reduce((s,x)=>s+x.tests,0),h=xs.reduce((s,x)=>s+x.hits,0);return{n,h,r:pct(h,n)}}
@@ -1651,7 +1642,7 @@ function globalTable(groups){
   <details class="secondary-section"><summary>📐 สูตร F1–F9 · OOS รวม <span>ข้อมูลตรวจสอบ</span></summary><div class="secondary-body"><div class="summary-table-container"><h3 style="color:#78590f;margin:0 0 8px">ภาพรวมสูตรทั้งหมด · OOS จริง</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>ชื่อสูตร</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div></details>
   <details class="secondary-section"><summary>🎯 เลขเจาะ · OOS รวม <span>เดิม / Adaptive</span></summary><div class="secondary-body"><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ระบบ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>หลุดติดสูงสุด</th><th>หลุดปัจจุบัน</th></tr></thead><tbody><tr><td>เดิม</td><td>${pen.n}</td><td>${pen.h}</td><td>${pen.n-pen.h}</td><td><span class="score-chip">${pen.r}%</span></td>${pen.hp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}<td>${pen.maxMiss}</td><td>${pen.maxCurMiss}</td></tr><tr><td><b>Adaptive</b></td><td>${pen.an}</td><td>${pen.ah}</td><td>${pen.an-pen.ah}</td><td><span class="score-chip">${pen.ar}%</span></td>${DISPLAY_WIN.map(w=>{const vals=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>penetrationStats(rs).displayAdaptiveHorizon.find(z=>z.w===w)).filter(Boolean);const hh=vals.reduce((a,z)=>a+z.hits,0),nn=vals.reduce((a,z)=>a+z.n,0);return`<td>${nn>=w?pct(hh,nn)+'%':'—'}</td>`}).join('')}<td>${pen.adaptiveMaxMiss}</td><td>${pen.adaptiveCurMiss}</td></tr></tbody></table></div></div></details>`
 }
-function installV30Panel(groups){const m=$('v30SelectionMount');if(!m)return;setTimeout(()=>{try{m.innerHTML=v30HundredPointAudit(groups)}catch(e){m.innerHTML='<div class="errorbox">⚠️ V102 audit โหลดไม่สำเร็จ</div>';console.error(e)}},70)}
+function installV30Panel(groups){const m=$('v30SelectionMount');if(!m)return;setTimeout(()=>{try{m.innerHTML=v30HundredPointAudit(groups)}catch(e){m.innerHTML='<div class="errorbox">⚠️ V104 audit โหลดไม่สำเร็จ</div>';console.error(e)}},70)}
 function installLazyPanels(groups){
   installV30Panel(groups);
   const root=$('result'); if(!root)return;
@@ -1665,7 +1656,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   let idx=0;
   for(const name of Object.keys(groups)){
     if(name==='__THAI_TOP__')continue;
-    const rs=groups[name],hist=historyGroups[name]||rs,rawHist=historyRawGroups[name]||hist,meta=rawMeta[name]||{},ad=audit(rs),routeCtx={name,groups},routeProfile=formulaRoutingProfile(groups,name),s=select(rs,ad,rawHist,null,routeProfile,routeCtx),pen=penetrationStats(rs);
+    const rs=groups[name],hist=historyGroups[name]||rs,rawHist=historyRawGroups[name]||hist,meta=rawMeta[name]||{},ad=audit(rs),routeCtx={name,groups},routeProfile=formulaRoutingProfile(groups,name),s0=select(rs,ad,rawHist,null,routeProfile,routeCtx),s=s0||{d1:'-',d2:'-',consensus:[],selection:{confidence:'ไม่พอข้อมูล',score:null},d1Pairs:[],d2Pairs:[]},pen=penetrationStats(rs);
     const p={lotteryName:name,nextDate:meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(rs.at(-1).date,name),...s};
     currentAuditDataMap[name]=ad;
     currentPredictionDataMap[name]={...p,routeCtx,records:rs,historicalRecords:hist,rawRoundCount:meta.rawCount||rs.length,historyRoundCount:meta.histRawCount||hist.length,latestRawRound:meta.lastRound};
@@ -1674,7 +1665,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
     html+=`<section class="lottery-audit-block">
       <div class="lottery-audit-block-head"><span>🔹 ${esc(formatDisplayTitle(name))}</span><span>${meta.rawCount||rs.length} รอบใช้งาน · หลังบ้าน ${meta.histRawCount||hist.length}</span></div>
       <div class="lottery-primary">
-        <div class="lottery-decision"><div class="decision-label">เลขเด่นล่าสุด</div><div class="decision-number">${s.d1??'-'} - ${s.d2??'-'}</div><div class="decision-meta">${esc(s.selection?.confidence||'ไม่ระบุ')} · Final Score ${s.selection?.score==null?'—':s.selection.score}<br>Consensus สูงสุด <b>${s.consensus[0]?.count||0} สูตร</b> · สูตรนำ <b>${esc(bestFormula||'-')}</b> ${bestRate}%</div></div>
+        <div class="lottery-decision"><div class="decision-label">เลขเด่นล่าสุด</div><div class="decision-number">${s.d1??'-'} - ${s.d2??'-'}</div><div class="decision-meta">${esc(s.selection?.confidence||'ไม่ระบุ')} · Final Score ${s.selection?.score==null?'—':s.selection.score}<br>Consensus สูงสุด <b>${s.consensus?.[0]?.count||0} สูตร</b> · สูตรนำ <b>${esc(bestFormula||'-')}</b> ${bestRate}%</div></div>
         <div class="lottery-quick"><div class="metric-box"><small>จำนวนงวด</small><b>${meta.rawCount||rs.length}</b><span>ล่าสุดที่ใช้</span></div><div class="metric-box"><small>สูตรอันดับ 1</small><b>${bestRate}%</b><span>${esc(bestFormula||'-')}</span></div><div class="metric-box"><small>เลขเจาะ Adaptive</small><b>${pen.adaptiveRate}%</b><span>หลุดปัจจุบัน ${pen.adaptiveCurMiss}</span></div><div class="metric-box"><small>วันที่รอบถัดไป</small><b>${esc(p.nextDate||'-')}</b><span>ตามกติกาปฏิทินเดิม</span></div></div>
       </div>
       <details class="secondary-section"><summary>🧾 รายละเอียดสูตร F1–F9 ของ ${esc(formatDisplayTitle(name))} <span>เปิดเพื่อดู</span></summary><div class="secondary-body">${table(name,rs,ad)}</div></details>
@@ -1689,7 +1680,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   idx=0;
   for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,idx++)}
   if(top)html+=card(top,900);
-  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V102 Atomic Adaptive Selection + Summary-Schema Fix + Stable Run Guard</span><span class="brand-star">✦</span></div>`;
+  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V104 Atomic Adaptive Selection + One-Pass OOS + Stable Run Guard</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
   installLazyPanels(groups);
 }
@@ -1743,7 +1734,7 @@ async function runEngineCore(){
     render(groups,historyGroups,rawMeta,historyRawGroups);updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
     finishProcessing();
-    showToast(`✓ V102 · ประมวลผลสำเร็จ · เก็บประวัติ ${allRecords.length} งวด · Selector แบบ Best-System-Derived พร้อม OOS Guard`);
+    showToast(`✓ V104 · ประมวลผลสำเร็จ · เก็บประวัติ ${allRecords.length} งวด · Selector แบบ Best-System-Derived พร้อม OOS Guard`);
   }catch(e){
     console.error(e);
     const panel=$('processingPanel');
@@ -1785,7 +1776,7 @@ async function runEngine(){
     if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
   }
 }
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V102',runGuard:'single-flight-ui-unlock',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V101+atomic-decision-memory+counterfactual-pair-learning+context-regime+policy-ensemble+error-attribution+recovery-control+chronological-walk-forward+behavioral-policy-league+dataset-local-meta-selection+chronological-walk-forward+best-system-derived-policy+bounded-policy-learning+oos-guard+stable-formula-team+conditional-selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V104',runGuard:'single-flight-ui-unlock',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V104+one-pass-chronological-oos+atomic-decision-memory+counterfactual-pair-learning+context-regime+policy-ensemble+recovery-control+stable-run-guard+dataset-local-learning+Myanmar-excluded+Thai-stock-separated'});
 
 /* V2.8 HIGH-PRECISION DIGIT SELECTION CORE
    Direct upgrade of the decision layer. Formula bodies are preserved.
@@ -2194,7 +2185,7 @@ function v30HundredPointAudit(groups){
  const rows=entries.slice().sort((a,b)=>b.d.rate-a.d.rate).map((x,i)=>`<tr><td class="v31-rownum">${i+1}</td><td>${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.misses}</td><td><b>${x.d.rate}%</b></td><td>${x.d.maxMiss}</td><td>${x.d.curMiss}</td><td>${esc((x.d.policyTable||[]).slice().sort((a,b)=>b.rate-a.rate)[0]?.label||'—')}</td></tr>`).join('');
  const policyRows=policyAgg.slice(0,10).map((x,i)=>`<tr><td class="v31-rownum">${i+1}</td><td>${esc(x.label)}</td><td>${x.n}</td><td>${x.h}</td><td>${x.n-x.h}</td><td><b>${x.rate}%</b></td></tr>`).join('');
  return `<div class="v31-unified">
-   <h3>🧠 V102 ATOMIC · Decision Learning · สรุปทั้งหมดในช่องเดียว</h3>
+   <h3>🧠 V104 ATOMIC · Decision Learning · สรุปทั้งหมดในช่องเดียว</h3>
    <div class="v31-grid">
     <div class="v31-item"><small>1 · Selection OOS</small><b>${hit}/${total} · ${pct(hit,total)}%</b><span>ผิด ${miss}</span></div>
     <div class="v31-item"><small>2 · Champion Policy</small><b>${esc(best?.label||'—')}</b><span>${best?.rate??0}% · 100 policies</span></div>
@@ -2205,154 +2196,116 @@ function v30HundredPointAudit(groups){
    <table class="v31-table"><thead><tr><th>#</th><th>รายการ</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>MaxMiss</th><th>CurMiss</th><th>Policy</th></tr></thead><tbody>${rows||'<tr><td colspan="9">ยังไม่มี OOS</td></tr>'}</tbody></table>
    <div style="height:6px"></div>
    <table class="v31-table"><thead><tr><th>#</th><th>Top Policy</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th></tr></thead><tbody>${policyRows}</tbody></table>
-   <div class="v31-note">สรุปนี้คือ Production Selection OOS ของ V102 โดยตรง · 100 candidate policies เป็น base league แล้ว V101 นำมา ensemble + memory + counterfactual แบบ chronological; Top policy เป็น input ไม่ใช่คำตอบสุดท้าย และอีก 90 ถูกตัดออกตาม OOS evidence; champion ถูกเลือกตาม rolling-10 + streak/recovery control · เก็บ ${keepCount} policy / ตัด ${cutCount} policy · ไม่ใช่ Formula Accuracy และไม่ใช่ Legacy Penetration · ต่ำสุด: ${worstLottery?esc(formatDisplayTitle(worstLottery.name))+' '+worstLottery.d.rate+'%':'—'} · Balanced: ${bal?.rate??0}% · Myanmar ไม่นับ · หุ้นไทยไม่ปนกับชุดอื่น · ทุก decision เป็น chronological walk-forward</div>
+   <div class="v31-note">สรุปนี้คือ Production Selection OOS ของ V104 โดยตรง · 100 candidate policies เป็น base league แล้ว V104 นำมา ensemble + memory + counterfactual แบบ chronological; Top policy เป็น input ไม่ใช่คำตอบสุดท้าย และอีก 90 ถูกตัดออกตาม OOS evidence; champion ถูกเลือกตาม rolling-10 + streak/recovery control · เก็บ ${keepCount} policy / ตัด ${cutCount} policy · ไม่ใช่ Formula Accuracy และไม่ใช่ Legacy Penetration · ต่ำสุด: ${worstLottery?esc(formatDisplayTitle(worstLottery.name))+' '+worstLottery.d.rate+'%':'—'} · Balanced: ${bal?.rate??0}% · Myanmar ไม่นับ · หุ้นไทยไม่ปนกับชุดอื่น · ทุก decision เป็น chronological walk-forward</div>
    <details style="margin-top:6px"><summary style="font-size:.48rem;color:#76570f;cursor:pointer">แสดง 100 Policy Candidates</summary><div style="max-height:220px;overflow:auto;margin-top:5px"><table class="v31-table"><thead><tr><th>#</th><th>Policy</th><th>สถานะ</th><th>รายละเอียด</th></tr></thead><tbody>${checks.map(x=>`<tr><td>${x.n}</td><td>${esc(x.label)}</td><td>${x.status==='KEEP'?'🟢 KEEP':'🔴 CUT'}</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div></details>
  </div>`;
 }
 
 
 /* =========================================================
-   V101 ATOMIC ADAPTIVE SELECTION ENGINE
+   V104 ATOMIC ADAPTIVE SELECTION ENGINE
    Purpose: improve end-to-end D1/D2 selection, not formula accuracy.
    Adds contextual decision memory, counterfactual regret, pair memory,
    policy ensemble, error attribution, recovery control and conservative
    shrinkage. All learning is dataset-local and chronological.
 ========================================================= */
-const V101_VERSION='V102';
-const V101_MEM_CACHE=new WeakMap();
-const V101_CTX_CACHE=new WeakMap();
+const V101_VERSION='V104';
+/* V103 ONE-PASS ATOMIC SELECTION CORE
+   Fixes the V101 stall by removing nested walk-forward calls.
+   One chronological pass builds decision memory, policy memory, pair memory,
+   and OOS rows. Current production selection reads that cached state directly.
+*/
+const V103_STATE_CACHE=new WeakMap();
 function v101TargetSet(r){return new Set(v30Target(r));}
 function v101Ctx(rs){
-  const a=rs.slice(-10), b=rs.slice(-30), last=rs.at(-1)||{};
-  const targetRates=d=>{
+  const a=rs.slice(-10),b=rs.slice(-30),last=rs.at(-1)||{};
+  const rates=Array.from({length:10},(_,d)=>{
     const z=a.length?a.filter(r=>v30Target(r).includes(d)).length/a.length:.5;
     const y=b.length?b.filter(r=>v30Target(r).includes(d)).length/b.length:.5;
     return .65*z+.35*y;
-  };
-  const rates=Array.from({length:10},(_,d)=>targetRates(d));
+  });
   const sorted=rates.map((x,d)=>({d,x})).sort((x,y)=>y.x-x.x);
-  const spread=sorted[0].x-sorted[9].x;
-  const entropy=v30Entropy(b.flatMap(r=>v30Target(r)));
-  const parity=last.n3?.map(Number).reduce((z,x)=>z+x,0)%2;
-  const mode=spread<.06?'flat':spread<.14?'mixed':'concentrated';
-  return {mode,spread:Math.round(spread*1000)/1000,entropy:Math.round(entropy*1000)/1000,parity:parity||0,top:sorted.slice(0,3).map(x=>x.d)};
+  const spread=sorted[0].x-sorted[9].x, entropy=v30Entropy(b.flatMap(r=>v30Target(r)));
+  const sum=(last.n3||'').split('').reduce((z,x)=>z+Number(x||0),0);
+  return {mode:spread<.06?'flat':spread<.14?'mixed':'concentrated',spread,entropy,parity:sum%2,top:sorted.slice(0,3).map(x=>x.d)};
 }
 function v101CtxKey(rs){const c=v101Ctx(rs);return `${c.mode}|p${c.parity}|e${c.entropy<2?'L':c.entropy<2.7?'M':'H'}|s${c.spread<.08?'L':c.spread<.16?'M':'H'}`}
-function v101Memory(rs,routeCtx=null){
-  const cacheKey=`${routeCtx?.name||'__none__'}|${rs.length}|${rs.at(-1)?.date||''}`;
-  let bucket=V101_MEM_CACHE.get(rs); if(bucket&&bucket.has(cacheKey))return bucket.get(cacheKey);
-  if(!bucket){bucket=new Map();V101_MEM_CACHE.set(rs,bucket)}
-  const out={pairs:new Map(),digits:new Map(),contexts:new Map(),decisions:[],policies:new Map()};
-  const wf=v100WalkForward(rs,routeCtx), rows=wf.rows||[];
-  out._wfRows=rows;
-  out._policyTable=wf.policyTable||[];
-  for(const row of rows){
-    const targetRow=rs.find(r=>r.date===row.target); if(!targetRow)continue;
-    const cutIndex=rs.findIndex(r=>r.date===row.source); if(cutIndex<1)continue;
-    const train=rs.slice(0,cutIndex+1),ctx=v101CtxKey(train),target=v101TargetSet(targetRow);
-    const base=v30BaseCached(train,routeCtx);if(!base)continue;
-    const dec=v100FastDecision(base,train,V100_POLICIES.find(p=>p.id===row.chosen)||V100_POLICIES[0]);
-    const pair=[Math.min(dec.d1,dec.d2),Math.max(dec.d1,dec.d2)].join(''),hit=target.has(dec.d1)||target.has(dec.d2);
-    const pm=out.pairs.get(pair)||{n:0,h:0,miss:0,ctx:new Map()};pm.n++;if(hit)pm.h++;else pm.miss++;
-    const cm=pm.ctx.get(ctx)||{n:0,h:0};cm.n++;if(hit)cm.h++;pm.ctx.set(ctx,cm);out.pairs.set(pair,pm);
-    for(const d of [dec.d1,dec.d2]){const dm=out.digits.get(`${ctx}|${d}`)||{n:0,h:0};dm.n++;if(target.has(d))dm.h++;out.digits.set(`${ctx}|${d}`,dm)}
-    const pol=out.policies.get(row.chosen)||{n:0,h:0};pol.n++;if(hit)pol.h++;out.policies.set(row.chosen,pol);
-    out.contexts.set(ctx,(out.contexts.get(ctx)||0)+1);
-    out.decisions.push({ctx,pair,d1:dec.d1,d2:dec.d2,hit,target:[...target]});
-  }
-  bucket.set(cacheKey,out);if(bucket.size>4)bucket.delete(bucket.keys().next().value);return out;
+function v101Rate(n,h,prior=.5,strength=10){return n?(h+prior*strength)/(n+strength):prior}
+function v103StateKey(rs,routeCtx){return `${routeCtx?.name||'__none__'}|${rs.length}|${rs.at(-1)?.date||''}`}
+function v103EmptyState(){return {pairs:new Map(),digits:new Map(),policies:new Map(),contexts:new Map(),rows:[],policyTotals:new Map(V100_POLICIES.map(p=>[p.id,{id:p.id,label:p.label,tests:0,hits:0}]))};}
+function v103PairMemory(st,a,b,ctx){const k=[Math.min(a,b),Math.max(a,b)].join(''),m=st.pairs.get(k);if(!m)return 50;const c=m.ctx.get(ctx);return v101Rate(c?.n||0,c?.h||0,.5,8)*100}
+function v103DigitMemory(st,d,ctx){const m=st.digits.get(`${ctx}|${d}`);return m?v101Rate(m.n,m.h,.5,10)*100:50}
+function v103PolicyChoice(st){
+  const recent=st.rows.slice(-10);
+  const scored=V100_POLICIES.map(p=>{
+    const m=st.policies.get(p.id), n=m?.n||0,h=m?.h||0,rate=v101Rate(n,h,.5,10)*100;
+    const bits=recent.map(x=>({hit:!!x.policyHits?.[p.id]}));
+    const sk=bits.length?streak(bits):{maxMiss:0,curMiss:0};
+    const recovery=bits.length?bits.reduce((z,x,i)=>z+(x.hit?(i&&!bits[i-1].hit?2:1):0),0)/bits.length:0;
+    const objective=rate+Math.min(8,recovery*2)-Math.max(0,sk.maxMiss-1)*5-Math.max(0,sk.curMiss-1)*7;
+    return {p,n,h,rate,misses:sk.maxMiss,current:sk.curMiss,recovery,objective};
+  }).sort((a,b)=>b.objective-a.objective||b.rate-a.rate||a.p.id.localeCompare(b.p.id));
+  const balanced=scored.find(x=>x.p.mode==='balanced')||scored[0],best=scored[0];
+  const chosen=(best&&balanced&&best.p.id!=='balanced'&&best.objective>balanced.objective+2)?best:balanced;
+  return {chosen:chosen?.p||V100_POLICIES[0],table:scored};
 }
-function v101Rate(n,h,prior=0.5,strength=10){return n?(h+prior*strength)/(n+strength):prior}
-function v101PairMemory(mem,a,b,ctx){
-  const key=[Math.min(a,b),Math.max(a,b)].join(''),m=mem.pairs.get(key);if(!m)return 50;
-  const cm=m.ctx.get(ctx);return v101Rate(cm?.n||0,cm?.h||0,.5,8)*100;
-}
-function v101DigitMemory(mem,d,ctx){const m=mem.digits.get(`${ctx}|${d}`);return m?v101Rate(m.n,m.h,.5,10)*100:50}
-function v101Regret(mem,selected,target,ctx){
-  const hit=target.has(selected.a)||target.has(selected.b); if(hit)return 0;
-  let best=-1,bp=null;
-  for(let a=0;a<10;a++)for(let b=a+1;b<10;b++){
-    const m=v101PairMemory(mem,a,b,ctx);if(m>best){best=m;bp=[a,b]}
-  }
-  return {selected:[selected.a,selected.b],best:bp,bestScore:best,miss:true};
-}
-function v101PolicyEnsemble(rs,base,history,routeCtx=null){
-  const mem=v101Memory(rs,routeCtx), h=mem._wfRows||[], choice=v100PolicyChoice(h).chosen;
-  const ctx=v101CtxKey(rs), candidates=[];
-  const policies=V100_POLICIES.map(p=>{
-    const ph=mem.policies.get(p.id), pr=v101Rate(ph?.n||0,ph?.h||0,.5,10)*100;
-    const d=v100FastDecision(base,history,p);
-    return {p,d,prior:pr};
-  });
-  for(const x of policies){
-    const a=x.d.d1,b=x.d.d2,pm=v101PairMemory(mem,a,b,ctx),dm=(v101DigitMemory(mem,a,ctx)+v101DigitMemory(mem,b,ctx))/2;
-    const rec=(h.length?Math.max(0,1-Math.min(1,(h.at(-1)?.curMiss||0)/3)):1)*100;
-    const score=.46*x.d.selection.policyScore+.18*x.prior+.20*pm+.10*dm+.06*rec;
-    candidates.push({...x,score,pm,dm});
+function v103Decision(base,history,state){
+  const ctx=v101CtxKey(history),choice=v103PolicyChoice(state),candidates=[];
+  for(const p of V100_POLICIES){
+    const d=v100FastDecision(base,history,p),pm=v103PairMemory(state,d.d1,d.d2,ctx),dm=(v103DigitMemory(state,d.d1,ctx)+v103DigitMemory(state,d.d2,ctx))/2;
+    const pmem=state.policies.get(p.id),prior=v101Rate(pmem?.n||0,pmem?.h||0,.5,10)*100;
+    const rec=Math.max(0,1-Math.min(1,(state.rows.at(-1)?.curMissBefore||0)/3))*100;
+    const score=.46*Number(d.selection?.policyScore||50)+.18*prior+.20*pm+.10*dm+.06*rec;
+    candidates.push({p,d,pm,dm,prior,score});
   }
   candidates.sort((a,b)=>b.score-a.score||b.prior-a.prior||a.p.id.localeCompare(b.p.id));
-  const top=candidates.slice(0,Math.min(7,candidates.length));
-  const digitScores=Array.from({length:10},(_,d)=>({digit:d,score:0,policies:0}));
-  top.forEach(x=>{const weight=Math.max(0.05,x.score);digitScores[x.d.d1].score+=weight;digitScores[x.d.d1].policies++;digitScores[x.d.d2].score+=weight;digitScores[x.d.d2].policies++});
-  for(const q of digitScores)q.memory=v101DigitMemory(mem,q.digit,ctx);
-  digitScores.sort((a,b)=>(b.score+.08*b.memory)-(a.score+.08*a.memory)||b.policies-a.policies||a.digit-b.digit);
-  const topDigits=digitScores.slice(0,5),pairs=[];
-  for(let i=0;i<topDigits.length;i++)for(let j=i+1;j<topDigits.length;j++){
-    const a=topDigits[i],b=topDigits[j],sy=v27PairSynergy(history,a.digit,b.digit),pm=v101PairMemory(mem,a.digit,b.digit,ctx);
-    const score=.43*a.score+.43*b.score+.07*sy+.07*pm;
-    pairs.push({a:a.digit,b:b.digit,score,synergy:sy,memory:pm});
+  const top=candidates.slice(0,7),ds=Array.from({length:10},(_,digit)=>({digit,score:0,policies:0}));
+  for(const x of top){const w=Math.max(0.05,x.score);ds[x.d.d1].score+=w;ds[x.d.d1].policies++;ds[x.d.d2].score+=w;ds[x.d.d2].policies++;}
+  for(const q of ds)q.memory=v103DigitMemory(state,q.digit,ctx);
+  ds.sort((a,b)=>(b.score+.08*b.memory)-(a.score+.08*a.memory)||b.policies-a.policies||a.digit-b.digit);
+  const td=ds.slice(0,5),pairs=[];
+  for(let i=0;i<td.length;i++)for(let j=i+1;j<td.length;j++){
+    const sy=v27PairSynergy(history,td[i].digit,td[j].digit),pm=v103PairMemory(state,td[i].digit,td[j].digit,ctx);
+    pairs.push({a:td[i].digit,b:td[j].digit,score:.43*td[i].score+.43*td[j].score+.07*sy+.07*pm,synergy:sy,memory:pm});
   }
   pairs.sort((a,b)=>b.score-a.score||b.memory-a.memory||a.a-b.a);
-  const best=pairs[0]||{a:choice?0:0,b:1,score:0,synergy:50,memory:50};
-  const runner=pairs[1]?.score??best.score;
-  const risk=selectionRiskFromHistory(h),missPenalty=Math.max(0,risk.curMiss-1)*4;
-  let d1=best.a,d2=best.b;
-  // Conservative recovery: after 2+ misses, require the pair to have either memory or strong independent support.
-  if(risk.curMiss>=2){
-    const safe=pairs.filter(x=>x.memory>=50||x.synergy>=55).sort((a,b)=>b.score-a.score)[0];
-    if(safe){d1=safe.a;d2=safe.b}
+  let best=pairs[0]||{a:0,b:1,score:0,synergy:50,memory:50};
+  const risk={curMiss:state.rows.length?streak(state.rows).curMiss:0,maxMiss:state.rows.length?streak(state.rows).maxMiss:0};
+  if(risk.curMiss>=2){const safe=pairs.filter(x=>x.memory>=52||x.synergy>=56).sort((a,b)=>b.score-a.score)[0];if(safe)best=safe;}
+  return {d1:best.a,d2:best.b,policy:top[0]?.p||choice.chosen,topPolicies:top,topDigits:td,pairs,ctx,margin:Math.round(((best.score-(pairs[1]?.score??best.score))*100))/100,score:best.score,risk,candidates};
+}
+function v101BuildState(rs,routeCtx=null){
+  const key=v103StateKey(rs,routeCtx),bucket=V103_STATE_CACHE.get(rs)||new Map();V103_STATE_CACHE.set(rs,bucket);
+  if(bucket.has(key))return bucket.get(key);
+  const st=v103EmptyState();
+  for(let i=1;i<rs.length-1;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const train=rs.slice(0,i+1),ad=audit(train),cutoff=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0;
+    const rp=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoff):null;
+    const base=v27AggressiveSelect(train,ad,train,null,rp,routeCtx);if(!base)continue;
+    const dec=v103Decision(base,train,st),target=v101TargetSet(rs[i+1]),hit=target.has(dec.d1)||target.has(dec.d2),policyHits={};
+    for(const x of (dec.candidates||[])){const ok=target.has(x.d.d1)||target.has(x.d.d2);policyHits[x.p.id]=ok;const t=st.policyTotals.get(x.p.id);t.tests++;if(ok)t.hits++;}
+    const row={source:train.at(-1).date,target:rs[i+1].date,d1:dec.d1,d2:dec.d2,hit,chosen:dec.policy.id,policyHits,context:dec.ctx,margin:dec.margin,curMissBefore:st.rows.length?streak(st.rows).curMiss:0};
+    st.rows.push(row);
+    const pair=[Math.min(dec.d1,dec.d2),Math.max(dec.d1,dec.d2)].join(''),pm=st.pairs.get(pair)||{n:0,h:0,miss:0,ctx:new Map()};pm.n++;if(hit)pm.h++;else pm.miss++;const cm=pm.ctx.get(dec.ctx)||{n:0,h:0};cm.n++;if(hit)cm.h++;pm.ctx.set(dec.ctx,cm);st.pairs.set(pair,pm);
+    for(const d of [dec.d1,dec.d2]){const dm=st.digits.get(`${dec.ctx}|${d}`)||{n:0,h:0};dm.n++;if(target.has(d))dm.h++;st.digits.set(`${dec.ctx}|${d}`,dm)}
+    const pol=st.policies.get(dec.policy.id)||{n:0,h:0};pol.n++;if(hit)pol.h++;st.policies.set(dec.policy.id,pol);st.contexts.set(dec.ctx,(st.contexts.get(dec.ctx)||0)+1);
   }
-  return {d1,d2,policy:top[0]?.p||choice,topPolicies:top,topDigits,pairs,ctx,mem,risk,margin:Math.round((best.score-runner)*100)/100,score:best.score-missPenalty};
+  st.policyTable=[...st.policyTotals.values()].map(x=>({...x,misses:x.tests-x.hits,rate:pct(x.hits,x.tests)})).sort((a,b)=>b.rate-a.rate||b.hits-a.hits);
+  bucket.set(key,st);if(bucket.size>4)bucket.delete(bucket.keys().next().value);return st;
 }
 function v101Select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const base=v27AggressiveSelect(rs,ad,historyRs,riskOverride,routeProfile,routeCtx);if(!base)return base;
-  const hist=historyRs||rs, eng=v101PolicyEnsemble(rs,base,hist,routeCtx), risk=riskOverride||eng.risk;
-  return {...base,d1:eng.d1,d2:eng.d2,consensus:eng.topDigits.map(x=>({...x,score:x.score,memory:x.memory})),selection:{...(base.selection||{}),
-    d1:eng.topDigits.find(x=>x.digit===eng.d1)||eng.topDigits[0],d2:eng.topDigits.find(x=>x.digit===eng.d2)||eng.topDigits[1],
-    v101:true,v101Policy:eng.policy.id,v101PolicyLabel:eng.policy.label,v101Context:eng.ctx,v101Margin:eng.margin,v101Score:eng.score,
-    v101MemoryRate:v101PairMemory(eng.mem,eng.d1,eng.d2,eng.ctx),v101RecoveryMiss:risk.curMiss,
-    v101PolicyTable:eng.topPolicies.map(x=>({id:x.p.id,label:x.p.label,score:Math.round(x.score*100)/100,prior:Math.round(x.prior*100)/100,memory:Math.round(x.pm*100)/100}))},
-    v101Engine:eng};
+  const st=v101BuildState(rs,routeCtx),hist=historyRs||rs,eng=v103Decision(base,hist,st),risk=riskOverride||eng.risk;
+  return {...base,d1:eng.d1,d2:eng.d2,consensus:eng.topDigits.map(x=>({...x,score:x.score,memory:x.memory})),selection:{...(base.selection||{}),d1:eng.topDigits.find(x=>x.digit===eng.d1)||eng.topDigits[0],d2:eng.topDigits.find(x=>x.digit===eng.d2)||eng.topDigits[1],v101:true,v101Policy:eng.policy.id,v101PolicyLabel:eng.policy.label,v101Context:eng.ctx,v101Margin:eng.margin,v101Score:eng.score,v101MemoryRate:v103PairMemory(st,eng.d1,eng.d2,eng.ctx),v101RecoveryMiss:risk.curMiss,v101PolicyTable:(eng.topPolicies||[]).map(x=>({id:x.p.id,label:x.p.label,score:Math.round(x.score*100)/100,prior:Math.round(x.prior*100)/100,memory:Math.round(x.pm*100)/100}))},v101Engine:eng};
 }
 const V101_STATS_CACHE=new WeakMap();
 function v101SelectionStats(rs,routeCtx=null){
-  const key=routeCtx?.name||'__none__';
-  let cache=V101_STATS_CACHE.get(rs);
-  if(!cache){cache=new Map();V101_STATS_CACHE.set(rs,cache)}
-  if(cache.has(key))return cache.get(key);
-  const out=[];
-  for(let i=1;i<rs.length-1;i++){
-    if(rs[i+1]?.breakBefore)continue;
-    const train=rs.slice(0,i+1), ad=audit(train), risk=selectionRiskFromHistory(out);
-    const rp=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0):null;
-    const s=v101Select(train,ad,train,risk,rp,routeCtx),t=v101TargetSet(rs[i+1]);
-    if(!s)continue;
-    const hit=t.has(s.d1)||t.has(s.d2);
-    out.push({source:train.at(-1).date,target:rs[i+1].date,d1:s.d1,d2:s.d2,hit,policy:s.selection?.v101Policy||'balanced',context:s.selection?.v101Context||null,margin:s.selection?.v101Margin||0,curMissBefore:risk.curMiss});
-  }
-  const st=streak(out),last10=out.slice(-10),h10=last10.filter(x=>x.hit).length;
-  // Keep the 100-policy base league table for the unified report. It is a diagnostic
-  // input to V101, not the final V101 selector accuracy.
-  const wf=v100WalkForward(rs,routeCtx);
-  const policyTable=(wf?.policyTable||[]).map(x=>({
-    id:x.id,label:x.label,tests:Number(x.tests||0),hits:Number(x.hits||0),misses:Number(x.misses??((x.tests||0)-(x.hits||0))),rate:Number(x.rate||0)
-  }));
-  const h=out.filter(x=>x.hit).length;
-  const result={total:out.length,hits:h,misses:out.length-h,rate:pct(h,out.length),rows:out,maxMiss:st.maxMiss,curMiss:st.curMiss,curHit:st.curHit,maxHit:st.maxHit,roll10Hits:h10,roll10N:last10.length,roll10Rate:pct(h10,last10.length),policyTable};
-  cache.set(key,result);return result;
+  const key=routeCtx?.name||'__none__';let cache=V101_STATS_CACHE.get(rs);if(!cache){cache=new Map();V101_STATS_CACHE.set(rs,cache)}if(cache.has(key))return cache.get(key);
+  const st=v101BuildState(rs,routeCtx),out=st.rows.slice(),h=out.filter(x=>x.hit).length,last10=out.slice(-10),h10=last10.filter(x=>x.hit).length,sk=streak(out);
+  const result={total:out.length,hits:h,misses:out.length-h,rate:pct(h,out.length),rows:out,maxMiss:sk.maxMiss,curMiss:sk.curMiss,curHit:sk.curHit,maxHit:sk.maxHit,roll10Hits:h10,roll10N:last10.length,roll10Rate:pct(h10,last10.length),policyTable:st.policyTable||[]};cache.set(key,result);return result;
 }
-/* Production selector: V101 replaces only the digit decision layer. Formula bodies remain intact. */
-/* V102 BEST-SYSTEM-DERIVED BASE LAYER
+/* V104 BEST-SYSTEM-DERIVED BASE LAYER
    Core idea: do not copy a lottery's formulas; learn the decision style of the strongest
    selector from prior OOS decisions, then apply that style only inside the same dataset.
    No future result is used. Myanmar remains excluded by the caller/group filters. */
