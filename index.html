@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V2.2 Selection Audit Trace + Conditional Survival: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
+<!-- V2.3 Stable Selection Engine + Conditional Survival: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
 <head>
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>Mester Lotto VIP+ — V2.2 Selection Audit Trace + Conditional Survival</title>
+<title>Mester Lotto VIP+ — V2.3 Stable Selection Engine + Conditional Survival</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1009,7 +1009,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
       <small>Ban Ngern Kong V32.4 Audit Intelligence</small>
     </div>
   </div>
-  <div class="pill">● V2.2 FORMULA ROUTING STACK</div>
+  <div class="pill">● V2.3 STABLE SELECTION ENGINE</div>
 </div>
 <section class="hero">
   <span class="hero-tag">BAN NGERN KONG MULTI-ANGLE AUDIT V32.4</span>
@@ -1040,7 +1040,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
   </div>
   <div class="actions">
     <button id="run" class="run">
-      ⚡ ประมวลผล V2.2
+      ⚡ ประมวลผล V2.3
     </button>
     <button id="clearInput" class="clear">
       ล้างกล่องกรอกข้อมูล
@@ -1108,6 +1108,8 @@ function formatThaiShortDate(date){const ms=['ม.ค.','ก.พ.','มี.ค.'
 function marketSchedule(name){const s=String(name||'').toLowerCase().replace(/\s+/g,'');if(s.includes('รัฐบาลไทย')||s.includes('รัฐบาล'))return'รัฐบาล';if(s.includes('ลาวพัฒนา'))return'ลาวพัฒนา';if(s.includes('มาเลย์')||s.includes('มาเลเซีย'))return'มาเลย์';if(s.includes('ดาวโจนส์')&& (s.includes('vip')||s.includes('พิเศษ')))return'ดาวโจนส์vip';if(s.includes('ดาวโจนส์'))return'ดาวโจนส์';return'weekday'}
 function validDrawDate(d,kind){const dow=d.getDay();if(kind==='รัฐบาล')return d.getDate()===1||d.getDate()===16;if(kind==='ลาวพัฒนา')return dow>=1&&dow<=5;if(kind==='มาเลย์')return dow===0||dow===3||dow===6;if(kind==='ดาวโจนส์vip')return true;if(kind==='ดาวโจนส์')return dow>=2&&dow<=5;return dow>=1&&dow<=5}
 function getNextValidDrawDateStr(dateStr,marketName){const base=parseThaiDate(dateStr);if(!base)return'';const d=new Date(base),kind=marketSchedule(marketName);for(let i=1;i<=370;i++){d.setDate(d.getDate()+1);if(validDrawDate(d,kind))return formatThaiShortDate(d)}return formatThaiShortDate(new Date(base+86400000))}
+function isThaiStockDataset(name){const s=String(name||'');return /หุ้นไทย|__THAI_ROUND__|__THAI_TOP__/.test(s)&&s!=='__THAI_ALLDAY__'}
+function thaiStockEntries(groups){return Object.entries(groups||{}).filter(([k,v])=>isThaiStockDataset(k)&&Array.isArray(v));}
 function formatDisplayTitle(rawName){ const exactNikkei=exactNikkeiCanonicalTitle(rawName); if(exactNikkei){ /* V108.6 MARKET TYPE LOCK: a non-VIP Nikkei card is explicitly Normal. */ return exactNikkei.replace(/^นิเคอิ(?: (เช้า|บ่าย))?$/,m=>m.replace('นิเคอิ','นิเคอิ ปกติ')); } rawName=cleanDatasetKey(rawName); let name=String(rawName||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim(); const thaiSynthetic=String(rawName||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
 // NIKKEI DISPLAY HARDENING: the visible title must NEVER start with the
 // generic Thai word 'หุ้น'. Input aliases may still contain it.
@@ -1299,17 +1301,39 @@ function selectionCounterfactual(rs,ad,historyRs=rs,routeProfile=null,routeCtx=n
   const rank=a=>a.slice().sort((x,y)=>y.score-x.score||x.digit-y.digit).map(x=>x.digit);
   return{baseTop:rank(base).slice(0,5),anchorTop:rank(withAnchor).slice(0,5),anchorChanged:rank(base).slice(0,2).join(',')!==rank(withAnchor).slice(0,2).join(','),anchorFormula:anchor?.f||null};
 }
-function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
-  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),anchor=signalAnchor(c,routeProfile,ad,rs);
-  applySignalPreservingSelection(c,anchor,risk);
-  const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
-  let second=ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
-  const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);
-  if(valid.length>1&&margin0<minMargin){const stronger=valid.slice(1).find(x=>x.digit!==top.digit&&top.score-x.score>=minMargin);if(stronger)second=stronger}
-  const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100;
-  const signalStrength=top.signalAnchor&&top.count>=2?'สูง':top.signalAnchor||top.count>=3?'กลาง':top.count>=1?'อ่อน':'ต่ำ';
-  const confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-  return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)}}
+function stableFormulaTeam(rs,ad,routeProfile=null){
+  const rows=FORMULAS.map(f=>{
+    const x=ad?.[f]||stats(formulaHistory(rs,f));
+    const base=Number.isFinite(x.rate)?x.rate:50;
+    const recent=Number.isFinite(x.recency)?x.recency:base;
+    const long30=x.horizon?.find(z=>z.w===30)?.rate;
+    const long=Number.isFinite(long30)?long30:base;
+    const sample=Math.min(1,(x.total||0)/30);
+    const route=routeProfile?.ranked?.find(z=>z.f===f);
+    const routeScore=Number.isFinite(route?.score)?Number(route.score):base;
+    const rw=sample>=.6?.28:.18;
+    const score=.46*base+.16*long+rw*recent+(1-.46-.16-rw)*routeScore;
+    return{f,base,recent,long,routeScore,n:x.total||0,score:Math.round(score*100)/100};
+  }).sort((a,b)=>b.score-a.score||b.n-a.n||a.f.localeCompare(b.f));
+  const clusters=formulaClusters(rs),chosen=[];
+  for(const row of rows){const cl=clusters.find(g=>g.includes(row.f))||[row.f];if(!chosen.some(q=>cl.includes(q.f))||chosen.length<3)chosen.push(row);if(chosen.length>=5)break}
+  for(const row of rows)if(chosen.length<5&&!chosen.some(q=>q.f===row.f))chosen.push(row);
+  return chosen;
+}
+function stableTeamSelect(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
+  const risk=riskOverride||selectionRiskProfile(rs),team=stableFormulaTeam(rs,ad,routeProfile),last=rs.at(-1),prev=rs.at(-2)||null;
+  const votes=Array.from({length:10},(_,digit)=>({digit,score:0,formulas:[],count:0,evidence:[]}));
+  for(const t of team){const pred=execFormula(t.f,last,prev);if(!pred)continue;const digits=[...new Set(pred.map(Number).filter(Number.isFinite))],weight=Math.max(.25,(t.score-45)/20);for(const d of digits){const q=votes[d];q.score+=weight;q.count++;q.formulas.push(t.f);q.evidence.push({f:t.f,weight:Math.round(weight*1000)/1000})}}
+  const dh=multiWindowDigitHistory(historyRs);
+  for(const q of votes){const hs=dh[q.digit],hist=Number.isFinite(hs?.score)?hs.score:50;q.score=Math.round(Math.max(0,q.score+.10*Math.max(-1,Math.min(1,(hist-50)/18))+(q.count>=3?.18:q.count===2?.10:q.count===1?.02:0)-(q.count?.0:.12))*1000)/1000;q.confidence=q.count>=3&&q.score>=1.9?'สูง':q.count>=2&&q.score>=1?'กลาง':q.count?'อ่อน':'ต่ำ';q.gate=q.count>0;q.evidenceSummary=q.formulas.join(', ')}
+  const ordered=votes.filter(q=>q.gate).sort((a,b)=>b.score-a.score||b.count-a.count||a.digit-b.digit),top=ordered[0]||votes[0],second=ordered.find(q=>q.digit!==top.digit)||votes.find(q=>q.digit!==top.digit)||{digit:norm(top.digit+1),score:0,count:0,confidence:'ต่ำ'};
+  const margin=Math.round((top.score-second.score)*1000)/1000,minMargin=risk.curMiss>=3?.20:risk.curMiss>=2?.16:.10,d1=top.digit,d2=second.digit,anchorDigit=Math.abs(7-Number(last.n3[0]))%10;
+  const confidence=top.confidence==='สูง'&&second.confidence!=='ต่ำ'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
+  const consensus=ordered.map(q=>({digit:q.digit,count:q.count,score:q.score,formulas:q.formulas,evidence:q.evidence,gate:q.gate,confidence:q.confidence}));
+  return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus,selection:{d1:top,d2:second,margin,confidence,signalStrength:top.count>=2?'สูง':top.count===1?'อ่อน':'ต่ำ',anchorFormula:null,anchorQuality:null,anchorConfidence:null,gate:margin>=minMargin,clusters:formulaClusters(rs),risk,stableTeam:team},current:currentPredictions(rs)};
+}
+function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){return stableTeamSelect(rs,ad,historyRs,riskOverride,routeProfile,routeCtx)}
+
 function selectionHistory(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}cache.set(key,out);return out}
 const selectionStatsCache=new WeakMap();function selectionStats(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionStatsCache.get(rs);if(!cache){cache=new Map();selectionStatsCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const h=selectionHistory(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});const out={total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};cache.set(key,out);return out}
 function decisionLog(rs,routeCtx=null){const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);const d1=target.includes(sel.d1),d2=target.includes(sel.d2);out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit:d1||d2,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}return out}
@@ -1400,6 +1424,7 @@ function showPipelineTrace(encoded){
   document.getElementById('pipelineTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+function thaiStockSelectionPanel(groups){const entries=thaiStockEntries(groups).map(([name,rs])=>{const sx=selectionStats(rs,{name,groups});return{name,rs,sx}}).filter(x=>x.sx.total>0);const tests=entries.reduce((a,x)=>a+x.sx.total,0),hits=entries.reduce((a,x)=>a+x.sx.hits,0),rate=pct(hits,tests),rows=entries.map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.sx.total}</td><td>${x.sx.hits}</td><td>${x.sx.misses}</td><td><span class="score-chip">${x.sx.rate}%</span></td><td>${x.sx.maxMiss}</td><td>${x.sx.curMiss}</td></tr>`).join('');return `<div class="lottery-audit-block"><div class="lottery-audit-title">🇹🇭 หุ้นไทย · Selection OOS แยกชุด</div><div class="lottery-audit-sub">นับเฉพาะชุดหุ้นไทยที่มีผลจริง · ไม่รวม __THAI_ALLDAY__ ซ้ำ · ไม่รวม Myanmar · ไม่ปนกับหวยประเภทอื่น</div><div class="audit-grid"><div class="metric-box"><small>หุ้นไทย OOS รวม</small><b>${hits}/${tests}</b><span>${rate}%</span></div><div class="metric-box"><small>ชุดหุ้นไทย</small><b>${entries.length}</b><span>แยกตามรอบ/ประเภท</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ชุด</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>หลุดติดสูงสุด</th><th>ปัจจุบัน</th></tr></thead><tbody>${rows||'<tr><td colspan="7">ยังไม่มีข้อมูลหุ้นไทยเพียงพอสำหรับ OOS</td></tr>'}</tbody></table></div></div>`}
 function selectionDecisionAuditPanel(groups){const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>{const d=selectionDecisionAudit(rs,{name,groups});return{name,rs,d}}).filter(x=>x.d.total>0);const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0),high=entries.reduce((n,x)=>n+x.d.confidence.สูง,0),mid=entries.reduce((n,x)=>n+x.d.confidence.กลาง,0),low=entries.reduce((n,x)=>n+x.d.confidence.ต่ำ,0);const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate||b.d.total-a.d.total).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.total-x.d.hits}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.marginAvg==null?'—':x.d.marginAvg}</td><td>${x.d.confidence.สูง}</td><td>${x.d.confidence.กลาง}</td><td>${x.d.confidence.ต่ำ}</td><td><button class="add-card-btn" onclick="showDecisionTrace('${encodeURIComponent(x.name)}')">ดู Trace</button></td></tr>`).join('');return`<div class="lottery-audit-block"><div class="lottery-audit-title">🔬 2. Selection Decision Audit · ย้อนรอยการตัดสินใจ OOS</div><div class="lottery-audit-sub">ตรวจจากลำดับเวลาเดิม: สูตร → Candidate Board → d1/d2 → ผลจริง โดยไม่ใช้ผลอนาคตในการตัดสินใจ</div><div class="audit-grid"><div class="metric-box"><small>OOS รวม</small><b>${total}</b><span>ทุกหวยที่มี OOS</span></div><div class="metric-box"><small>Selection Hit</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>Confidence สูง</small><b>${high}</b><span>จากทุก decision</span></div><div class="metric-box"><small>กลาง / ต่ำ</small><b>${mid} / ${low}</b><span>ใช้ตรวจ calibration</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Accuracy</th><th>Margin เฉลี่ย</th><th>สูง</th><th>กลาง</th><th>ต่ำ</th><th>Trace</th></tr></thead><tbody>${rows}</tbody></table></div></div><div id="decisionTracePanel"></div>`}
 function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[],logs=decisionLog(rs,base.routeCtx||null).slice(-12).reverse();const rows=logs.map(x=>`<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${x.d1}</td><td>${x.d1Hit?'✓':'✗'}</td><td>${x.d2}</td><td>${x.d2Hit?'✓':'✗'}</td><td>${x.margin}</td><td>${x.confidence}</td><td>${x.curMissBefore}</td></tr>`).join('');$('decisionTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔎 Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุดของหวยนี้ · d1/d2 ถูกตรวจแยก และ curMissBefore แสดงความเสี่ยงก่อนการตัดสินใจ</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>d1</th><th>d1 Hit</th><th>d2</th><th>d2 Hit</th><th>Margin</th><th>Confidence</th><th>Miss ก่อนหน้า</th></tr></thead><tbody>${rows}</tbody></table></div>`;document.getElementById('decisionTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})}
 function decisionStats(rs,routeCtx=null){const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}}
@@ -1430,7 +1455,7 @@ function globalSelectionSummary(groups){
 }
 
 
-/* V2.2 FORMULA ROUTING STACK — fixed formula bodies, bounded variants, chronological OOS only. */
+/* V2.3 STABLE SELECTION ENGINE — fixed formula bodies, bounded variants, chronological OOS only. */
 const FL_OFFSETS=[-3,-2,-1,0,1,2,3];
 const FL_MODES=[
   {id:'B',label:'ทั้งคู่',apply:(p,o)=>p.map(d=>norm(d+o))},
@@ -1524,7 +1549,7 @@ function globalTable(groups){
     return{f,h,n,r:pct(h,n),hp}
   }).sort((a,b)=>b.r-a.r).map((x,i)=>`<tr><td><span class="badge-rank-${i<3?i+1:'other'}">อันดับ ${i+1}</span></td><td class="formula-cell">${esc(x.f)}</td><td>${x.n}</td><td>${x.h}</td><td>${x.n-x.h}</td><td><span class="score-chip">${x.r}%</span></td>${x.hp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}</tr>`).join('');
   return `<div class="section-title">🌐 0. ภาพรวมระบบ</div>
-  <div id="globalSelectionMount"><div class="loading-placeholder">กำลังสร้าง Global Selection Audit…</div></div>
+  <div id="globalSelectionMount"><div class="loading-placeholder">กำลังสร้าง Global Selection Audit…</div></div><div id="thaiStockSelectionMount"><div class="loading-placeholder">กำลังเตรียม OOS หุ้นไทย…</div></div>
   <details class="secondary-section" data-lazy-global="routing"><summary>🧭 Formula Routing · ทีม Main 3 ตามประเภทหวย <span>แสดงเมื่อเปิด</span></summary><div class="secondary-body"><div class="loading-placeholder">กดเปิดเพื่อโหลด</div></div></details>
   <details class="secondary-section" data-lazy-global="research"><summary>🧪 Formula Research Stack · ห้องวิจัยสูตร <span>ไม่กระทบสูตรล็อก</span></summary><div class="secondary-body"><div class="loading-placeholder">กดเปิดเพื่อโหลด</div></div></details>
   <details class="secondary-section"><summary>📐 สูตร F1–F9 · OOS รวม <span>ข้อมูลตรวจสอบ</span></summary><div class="secondary-body"><div class="summary-table-container"><h3 style="color:#78590f;margin:0 0 8px">ภาพรวมสูตรทั้งหมด · OOS จริง</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>ชื่อสูตร</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div></details>
@@ -1534,6 +1559,7 @@ function installLazyPanels(groups){
   const root=$('result'); if(!root)return;
   const gmount=$('globalSelectionMount');
   if(gmount){setTimeout(()=>{try{gmount.innerHTML=globalSelectionSummary(groups)}catch(e){gmount.innerHTML='<div class="error-box">⚠️ สร้าง Global Selection Audit ไม่สำเร็จ</div>';console.error(e)}},30)}
+  const tmount=$('thaiStockSelectionMount'); if(tmount){setTimeout(()=>{try{tmount.innerHTML=thaiStockSelectionPanel(groups)}catch(e){tmount.innerHTML='<div class="error-box">⚠️ สร้าง OOS หุ้นไทยไม่สำเร็จ</div>';console.error(e)}},45)}
   root.querySelectorAll('details[data-lazy-global]').forEach(d=>{d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const kind=d.dataset.lazyGlobal,body=d.querySelector('.secondary-body');try{body.innerHTML=kind==='routing'?formulaRoutingPanel(groups):formulaResearchStackPanel(groups);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}})})
   root.querySelectorAll('details[data-lazy-selection]').forEach(d=>{d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazySelection),base=currentPredictionDataMap[name];const body=d.querySelector('.secondary-body');try{body.innerHTML=base?selectionDashboard(base.records,base.routeCtx):'<div class="error-box">ไม่พบข้อมูลหวย</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลด Selection Diagnostics ไม่สำเร็จ</div>';console.error(e)}})})
 }
@@ -1568,7 +1594,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   idx=0;
   for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,idx++)}
   if(top)html+=card(top,900);
-  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.2 Selection Audit Trace + Conditional Survival</span><span class="brand-star">✦</span></div>`;
+  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.3 Stable Selection Engine + Conditional Survival</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
   installLazyPanels(groups);
 }
@@ -1627,7 +1653,7 @@ async function runEngine(){
     const panel=$('processingPanel');if(panel&&$('run').disabled){$('run').disabled=false;$('run').removeAttribute('aria-busy')}
   }
 }
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V2.2',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.2+conditional-selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V2.3',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.3+stable-formula-team+conditional-selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator()});
 })();
 </script>
