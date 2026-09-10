@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V2.3 Stable Selection Engine + Conditional Survival: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
+<!-- V2.8 Aggressive Digit Selector + Conditional Survival: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
 <head>
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>Mester Lotto VIP+ — V2.3 Stable Selection Engine + Conditional Survival</title>
+<title>Mester Lotto VIP+ — V2.8 Aggressive Digit Selector + Conditional Survival</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1009,7 +1009,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
       <small>Ban Ngern Kong V32.4 Audit Intelligence</small>
     </div>
   </div>
-  <div class="pill">● V2.3 STABLE SELECTION ENGINE</div>
+  <div class="pill">● V2.8 AGGRESSIVE DIGIT SELECTOR</div>
 </div>
 <section class="hero">
   <span class="hero-tag">BAN NGERN KONG MULTI-ANGLE AUDIT V32.4</span>
@@ -1040,7 +1040,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
   </div>
   <div class="actions">
     <button id="run" class="run">
-      ⚡ ประมวลผล V2.3
+      ⚡ ประมวลผล V2.8
     </button>
     <button id="clearInput" class="clear">
       ล้างกล่องกรอกข้อมูล
@@ -1332,7 +1332,75 @@ function stableTeamSelect(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null
   const consensus=ordered.map(q=>({digit:q.digit,count:q.count,score:q.score,formulas:q.formulas,evidence:q.evidence,gate:q.gate,confidence:q.confidence}));
   return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus,selection:{d1:top,d2:second,margin,confidence,signalStrength:top.count>=2?'สูง':top.count===1?'อ่อน':'ต่ำ',anchorFormula:null,anchorQuality:null,anchorConfidence:null,gate:margin>=minMargin,clusters:formulaClusters(rs),risk,stableTeam:team},current:currentPredictions(rs)};
 }
-function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){return stableTeamSelect(rs,ad,historyRs,riskOverride,routeProfile,routeCtx)}
+function aggressiveDigitEnsemble(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
+  const last=rs.at(-1),prev=rs.at(-2)||null;if(!last)return stableTeamSelect(rs,ad,historyRs,riskOverride,routeProfile,routeCtx);
+  const risk=riskOverride||selectionRiskProfile(rs), dh=multiWindowDigitHistory(historyRs), rows=historyRs.filter(r=>r&&!r.breakBefore).slice(-120);
+  const V=Array.from({length:10},(_,digit)=>({digit,score:0,signals:[],formulas:[],count:0,independent:0}));
+  const add=(d,w,label,extra)=>{d=Number(d);if(!Number.isInteger(d)||d<0||d>9||!Number.isFinite(w))return;const q=V[d];q.score+=w;q.signals.push({label,weight:Math.round(w*1000)/1000,...(extra||{})});};
+  // A. Formula ensemble: all formulas contribute, but quality is shrinkage-weighted and recent performance matters.
+  const fRows=FORMULAS.map(f=>{const x=ad?.[f]||stats(formulaHistory(rs,f));const n=Number(x?.total||0);const base=Number.isFinite(x?.rate)?x.rate:50;const rec=Number.isFinite(x?.recency)?x.recency:base;const r30=Number((x?.horizon||[]).find(z=>z.w===30)?.rate);const long=Number.isFinite(r30)?r30:base;const shr=(base*n+50*18)/(n+18);return{f,x,n,quality:.42*shr+.23*long+.35*rec};}).sort((a,b)=>b.quality-a.quality);
+  const fmin=Math.min(...fRows.map(x=>x.quality)),frange=Math.max(1,Math.max(...fRows.map(x=>x.quality))-fmin);
+  for(const fr of fRows){const pred=execFormula(fr.f,last,prev)||[];const fw=.22+.88*((fr.quality-fmin)/frange);for(const d of [...new Set(pred.map(Number).filter(Number.isFinite))]){add(d,fw,'formula',{f:fr.f});V[d].formulas.push(fr.f);V[d].count++;}}
+  // B. Stable team is a bonus, never a hard gate.
+  const team=stableFormulaTeam(rs,ad,routeProfile);for(const t of team){const pred=execFormula(t.f,last,prev)||[];for(const d of [...new Set(pred.map(Number).filter(Number.isFinite))])add(d,.45+.55*Math.max(0,Math.min(1,(t.score-50)/15)),'team',{f:t.f});}
+  // C. Candidate board: use rank decay plus independent support.
+  const cb=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx);cb.forEach((q,i)=>{const ind=Number(q.independentSupport||q.support||0);const sc=Math.max(0,Number(q.score||0));add(q.digit,.20/(1+i*.14)*Math.min(2.2,Math.max(.25,sc))+Math.min(.30,ind*.12),'candidate',{rank:i+1});});
+  // D. Position-aware Bayesian digit rates, with separate recent and long windows.
+  const targetOf=r=>[Number(r.n3?.[1]),Number(r.n3?.[2]),Number(r.n2?.[0]),Number(r.n2?.[1])].filter(Number.isFinite);
+  function digitRate(sample,d,mode){let n=sample.length,h=0;for(const r of sample){const ds=targetOf(r);if(mode==='any'){if(ds.includes(d))h++;}else if(ds.filter(x=>x===d).length)h+=1;}return n?(h/n):.4;}
+  const long=rows.slice(-100),mid=rows.slice(-50),recent=rows.slice(-20);
+  for(let d=0;d<10;d++){
+    const rl=digitRate(recent,d,'any'),rm=digitRate(mid,d,'any'),rg=digitRate(long,d,'any');
+    const pos=(sample=>{let h=0,n=sample.length*4;for(const r of sample)for(const x of targetOf(r))if(x===d)h++;return n?h/n:.1})(long);
+    const hist=Number(dh[d]?.score||50);
+    add(d,1.75*(.50*rl+.30*rm+.20*rg-.40)+.72*(pos-.10)+.025*(hist-50),'bayes-base');
+    // Gap/return signal: reward digits whose absence is unusual, but cap it.
+    let gap=0;for(let i=historyRs.length-1;i>=0&&i>=historyRs.length-40;i--){if(targetOf(historyRs[i]).includes(d))break;gap++;}
+    const expected=Math.max(1,Math.round(1/Math.max(.08,rg)));
+    add(d,.34*Math.max(-1,Math.min(1,(gap-expected)/Math.max(2,expected))),'gap');
+  }
+  // E. Exponential recent pressure at target-position level.
+  for(let d=0;d<10;d++){let w=1,hit=0,total=0;for(let i=historyRs.length-1;i>=0&&i>=historyRs.length-35;i--){const r=historyRs[i];if(!r||r.breakBefore)continue;total+=w;if(targetOf(r).includes(d))hit+=w;w*=.91;}if(total)add(d,1.15*(hit/total-.40),'recent-pressure');}
+  // F. Conditional transition: previous lower-unit -> next target digit, with Laplace smoothing.
+  const src=Number(last.n2?.[1]);if(Number.isFinite(src)){
+    const transN=Array(10).fill(0),transH=Array.from({length:10},()=>Array(10).fill(0));
+    for(let i=0;i<historyRs.length-1;i++){const a=historyRs[i],b=historyRs[i+1];if(!a||!b||b.breakBefore)continue;const x=Number(a.n2?.[1]);if(!Number.isFinite(x))continue;transN[x]++;for(const d of new Set(targetOf(b)))transH[x][d]++;}
+    const n=transN[src];if(n>=4){for(let d=0;d<10;d++){const p=(transH[src][d]+1.5)/(n+15);add(d,1.35*(p-.40),'transition',{source:src,n});}}
+  }
+  // G. Pair synergy: score the probability that a digit co-occurs with another strong digit in the same target.
+  const co=Array.from({length:10},()=>Array(10).fill(0)),dn=Array(10).fill(0);
+  for(const r of rows){const ds=[...new Set(targetOf(r))];for(const d of ds){dn[d]++;for(const e of ds)if(e!==d)co[d][e]++;}}
+  for(let d=0;d<10;d++){let best=-1,bestE=0;for(let e=0;e<10;e++)if(e!==d){const p=(co[d][e]+1.2)/(dn[d]+12);if(p>best){best=p;bestE=e;}}add(d,.42*(best-.22),'co-occurrence',{partner:bestE});}
+  // H. Formula agreement density and contradiction penalty.
+  for(const q of V){const uniq=new Set(q.formulas).size;if(uniq>=4)add(q.digit,.52,'consensus4');else if(uniq===3)add(q.digit,.30,'consensus3');else if(uniq===2)add(q.digit,.12,'consensus2');if(uniq===0)add(q.digit,-.20,'no-formula');}
+  // I. OOS-conditioned feature reliability: estimate whether each signal family historically picked the right digit.
+  // This is trained only on data strictly before the current source row; no future target is touched.
+  function familyReliability(limit){const hist=historyRs.slice(1,Math.max(1,limit));if(hist.length<12)return 0;let good=0,total=0;
+    for(let i=1;i<hist.length;i++){const tr=hist.slice(0,i+1),tar=hist[i+1];if(!tar||tar.breakBefore)continue;const rr=Array.from({length:10},()=>0);const rrLast=tr.at(-1),rrPrev=tr.at(-2)||null;for(const f of FORMULAS){const p=execFormula(f,rrLast,rrPrev)||[];for(const d of new Set(p.map(Number).filter(Number.isFinite)))rr[d]++;}const mx=Math.max(...rr);const picks=rr.map((x,d)=>({x,d})).filter(z=>z.x===mx).map(z=>z.d);const td=new Set(targetOf(tar));if(picks.some(d=>td.has(d)))good++;total++;}
+    return total?good/total:.4;
+  }
+  const fr=familyReliability(historyRs.length);addToAll=undefined;
+  // J. Risk-aware correction: confidence in an overconfident lead is reduced after a miss streak.
+  if(risk.curMiss>=4){for(const q of V)q.score-=.035*Math.max(0,q.count-2);}
+  // K. Small Bayesian shrink toward the population center prevents one noisy signal from dominating.
+  const mean=V.reduce((a,q)=>a+q.score,0)/10;for(const q of V)q.score=.92*q.score+.08*mean;
+  // L. Select first digit by evidence density, second by a blend of score + independence/diversity.
+  const ordered=V.map(q=>({...q,score:Math.round(q.score*1000)/1000})).sort((a,b)=>b.score-a.score||b.count-a.count||a.digit-b.digit);
+  const pool=ordered.length?ordered:V;
+  const d1=pool[0].digit;
+  const secondCandidates=pool.slice(1);
+  const second=secondCandidates.sort((a,b)=>{
+    const ai=(a.count>=2?0.16:0)+(a.signals.filter(x=>['bayes-base','transition','co-occurrence','gap'].includes(x.label)).length>=2?.10:0);
+    const bi=(b.count>=2?0.16:0)+(b.signals.filter(x=>['bayes-base','transition','co-occurrence','gap'].includes(x.label)).length>=2?.10:0);
+    return (b.score+bi)-(a.score+ai);
+  })[0]||pool[1];
+  const margin=Math.round(((pool[0]?.score||0)-(second?.score||0))*1000)/1000;
+  const conf=margin>=.70&&pool[0].count>=3?'สูง':margin>=.28?'กลาง':'ต่ำ';
+  const consensus=ordered.map(q=>({...q,confidence:q.score>0?(q.count>=3?'สูง':q.count>=2?'กลาง':'อ่อน'):'ต่ำ',gate:true}));
+  const anchorDigit=Math.abs(7-Number(last.n3[0]))%10;
+  return{d1,d2:second?.digit??norm(d1+1),anchor:anchorDigit,pool:pairPool(d1,second?.digit??norm(d1+1),anchorDigit),d1Pairs:pairs(d1,second?.digit??norm(d1+1),anchorDigit,rs,historyRs),d2Pairs:pairs(second?.digit??norm(d1+1),d1,anchorDigit,rs,historyRs),consensus,selection:{d1:consensus.find(q=>q.digit===d1),d2:consensus.find(q=>q.digit===second?.digit),margin,confidence,signalStrength:pool[0].count>=3?'สูง':pool[0].count>=2?'กลาง':'อ่อน',anchorFormula:null,anchorQuality:null,anchorConfidence:null,gate:true,clusters:formulaClusters(rs),risk,stableTeam:team,ensemble:true,aggressive:true,featureFamilies:{formula:true,team:true,candidate:true,bayesBase:true,gap:true,recent:true,transition:true,coOccurrence:true,consensus:true,familyReliability:fr}},current:currentPredictions(rs)};
+}
+function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){return aggressiveDigitEnsemble(rs,ad,historyRs,riskOverride,routeProfile,routeCtx)}
 
 function selectionHistory(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}cache.set(key,out);return out}
 const selectionStatsCache=new WeakMap();function selectionStats(rs,routeCtx=null){const key=routeCtx?.name||'__none__';let cache=selectionStatsCache.get(rs);if(!cache){cache=new Map();selectionStatsCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const h=selectionHistory(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});const out={total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};cache.set(key,out);return out}
@@ -1443,6 +1511,10 @@ function globalSelectionSummary(groups){
   const totalHits=entries.reduce((n,x)=>n+x.sx.hits,0);
   const totalMisses=totalTests-totalHits;
   const pooledRate=pct(totalHits,totalTests);
+  const penEntries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>({name,rs,px:penetrationStats(rs)})).filter(x=>x.px.total>0);
+  const penN=penEntries.reduce((n,x)=>n+x.px.total,0),penH=penEntries.reduce((n,x)=>n+x.px.hits,0),penAN=penEntries.reduce((n,x)=>n+x.px.adaptiveTotal,0),penAH=penEntries.reduce((n,x)=>n+x.px.adaptiveHits,0);
+  const thaiEntries=Object.entries(groups).filter(([k,v])=>isThaiStockDataset(k)&&Array.isArray(v)).map(([name,rs])=>({name,rs,sx:selectionStats(rs,{name,groups})})).filter(x=>x.sx.total>0);
+  const thaiN=thaiEntries.reduce((n,x)=>n+x.sx.total,0),thaiH=thaiEntries.reduce((n,x)=>n+x.sx.hits,0);
   const rates=entries.map(x=>x.sx.rate).filter(v=>Number.isFinite(v));
   const sorted=rates.slice().sort((a,b)=>a-b);
   const avgRate=sorted.length?Math.round(avg(sorted)*100)/100:null;
@@ -1451,11 +1523,11 @@ function globalSelectionSummary(groups){
   const pass60=entries.filter(x=>x.sx.rate>=60).length;
   const best=entries.slice().sort((a,b)=>b.sx.rate-a.sx.rate||b.sx.total-a.sx.total)[0]||null;
   const worst=entries.slice().sort((a,b)=>a.sx.rate-b.sx.rate||b.sx.total-a.sx.total)[0]||null;
-  return `<div class="global-selection-panel"><div class="global-selection-head"><b>🎯 Selection Accuracy รวมทุกหวย · OOS จริง</b><span>อ่านจากข้อมูลทุกหวยในช่องเดียว<br>ไม่นับ __THAI_ALLDAY__ เป็นหวยแยก</span></div><div class="global-selection-grid"><div class="global-selection-item primary"><small>อัตราเลือกถูก รวมทุก OOS</small><b>${totalHits}/${totalTests} · ${pooledRate}%</b><span>เข้า ${totalHits} · หลุด ${totalMisses}</span></div><div class="global-selection-item"><small>หวยที่มี OOS</small><b>${entries.length} หวย</b><span>จากข้อมูลที่มีผลเพียงพอ</span></div><div class="global-selection-item"><small>ผ่านมาตรฐาน ≥70%</small><b>${pass70}/${entries.length||0} หวย</b><span>คิดจาก Accuracy รายหวย</span></div><div class="global-selection-item"><small>ผ่านมาตรฐาน ≥60%</small><b>${pass60}/${entries.length||0} หวย</b><span>คิดจาก Accuracy รายหวย</span></div><div class="global-selection-item"><small>ค่าเฉลี่ย Accuracy ต่อหวย</small><b>${avgRate==null?'—':avgRate+'%'}</b><span>ให้น้ำหนักแต่ละหวยเท่ากัน</span></div><div class="global-selection-item"><small>Median Accuracy ต่อหวย</small><b>${medianRate==null?'—':medianRate+'%'}</b><span>ค่ากลางของหวยทั้งหมด</span></div><div class="global-selection-item"><small>ดีที่สุด</small><b>${best?esc(formatDisplayTitle(best.name)):'—'}</b><span>${best?best.sx.rate+'% · '+best.sx.hits+'/'+best.sx.total:'—'}</span></div><div class="global-selection-item"><small>ต่ำสุด</small><b>${worst?esc(formatDisplayTitle(worst.name)):'—'}</b><span>${worst?worst.sx.rate+'% · '+worst.sx.hits+'/'+worst.sx.total:'—'}</span></div></div><div class="global-selection-foot">เกณฑ์หลักของระบบยังแยกชัดเจน: <b>Selection Accuracy รวม</b> = ทุก OOS decision รวมกัน; ส่วน <b>ผ่าน ≥70% / ≥60%</b> = นับเป็นรายหวย เพื่อดูว่าความแม่นครอบคลุมหลายหวยจริงหรือไม่</div></div>`
+  return `<div class="global-selection-panel"><div class="global-selection-head"><b>🎯 Selection Accuracy รวมทุกหวย · OOS จริง</b><span>อ่านจากข้อมูลทุกหวยในช่องเดียว<br>ไม่นับ __THAI_ALLDAY__ เป็นหวยแยก</span></div><div class="global-selection-grid"><div class="global-selection-item primary"><small>อัตราเลือกถูก รวมทุก OOS</small><b>${totalHits}/${totalTests} · ${pooledRate}%</b><span>เข้า ${totalHits} · หลุด ${totalMisses}</span></div><div class="global-selection-item"><small>หวยที่มี OOS</small><b>${entries.length} หวย</b><span>จากข้อมูลที่มีผลเพียงพอ</span></div><div class="global-selection-item"><small>ผ่านมาตรฐาน ≥70%</small><b>${pass70}/${entries.length||0} หวย</b><span>คิดจาก Accuracy รายหวย</span></div><div class="global-selection-item"><small>ผ่านมาตรฐาน ≥60%</small><b>${pass60}/${entries.length||0} หวย</b><span>คิดจาก Accuracy รายหวย</span></div><div class="global-selection-item"><small>ค่าเฉลี่ย Accuracy ต่อหวย</small><b>${avgRate==null?'—':avgRate+'%'}</b><span>ให้น้ำหนักแต่ละหวยเท่ากัน</span></div><div class="global-selection-item"><small>Median Accuracy ต่อหวย</small><b>${medianRate==null?'—':medianRate+'%'}</b><span>ค่ากลางของหวยทั้งหมด</span></div><div class="global-selection-item"><small>ดีที่สุด</small><b>${best?esc(formatDisplayTitle(best.name)):'—'}</b><span>${best?best.sx.rate+'% · '+best.sx.hits+'/'+best.sx.total:'—'}</span></div><div class="global-selection-item"><small>ต่ำสุด</small><b>${worst?esc(formatDisplayTitle(worst.name)):'—'}</b><span>${worst?worst.sx.rate+'% · '+worst.sx.hits+'/'+worst.sx.total:'—'}</span></div></div><div class="global-selection-foot">เกณฑ์หลักของระบบยังแยกชัดเจน: <b>Selection Accuracy รวม</b> = ทุก OOS decision รวมกัน; ส่วน <b>ผ่าน ≥70% / ≥60%</b> = นับเป็นรายหวย เพื่อดูว่าความแม่นครอบคลุมหลายหวยจริงหรือไม่</div><div class="summary-table-container" style="margin-top:10px"><h3 style="color:#78590f;font-size:.78rem;margin:8px 0">🔥 V2.8 Selection Truth Audit · แยกจากเลขเจาะเดิม</h3><table class="audit-table"><thead><tr><th>ระบบ</th><th>OOS</th><th>เข้า</th><th>หลุด</th><th>Accuracy</th><th>สถานะ</th></tr></thead><tbody><tr><td><b>V2.8 Aggressive Ensemble Selector</b></td><td>${totalTests}</td><td>${totalHits}</td><td>${totalMisses}</td><td><span class="score-chip">${pooledRate}%</span></td><td>production selector</td></tr><tr><td>เลขเจาะเดิม</td><td>${penN}</td><td>${penH}</td><td>${penN-penH}</td><td>${pct(penH,penN)}%</td><td>legacy penetration</td></tr><tr><td>เลขเจาะ Adaptive</td><td>${penAN}</td><td>${penAH}</td><td>${penAN-penAH}</td><td>${pct(penAH,penAN)}%</td><td>legacy adaptive</td></tr></tbody></table></div><div class="summary-table-container" style="margin-top:10px"><h3 style="color:#78590f;font-size:.78rem;margin:8px 0">🇹🇭 หุ้นไทย · Selection OOS แยกชุด</h3><table class="audit-table"><thead><tr><th>ชุด</th><th>OOS</th><th>เข้า</th><th>Accuracy</th></tr></thead><tbody><tr><td>Thai Stock datasets</td><td>${thaiN}</td><td>${thaiH}</td><td>${pct(thaiH,thaiN)}%</td></tr></tbody></table></div></div>`
 }
 
 
-/* V2.3 STABLE SELECTION ENGINE — fixed formula bodies, bounded variants, chronological OOS only. */
+/* V2.8 AGGRESSIVE DIGIT SELECTOR — fixed formula bodies, bounded variants, chronological OOS only. */
 const FL_OFFSETS=[-3,-2,-1,0,1,2,3];
 const FL_MODES=[
   {id:'B',label:'ทั้งคู่',apply:(p,o)=>p.map(d=>norm(d+o))},
@@ -1594,7 +1666,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   idx=0;
   for(const name of Object.keys(currentPredictionDataMap)){const pc=currentPredictionDataMap[name];if(pc.latestRawRound?.status==='skipped')continue;html+=card(pc,idx++)}
   if(top)html+=card(top,900);
-  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.3 Stable Selection Engine + Conditional Survival</span><span class="brand-star">✦</span></div>`;
+  html+=`</div><div id="manualCards"></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.8 Aggressive Digit Selector + Conditional Survival</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
   installLazyPanels(groups);
 }
@@ -1653,7 +1725,178 @@ async function runEngine(){
     const panel=$('processingPanel');if(panel&&$('run').disabled){$('run').disabled=false;$('run').removeAttribute('aria-busy')}
   }
 }
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V2.3',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.3+stable-formula-team+conditional-selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V2.8',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.8+stable-formula-team+conditional-selection-pipeline-trace+audit-upgrade-dataset-identity+conflict-safe-merge+independent-support+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+
+/* V2.8 HIGH-PRECISION DIGIT SELECTION CORE
+   Direct upgrade of the decision layer. Formula bodies are preserved.
+   New: conditional digit skill, position-aware transition, bounded recent form,
+   cluster de-duplication, evidence shrinkage, and joint pair optimization.
+   No future data is used in a decision. */
+function v27Clamp(v,a,b){return Math.max(a,Math.min(b,Number(v)||0))}
+function v27Rate(h,n,prior=.5,priorN=8){return n>0?((h+prior*priorN)/(n+priorN))*100:prior*100}
+function v27TargetDigits(r){return [...String(r.n3||'').padStart(3,'0').slice(1),...String(r.n2||'').padStart(2,'0')].map(Number).filter(Number.isFinite)}
+function v27FormulaWeight(stat,hist){
+  const n=Number(stat?.total||hist.length||0), base=v27Rate(Number(stat?.hits||0),n,.5,12);
+  const a=hist.slice(-10),b=hist.slice(-30);
+  const recent=.65*v27Rate(a.filter(x=>x.hit).length,a.length,.5,4)+.35*v27Rate(b.filter(x=>x.hit).length,b.length,.5,8);
+  const st=Number(stat?.stability==null?50:stat.stability), trend=recent-base;
+  let w=.54+.28*((base-50)/50)+.16*((recent-50)/50)+.06*((st-50)/50)+.06*Math.tanh(trend/8);
+  if((stat?.curHit||0)>0)w*=1+Math.min(.07,(stat.curHit||0)*.014);
+  if((stat?.curMiss||0)>=2)w*=1-Math.min(.10,(stat.curMiss||0)*.025);
+  return v27Clamp(w,.65,1.35)
+}
+function v27TransitionEvidence(rs,digit){
+  const last=rs.at(-1); if(!last)return 50;
+  const src=v27TargetDigits(last), scores=[];
+  for(let pos=0;pos<4;pos++){
+    const srcD=src[pos]; let h=0,n=0;
+    for(let i=0;i<rs.length-1;i++){
+      if(rs[i+1]?.breakBefore)continue;
+      const a=v27TargetDigits(rs[i]),b=v27TargetDigits(rs[i+1]);
+      if(a[pos]===srcD){n++;if(b[pos]===digit)h++}
+    }
+    scores.push(v27Rate(h,n,.1,.9));
+  }
+  return avg(scores)
+}
+function v27DigitBase(rs,digit){
+  const wins=[[20,.50],[50,.30],[100,.20]];let z=0,w=0;
+  for(const [N,ww] of wins){const a=rs.slice(-N);if(!a.length)continue;let h=0,n=a.length*4;for(const r of a)h+=v27TargetDigits(r).filter(x=>x===digit).length;z+=v27Rate(h,n,.4,4)*ww;w+=ww}
+  return w?z/w:50
+}
+function v27Recurrence(rs,digit){
+  let gap=999,count=0,sum=0;
+  for(let i=rs.length-1;i>=0&&count<8;i--){if(v27TargetDigits(rs[i]).includes(digit)){if(gap===999)gap=rs.length-1-i;sum+=rs.length-1-i;count++}}
+  if(count===0)return 50; const mean=sum/count;
+  let s=50;if(gap<=1)s=47;else if(gap<=4)s=54;else if(gap<=8)s=59;else if(gap<=14)s=55;else s=49;
+  return v27Clamp(s+v27Clamp((mean-gap)*.25,-4,4),30,65)
+}
+/* Conditional digit skill: when a formula predicts digit d, how often does d actually
+   occur in one of the four scored target positions? This is much more useful for
+   selection than treating every formula hit as an equally informative vote. */
+function v27ConditionalDigitSkill(rs,f,digit){
+  let h=0,n=0;
+  for(let i=0;i<rs.length-1;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const p=execFormula(f,rs[i],rs[i-1]);if(!p)continue;
+    if(new Set(p.map(Number)).has(digit)){n++;if(v27TargetDigits(rs[i+1]).includes(digit))h++}
+  }
+  return {rate:v27Rate(h,n,.5,10),tests:n,hits:h}
+}
+function v27IndependentFormulaVotes(rs,ad,routeProfile){
+  const votes=Array.from({length:10},()=>({score:0,clusters:new Set(),formulas:[],conditional:[]})),last=rs.at(-1),prev=rs.at(-2);
+  const ranked=routeProfile?.ranked||[],rankMap=new Map(ranked.map(x=>[x.f,x]));
+  const clusterMap=new Map(); const cls=formulaClusters(rs); for(const g of cls)for(const f of g)clusterMap.set(f,g.join('|'));
+  for(const f of FORMULAS){
+    const hist=formulaHistory(rs,f),st=ad?.[f]||stats(hist),p=execFormula(f,last,prev);if(!p)continue;
+    let w=v27FormulaWeight(st,hist);const rr=rankMap.get(f);if(rr?.score!=null)w*=v27Clamp(.94+.06*((Number(rr.score)-50)/20),.92,1.08);
+    const cl=clusterMap.get(f)||f;
+    for(const dg of new Set(p.map(Number).filter(Number.isFinite))){
+      const q=votes[dg], cs=v27ConditionalDigitSkill(rs,f,dg), skill=v27Clamp(cs.rate,40,72)/60;
+      const duplicate=q.clusters.has(cl)?.25:1;
+      q.score+=w*duplicate*skill; q.clusters.add(cl); q.formulas.push({f,w:Math.round(w*duplicate*1000)/1000,conditional:Math.round(cs.rate*100)/100,tests:cs.tests}); q.conditional.push(cs.rate);
+    }
+  }
+  const mx=Math.max(...votes.map(x=>x.score),1);
+  return votes.map((x,d)=>({...x,digit:d,score:100*x.score/mx,raw:x.score,clusterCount:x.clusters.size,conditionalAvg:x.conditional.length?avg(x.conditional):50}))
+}
+function v27PairSynergy(rs,a,b){
+  const wins=[[20,.5],[50,.3],[100,.2]];let z=0,w=0;
+  for(const [N,ww] of wins){const x=rs.slice(-N);if(!x.length)continue;let h=0,n=x.length;for(const r of x){const t=v27TargetDigits(r);if(t.includes(a)&&t.includes(b))h++}z+=v27Rate(h,n,.12,4)*ww;w+=ww}
+  return w?z/w:50
+}
+function v27AggressiveSelect(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
+  const hist=historyRs||rs,last=rs.at(-1);if(!last)return null;
+  const baseVotes=v27IndependentFormulaVotes(rs,ad,routeProfile), risk=riskOverride||selectionRiskProfile(rs);
+  const rows=baseVotes.map(q=>{
+    const formula=v27Clamp(q.score,0,100), tr=v27TransitionEvidence(hist,q.digit), base=v27DigitBase(hist,q.digit), rec=v27Recurrence(hist,q.digit);
+    const conditional=v27Clamp(q.conditionalAvg||50,35,75);
+    const miss=Number(risk?.curMiss||0); const stability=miss>=4?(q.digit%2===0?1:-1):0;
+    /* Formula evidence is primary; other layers break ties rather than overwhelm it. */
+    const score=.48*formula+.20*conditional+.14*tr+.10*base+.05*rec+.03*(50+stability*3);
+    return {...q,formulaScore:formula,conditional,tr,digitBase:base,recurrence:rec,finalScore:score,evidenceDensity:q.clusterCount*1.5+q.formulas.length*.35}
+  });
+  const pairs=[];
+  for(let a=0;a<10;a++)for(let b=a+1;b<10;b++){
+    const A=rows[a],B=rows[b],sy=v27PairSynergy(hist,a,b);
+    const independent=Math.min(A.clusterCount,B.clusterCount);
+    const diversity=A.formulas.length&&B.formulas.length&&A.formulas.some(x=>!B.formulas.some(y=>y.f===x.f))?2.5:0;
+    /* Pair selection is joint: neither digit may win merely because it is #1 alone. */
+    const score=.43*A.finalScore+.43*B.finalScore+.09*sy+.05*v27Clamp(independent*10,0,20)+diversity;
+    pairs.push({a,b,synergy:sy,score})
+  }
+  pairs.sort((a,b)=>b.score-a.score||b.synergy-a.synergy||a.a-b.a);
+  const bp=pairs[0]||{a:0,b:1,score:0,synergy:50};
+  const nextPair=pairs[1]?.score??bp.score; const pairMargin=Math.round((bp.score-nextPair)*100)/100;
+  const d1=rows[bp.a],d2=rows[bp.b];
+  const ordered=rows.slice().sort((a,b)=>b.finalScore-a.finalScore||b.conditional-a.conditional||a.digit-b.digit);
+  const confidence=bp.score>=65&&pairMargin>=1.5?'สูง':bp.score>=57?'กลาง':'ต่ำ';
+  const anchor=Math.abs(7-Number(last.n3[0]))%10;
+  return {d1:d1.digit,d2:d2.digit,anchor,pool:pairPool(d1.digit,d2.digit,anchor),d1Pairs:pairsFnSafe(d1.digit,d2.digit,anchor,rs,hist),d2Pairs:pairsFnSafe(d2.digit,d1.digit,anchor,rs,hist),consensus:ordered,selection:{d1,d2,margin:Math.round(Math.abs(d1.finalScore-d2.finalScore)*100)/100,pairMargin,pairScore:bp.score,confidence,signalStrength:Math.min(d1.clusterCount,d2.clusterCount)>=2?'สูง':'กลาง',guard:pairMargin>=.5},current:currentPredictions(rs),v27:true}
+}
+/* Keep the existing pair generator untouched; this wrapper avoids collision with the local
+   variable name 'pairs' used by the joint optimizer. */
+function pairsFnSafe(a,b,anchor,rs,hist){return pairs(a,b,anchor,rs,hist)}
+/* Production selector: V2.8 replaces only the digit decision layer. Formula bodies remain intact. */
+/* V2.8 BEST-SYSTEM-DERIVED SELECTOR
+   Core idea: do not copy a lottery's formulas; learn the decision style of the strongest
+   selector from prior OOS decisions, then apply that style only inside the same dataset.
+   No future result is used. Myanmar remains excluded by the caller/group filters. */
+const v28PolicyCache=new WeakMap();
+const V28_POLICIES=[
+  {id:'consensus',label:'Consensus-first',w:[.58,.18,.08,.08,.08]},
+  {id:'recent',label:'Recent-first',w:[.40,.22,.20,.10,.08]},
+  {id:'transition',label:'Transition-first',w:[.40,.18,.22,.12,.08]},
+  {id:'base',label:'Base-rate-first',w:[.40,.18,.10,.24,.08]},
+  {id:'balanced',label:'Balanced',w:[.48,.20,.12,.12,.08]}
+];
+function v28PolicyDigitScore(q,policy){
+  const w=policy.w;
+  return w[0]*Number(q.formulaScore||0)+w[1]*Number(q.conditional||50)+w[2]*Number(q.tr||50)+w[3]*Number(q.digitBase||50)+w[4]*Number(q.recurrence||50);
+}
+function v28PolicyDecision(base,policy,historyRs){
+  const rows=(base?.consensus||[]).map(q=>({...q,v28score:v28PolicyDigitScore(q,policy)}));
+  if(rows.length<2)return base;
+  rows.sort((a,b)=>b.v28score-a.v28score||b.score-a.score||a.digit-b.digit);
+  const candidates=rows.slice(0,Math.min(8,rows.length)),pairs=[];
+  for(let i=0;i<candidates.length;i++)for(let j=i+1;j<candidates.length;j++){
+    const a=candidates[i],b=candidates[j],sy=v27PairSynergy(historyRs,a.digit,b.digit);
+    const score=.47*a.v28score+.47*b.v28score+.06*sy;
+    pairs.push({a:a.digit,b:b.digit,score,synergy:sy});
+  }
+  pairs.sort((a,b)=>b.score-a.score||b.synergy-a.synergy||a.a-b.a);
+  const bp=pairs[0]||{a:rows[0].digit,b:rows[1].digit,score:0,synergy:50};
+  const d1=rows.find(x=>x.digit===bp.a)||rows[0],d2=rows.find(x=>x.digit===bp.b)||rows[1];
+  return {...base,d1:d1.digit,d2:d2.digit,consensus:rows,selection:{...(base.selection||{}),d1,d2,policy:policy.id,policyLabel:policy.label,policyScore:bp.score,policyMargin:Math.round(((bp.score-(pairs[1]?.score||bp.score))*100))/100}};
+}
+function v28BestPolicy(rs,routeCtx){
+  if(!rs||rs.length<25)return V28_POLICIES[4];
+  const cached=v28PolicyCache.get(rs);if(cached)return cached;
+  const end=rs.length-1,start=Math.max(1,end-70),scores=V28_POLICIES.map(p=>({p,tests:0,hits:0,weighted:0}));
+  for(let i=start;i<end;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const train=rs.slice(0,i+1),ad=audit(train),cut=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0;
+    const rp=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cut):null;
+    const base=v27AggressiveSelect(train,ad,train,null,rp,routeCtx),target=v27TargetDigits(rs[i+1]);
+    for(const x of scores){const d=v28PolicyDecision(base,x.p,train),hit=target.includes(d.d1)||target.includes(d.d2);x.tests++;if(hit)x.hits++;/* recency emphasis, but bounded */x.weighted+=hit?(i-start+1):0;}
+  }
+  scores.forEach(x=>x.rate=x.tests?pct(x.hits,x.tests):0);
+  scores.sort((a,b)=>(b.hits-b.tests*0.5)-(a.hits-a.tests*0.5)||b.rate-a.rate||b.tests-a.tests);
+  /* Shrink tiny samples toward balanced; require a real OOS edge before switching. */
+  const best=scores[0],balanced=scores.find(x=>x.p.id==='balanced')||scores.at(-1);
+  const bestAdj=(best.hits+10)/(best.tests+20),balAdj=(balanced.hits+10)/(balanced.tests+20);
+  const chosen=(best.tests>=18&&bestAdj>balAdj+.015)?best.p:V28_POLICIES.find(x=>x.id==='balanced');
+  const out={policy:chosen,table:scores.map(x=>({id:x.p.id,label:x.p.label,tests:x.tests,hits:x.hits,rate:x.rate}))};
+  v28PolicyCache.set(rs,out);return out;
+}
+function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
+  const base=v27AggressiveSelect(rs,ad,historyRs,riskOverride,routeProfile,routeCtx);
+  if(!base)return base;
+  const learned=v28BestPolicy(rs,routeCtx),out=v28PolicyDecision(base,learned.policy,historyRs||rs);
+  out.v28=true;out.selection={...(out.selection||{}),bestSystemPolicy:learned.policy.id,bestSystemPolicyLabel:learned.policy.label,policyTable:learned.table};
+  return out;
+}
+
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator()});
 })();
 </script>
