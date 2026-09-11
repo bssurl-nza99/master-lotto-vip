@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 FINAL-SMOOTH-3</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 FINAL-SMOOTH-4</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1345,7 +1345,7 @@ body:before{
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.6 FINAL-SMOOTH-3</div>
+  <div class="pill">V1.9.6 FINAL-SMOOTH-4</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2685,7 +2685,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.6 FINAL-SMOOTH-3: cooperative execution helpers.
+// V1.9.6 FINAL-SMOOTH-4: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -2694,6 +2694,15 @@ async function __coopYieldIfNeeded(state,force=false){
   const now=performance.now();
   if(force||now-state.last>=__COOP_YIELD_MS__){state.last=now;await new Promise(r=>{if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>r());else setTimeout(r,0);});}
 }
+const __COOP_SELECT_CACHE__=new Map();
+function __coopRsKey(rs,routeCtx=null){
+  const n=routeCtx?.name||'__none__';
+  const a=rs?.[0],z=rs?.at?.(-1)||rs?.[rs?.length-1];
+  return `${n}|${rs?.length||0}|${a?recordKey(a):''}|${z?recordKey(z):''}`;
+}
+function __coopRouteKey(routeCtx=null){return routeCtx?.name||'__none__'}
+function __coopSelectCacheGet(rs,routeCtx){return __COOP_SELECT_CACHE__.get(__coopRsKey(rs,routeCtx))}
+function __coopSelectCacheSet(rs,routeCtx,v){__COOP_SELECT_CACHE__.set(__coopRsKey(rs,routeCtx),v);return v}
 async function decisionMemoryCooperative(rs,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("decisionMemoryCooperative");
   try{
@@ -2734,6 +2743,7 @@ async function candidateBoardCooperative(rs,ad,historyRs=rs,routeProfile=null,ro
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
+    if(!riskOverride){const cached=__coopSelectCacheGet(rs,routeCtx);if(cached)return cached}
     const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx),anchor=signalAnchor(c,routeProfile,ad,rs);
     applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);
     const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
@@ -2742,23 +2752,34 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);if(valid.length>1&&margin0<minMargin){const stronger=d2Pool.find(x=>top.score-x.score>=minMargin);if(stronger)second=stronger}
     const rescue=chooseContextRescue(c,rs,risk);if(rescue&&rescue.digit!==top.digit){second=top;top=rescue}
     const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)};
+    if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
+    return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
 }
-async function selectionHistoryCooperative(rs,routeCtx=null){
-  const __pt0=window.__PERFTRACE__.begin("selectionHistoryCooperative");
-  try{
-    const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has('__coop__'+key))return cache.get('__coop__'+key);
-    const out=[],state={last:performance.now()};
-    for(let i=1;i<rs.length-1;i++){
-      if(rs[i+1]?.breakBefore)continue;
-      const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));
-      out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
-      await __coopYieldIfNeeded(state);
-    }
-    cache.set('__coop__'+key,out);return out;
-  }finally{window.__PERFTRACE__.end("selectionHistoryCooperative",__pt0)}
+async function __coopOosBundle(rs,routeCtx=null){
+  const key=__coopRsKey(rs,routeCtx),cached=window.__COOP_OOS_BUNDLE_CACHE__?.get?.(key);
+  if(cached)return cached;
+  const selection=[],decision=[],state={last:performance.now()};
+  for(let i=1;i<rs.length-1;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(selection),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0;
+    const routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null;
+    const sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx);
+    const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),d1=target.includes(sel.d1),d2=target.includes(sel.d2),pairHit=d1||d2;
+    selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
+    decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
+    await __coopYieldIfNeeded(state);
+  }
+  const bundle={selection,decision};
+  if(!window.__COOP_OOS_BUNDLE_CACHE__)window.__COOP_OOS_BUNDLE_CACHE__=new Map();
+  window.__COOP_OOS_BUNDLE_CACHE__.set(key,bundle);return bundle;
 }
+async function selectionHistoryCooperative(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionHistoryCooperative");try{return(await __coopOosBundle(rs,routeCtx)).selection}finally{window.__PERFTRACE__.end("selectionHistoryCooperative",__pt0)}}
+async function selectionStatsCooperative(rs,routeCtx=null){const h=await selectionHistoryCooperative(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});return{total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss}}
+async function decisionLogCooperative(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionLogCooperative");try{return(await __coopOosBundle(rs,routeCtx)).decision}finally{window.__PERFTRACE__.end("decisionLogCooperative",__pt0)}}
+async function decisionStatsCooperative(rs,routeCtx=null){const h=await decisionLogCooperative(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}}
+
 async function selectionStatsCooperative(rs,routeCtx=null){
   const h=await selectionHistoryCooperative(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});return{total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};
 }
@@ -2775,7 +2796,7 @@ async function decisionLogCooperative(rs,routeCtx=null){
 }
 async function decisionStatsCooperative(rs,routeCtx=null){const h=await decisionLogCooperative(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}}
 
-async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){const __pt0=window.__PERFTRACE__.begin("render"); try {
+async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},startedAt=null){const __pt0=window.__PERFTRACE__.begin("render"); try {
   const root=$('result');if(!root)return;
   let html=`<div class="vip-dashboard v193-dashboard">`;
   const snapshotCards=[];
@@ -2783,6 +2804,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){co
   const names=Object.keys(groups).filter(name=>name!=='__THAI_TOP__');
   for(let ni=0;ni<names.length;ni++){
     const name=names[ni];
+    if(startedAt){const rp=90+((ni)/Math.max(1,names.length))*9;setProcessingProgress(rp,'กำลังสร้างรายงาน',`กำลังสร้างการ์ด + OOS ${formatDisplayTitle(name)} · ${ni+1}/${names.length}`,startedAt,100,rp,true);}
     // Yield before every heavy lottery block so the browser can repaint on mobile.
     await new Promise(r=>setTimeout(r,0));
     const rs=groups[name],hist=historyGroups[name]||rs,rawHist=historyRawGroups[name]||hist,meta=rawMeta[name]||{};
@@ -2831,7 +2853,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){co
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.6 FINAL-SMOOTH-3</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.6 FINAL-SMOOTH-4</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
@@ -2914,9 +2936,9 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     }
     const thaiAllDay=Object.values(groups).flat().filter(r=>v95ThaiRound(r.name));if(thaiAllDay.length)groups.__THAI_ALLDAY__=thaiAllDay;
     currentAuditDataMap={};currentPredictionDataMap={};
-    setProcessingProgress(97,'กำลังสร้างรายงาน','สรุป Global Selection Accuracy Audit และการ์ดทั้งหมด',startedAt,100,97,true);
+    setProcessingProgress(90,'กำลังสร้างรายงาน','เริ่มสร้างรายงานและ Selection OOS แบบแบ่งช่วง',startedAt,100,90,true);
     await new Promise(r=>setTimeout(r,0));
-    await render(groups,historyGroups,rawMeta,historyRawGroups);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
+    await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
     setTimeout(()=>window.__SHOW_OPT_VERIFY__?.(),80);
     showToast(`✓ V1.9.6 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
@@ -2950,7 +2972,7 @@ window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=run
 <style id="optVerifyPanelStyle">#optVerifyPanel{position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;display:none;background:#fff;border:1px solid #ddd;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:12px;font:13px/1.45 system-ui,sans-serif;max-height:42vh;overflow:auto}
 #optVerifyPanel .ov-title{font-weight:800;margin-bottom:6px}#optVerifyPanel .ov-ok{font-weight:800}#optVerifyPanel .ov-bad{font-weight:800}#optVerifyPanel button{margin-top:8px;border:0;border-radius:10px;padding:7px 10px;background:#eee}
 <style id="uiSmoothPatch">
-/* V1.9.6 FINAL-SMOOTH-3: post-render mobile paint stabilization.
+/* V1.9.6 FINAL-SMOOTH-4: post-render mobile paint stabilization.
    Calculation/data logic is untouched. This only removes continuous paint-heavy effects. */
 body.ui-smooth .top,
 body.ui-smooth .ai-snapshot,
@@ -2972,7 +2994,7 @@ body.ui-smooth .top,
 body.ui-smooth .panel{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
 /* Browser can skip layout/paint work for off-screen result sections. */
 body.ui-smooth #result .lottery-detail-lazy{content-visibility:auto;contain:layout style paint;}
-/* V1.9.6 FINAL-SMOOTH-3: isolate visible result cards so one card's paint/layout does not invalidate the whole dashboard. */
+/* V1.9.6 FINAL-SMOOTH-4: isolate visible result cards so one card's paint/layout does not invalidate the whole dashboard. */
 body.ui-smooth #result .ai-snapshot-grid{contain:layout paint;}
 body.ui-smooth #result .ai-board,
 body.ui-smooth #result .ai-formula,
