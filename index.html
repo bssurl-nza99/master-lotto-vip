@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.9 SELECTOR-RANK-STABILIZER-2</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.10 SELECTOR-ADAPTIVE-GUARDRAIL-1</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1416,7 +1416,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.9 SELECTOR-RANK-STABILIZER-2</div>
+  <div class="pill">V1.9.10 SELECTOR-ADAPTIVE-GUARDRAIL-1</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2500,8 +2500,55 @@ const selectionMetaCache=new Map();
 function selectionMetaCacheKey(rs){const a=rs?.[0],z=rs?.[rs.length-1];const sig=(rs||[]).map(r=>`${r?.date||''}:${r?.n3||''}:${r?.n2||''}:${r?.status||''}:${r?.sequence||''}`).join('|');let h=2166136261;for(let i=0;i<sig.length;i++){h^=sig.charCodeAt(i);h=Math.imul(h,16777619)}return `${a?.name||''}|${a?.date||''}|${z?.date||''}|${rs?.length||0}|v${AUDIT_TUNING.cacheVersion}|${(h>>>0).toString(36)}`;}
 function selectionMetaKey(q){const c=Math.min(3,Number(q.count||0)),r=Math.min(4,Math.floor(Number(q.risk||0))),h=q.history?.rate==null?'u':Math.min(4,Math.floor(Number(q.history.rate)/10)),cf=q.confidence||'ต่ำ';return `c${c}|r${r}|h${h}|cf${cf}`}
 function selectionMetaScore(m){return !m||m.tests<8?50:Math.max(0,Math.min(100,(m.hits+10)/(m.tests+20)*100))}
-function selectionMetaMemory(rs){const __pt0=window.__PERFTRACE__.begin("selectionMetaMemory"); try {const cacheKey=selectionMetaCacheKey(rs);if(selectionMetaCache.has(cacheKey))return selectionMetaCache.get(cacheKey);const byKey=new Map(),byRank=Array.from({length:6},()=>({tests:0,hits:0})),all=[];const start=Math.max(1,rs.length-1-40);for(let i=start;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train);let c;const __sm=globalThis.__SUPPORT_META_BUILD__;globalThis.__SUPPORT_META_BUILD__=true;try{c=candidateBoardRaw(train,ad,train)}finally{globalThis.__SUPPORT_META_BUILD__=__sm}const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);c.slice(0,5).forEach((q,rank)=>{const ok=target.includes(q.digit),key=selectionMetaKey(q),m=byKey.get(key)||{tests:0,hits:0};m.tests++;if(ok)m.hits++;m.rate=pct(m.hits,m.tests);byKey.set(key,m);byRank[rank+1].tests++;if(ok)byRank[rank+1].hits++;all.push({source:train.at(-1).date,target:rs[i+1].date,digit:q.digit,rank:rank+1,hit:ok,key})})}const out={map:byKey,byRank,tests:all.length,hits:all.filter(x=>x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length),log:all};selectionMetaCache.set(cacheKey,out);if(selectionMetaCache.size>600){const firstKey=selectionMetaCache.keys().next().value;selectionMetaCache.delete(firstKey)}return out} finally { window.__PERFTRACE__.end("selectionMetaMemory",__pt0); }}
-function applySelectionMeta(c,rs){const meta=selectionMetaMemory(rs);for(let i=0;i<c.length;i++){const q=c[i],m=meta.map.get(selectionMetaKey(q)),r=meta.byRank[Math.max(1,Math.min(5,i+1))],ms=selectionMetaScore(m),rsr=r&&r.tests>=10?Math.max(0,Math.min(100,(r.hits+10)/(r.tests+20)*100)):50;q.metaTests=m?.tests||0;q.metaRate=m?.tests?Math.round(ms*100)/100:null;q.metaRankTests=r?.tests||0;q.metaRankRate=r?.tests?Math.round(rsr*100)/100:null;const evidence=(ms-50)*.004+(rsr-50)*.002;q.score=Math.max(0,q.score+Math.max(-.24,Math.min(.24,evidence))) }return c.sort((a,b)=>b.score-a.score||b.support-a.support||b.count-a.count||a.digit-b.digit)}
+function selectionMetaMemory(rs){const __pt0=window.__PERFTRACE__.begin("selectionMetaMemory"); try {const cacheKey=selectionMetaCacheKey(rs);if(selectionMetaCache.has(cacheKey))return selectionMetaCache.get(cacheKey);const byKey=new Map(),byRank=Array.from({length:11},()=>({tests:0,hits:0})),all=[];const start=Math.max(1,rs.length-1-40);for(let i=start;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train);let c;const __sm=globalThis.__SUPPORT_META_BUILD__;globalThis.__SUPPORT_META_BUILD__=true;try{c=candidateBoardRaw(train,ad,train)}finally{globalThis.__SUPPORT_META_BUILD__=__sm}const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);c.slice(0,10).forEach((q,rank)=>{const ok=target.includes(q.digit),key=selectionMetaKey(q),m=byKey.get(key)||{tests:0,hits:0};m.tests++;if(ok)m.hits++;m.rate=pct(m.hits,m.tests);byKey.set(key,m);byRank[rank+1].tests++;if(ok)byRank[rank+1].hits++;all.push({source:train.at(-1).date,target:rs[i+1].date,digit:q.digit,rank:rank+1,hit:ok,key})})}const out={map:byKey,byRank,tests:all.length,hits:all.filter(x=>x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length),log:all};selectionMetaCache.set(cacheKey,out);if(selectionMetaCache.size>600){const firstKey=selectionMetaCache.keys().next().value;selectionMetaCache.delete(firstKey)}return out} finally { window.__PERFTRACE__.end("selectionMetaMemory",__pt0); }}
+function applySelectionMeta(c,rs){const meta=selectionMetaMemory(rs);for(let i=0;i<c.length;i++){const q=c[i],m=meta.map.get(selectionMetaKey(q)),r=meta.byRank[Math.max(1,Math.min(10,i+1))],ms=selectionMetaScore(m),rsr=r&&r.tests>=10?Math.max(0,Math.min(100,(r.hits+10)/(r.tests+20)*100)):50;q.metaTests=m?.tests||0;q.metaRate=m?.tests?Math.round(ms*100)/100:null;q.metaRankTests=r?.tests||0;q.metaRankRate=r?.tests?Math.round(rsr*100)/100:null;const evidence=(ms-50)*.004+(rsr-50)*.002;q.score=Math.max(0,q.score+Math.max(-.24,Math.min(.24,evidence))) }return c.sort((a,b)=>b.score-a.score||b.support-a.support||b.count-a.count||a.digit-b.digit)}
+/* V1.9.10 ADAPTIVE SELECTOR CALIBRATION
+   Uses only prior OOS history already available to the selector. The purpose is
+   to give lower-ranked candidates a measured chance when their historical
+   pattern/rank has outperformed the raw score, while preserving strong current
+   leaders. No F1-F9 formulas or future outcomes are touched. */
+function applySelectorCalibration(c,rs){
+  const meta=selectionMetaMemory(rs);if(!meta||!Array.isArray(c)||!c.length)return c;
+  const before=c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);
+  const baseRank=new Map(before.map((q,i)=>[Number(q.digit),i+1]));
+  for(const q of c){
+    const m=meta.map.get(selectionMetaKey(q)),r=meta.byRank[Math.max(1,Math.min(10,baseRank.get(Number(q.digit))||10))];
+    const keyRate=m&&m.tests>=8?selectionMetaScore(m):50;
+    const rankRate=r&&r.tests>=12?Math.max(0,Math.min(100,(r.hits+10)/(r.tests+20)*100)):50;
+    const keyEdge=keyRate-50,rankEdge=rankRate-50;
+    let adj=Math.max(-.18,Math.min(.18,keyEdge*.006+rankEdge*.004));
+    const br=baseRank.get(Number(q.digit))||10;
+    if(br>=4&&m?.tests>=8&&keyRate>=57)adj+=Math.min(.10,(keyRate-57)*.012);
+    if(br<=3&&m?.tests>=10&&keyRate<46)adj-=.04;
+    q.selectorCalibrationAdj=Math.round(adj*1000)/1000;
+    q.selectorCalibrationRate=Math.round(keyRate*100)/100;
+    q.selectorCalibrationRankRate=Math.round(rankRate*100)/100;
+    q.selectorCalibrationTests=m?.tests||0;
+    q.score=Math.max(0,q.score+adj);
+  }
+  return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);
+}
+/* V1.9.10 ADAPTIVE OVERRIDE GUARDRAIL
+   Prevents weak late-stage overrides from discarding a historically strong
+   pre-selector candidate. Strong evidence can still override the guardrail. */
+function applySelectorGuardrail(c,baselineRanks,risk){
+  if(!Array.isArray(c)||!c.length||!baselineRanks)return c;
+  const ordered=c.filter(x=>x.gate).length?c.filter(x=>x.gate):c;
+  const top=ordered[0];if(!top)return c;
+  const topBaseRank=baselineRanks.get(Number(top.digit))||10;
+  for(const q of c){
+    const br=baselineRanks.get(Number(q.digit))||10;if(br>2||q.digit===top.digit)continue;
+    const curRank=ordered.findIndex(x=>x.digit===q.digit)+1;if(curRank<=2)continue;
+    const gap=top.score-q.score;
+    const trust=Math.max(0,Math.min(1,Number(q.selectorCalibrationRate||50)/100));
+    const threshold=risk?.curMiss>=3?.24:risk?.curMiss>=2?.20:.16;
+    if(gap<=threshold&&Number(q.selectorCalibrationRate||50)>=48){
+      const lift=Math.min(.14,.07+(2-br)*.025+.04*Math.max(0,trust-.5));
+      q.score+=lift;q.guardrailApplied=true;q.guardrailLift=Math.round(lift*1000)/1000;
+    }
+  }
+  return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);
+}
 
 
 
@@ -2635,7 +2682,7 @@ function chooseContextRescue(c,rs,risk){
   if((gain>=7&&margin<.20)||(risk?.curMiss>=2&&gain>=4&&margin<.12))return alt;
   return null;
 }
-/* V1.9.9 SELECTOR-RANK-STABILIZER-2
+/* V1.9.10 SELECTOR-ADAPTIVE-GUARDRAIL-1
    Real selector improvement: late-stage adjustments may push a candidate several
    ranks below its pre-signal position. When that displacement is large, blend the
    final score back toward the pre-signal score. This uses no future outcome data,
@@ -2663,7 +2710,7 @@ function stabilizeSelectorRanks(c,baselineScores){
   return changed?c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit):c;
 }
 function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("select"); try {
-  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);
+  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);applySelectorCalibration(c,rs);applySelectorGuardrail(c,__baselineRankMap,risk);
   const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
   const d2Pool=ordered.filter(x=>x.digit!==top.digit).map(x=>{const a=new Set(x.formulas||[]),b=new Set(top.formulas||[]),shared=[...a].filter(f=>b.has(f)).length,den=Math.max(1,new Set([...a,...b]).size),corr=shared/den;const radarAdj=(x.radarQualified&&top.radarQualified===false)?.045*(x.radarSupport||0):0;return{...x,_d2Score:x.score+.10*(1-corr)+.06*(x.independentSupport||0)+radarAdj,_d2Correlation:corr}}).sort((a,b)=>b._d2Score-a._d2Score||b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);
   let second=d2Pool[0]||ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
@@ -2828,7 +2875,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.9 SELECTOR-RANK-STABILIZER-2: cooperative execution helpers.
+// V1.9.10 SELECTOR-ADAPTIVE-GUARDRAIL-1: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -2894,7 +2941,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
     if(!riskOverride){const cached=__coopSelectCacheGet(rs,routeCtx);if(cached)return cached}
-    const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)]));
+    const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1]));
     const __cloneRank=(arr)=>arr.slice(0,5).map((q,i)=>({rank:i+1,digit:Number(q.digit),score:Math.round(Number(q.score||0)*1000)/1000,support:Math.round(Number(q.support||0)*1000)/1000,independentSupport:Math.round(Number(q.independentSupport||0)*1000)/1000,gate:!!q.gate,contextAdj:Math.round(Number(q.contextAdj||0)*1000)/1000,memoryRate:q.memoryRate==null?null:Number(q.memoryRate),metaRate:q.metaRate==null?null:Number(q.metaRate),signalAnchor:!!q.signalAnchor,anchorBonus:Math.round(Number(q.anchorBonus||0)*1000)/1000,formulas:Array.isArray(q.formulas)?q.formulas.slice(0,9):[],rankStabilized:!!q.rankStabilized,rankDisplacement:q.rankDisplacement??null}));
     const __forensicStages=c.__forensicStages||{raw:__cloneRank(c),afterMemory:__cloneRank(c),afterMeta:__cloneRank(c)};
     const __diagRawBoard=c.slice().map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas}));
@@ -2906,7 +2953,12 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __afterSignal=__cloneRank(c);
     applyContextSelection(c,rs);
     stabilizeSelectorRanks(c,__rankBaseline);
-    const __afterContext=__cloneRank(c);
+    const __afterStabilizer=__cloneRank(c);
+    applySelectorCalibration(c,rs);
+    const __afterCalibration=__cloneRank(c);
+    applySelectorGuardrail(c,__baselineRankMap,risk);
+    const __afterGuardrail=__cloneRank(c);
+    const __afterContext=__afterGuardrail;
     const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
     const d2Pool=ordered.filter(x=>x.digit!==top.digit).map(x=>{const a=new Set(x.formulas||[]),b=new Set(top.formulas||[]),shared=[...a].filter(f=>b.has(f)).length,den=Math.max(1,new Set([...a,...b]).size),corr=shared/den;const radarAdj=(x.radarQualified&&top.radarQualified===false)?.045*(x.radarSupport||0):0;return{...x,_d2Score:x.score+.10*(1-corr)+.06*(x.independentSupport||0)+radarAdj,_d2Correlation:corr}}).sort((a,b)=>b._d2Score-a._d2Score||b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);
     let second=d2Pool[0]||ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
@@ -2917,7 +2969,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     if(rescue&&rescue.digit!==top.digit){second=top;top=rescue}
     const __afterRescue={top:top.digit,second:second.digit,rescueApplied:!!rescue&&rescue.digit===top.digit&&__beforeRescue.top!==top.digit,rescueDigit:rescue?.digit??null};
     const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterSignal:__afterSignal,afterStabilizer:__afterContext,afterContext:__afterContext,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue}}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterSignal:__afterSignal,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterGuardrail:__afterGuardrail,afterContext:__afterContext,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue}}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -2945,9 +2997,9 @@ async function __coopOosBundle(rs,routeCtx=null){
     const __st=__diag.stages||{};
     const __targetRanks={};
     for(const [stage,arr] of Object.entries(__st)){if(Array.isArray(arr)){__targetRanks[stage]=arr.findIndex(x=>target.includes(Number(x.digit)))+1||null}}
-    const __rawRank=__targetRanks.raw||null,__metaRank=__targetRanks.afterMeta||null,__signalRank=__targetRanks.afterSignal||null,__contextRank=__targetRanks.afterContext||null;
+    const __rawRank=__targetRanks.raw||null,__metaRank=__targetRanks.afterMeta||null,__signalRank=__targetRanks.afterSignal||null,__contextRank=__targetRanks.afterContext||null,__calRank=__targetRanks.afterCalibration||null,__guardRank=__targetRanks.afterGuardrail||null;
     const __rankDrop=(a,b)=>a&&b&&b>a?b-a:0;
-    const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),d1:sel.d1,d2:sel.d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length,stageRanks:__targetRanks,stageTop:Object.fromEntries(Object.entries(__st).filter(([,v])=>Array.isArray(v)?v.length:v).map(([k,v])=>[k,Array.isArray(v)?v.slice(0,2).map(x=>Number(x.digit)):v])),rankDropRawToMeta:__rankDrop(__rawRank,__metaRank),rankDropMetaToSignal:__rankDrop(__metaRank,__signalRank),rankDropSignalToContext:__rankDrop(__signalRank,__contextRank),rescueApplied:!!__st.afterRescue?.rescueApplied,rescueDigit:__st.afterRescue?.rescueDigit??null};
+    const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),d1:sel.d1,d2:sel.d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length,stageRanks:__targetRanks,stageTop:Object.fromEntries(Object.entries(__st).filter(([,v])=>Array.isArray(v)?v.length:v).map(([k,v])=>[k,Array.isArray(v)?v.slice(0,2).map(x=>Number(x.digit)):v])),rankDropRawToMeta:__rankDrop(__rawRank,__metaRank),rankDropMetaToSignal:__rankDrop(__metaRank,__signalRank),rankDropSignalToContext:__rankDrop(__signalRank,__contextRank),rankDropContextToCalibration:__rankDrop(__contextRank,__calRank),rankDropCalibrationToGuardrail:__rankDrop(__calRank,__guardRank),selectorDamage:__boardTop2Hit&&!pairHit,selectorRescued:!__boardTop2Hit&&pairHit,guardrailApplied:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.guardrailApplied),rescueApplied:!!__st.afterRescue?.rescueApplied,rescueDigit:__st.afterRescue?.rescueDigit??null};
     diagnostic.push(__diagRow);
     if(__SELECTOR_DIAGNOSTIC__.enabled)__SELECTOR_DIAGNOSTIC__.add(__diagRow);
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
@@ -3061,7 +3113,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.9 SELECTOR-RANK-STABILIZER-2</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.10 SELECTOR-ADAPTIVE-GUARDRAIL-1</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
