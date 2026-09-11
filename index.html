@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 FINAL-SMOOTH-4-PROD-4-2</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 SELECTOR-DIAGNOSTIC-1</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1353,6 +1353,12 @@ html{scroll-behavior:auto!important}
 .lottery-detail-lazy{contain:layout paint style}
 .secondary-section{contain:layout paint style}
 @media(max-width:700px){body{overflow-x:hidden}.ai-lottery,.lottery-detail-lazy,.secondary-section{contain:layout paint style}}
+
+/* SELECTOR DIAGNOSTIC — analysis only, no scoring changes */
+.selector-diag-panel{margin:18px 0;padding:14px;border:1px solid rgba(53,105,168,.22);border-radius:18px;background:linear-gradient(135deg,#fbfdff,#f6f9fd);box-shadow:0 8px 24px rgba(53,105,168,.05)}
+.selector-diag-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;color:#3569a8}.selector-diag-head b{font-size:.72rem}.selector-diag-head small{display:block;margin-top:3px;font-size:.43rem;color:#7b8796}.selector-diag-head>span{font-size:.45rem;color:#718096;white-space:nowrap}
+.selector-diag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.selector-diag-grid>div{padding:9px;border:1px solid #e1eaf4;border-radius:10px;background:#fff}.selector-diag-grid small{display:block;font-size:.39rem;color:#7b8796}.selector-diag-grid b{display:block;margin-top:3px;font:900 .72rem "IBM Plex Mono",monospace;color:#2f5f8f}.selector-diag-grid span{display:block;margin-top:2px;font-size:.38rem;color:#8a97a6}.selector-diag-note{margin:9px 0;padding:8px 9px;border-radius:10px;background:#fffaf0;border:1px solid #eee0c4;color:#75623d;font-size:.45rem;line-height:1.5}.selector-diag-details{margin-top:7px}.selector-diag-details>summary{cursor:pointer;list-style:none;padding:7px 9px;border:1px solid #e1eaf4;border-radius:9px;background:#fff;color:#3569a8;font-size:.48rem;font-weight:800}.selector-diag-details>summary::-webkit-details-marker{display:none}.selector-diag-details>summary:after{content:'＋';float:right}.selector-diag-details[open]>summary:after{content:'−'}
+@media(max-width:650px){.selector-diag-grid{grid-template-columns:1fr 1fr}.selector-diag-panel{padding:10px}.selector-diag-head{flex-direction:column}.selector-diag-head>span{align-self:flex-start}}
 </style>
 </head>
 <body>
@@ -1368,7 +1374,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.6 FINAL-SMOOTH-4-PROD-4</div>
+  <div class="pill">V1.9.6 SELECTOR-DIAGNOSTIC-1</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -1412,8 +1418,69 @@ html{scroll-behavior:auto!important}
 </div>
 </div>
 <script id="V1_CLEAN_ENGINE">
-/* V1 PERFORMANCE TRACE disabled in PROD. Call surface retained as no-op so calculation code is untouched. */
-window.__PERFTRACE__ = {begin(){return 0},end(){},reset(){},rows(){return[]},summary(){return{total:null,rows:[]}},fmt(ms){return Number.isFinite(ms)?`${ms} ms`:'—'}};
+/* ===== V1 PERFORMANCE TRACE (instrumented audit copy; no formula/logic changes) ===== */
+window.__PERFTRACE__ = window.__PERFTRACE__ || (() => {
+  const data = new Map();
+  const stack = [];
+  let enabled = false;
+  let lastRunMs = null;
+  function rec(name, ms, selfMs) {
+    if (!enabled) return;
+    let x = data.get(name);
+    if (!x) { x = {calls:0,total:0,self:0,max:0,min:Infinity}; data.set(name,x); }
+    x.calls++; x.total += ms; x.self += Math.max(0,selfMs||0); if(ms>x.max)x.max=ms; if(ms<x.min)x.min=ms;
+  }
+  function begin(name){
+    if(!enabled)return 0;
+    const t=performance.now();
+    stack.push({name,t,child:0});
+    return t;
+  }
+  function end(name,t){
+    if(!enabled)return;
+    const now=performance.now();
+    let frame=stack.length?stack.pop():null;
+    const elapsed=now-(t||now);
+    const selfMs=Math.max(0,elapsed-(frame?.child||0));
+    rec(name,elapsed,selfMs);
+    if(stack.length)stack[stack.length-1].child+=elapsed;
+    if(name==='runEngine'){
+      lastRunMs=elapsed;
+      setTimeout(()=>show({engineMs:elapsed,auto:true}),80);
+    }
+  }
+  function reset(){ data.clear(); stack.length=0; lastRunMs=null; }
+  function rows(){ return [...data.entries()].map(([name,x])=>({name,calls:x.calls,total:x.total,self:x.self,avg:x.calls?x.total/x.calls:0,max:x.max,min:x.min===Infinity?0:x.min})).sort((a,b)=>b.total-a.total); }
+  function summary(){ const rs=rows(); return {total:lastRunMs,rows:rs}; }
+  function fmt(ms){
+    if(!Number.isFinite(ms))return '—';
+    if(ms<1000)return `${ms.toFixed(0)} ms`;
+    const sec=ms/1000;
+    if(sec<60)return `${sec.toFixed(2)} วินาที`;
+    const m=Math.floor(sec/60),s=sec-m*60;
+    return `${m} นาที ${s.toFixed(1)} วินาที`;
+  }
+  function show(extra){
+    const old=document.getElementById('__perftrace_panel'); if(old)old.remove();
+    const box=document.createElement('div'); box.id='__perftrace_panel';
+    box.style.cssText='position:fixed;z-index:999999;left:8px;right:8px;bottom:8px;max-height:82vh;overflow:auto;background:#101318;color:#f5f5f5;border:1px solid #596273;border-radius:14px;padding:14px;font:13px/1.5 system-ui,sans-serif;box-shadow:0 10px 35px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch';
+    const s=summary();
+    const engineMs=Number.isFinite(extra?.engineMs)?extra.engineMs:s.total;
+    const rs=s.rows;
+    const top=rs.filter(r=>r.name!=='runEngine').slice(0,12);
+    const rows=top.map((r,i)=>`<tr><td style="padding:6px 4px;vertical-align:top"><b>${i+1}. ${r.name}</b><br><span style="opacity:.7">${r.calls.toLocaleString()} ครั้ง · เฉลี่ย ${r.avg.toFixed(1)} ms</span></td><td style="padding:6px 4px;text-align:right;white-space:nowrap">${fmt(r.total)}</td></tr>`).join('');
+    box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:17px;font-weight:800">⚡ สรุปเวลาประมวลผล</div><div style="opacity:.72;margin-top:2px">Performance Trace · โหมดวินิจฉัยเท่านั้น</div></div><button id="__perftrace_close" style="font-size:20px;line-height:1;padding:4px 8px">×</button></div><div style="margin:12px 0;padding:12px;border-radius:10px;background:#1b2029"><div style="opacity:.72">เวลารันจริงทั้งหมด</div><div style="font-size:25px;font-weight:800;margin-top:2px">${fmt(engineMs)}</div><div style="opacity:.72;margin-top:4px">นี่คือเวลาจริงของ runEngine ไม่ใช่ผลรวมฟังก์ชันที่ซ้อนกัน</div></div><div style="font-weight:800;margin:10px 0 6px">🔎 จุดที่ใช้เวลามากที่สุด</div><table style="width:100%;border-collapse:collapse"><tbody>${rows||'<tr><td>ยังไม่มีข้อมูล</td></tr>'}</tbody></table><div style="margin-top:10px;padding:10px;border-radius:10px;background:#191d24;font-size:12px;opacity:.82">หมายเหตุ: เวลาของฟังก์ชันด้านบนเป็นเวลาที่ฟังก์ชันครอบไว้ จึงอาจซ้อนกันได้ ให้ใช้ “เวลารันจริงทั้งหมด” เป็นตัวเลขหลัก แล้วดูอันดับด้านล่างเพื่อหาคอขวด</div><div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap"><button id="__perftrace_copy">คัดลอกผล</button><button id="__perftrace_detail">รายละเอียดทั้งหมด</button></div>`;
+    document.body.appendChild(box);
+    document.getElementById('__perftrace_close').onclick=()=>box.remove();
+    document.getElementById('__perftrace_copy').onclick=async()=>{ const payload={generatedAt:new Date().toISOString(),engineMs,rows:rs}; try{await navigator.clipboard?.writeText(JSON.stringify(payload,null,2));showToast?.('✓ คัดลอก Performance Trace แล้ว')}catch(e){} };
+    document.getElementById('__perftrace_detail').onclick=()=>{
+      const old2=document.getElementById('__perftrace_detailbox'); if(old2){old2.remove();return;}
+      const d=document.createElement('div');d.id='__perftrace_detailbox';d.style.cssText='margin-top:10px;border-top:1px solid #394150;padding-top:10px';
+      d.innerHTML='<div style="font-weight:800;margin-bottom:6px">รายละเอียดทุกฟังก์ชัน</div>'+rs.map(r=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #252b35"><span>${r.name}<br><small style="opacity:.65">${r.calls.toLocaleString()} ครั้ง · self ${fmt(r.self)}</small></span><b style="white-space:nowrap">${fmt(r.total)}</b></div>`).join('');box.appendChild(d);
+    };
+  }
+  return {begin,end,reset,rows,summary,show,enable(v){enabled=v!==false;},record:(name,ms)=>rec(name,ms,ms)};
+})();
 
 (()=>{'use strict';
 const $=id=>document.getElementById(id),STORAGE_KEY='lottery_audit_v1_clean',WIN=[25,26,27,28,29,30],DISPLAY_WIN=[5,10,15,20,25,30],RECENT_MAX=30,MEDIUM_MAX=50,HIST_MAX=100,AUDIT_TUNING=Object.freeze({supportCap:1.80,cacheVersion:2,summaryCollapseMinLotteries:5}),norm=n=>((Number(n)%10)+10)%10,esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'),avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0,pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
@@ -2493,7 +2560,21 @@ function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=
   const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);if(valid.length>1&&margin0<minMargin){const stronger=d2Pool.find(x=>top.score-x.score>=minMargin);if(stronger)second=stronger}
   const rescue=chooseContextRescue(c,rs,risk);if(rescue&&rescue.digit!==top.digit){second=top;top=rescue;}const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
   return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)}} finally { window.__PERFTRACE__.end("select",__pt0); }}
-function selectionHistory(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionHistory"); try {const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}cache.set(key,out);return out} finally { window.__PERFTRACE__.end("selectionHistory",__pt0); }}
+const __SELECTOR_DIAGNOSTIC__={enabled:true,rows:[],reset(){this.rows=[]},add(row){this.rows.push(row)}};
+function selectorDiagnosticPanel(){
+  const rows=__SELECTOR_DIAGNOSTIC__.rows||[];
+  if(!rows.length)return `<section class="selector-diag-panel"><div class="selector-diag-head"><b>🔬 Selector Diagnostic</b><span>ยังไม่มี OOS trace</span></div></section>`;
+  const total=rows.length,selHit=rows.filter(x=>x.selectionHit).length,unionHit=rows.filter(x=>x.unionHit).length,best2=rows.filter(x=>x.boardTop2Hit).length,inBoard=rows.filter(x=>x.targetInBoard).length,bestF=rows.filter(x=>x.bestFormulaHit).length,selectorLoss=rows.filter(x=>!x.selectionHit&&x.targetInBoard).length,boardLoss=rows.filter(x=>!x.targetInBoard&&x.unionHit).length;
+  const pct2=(h,n)=>n?Math.round(h/n*10000)/100:0;
+  const byLottery=new Map();for(const r of rows){const a=byLottery.get(r.name)||{n:0,sel:0,union:0,top2:0,inBoard:0,loss:0};a.n++;a.sel+=r.selectionHit?1:0;a.union+=r.unionHit?1:0;a.top2+=r.boardTop2Hit?1:0;a.inBoard+=r.targetInBoard?1:0;a.loss+=(!r.selectionHit&&r.targetInBoard)?1:0;byLottery.set(r.name,a)}
+  const lotRows=[...byLottery.entries()].sort((a,b)=>pct2(a[1].sel,a[1].n)-pct2(b[1].sel,b[1].n)||b[1].n-a[1].n).map(([name,a])=>`<tr><td>${esc(formatDisplayTitle(name))}</td><td>${a.n}</td><td>${pct2(a.sel,a.n)}%</td><td>${pct2(a.union,a.n)}%</td><td>${pct2(a.top2,a.n)}%</td><td>${pct2(a.inBoard,a.n)}%</td><td>${a.loss}</td></tr>`).join('');
+  const missRows=rows.filter(x=>!x.selectionHit&&x.targetInBoard).slice(-20).reverse().map(x=>`<tr><td>${esc(formatDisplayTitle(x.name))}</td><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${x.d1} · ${x.d2}</td><td>${x.targetRank==null?'—':x.targetRank+1}</td><td>${x.top3.join(' · ')}</td><td>${x.formulaHits.join(', ')||'—'}</td></tr>`).join('');
+  return `<section class="selector-diag-panel"><div class="selector-diag-head"><div><b>🔬 Selector Diagnostic · จุดที่เลขถูกหาย</b><small>ไม่เปลี่ยนสูตรหรือผลการเลือก · ตรวจ OOS จากข้อมูลที่ระบบคำนวณอยู่แล้ว</small></div><span>${total} OOS</span></div><div class="selector-diag-grid"><div><small>Current Selection</small><b>${pct2(selHit,total)}%</b><span>${selHit}/${total}</span></div><div><small>Formula Union</small><b>${pct2(unionHit,total)}%</b><span>อย่างน้อย 1 สูตรเสนอถูก</span></div><div><small>Board Top 2</small><b>${pct2(best2,total)}%</b><span>เลขถูกอยู่ Top 2</span></div><div><small>Target In Board</small><b>${pct2(inBoard,total)}%</b><span>เลขถูกอยู่ใน Board</span></div><div><small>Best Formula</small><b>${pct2(bestF,total)}%</b><span>สูตรใดสูตรหนึ่งเข้า</span></div><div><small>Selector Loss</small><b>${selectorLoss}</b><span>เลขถูกใน Board แต่เลือกพลาด</span></div><div><small>Pre-Board Loss</small><b>${boardLoss}</b><span>สูตรมีเลขถูก แต่ Board ไม่เก็บไว้</span></div><div><small>Potential Headroom</small><b>+${pct2(best2,total)-pct2(selHit,total)} pp</b><span>ถ้าเลือก Top 2 ได้ดีที่สุด</span></div></div><div class="selector-diag-note"><b>อ่านผล:</b> ถ้า <b>Target In Board</b> สูง แต่ Selection ต่ำ → แก้ <b>select()</b> ก่อน · ถ้า Formula Union สูง แต่ Target In Board ต่ำ → แก้ <b>candidateBoardRaw()</b> · ถ้า Top 2 สูงกว่า Selection มาก → มี headroom ที่ Selector</div><details class="selector-diag-details"><summary>ดูรายหวย</summary><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Selection</th><th>Formula Union</th><th>Board Top2</th><th>In Board</th><th>Selector Loss</th></tr></thead><tbody>${lotRows}</tbody></table></div></details><details class="selector-diag-details"><summary>ดูตัวอย่าง Selector Loss สูงสุด 20 เคส</summary><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>Source</th><th>Target</th><th>Selected</th><th>Target Rank</th><th>Board Top3</th><th>Formula Hits</th></tr></thead><tbody>${missRows||'<tr><td colspan=7>ยังไม่พบ Selector Loss</td></tr>'}</tbody></table></div></details></section>`;
+}
+function selectionHistory(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionHistory"); try {const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));
+const board=(sel.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);const boardDigits=board.map(q=>Number(q.digit));const currentPred=currentPredictions(train);const formulaHits=FORMULAS.filter(f=>Array.isArray(currentPred[f])&&currentPred[f].some(d=>target.includes(Number(d))));const unionHit=formulaHits.length>0;const best2=boardDigits.slice(0,2).some(d=>target.includes(d));const targetRank=boardDigits.findIndex(d=>target.includes(d));const targetInBoard=targetRank>=0;const selectionHit=ok;
+if(__SELECTOR_DIAGNOSTIC__.enabled)__SELECTOR_DIAGNOSTIC__.add({name:train[0]?.name||train.at(-1)?.name||routeCtx?.name||'',source:rs[i].date,target:target.join(' · '),d1:sel.d1,d2:sel.d2,selectionHit,unionHit,best2,boardTop2Hit:best2,targetInBoard,targetRank,top3:boardDigits.slice(0,3),formulaHits,bestFormulaHit:unionHit});
+out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}cache.set(key,out);return out} finally { window.__PERFTRACE__.end("selectionHistory",__pt0); }}
 const selectionStatsCache=new WeakMap();function selectionStats(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionStats"); try {const key=routeCtx?.name||'__none__';let cache=selectionStatsCache.get(rs);if(!cache){cache=new Map();selectionStatsCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const h=selectionHistory(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});const out={total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};cache.set(key,out);return out} finally { window.__PERFTRACE__.end("selectionStats",__pt0); }}
 function decisionLog(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionLog"); try {const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);const d1=target.includes(sel.d1),d2=target.includes(sel.d2);out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit:d1||d2,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]})}return out} finally { window.__PERFTRACE__.end("decisionLog",__pt0); }}
 function selectionDecisionAudit(rs,routeCtx=null){const h=decisionLog(rs,routeCtx),last=rs.at(-1)||null,rows=h.slice(-12).reverse(),hitCount=h.filter(x=>x.pairHit).length,marginAvg=h.length?Math.round(avg(h.map(x=>Number(x.margin||0)))*100)/100:null,conf={สูง:h.filter(x=>x.confidence==='สูง').length,กลาง:h.filter(x=>x.confidence==='กลาง').length,ต่ำ:h.filter(x=>x.confidence==='ต่ำ').length};return{total:h.length,hits:hitCount,rate:pct(hitCount,h.length),marginAvg,confidence:conf,last,rows}}
@@ -2633,7 +2714,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.6 FINAL-SMOOTH-4-PROD-4: cooperative execution helpers.
+// V1.9.6 SELECTOR-DIAGNOSTIC-1: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -2824,7 +2905,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.6 FINAL-SMOOTH-4-PROD-4</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.6 SELECTOR-DIAGNOSTIC-1</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
@@ -2833,7 +2914,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     <div class="ai-snapshot-grid ${names.length===1?'single':''}">${snapshotCards.join('')}</div>
   </section>
   <div class="ai-details-heading"><span>รายละเอียดการวิเคราะห์</span><small>ภาพรวมและหลักฐานของแต่ละหวย</small></div>
-  ${detailHtml}${globalSummaryPanel(globalStats)}`;
+  ${detailHtml}${globalSummaryPanel(globalStats)}${selectorDiagnosticPanel()}`;
   html+=`</div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.6</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
 } finally { window.__PERFTRACE__.end("render",__pt0); }}
@@ -2869,7 +2950,7 @@ function runSystemHealth(){
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
-  const startedAt=performance.now();startProcessing();
+  const startedAt=performance.now();__SELECTOR_DIAGNOSTIC__.reset();startProcessing();
   try{
     await new Promise(r=>setTimeout(r,0));
     const parsed=parseInput($('bulkInput').value),incoming=parsed.records;
