@@ -1327,6 +1327,9 @@ body:before{
 @keyframes aiChartDraw{to{stroke-dashoffset:0}}
 @keyframes aiPointIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.top,.ai-snapshot{animation:none}.ai-trend-chart svg polyline,.ai-trend-chart svg circle{animation:none;opacity:1;stroke-dashoffset:0}}
+
+/* V1.9.7 PERFORMANCE: per-lottery detail stays in <template> until opened. */
+.lottery-detail-lazy{margin:0 0 12px;border:1px solid rgba(133,100,20,.14);border-radius:16px;background:rgba(255,255,255,.78);overflow:hidden}.lottery-detail-lazy>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;color:#78590f;font-size:.68rem;font-weight:800}.lottery-detail-lazy>summary::-webkit-details-marker{display:none}.lottery-detail-lazy>summary>span{display:flex;flex-direction:column;gap:3px;min-width:0}.lottery-detail-lazy>summary small{font-size:.5rem;color:#8a7b64;font-weight:500}.lottery-detail-lazy>summary em{font-style:normal;font-size:.5rem;color:#9a7a2b;white-space:nowrap}.lottery-detail-lazy>summary::after{content:'＋';font-size:.8rem;color:#a67c1e}.lottery-detail-lazy[open]>summary::after{content:'−'}.lottery-detail-body>.vip-lottery{margin:0;border-radius:0;border-left:0;border-right:0;border-bottom:0}
 </style>
 </head>
 <body>
@@ -2619,7 +2622,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
     const digitCards=topDigits.map(q=>`<div class="ai-digit"><b>${q.digit}</b><div><strong>${q.r}%</strong><span>${q.h}/${q.n} ครั้ง</span></div><i style="width:${q.r}%"></i></div>`).join('')||`<div class="ai-empty">ยังไม่มีข้อมูลประวัติเลขเพียงพอ</div>`;
     const boardCards=board.map((q,i)=>`<div class="ai-board"><span>#${i+1}</span><b>${q.digit??'-'}</b></div>`).join('')||`<div class="ai-empty">ยังไม่มี Board</div>`;
     snapshotCards.push(card(p, 1000 + snapshotCards.length));
-    detailHtml+=`<section class="vip-lottery ai-lottery">
+    detailHtml+=`<details class="lottery-detail-lazy" data-lottery-detail="${encodeURIComponent(name)}"><summary><span><b>${esc(formatDisplayTitle(name))}</b><small>${meta.rawCount||rs.length} รอบ · ถัดไป ${esc(p.nextDate||'-')}</small></span><em>กดเพื่ออ่านรายละเอียด</em></summary><template> <section class="vip-lottery ai-lottery">
       <div class="ai-lottery-head"><div><div class="ai-eyebrow">โปรไฟล์หวย AI</div><div class="vip-name">${esc(formatDisplayTitle(name))}</div></div><div class="ai-head-right"><span>${meta.rawCount||rs.length} รอบ</span><span>ถัดไป ${esc(p.nextDate||'-')}</span></div></div>
       <div class="ai-hero">
         <div class="ai-decision"><div class="ai-eyebrow">ผลตัดสินใจ</div><div class="ai-number">${s.d1??'-'} <span>·</span> ${s.d2??'-'}</div><div class="ai-decision-line"><span>Consensus ${s.consensus[0]?.count||0} สูตร</span><span>นำโดย ${esc(bestFormula||'-')} · ${bestRate}%</span></div></div>
@@ -2632,7 +2635,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
       <div class="ai-footer"><span>V1.9.6</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
-    </section>`;
+    </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
   html+=`<section class="ai-snapshot">
@@ -2644,6 +2647,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){
   html+=`</div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.6</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
 }
+function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
 window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
 function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
@@ -2715,7 +2719,7 @@ async function runEngine(){
     currentAuditDataMap={};currentPredictionDataMap={};
     setProcessingProgress(97,'กำลังสร้างรายงาน','สรุป Global Selection Accuracy Audit และการ์ดทั้งหมด',startedAt,100,97,true);
     await new Promise(r=>setTimeout(r,0));
-    render(groups,historyGroups,rawMeta,historyRawGroups);applySummaryCollapse(names.length);updateIndicator();
+    render(groups,historyGroups,rawMeta,historyRawGroups);installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
     showToast(`✓ V1.9.6 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
   }catch(e){
