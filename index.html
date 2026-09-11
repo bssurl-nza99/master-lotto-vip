@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 OPT-TEST</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1345,7 +1345,7 @@ body:before{
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.6</div>
+  <div class="pill">V1.9.6 OPT-TEST</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2365,6 +2365,8 @@ function applyEvidenceArbitration(c,rs){
 
 
 const __CANDIDATE_RAW_CACHE__=new WeakMap();
+const __CANDIDATE_RAW_VERIFY__={enabled:true,maxSamples:40,samples:0,passed:0,failed:0,cacheHits:0,cacheMisses:0,errors:[],startMs:performance.now()};
+function __candidateRawStable__(value){try{return JSON.stringify(value);}catch(e){return String(value);}}
 function __cloneCandidateRaw__(value){try{return typeof structuredClone==='function'?structuredClone(value):value.map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas,clusters:Array.isArray(q.clusters)?q.clusters.slice():q.clusters,evidence:Array.isArray(q.evidence)?q.evidence.map(e=>({...e})):q.evidence,scoreBreakdown:q.scoreBreakdown?{...q.scoreBreakdown}:q.scoreBreakdown}));}catch(e){return value.map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas,clusters:Array.isArray(q.clusters)?q.clusters.slice():q.clusters,evidence:Array.isArray(q.evidence)?q.evidence.map(e=>({...e})):q.evidence,scoreBreakdown:q.scoreBreakdown?{...q.scoreBreakdown}:q.scoreBreakdown}));}}
 function __candidateRawRouteSig__(routeProfile){const r=routeProfile?.ranked||[];return r.map(x=>`${x.f||''}:${x.score??''}:${x.recentRate??''}:${x.rate??''}`).join('|')}
 function __candidateRawAdSig__(ad){return FORMULAS.map(f=>{const x=ad?.[f]||{};return `${x.rate??''},${x.curMiss??''},${x.rel??''},${x.horizon?.[0]?.rate??''},${x.horizon?.[1]?.rate??''},${x.horizon?.[4]?.rate??''},${x.horizon?.[5]?.rate??''}`}).join('|')}
@@ -2373,7 +2375,22 @@ function candidateBoardRaw(rs,ad,historyRs=rs,routeProfile=null){const __pt0=win
   const flagSig=`${globalThis.__SUPPORT_META_BUILD__?'S':'-'}${globalThis.__TEN_SELECTOR_META_BUILD__?'T':'-'}`;
   const cacheKey=`${rs.length}|${historyRs?.length||0}|${__candidateRawAdSig__(ad)}|${__candidateRawRouteSig__(routeProfile)}|${flagSig}`;
   const bucket=__CANDIDATE_RAW_CACHE__.get(last);
-  if(bucket?.has(cacheKey)){window.__PERFTRACE__.mark?.('candidateBoardRawCacheHit');return __cloneCandidateRaw__(bucket.get(cacheKey));}
+  if(bucket?.has(cacheKey) && !globalThis.__CANDIDATE_RAW_BYPASS_CACHE__){
+    __CANDIDATE_RAW_VERIFY__.cacheHits++;
+    window.__PERFTRACE__.mark?.('candidateBoardRawCacheHit');
+    const cached=bucket.get(cacheKey);
+    if(__CANDIDATE_RAW_VERIFY__.enabled && __CANDIDATE_RAW_VERIFY__.samples<__CANDIDATE_RAW_VERIFY__.maxSamples){
+      __CANDIDATE_RAW_VERIFY__.samples++;
+      try{
+        const oldBypass=globalThis.__CANDIDATE_RAW_BYPASS_CACHE__;globalThis.__CANDIDATE_RAW_BYPASS_CACHE__=true;
+        let baseline;try{baseline=candidateBoardRaw(rs,ad,historyRs,routeProfile)}finally{globalThis.__CANDIDATE_RAW_BYPASS_CACHE__=oldBypass;}
+        const a=__candidateRawStable__(cached),b=__candidateRawStable__(baseline);
+        if(a===b)__CANDIDATE_RAW_VERIFY__.passed++;else{__CANDIDATE_RAW_VERIFY__.failed++;if(__CANDIDATE_RAW_VERIFY__.errors.length<5)__CANDIDATE_RAW_VERIFY__.errors.push({rsLength:rs.length,historyLength:historyRs?.length||0,cacheKey,reason:'baseline mismatch'});}
+      }catch(e){__CANDIDATE_RAW_VERIFY__.failed++;if(__CANDIDATE_RAW_VERIFY__.errors.length<5)__CANDIDATE_RAW_VERIFY__.errors.push({rsLength:rs.length,historyLength:historyRs?.length||0,cacheKey,reason:String(e?.message||e)});}
+    }
+    return __cloneCandidateRaw__(cached);
+  }
+  __CANDIDATE_RAW_VERIFY__.cacheMisses++;
   window.__PERFTRACE__.mark?.('candidateBoardRawCacheMiss');
   const dh=multiWindowDigitHistory(historyRs),votes=Array.from({length:10},(_,digit)=>({digit,score:0,support:0,count:0,rawCount:0,independentSupport:0,independence:0,formulas:[],clusters:[],risk:0,history:dh[digit],evidence:[]}));
   const rankedRoute=routeProfile?.ranked||[],routeRank=new Map(rankedRoute.map((x,i)=>[x.f,i])),formulaRows=[];
@@ -2383,7 +2400,7 @@ function candidateBoardRaw(rs,ad,historyRs=rs,routeProfile=null){const __pt0=win
   for(const q of votes){const h=q.history,hr=h.rate==null?34.39:h.rate,hs=h.score==null?50:h.score,historyAdj=.16*Math.max(-1,Math.min(1,(hs-50)/18)),rawFreq=q.rawCount>=3?.18:q.rawCount===2?.10:q.rawCount===1?.02:0,indepBonus=q.independentSupport>=1.35?.24:q.independentSupport>=.90?.14:q.independentSupport>=.55?.06:0,diversityBonus=q.evidence.length>=2?.08*Math.min(1,q.independentSupport/1.5):0;q.independence=q.rawCount?Math.max(0,Math.min(1,q.independentSupport/(q.rawCount*.95))):0;q.risk+=(q.rawCount?0:1.15)+(hr<25?.65:hr<30?.28:0);const supportBase=Math.min(q.support,AUDIT_TUNING.supportCap);q.supportCompressed=q.support-supportBase;q.score=Math.max(0,supportBase+historyAdj+rawFreq+indepBonus+diversityBonus-.30*q.risk);q.scoreBreakdown={formulaSupport:supportBase,formulaSupportCompressed:q.supportCompressed,history:historyAdj,frequency:rawFreq,independence:indepBonus,diversity:diversityBonus,risk:-.30*q.risk};q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35;q.evidenceSummary=q.evidence.slice().sort((a,b)=>b.weight-a.weight).map(e=>e.f).join(', ')}
   const radar=radarBuild(historyRs);applyRadarSelection(votes,historyRs);applyRadarEnsemble(votes,historyRs);applyRadarMatrix(votes,historyRs);applySupportFilter(votes,historyRs);applySupportGranularity(votes,historyRs);applyVolatilityShield(votes,historyRs);applyTenSelectorEnsemble(votes,historyRs);applyFlowRadar(votes,historyRs);applyFlowOutcomeMeta(votes,historyRs);applyPairTripletIntelligence(votes,historyRs);applyRegimeAndReplacementDirection(votes,historyRs);applyEvidenceArbitration(votes,historyRs);
   const result=votes.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
-  const store=__CANDIDATE_RAW_CACHE__.get(last)||new Map();store.set(cacheKey,__cloneCandidateRaw__(result));__CANDIDATE_RAW_CACHE__.set(last,store);
+  if(!globalThis.__CANDIDATE_RAW_BYPASS_CACHE__){const store=__CANDIDATE_RAW_CACHE__.get(last)||new Map();store.set(cacheKey,__cloneCandidateRaw__(result));__CANDIDATE_RAW_CACHE__.set(last,store);}
   return result
 } finally { window.__PERFTRACE__.end("candidateBoardRaw",__pt0); }}
 function candidateBoard(rs,ad,historyRs=rs,routeProfile=null,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("candidateBoard"); try {const c=candidateBoardRaw(rs,ad,historyRs,routeProfile);if(globalThis.__FAST_OOS__)return c;const mem=decisionMemory(rs,routeCtx);for(const q of c){const m=mem.map.get(decisionKey(q));if(m&&m.tests>=6){q.memoryTests=m.tests;q.memoryRate=m.rate;q.memoryScore=Math.max(0,Math.min(100,(m.hits+.5)/(m.tests+1)*100));q.memoryPenalty=m.rate<45?.14:m.rate<50?.06:m.rate>60?.10:0;q.score=Math.max(0,q.score+.02*(q.memoryScore-50)-q.memoryPenalty);if(m.rate<45)q.risk+=.25;else if(m.rate>60)q.risk=Math.max(0,q.risk-.08);q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35}}applySelectionMeta(c,rs);return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit)} finally { window.__PERFTRACE__.end("candidateBoard",__pt0); }}
@@ -2796,6 +2813,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     render(groups,historyGroups,rawMeta,historyRawGroups);installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
+    setTimeout(()=>window.__SHOW_OPT_VERIFY__?.(),80);
     showToast(`✓ V1.9.6 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
   }catch(e){
     console.error(e);showToast('⚠️ ประมวลผลไม่สำเร็จ กรุณาตรวจข้อมูลอีกครั้ง');
@@ -2822,6 +2840,24 @@ window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=run
     }
   });
   obs.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['hidden','style','class']});
+})();
+</script>
+<style>
+#optVerifyPanel{position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;display:none;background:#fff;border:1px solid #ddd;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:12px;font:13px/1.45 system-ui,sans-serif;max-height:42vh;overflow:auto}
+#optVerifyPanel .ov-title{font-weight:800;margin-bottom:6px}#optVerifyPanel .ov-ok{font-weight:800}#optVerifyPanel .ov-bad{font-weight:800}#optVerifyPanel button{margin-top:8px;border:0;border-radius:10px;padding:7px 10px;background:#eee}
+</style>
+<div id="optVerifyPanel"><div class="ov-title">OPT-TEST · ตรวจสอบความเท่าเทียม Cache</div><div id="optVerifyBody"></div><button onclick="this.parentElement.style.display='none'">ปิด</button></div>
+<script>
+(function(){
+ function showOptVerify(){
+   const v=window.__CANDIDATE_RAW_VERIFY__;if(!v)return;
+   const el=document.getElementById('optVerifyPanel'),b=document.getElementById('optVerifyBody');if(!el||!b)return;
+   const status=v.failed===0?'ผ่าน':'พบความต่าง';
+   const cls=v.failed===0?'ov-ok':'ov-bad';
+   b.innerHTML=`<div class="${cls}">${status}</div><div>Cache hit: ${v.cacheHits.toLocaleString()} · miss: ${v.cacheMisses.toLocaleString()}</div><div>ตรวจ baseline เทียบ cache: ${v.samples} ครั้ง · ตรงกัน ${v.passed} · ต่าง ${v.failed}</div>${v.errors.length?'<pre style="white-space:pre-wrap">'+v.errors.map(x=>JSON.stringify(x)).join('\n')+'</pre>':''}`;
+   el.style.display='block';
+ }
+ window.__SHOW_OPT_VERIFY__=showOptVerify;
 })();
 </script>
 </body>
