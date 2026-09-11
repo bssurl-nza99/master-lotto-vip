@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.7 SELECTOR-FORENSIC-2</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.8 SELECTOR-FORENSIC-3</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1376,7 +1376,7 @@ body:before{
 @media(prefers-reduced-motion:reduce){.top,.ai-snapshot{animation:none}.ai-trend-chart svg polyline,.ai-trend-chart svg circle{animation:none;opacity:1;stroke-dashoffset:0}}
 
 
-/* V1.9.7 PERFORMANCE: per-lottery detail stays in <template> until opened. */
+/* V1.9.8 PERFORMANCE: per-lottery detail stays in <template> until opened. */
 .lottery-detail-lazy{margin:0 0 12px;border:1px solid rgba(133,100,20,.14);border-radius:16px;background:rgba(255,255,255,.78);overflow:hidden}.lottery-detail-lazy>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;color:#78590f;font-size:.68rem;font-weight:800}.lottery-detail-lazy>summary::-webkit-details-marker{display:none}.lottery-detail-lazy>summary>span{display:flex;flex-direction:column;gap:3px;min-width:0}.lottery-detail-lazy>summary small{font-size:.5rem;color:#8a7b64;font-weight:500}.lottery-detail-lazy>summary em{font-style:normal;font-size:.5rem;color:#9a7a2b;white-space:nowrap}.lottery-detail-lazy>summary::after{content:'＋';font-size:.8rem;color:#a67c1e}.lottery-detail-lazy[open]>summary::after{content:'−'}.lottery-detail-body>.vip-lottery{margin:0;border-radius:0;border-left:0;border-right:0;border-bottom:0}
 </style>
 
@@ -1416,7 +1416,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.7 SELECTOR-FORENSIC-2</div>
+  <div class="pill">V1.9.8 SELECTOR-FORENSIC-3</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2801,7 +2801,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.7 SELECTOR-FORENSIC-2: cooperative execution helpers.
+// V1.9.8 SELECTOR-FORENSIC-3: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -2846,14 +2846,21 @@ async function candidateBoardCooperative(rs,ad,historyRs=rs,routeProfile=null,ro
   const __pt0=window.__PERFTRACE__.begin("candidateBoardCooperative");
   try{
     const c=candidateBoardRaw(rs,ad,historyRs,routeProfile);
-    if(globalThis.__FAST_OOS__)return c;
+    const __forensicClone=(arr)=>arr.slice(0,5).map((q,i)=>({rank:i+1,digit:Number(q.digit),score:Number(q.score||0),support:Number(q.support||0),independentSupport:Number(q.independentSupport||0),rawCount:Number(q.rawCount||0),gate:!!q.gate,contextAdj:Number(q.contextAdj||0),memoryRate:q.memoryRate==null?null:Number(q.memoryRate),metaRate:q.metaRate==null?null:Number(q.metaRate),signalAnchor:!!q.signalAnchor,anchorBonus:Number(q.anchorBonus||0),formulas:Array.isArray(q.formulas)?q.formulas.slice(0,9):[]}));
+    const __forensicStages={raw:__forensicClone(c)};
+    if(globalThis.__FAST_OOS__){c.__forensicStages=__forensicStages;return c;}
     const mem=await decisionMemoryCooperative(rs,routeCtx);
     for(const q of c){
       const m=mem.map.get(decisionKey(q));
       if(m&&m.tests>=6){q.memoryTests=m.tests;q.memoryRate=m.rate;q.memoryScore=Math.max(0,Math.min(100,(m.hits+.5)/(m.tests+1)*100));q.memoryPenalty=m.rate<45?.14:m.rate<50?.06:m.rate>60?.10:0;q.score=Math.max(0,q.score+.02*(q.memoryScore-50)-q.memoryPenalty);if(m.rate<45)q.risk+=.25;else if(m.rate>60)q.risk=Math.max(0,q.risk-.08);q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35}
     }
+    c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
+    __forensicStages.afterMemory=__forensicClone(c);
     applySelectionMeta(c,rs);
-    return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
+    c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
+    __forensicStages.afterMeta=__forensicClone(c);
+    c.__forensicStages=__forensicStages;
+    return c;
   }finally{window.__PERFTRACE__.end("candidateBoardCooperative",__pt0)}
 }
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
@@ -2861,18 +2868,28 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
   try{
     if(!riskOverride){const cached=__coopSelectCacheGet(rs,routeCtx);if(cached)return cached}
     const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx);
+    const __cloneRank=(arr)=>arr.slice(0,5).map((q,i)=>({rank:i+1,digit:Number(q.digit),score:Math.round(Number(q.score||0)*1000)/1000,support:Math.round(Number(q.support||0)*1000)/1000,independentSupport:Math.round(Number(q.independentSupport||0)*1000)/1000,gate:!!q.gate,contextAdj:Math.round(Number(q.contextAdj||0)*1000)/1000,memoryRate:q.memoryRate==null?null:Number(q.memoryRate),metaRate:q.metaRate==null?null:Number(q.metaRate),signalAnchor:!!q.signalAnchor,anchorBonus:Math.round(Number(q.anchorBonus||0)*1000)/1000,formulas:Array.isArray(q.formulas)?q.formulas.slice(0,9):[]}));
+    const __forensicStages=c.__forensicStages||{raw:__cloneRank(c),afterMemory:__cloneRank(c),afterMeta:__cloneRank(c)};
     const __diagRawBoard=c.slice().map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas}));
     const __diagEligible=__diagRawBoard.filter(x=>x.gate);
     const __diagBoard=__diagEligible.length?__diagEligible:__diagRawBoard;
+    const __preSignal=__cloneRank(c);
     const anchor=signalAnchor(c,routeProfile,ad,rs);
-    applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);
+    applySignalPreservingSelection(c,anchor,risk);
+    const __afterSignal=__cloneRank(c);
+    applyContextSelection(c,rs);
+    const __afterContext=__cloneRank(c);
     const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
     const d2Pool=ordered.filter(x=>x.digit!==top.digit).map(x=>{const a=new Set(x.formulas||[]),b=new Set(top.formulas||[]),shared=[...a].filter(f=>b.has(f)).length,den=Math.max(1,new Set([...a,...b]).size),corr=shared/den;const radarAdj=(x.radarQualified&&top.radarQualified===false)?.045*(x.radarSupport||0):0;return{...x,_d2Score:x.score+.10*(1-corr)+.06*(x.independentSupport||0)+radarAdj,_d2Correlation:corr}}).sort((a,b)=>b._d2Score-a._d2Score||b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);
     let second=d2Pool[0]||ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
     const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);if(valid.length>1&&margin0<minMargin){const stronger=d2Pool.find(x=>top.score-x.score>=minMargin);if(stronger)second=stronger}
-    const rescue=chooseContextRescue(c,rs,risk);if(rescue&&rescue.digit!==top.digit){second=top;top=rescue}
+    const __afterMargin={top:top.digit,second:second.digit,topScore:Math.round(Number(top.score||0)*1000)/1000,secondScore:Math.round(Number(second.score||0)*1000)/1000,margin:Math.round((top.score-(second.score||0))*1000)/1000};
+    const rescue=chooseContextRescue(c,rs,risk);
+    const __beforeRescue={top:top.digit,second:second.digit};
+    if(rescue&&rescue.digit!==top.digit){second=top;top=rescue}
+    const __afterRescue={top:top.digit,second:second.digit,rescueApplied:!!rescue&&rescue.digit===top.digit&&__beforeRescue.top!==top.digit,rescueDigit:rescue?.digit??null};
     const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterSignal:__afterSignal,afterContext:__afterContext,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue}}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -2897,7 +2914,12 @@ async function __coopOosBundle(rs,routeCtx=null){
     const __rawBoardHasTarget=__rawBoardDigits.some(x=>target.includes(x));
     const __boardTop2Hit=__boardDigits.slice(0,2).some(x=>target.includes(x));
     const __targetRank=__boardDigits.findIndex(x=>target.includes(x));
-    const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),d1:sel.d1,d2:sel.d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length};
+    const __st=__diag.stages||{};
+    const __targetRanks={};
+    for(const [stage,arr] of Object.entries(__st)){if(Array.isArray(arr)){__targetRanks[stage]=arr.findIndex(x=>target.includes(Number(x.digit)))+1||null}}
+    const __rawRank=__targetRanks.raw||null,__metaRank=__targetRanks.afterMeta||null,__signalRank=__targetRanks.afterSignal||null,__contextRank=__targetRanks.afterContext||null;
+    const __rankDrop=(a,b)=>a&&b&&b>a?b-a:0;
+    const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),d1:sel.d1,d2:sel.d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length,stageRanks:__targetRanks,stageTop:Object.fromEntries(Object.entries(__st).filter(([,v])=>Array.isArray(v)?v.length:v).map(([k,v])=>[k,Array.isArray(v)?v.slice(0,2).map(x=>Number(x.digit)):v])),rankDropRawToMeta:__rankDrop(__rawRank,__metaRank),rankDropMetaToSignal:__rankDrop(__metaRank,__signalRank),rankDropSignalToContext:__rankDrop(__signalRank,__contextRank),rescueApplied:!!__st.afterRescue?.rescueApplied,rescueDigit:__st.afterRescue?.rescueDigit??null};
     diagnostic.push(__diagRow);
     if(__SELECTOR_DIAGNOSTIC__.enabled)__SELECTOR_DIAGNOSTIC__.add(__diagRow);
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
@@ -3011,7 +3033,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.7 SELECTOR-FORENSIC-2</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.8 SELECTOR-FORENSIC-3</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
@@ -3021,7 +3043,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   </section>
   <div class="ai-details-heading"><span>รายละเอียดการวิเคราะห์</span><small>ภาพรวมและหลักฐานของแต่ละหวย</small></div>
   ${detailHtml}${globalSummaryPanel(globalStats)}${selectorDiagnosticPanel()}`;
-  html+=`</div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.7</span><span class="brand-star">✦</span></div>`;
+  html+=`</div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.8</span><span class="brand-star">✦</span></div>`;
   $('result').innerHTML=html;
 } finally { window.__PERFTRACE__.end("render",__pt0); }}
 function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
@@ -3050,9 +3072,9 @@ function runSystemHealth(){
   if(!/__SUPPORT_META_BUILD__/.test(s))issues.push('support recursion guard missing');
   if(!/breakBefore/.test(s))warnings.push('breakBefore handling not detected');
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
-  if(!/version:'V1\.9.6'/.test(s))issues.push('config version mismatch');
-  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.7'))issues.push('visible version mismatch');
-  const health={version:'V1.9.7',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
+  if(!/version:'V1\.9.8'/.test(s))issues.push('config version mismatch');
+  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.8'))issues.push('visible version mismatch');
+  const health={version:'V1.9.8',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
@@ -3098,7 +3120,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    showToast(`✓ V1.9.7 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
+    showToast(`✓ V1.9.8 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
   }catch(e){
     console.error(e);showToast('⚠️ ประมวลผลไม่สำเร็จ กรุณาตรวจข้อมูลอีกครั้ง');
   }finally{
@@ -3106,7 +3128,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
   }
 } finally { window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.7',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.8',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth()});
 })();
 </script>
