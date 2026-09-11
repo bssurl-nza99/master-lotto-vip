@@ -3,373 +3,407 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์หวยหลายประเภท</title>
+    <title>ระบบวิเคราะห์หวย — รองรับรูปแบบของคุณโดยตรง</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { max-width: 1000px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #e8f5e9, #e3f2fd); color: #333; min-height: 100vh; }
-        h1 { text-align: center; color: #1b5e20; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #558b2f; margin-bottom: 25px; font-size: 15px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 6px 25px rgba(27,94,32,0.1); margin-bottom: 20px; }
-        textarea { width: 100%; min-height: 200px; padding: 18px; border: 2px solid #c8e6c9; border-radius: 14px; font-size: 14px; resize: vertical; line-height: 1.7; }
-        textarea:focus { outline: none; border-color: #2e7d32; background: #fafdfa; }
+        body { max-width: 1100px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #f0f0f0; min-height: 100vh; }
+        h1 { text-align: center; color: #00e5ff; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #80deea; margin-bottom: 25px; }
+        .card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); margin-bottom: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        textarea { width: 100%; min-height: 220px; padding: 18px; border: 2px solid rgba(0,229,255,0.3); border-radius: 14px; font-size: 14px; resize: vertical; line-height: 1.8; background: rgba(0,0,0,0.2); color: #fff; }
+        textarea:focus { outline: none; border-color: #00e5ff; }
         button { padding: 15px 24px; font-size: 17px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.25s; }
-        .btn-primary { background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; width: 100%; margin: 8px 0; box-shadow: 0 4px 12px rgba(46,125,50,0.3); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(46,125,50,0.4); }
-        .btn-danger { background: linear-gradient(135deg, #ef5350, #c62828); color: white; box-shadow: 0 4px 12px rgba(198,40,40,0.3); }
-        .btn-danger:hover { transform: translateY(-2px); }
+        .btn-primary { background: linear-gradient(135deg, #00b4d8, #0077b6); color: white; width: 100%; margin: 8px 0; box-shadow: 0 4px 15px rgba(0,180,216,0.4); }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-danger { background: linear-gradient(135deg, #e63946, #d62828); color: white; }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
         .btn-group button { flex: 1; min-width: 140px; }
-        .type-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; border-bottom: 2px solid #e8f5e9; padding-bottom: 10px; }
-        .type-tab { padding: 10px 18px; background: #e8f5e9; border-radius: 10px; cursor: pointer; font-weight: 600; color: #2e7d32; transition: all 0.2s; }
-        .type-tab.active { background: #2e7d32; color: white; box-shadow: 0 3px 8px rgba(46,125,50,0.3); }
-        .section-title { font-size: 19px; font-weight: 700; margin: 22px 0 12px; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px; }
-        .result-box { background: #f1f8e9; padding: 22px; border-radius: 14px; border-left: 6px solid #4caf50; margin-top: 15px; }
-        .number-badge { display: inline-block; width: 54px; height: 54px; line-height: 54px; text-align: center; border-radius: 50%; background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; font-size: 24px; font-weight: bold; margin: 5px; box-shadow: 0 3px 10px rgba(46,125,50,0.25); }
-        .number-badge.small { width: 40px; height: 40px; line-height: 40px; font-size: 17px; }
-        .freq-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; margin-top: 12px; }
-        .freq-cell { text-align: center; padding: 10px 6px; border-radius: 10px; background: #f1f8e9; border: 1px solid #c8e6c9; }
-        .freq-cell.highlight { background: #c8e6c9; border-color: #2e7d32; font-weight: bold; }
-        .freq-cell .n { font-weight: bold; font-size: 20px; color: #1b5e20; }
-        .freq-cell .c { font-size: 13px; color: #689f38; margin-top: 3px; }
-        .flow-item { display: inline-block; background: #e8f5e9; padding: 8px 14px; border-radius: 25px; margin: 5px; font-weight: 500; color: #2e7d32; }
+
+        /* === สรุปผลรวม === */
+        .global-summary { background: linear-gradient(135deg, rgba(0,180,216,0.15), rgba(0,119,182,0.15)); border: 2px solid #00e5ff; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .global-summary h2 { color: #00e5ff; margin-top: 0; font-size: 20px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 15px; }
+        .sum-card { background: rgba(0,0,0,0.25); padding: 14px; border-radius: 12px; text-align: center; }
+        .sum-card .val { font-size: 24px; font-weight: bold; }
+        .sum-card .lbl { font-size: 13px; color: #b2ebf2; margin-top: 5px; }
+        .ok { color: #00ff9d; }
+        .no { color: #ff6b6b; }
+        .warn { color: #ffd166; }
+        .pct-bar { height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; margin-top: 8px; overflow: hidden; }
+        .pct-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+
+        /* === แท็บ & เนื้อหา === */
+        .type-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .type-tab { padding: 10px 18px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: 600; color: #b2ebf2; }
+        .type-tab.active { background: #00b4d8; color: white; box-shadow: 0 3px 10px rgba(0,180,216,0.4); }
+        .section-title { font-size: 18px; font-weight: 700; margin: 22px 0 12px; color: #00e5ff; border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 8px; }
+        .backtest-box { background: rgba(0,0,0,0.25); border-radius: 12px; padding: 16px; margin: 12px 0; }
+        .bt-row { display: flex; flex-wrap: wrap; gap: 15px; margin: 8px 0; }
+        .bt-item { flex: 1; min-width: 110px; }
+        .bt-item b { color: #00e5ff; }
+        .method-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+        .method-card { padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); text-align: center; font-size: 13px; }
+        .method-card.best { border: 2px solid #00ff9d; background: rgba(0,255,157,0.1); }
+        .number-badge { display: inline-block; width: 50px; height: 50px; line-height: 50px; text-align: center; border-radius: 50%; background: linear-gradient(135deg, #00b4d8, #0077b6); color: white; font-size: 20px; font-weight: bold; margin: 4px; }
+        .result-log { max-height: 250px; overflow-y: auto; margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; font-size: 13px; }
+        .log-item { padding: 4px 8px; border-radius: 4px; margin: 2px 0; }
+        .log-item.ok { background: rgba(0,255,157,0.15); color: #00ff9d; }
+        .log-item.no { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+        .warning { background: rgba(255,209,102,0.1); border-left: 5px solid #ffd166; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 14px; line-height: 1.7; color: #fff3cd; }
         .stat-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
-        .stat-item { background: #f1f8e9; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
-        .sub-tab { padding: 8px 16px; background: #e8f5e9; border-radius: 8px; cursor: pointer; font-weight: 500; color: #2e7d32; font-size: 14px; }
-        .sub-tab.active { background: #2e7d32; color: white; }
-        .sub-tabs { display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
+        .stat-item { background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
-        .warning { background: #fff8e1; border-left: 5px solid #ff8f00; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 14px; line-height: 1.7; }
-        .summary-bar { display: flex; flex-wrap: wrap; gap: 15px; margin: 10px 0; font-size: 14px; }
-        .summary-item { background: #f1f8e9; padding: 8px 14px; border-radius: 8px; }
-        .empty-state { text-align: center; padding: 40px; color: #78909c; font-size: 15px; }
     </style>
 </head>
 <body>
 
-<h1>🎰 ระบบวิเคราะห์หวยหลายประเภท</h1>
-<p class="subtitle">รองรับไม่จำกัดชนิด — แยกประเภทอัตโนมัติ วิเคราะห์แยกกันโดยไม่ปนข้อมูล</p>
+<h1>🧠 ระบบวิเคราะห์หวย — อ่านรูปแบบของคุณโดยตรง</h1>
+<p class="subtitle">ไม่ต้องแก้ข้อมูล — ใส่ตามรูปแบบปกติ เว้นบรรทัดว่างแยกหวยแต่ละชนิด ระบบแยกอัตโนมัติ</p>
 
 <div class="card">
-    <div class="section-title">📥 วางข้อมูลสถิติทั้งหมดที่นี่</div>
-    <p style="color:#556b2f; font-size:14px;">
-        <strong>รูปแบบตัวอย่าง:</strong><br>
-        <code>===== หุ้นนิคเคอิเช้า =====</code><br>
-        <code>หุ้นนิคเคอิเช้า | 10 ก.ย. 69</code><br>
-        <code>746</code><br><code>32</code><br>
-        <code>===== หุ้นจีนเช้า =====</code><br>
-        <code>หุ้นจีนเช้า | 10 ก.ย. 69</code><br>
-        <code>458</code><br><code>13</code><br>
-        * ข้าม "งดออกผล" อัตโนมัติ
-    </p>
-    <textarea id="statInput" placeholder="วางข้อมูลทั้งหมดของทุกประเภทหวยที่นี่...&#10;&#10;===== หุ้นนิคเคอิเช้า =====&#10;หุ้นนิคเคอิเช้า | 10 ก.ย. 69&#10;746&#10;32&#10;หุ้นนิคเคอิเช้า | 9 ก.ย. 69&#10;523&#10;90&#10;&#10;===== หุ้นจีนเช้า =====&#10;หุ้นจีนเช้า | 10 ก.ย. 69&#10;458&#10;13"></textarea>
+    <div class="section-title">📥 วางข้อมูลสถิติของคุณตรงนี้เลย</div>
+    <p style="color:#80deea; font-size:14px;">💡 <strong>รูปแบบของคุณใช้ได้เลย:</strong><br>
+    • บรรทัดแรก: ชื่อหวย | วันที่<br>
+    • บรรทัดถัดไป: เลข 3 ตัว → เลข 2 ตัว<br>
+    • เว้น 1 บรรทัดว่าง → ใส่หวยชนิดถัดไป<br>
+    • มี "งดออกผล" ระบบข้ามให้อัตโนมัติ</p>
+    <textarea id="statInput" placeholder="ตัวอย่าง:&#10;หุ้นดาวโจนส์ | 9 ก.ย. 69&#10;066&#10;41&#10;หุ้นดาวโจนส์ | 8 ก.ย. 69&#10;607&#10;18&#10;&#10;หุ้นนิคเคอิเช้า | 9 ก.ย. 69&#10;123&#10;45"></textarea>
     
     <div class="btn-group">
-        <button class="btn-primary" onclick="analyzeData()">🔮 ประมวลผลทั้งหมด</button>
+        <button class="btn-primary" onclick="analyzeAll()">🚀 ประมวลผล + ทดสอบย้อนหลัง</button>
         <button class="btn-danger" onclick="clearAll()">🗑️ ล้างทั้งหมด</button>
     </div>
 </div>
 
-<div class="card" id="resultSection" style="display:none;">
-    <div class="section-title">📊 ผลการวิเคราะห์</div>
-    <div id="parseSummary" class="summary-bar"></div>
-    
-    <!-- เลือกประเภทหวย -->
-    <div class="type-tabs" id="typeTabs"></div>
-    
-    <!-- เนื้อหาแต่ละประเภท -->
-    <div id="typeContents"></div>
+<!-- สรุปผลรวมทุกหวย -->
+<div class="card" id="globalSummarySection" style="display:none;">
+    <div class="global-summary">
+        <h2>📊 สรุปผลรวมทุกชนิดหวย</h2>
+        <div class="summary-grid">
+            <div class="sum-card"><div class="val">🏷️ <span id="g_types">0</span></div><div class="lbl">ชนิดหวยทั้งหมด</div></div>
+            <div class="sum-card"><div class="val ok">🎯 <span id="g_rounds">0</span></div><div class="lbl">รอบทดสอบทั้งหมด</div></div>
+            <div class="sum-card"><div class="val ok">✅ <span id="g3_ok">0</span></div><div class="lbl">ถูกเลข 3 ตัว</div></div>
+            <div class="sum-card"><div class="val no">❌ <span id="g3_no">0</span></div><div class="lbl">ผิดเลข 3 ตัว</div></div>
+            <div class="sum-card"><div class="val ok">🎯 <span id="g2_ok">0</span></div><div class="lbl">ถูกเลข 2 ตัว</div></div>
+            <div class="sum-card"><div class="val no">❌ <span id="g2_no">0</span></div><div class="lbl">ผิดเลข 2 ตัว</div></div>
+            <div class="sum-card"><div class="val ok">📈 <span id="g3_pct">0%</span></div><div class="lbl">% ถูกต้อง 3 ตัว</div><div class="pct-bar"><div class="pct-fill ok" id="g3_bar" style="width:0%"></div></div></div>
+            <div class="sum-card"><div class="val ok">📈 <span id="g2_pct">0%</span></div><div class="lbl">% ถูกต้อง 2 ตัว</div><div class="pct-bar"><div class="pct-fill ok" id="g2_bar" style="width:0%"></div></div></div>
+            <div class="sum-card"><div class="val warn">⚠️ <span id="g3_streak">0</span></div><div class="lbl">ผิดติดต่อมากสุด (3ตัว)</div></div>
+            <div class="sum-card"><div class="val warn">⚠️ <span id="g2_streak">0</span></div><div class="lbl">ผิดติดต่อมากสุด (2ตัว)</div></div>
+        </div>
+    </div>
+</div>
 
+<div class="card" id="resultSection" style="display:none;">
+    <div class="type-tabs" id="typeTabs"></div>
+    <div id="typeContents"></div>
     <div class="warning">
-        ⚠️ <strong>คำเตือนสำคัญ:</strong> ระบบวิเคราะห์จากสถิติและรูปแบบความน่าจะเป็นเท่านั้น <strong>ไม่สามารถรับประกันผลจริงได้</strong> ทุกชุดตัวเลขมีโอกาสเท่าเทียมกัน ใช้เพื่อการศึกษาและความบันเทิงเท่านั้นครับ
+        ⚠️ <strong>คำเตือนความจริง:</strong> เปอร์เซ็นต์ที่แสดงคือผลทดสอบย้อนหลังเท่านั้น หวยเป็นเหตุการณ์สุ่ม ไม่มีระบบใดรับประกันผลลัพธ์จริง ใช้เพื่อการศึกษาและความบันเทิงครับ
     </div>
 </div>
 
 <script>
-// ตัวแปรหลัก
-let allLotteryTypes = {};  // { ชื่อประเภท: { data3, data2, rawEntries } }
+// ==============================================
+// === ตัวแปรหลัก & ค่าคงที่ ===
+// ==============================================
+let allData = {};
 let activeType = null;
 
-// --- หลักประมวลผลข้อมูล ---
-function analyzeData() {
+const METHODS = {
+    freq: { name: 'ความถี่รวม' },
+    position: { name: 'แยกตำแหน่ง' },
+    cold: { name: 'เลขเย็น' },
+    hybrid: { name: 'ผสมผสาน' }
+};
+
+// ==============================================
+// === 1. อ่านข้อมูล — รองรับรูปแบบของคุณโดยตรง ===
+// ==============================================
+function analyzeAll() {
     const input = document.getElementById('statInput').value;
     if (!input.trim()) { alert('กรุณาวางข้อมูลสถิติก่อนครับ'); return; }
 
-    allLotteryTypes = {};
-    parseAllInput(input);
-    
-    const typeCount = Object.keys(allLotteryTypes).length;
-    if (typeCount === 0) {
-        alert('ไม่พบข้อมูลประเภทหวย กรุณาตรวจสอบรูปแบบ (ต้องมี ===== ชื่อประเภท =====) ครับ'); return;
+    allData = {};
+    parseInputYourFormat(input);  // ใช้ตัวแยกที่เข้ากับรูปแบบของคุณโดยตรง
+
+    const typeNames = Object.keys(allData);
+    if (typeNames.length === 0) {
+        alert('ไม่พบข้อมูลที่ถูกต้อง กรุณาตรวจสอบรูปแบบ:\n• ชื่อหวย | วันที่\n• เลข 3 ตัว\n• เลข 2 ตัว\n• เว้น 1 บรรทัดแยกหวยชนิดถัดไป');
+        return;
     }
 
-    // แสดงสรุป
-    let totalRounds = 0;
-    Object.values(allLotteryTypes).forEach(t => totalRounds += t.rawEntries.length);
-    document.getElementById('parseSummary').innerHTML = `
-        <div class="summary-item">✅ พบ <strong>${typeCount}</strong> ประเภทหวย</div>
-        <div class="summary-item">📊 รวม <strong>${totalRounds}</strong> งวด</div>
-    `;
+    // ทดสอบย้อนหลังทุกชนิด
+    typeNames.forEach(type => runBacktest(type));
 
-    // สร้างแท็บประเภทหวย
-    const typeNames = Object.keys(allLotteryTypes);
-    let tabHtml = '';
-    typeNames.forEach((name, idx) => {
-        tabHtml += `<div class="type-tab ${idx===0?'active':''}" onclick="switchType('${name.replace(/'/g,"\\'")}')">${name}</div>`;
-    });
-    document.getElementById('typeTabs').innerHTML = tabHtml;
-
-    // สร้างเนื้อหาแต่ละประเภท
-    let contentHtml = '';
-    typeNames.forEach((name, idx) => {
-        contentHtml += `<div class="tab-content ${idx===0?'active':''}" id="type_${btoa(name)}">${buildTypeContent(name)}</div>`;
-    });
-    document.getElementById('typeContents').innerHTML = contentHtml;
+    // แสดงผล
+    renderGlobalSummary();
+    renderTypeTabs(typeNames);
+    renderAllTypeContents(typeNames);
 
     activeType = typeNames[0];
     document.getElementById('resultSection').style.display = 'block';
-    document.getElementById('resultSection').scrollIntoView({behavior:'smooth'});
+    document.getElementById('globalSummarySection').style.display = 'block';
+    document.getElementById('globalSummarySection').scrollIntoView({behavior:'smooth'});
 }
 
-// --- แยกประเภทหวยจากข้อความทั้งหมด ---
-function parseAllInput(text) {
-    // แบ่งตามหัวข้อ ===== ชื่อ =====
-    const blocks = text.split(/={3,}\s*([^=]+)\s*={3,}/).filter(b => b.trim());
-    let currentType = null;
-
-    for (let i = 0; i < blocks.length; i++) {
-        const block = blocks[i].trim();
-        // ถ้าเป็นชื่อประเภท
-        if (!block.includes('\n') || !/[\d]/.test(block)) {
-            currentType = block.trim();
-            if (!allLotteryTypes[currentType]) {
-                allLotteryTypes[currentType] = { data3: [], data2: [], rawEntries: [] };
-            }
-        }
-        // ถ้าเป็นข้อมูลสถิติ
-        else if (currentType) {
-            parseBlock(block, allLotteryTypes[currentType]);
-        }
-    }
-}
-
-// --- แปลงข้อมูลแต่ละกลุ่มสถิติ ---
-function parseBlock(block, typeData) {
-    const lines = block.split('\n').map(l=>l.trim()).filter(l=>l);
-    let i = 0;
-    while (i < lines.length) {
-        const line = lines[i];
-        // ตรวจหาหัวงวด/วันที่
-        if (line.length > 5 && !/^\d+$/.test(line) && !line.includes('งดออกผล')) {
-            i++;
-            let num3 = null, num2 = null;
-            // ข้ามงดออกผล
-            while (i < lines.length && lines[i].includes('งดออกผล')) i++;
-            // อ่านเลข 3 ตัว
-            if (i < lines.length) {
-                const m3 = lines[i].replace(/\s/g,'').match(/^(\d)(\d)(\d)$/);
-                if (m3) {
-                    num3 = [parseInt(m3[1]), parseInt(m3[2]), parseInt(m3[3])];
-                    i++;
-                }
-            }
-            // ข้ามงดออกผล
-            while (i < lines.length && lines[i].includes('งดออกผล')) i++;
-            // อ่านเลข 2 ตัว
-            if (i < lines.length) {
-                const m2 = lines[i].replace(/\s/g,'').match(/^(\d)(\d)$/);
-                if (m2) {
-                    num2 = [parseInt(m2[1]), parseInt(m2[2])];
-                    i++;
-                }
-            }
-            if (num3 || num2) {
-                typeData.rawEntries.push({date: line, num3, num2});
-                if (num3) typeData.data3.push(num3);
-                if (num2) typeData.data2.push(num2);
-            }
-        } else { i++; }
-    }
-    // เรียงจากเก่าไปใหม่
-    typeData.data3.reverse();
-    typeData.data2.reverse();
-    typeData.rawEntries.reverse();
-}
-
-// --- สร้างเนื้อหาสำหรับแต่ละประเภทหวย ---
-function buildTypeContent(typeName) {
-    const t = allLotteryTypes[typeName];
-    let html = '';
+// === ตัวแยกข้อมูล — ตรงกับรูปแบบที่คุณใช้เป๊ะๆ ===
+function parseInputYourFormat(text) {
+    // แยกด้วยบรรทัดว่าง 1 บรรทัด → แต่ละกลุ่ม = หวย 1 ชนิด
+    const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
     
-    // สร้างแท็บย่อย
-    html += `<div class="sub-tabs">
-        <div class="sub-tab active" onclick="switchSubTab('${btoa(typeName)}','tab3')">🔢 เลข 3 ตัว</div>
-        <div class="sub-tab" onclick="switchSubTab('${btoa(typeName)}','tab2')">🔟 เลข 2 ตัว</div>
-        <div class="sub-tab" onclick="switchSubTab('${btoa(typeName)}','tabFlow')">🔄 เลขไหล</div>
-        <div class="sub-tab" onclick="switchSubTab('${btoa(typeName)}','tabHis')">📋 ประวัติ</div>
-    </div>`;
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length < 3) return;  // ต้องมีอย่างน้อย: วันที่ + เลข3 + เลข2
 
-    // 1. เลข 3 ตัว
-    html += `<div class="tab-content active" id="tab3_${btoa(typeName)}">`;
-    if (t.data3.length > 0) {
-        const r = analyzeNumberSet(t.data3);
-        html += renderResultHTML(r, '3 ตัว');
-    } else {
-        html += `<div class="empty-state">ไม่พบข้อมูลเลข 3 ตัว</div>`;
+        // หาชื่อหวยจากบรรทัดแรกที่มี "|"
+        const firstLine = lines[0];
+        const pipeMatch = firstLine.match(/^(.+?)\s*\|\s*.+$/);
+        if (!pipeMatch) return;
+        
+        const typeName = pipeMatch[1].trim();  // "หุ้นดาวโจนส์"
+        if (!allData[typeName]) allData[typeName] = { rawEntries: [], data3: [], data2: [] };
+
+        // อ่านข้อมูลทีละ 3 บรรทัด: วันที่ → เลข3 → เลข2
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i];
+            
+            // ถ้าเป็นหัววันที่ (มีเครื่องหมาย |)
+            if (line.includes('|') && !/^\d+$/.test(line) && !line.includes('งดออกผล')) {
+                const dateLine = line;
+                i++;
+                
+                let num3 = null, num2 = null;
+                
+                // อ่านเลข 3 ตัว หรือ ข้าม "งดออกผล"
+                while (i < lines.length && lines[i].includes('งดออกผล')) i++;
+                if (i < lines.length && /^\d{3}$/.test(lines[i].replace(/\s/g, ''))) {
+                    const m3 = lines[i].replace(/\s/g, '').match(/^(\d)(\d)(\d)$/);
+                    if (m3) num3 = [+m3[1], +m3[2], +m3[3]];
+                    i++;
+                }
+                
+                // อ่านเลข 2 ตัว หรือ ข้าม "งดออกผล"
+                while (i < lines.length && lines[i].includes('งดออกผล')) i++;
+                if (i < lines.length && /^\d{2}$/.test(lines[i].replace(/\s/g, ''))) {
+                    const m2 = lines[i].replace(/\s/g, '').match(/^(\d)(\d)$/);
+                    if (m2) num2 = [+m2[1], +m2[2]];
+                    i++;
+                }
+                
+                if (num3 || num2) {
+                    allData[typeName].rawEntries.push({ date: dateLine, num3, num2 });
+                    if (num3) allData[typeName].data3.push(num3);
+                    if (num2) allData[typeName].data2.push(num2);
+                }
+            } else {
+                i++;
+            }
+        }
+
+        // เรียงเก่า→ใหม่
+        allData[typeName].rawEntries.reverse();
+        allData[typeName].data3.reverse();
+        allData[typeName].data2.reverse();
+    });
+}
+
+// ==============================================
+// === 2. ทดสอบย้อนหลัง & วัดความแม่นยำ ===
+// ==============================================
+function runBacktest(type) {
+    const t = allData[type];
+    const minRounds = 5;
+    
+    t.backtest3 = t.data3.length >= minRounds ? testOneSet(t.data3) : { enough: false };
+    t.backtest2 = t.data2.length >= minRounds ? testOneSet(t.data2) : { enough: false };
+    t.bestMethod = { m3: t.backtest3.enough ? t.backtest3.bestMethod : 'hybrid', m2: t.backtest2.enough ? t.backtest2.bestMethod : 'hybrid' };
+}
+
+function testOneSet(dataArray) {
+    const L = dataArray.length;
+    const minHistory = 3;
+    const resultsByMethod = {};
+    Object.keys(METHODS).forEach(m => resultsByMethod[m] = { ok: 0, no: 0, log: [], maxMissStreak: 0, currentStreak: 0 });
+
+    for (let predictIdx = minHistory; predictIdx < L; predictIdx++) {
+        const history = dataArray.slice(0, predictIdx);
+        const actual = dataArray[predictIdx];
+
+        Object.keys(METHODS).forEach(method => {
+            const pred = predictByMethod(history, method);
+            const isCorrect = JSON.stringify(pred) === JSON.stringify(actual);
+            const r = resultsByMethod[method];
+            if (isCorrect) {
+                r.ok++; r.currentStreak = 0;
+                r.log.push({ round: predictIdx+1, pred, actual, result: 'OK' });
+            } else {
+                r.no++; r.currentStreak++;
+                if (r.currentStreak > r.maxMissStreak) r.maxMissStreak = r.currentStreak;
+                r.log.push({ round: predictIdx+1, pred, actual, result: 'NO' });
+            }
+        });
+    }
+
+    // หาสูตรดีที่สุด
+    let bestMethod = 'hybrid', bestPct = 0;
+    Object.entries(resultsByMethod).forEach(([m, r]) => {
+        r.pct = r.ok + r.no > 0 ? ((r.ok / (r.ok + r.no)) * 100).toFixed(1) : '0.0';
+        if (+r.pct > bestPct) { bestPct = +r.pct; bestMethod = m; }
+    });
+
+    return {
+        enough: true,
+        totalTested: L - minHistory,
+        results: resultsByMethod,
+        bestMethod,
+        bestPct,
+        ok: resultsByMethod[bestMethod].ok,
+        no: resultsByMethod[bestMethod].no,
+        pct: resultsByMethod[bestMethod].pct,
+        maxMissStreak: Math.max(...Object.values(resultsByMethod).map(r => r.maxMissStreak)),
+        log: resultsByMethod[bestMethod].log
+    };
+}
+
+function predictByMethod(history, method) {
+    const len = history[0].length;
+    const freq = Array(10).fill(0);
+    const posFreq = Array.from({length: len}, () => Array(10).fill(0));
+    const flat = history.flat();
+    history.forEach(row => {
+        row.forEach(d => freq[d]++);
+        row.forEach((d, i) => posFreq[i][d]++);
+    });
+
+    switch (method) {
+        case 'freq':
+            return [...Array(10).keys()].sort((a,b) => freq[b] - freq[a]).slice(0, len);
+        case 'position':
+            return posFreq.map(pf => { let m=-1,n=0; for(let i=0;i<10;i++) if(pf[i]>m){m=pf[i];n=i;} return n; });
+        case 'cold':
+            const lastSeen = Array(10).fill(999);
+            flat.forEach((d, i) => lastSeen[d] = Math.min(lastSeen[d], flat.length - 1 - i));
+            return [...Array(10).keys()].sort((a,b) => lastSeen[b] - lastSeen[a]).slice(0, len);
+        case 'hybrid':
+            const avgFreq = flat.length / 10;
+            const score = Array(10).fill(0);
+            for (let n = 0; n < 10; n++) {
+                score[n] = freq[n];
+                score[n] += freq[n] < avgFreq * 0.5 ? 2 : 0;
+                score[n] += freq[n] > avgFreq * 1.3 ? 1 : 0;
+                const lastIdx = flat.lastIndexOf(n);
+                score[n] += (flat.length - lastIdx - 1) * 0.25;
+            }
+            return posFreq.map(pf => {
+                const c = []; for(let n=0;n<10;n++) c.push({n,s:pf[n]*1.5+score[n]});
+                c.sort((a,b)=>b.s-a.s); return c[0].n;
+            });
+        default:
+            return posFreq.map(pf => pf.indexOf(Math.max(...pf)));
+    }
+}
+
+// ==============================================
+// === 3. แสดงผล ===
+// ==============================================
+function renderGlobalSummary() {
+    let t3=0, o3=0, n3=0, s3=0, t2=0, o2=0, n2=0, s2=0;
+    Object.values(allData).forEach(t => {
+        if (t.backtest3.enough) { t3 += t.backtest3.ok + t.backtest3.no; o3 += t.backtest3.ok; n3 += t.backtest3.no; s3 = Math.max(s3, t.backtest3.maxMissStreak); }
+        if (t.backtest2.enough) { t2 += t.backtest2.ok + t.backtest2.no; o2 += t.backtest2.ok; n2 += t.backtest2.no; s2 = Math.max(s2, t.backtest2.maxMissStreak); }
+    });
+    const p3 = t3>0 ? ((o3/t3)*100).toFixed(1) : '0.0';
+    const p2 = t2>0 ? ((o2/t2)*100).toFixed(1) : '0.0';
+
+    document.getElementById('g_types').textContent = Object.keys(allData).length;
+    document.getElementById('g_rounds').textContent = t3 + t2;
+    document.getElementById('g3_ok').textContent = o3; document.getElementById('g3_no').textContent = n3;
+    document.getElementById('g2_ok').textContent = o2; document.getElementById('g2_no').textContent = n2;
+    document.getElementById('g3_pct').textContent = p3 + '%'; document.getElementById('g2_pct').textContent = p2 + '%';
+    document.getElementById('g3_bar').style.width = Math.min(p3,100)+'%'; document.getElementById('g2_bar').style.width = Math.min(p2,100)+'%';
+    document.getElementById('g3_streak').textContent = s3; document.getElementById('g2_streak').textContent = s2;
+}
+
+function renderTypeTabs(names) {
+    document.getElementById('typeTabs').innerHTML = names.map((n,i)=>`<div class="type-tab ${i===0?'active':''}" onclick="switchType('${n.replace(/'/g,"\\'")}')">${n}</div>`).join('');
+}
+
+function renderAllTypeContents(names) {
+    document.getElementById('typeContents').innerHTML = names.map((n,i)=>`<div class="tab-content ${i===0?'active':''}" id="type_${btoa(n)}">${buildOneTypeContent(n)}</div>`).join('');
+}
+
+function buildOneTypeContent(type) {
+    const t = allData[type];
+    let html = '';
+
+    html += `<div class="section-title">📊 ผลทดสอบย้อนหลัง & ความแม่นยำจริง</div><div class="backtest-box">`;
+    
+    if (t.backtest3.enough) {
+        const b = t.backtest3;
+        html += `<h4 style="color:#00e5ff; margin:0 0 10px;">🔢 เลข 3 ตัว — สูตรดีที่สุด: <strong>${METHODS[b.bestMethod].name}</strong> (${b.pct}%)</h4>`;
+        html += `<div class="bt-row"><div class="bt-item"><b>ทดสอบ:</b> ${b.totalTested} รอบ</div><div class="bt-item ok"><b>ถูก:</b> ${b.ok}</div><div class="bt-item no"><b>ผิด:</b> ${b.no}</div><div class="bt-item ok"><b>ถูกต้อง:</b> ${b.pct}%</div><div class="bt-item warn"><b>ผิดติดต่อมากสุด:</b> ${b.maxMissStreak}</div></div>`;
+        html += `<div class="method-compare">${Object.entries(b.results).map(([m,r])=>`<div class="method-card ${m===b.bestMethod?'best':''}"><div>${METHODS[m].name}</div><div style="font-weight:bold; font-size:16px; margin-top:4px;">${r.pct}%</div><div style="font-size:12px; color:#999;">${r.ok}/${r.ok+r.no}</div></div>`).join('')}</div>`;
+    } else html += `<div style="color:#999;">🔢 เลข 3 ตัว: ข้อมูลไม่พอ (ต้อง ≥5 รอบ)</div>`;
+
+    html += `<br>`;
+
+    if (t.backtest2.enough) {
+        const b = t.backtest2;
+        html += `<h4 style="color:#00e5ff; margin:0 0 10px;">🔟 เลข 2 ตัว — สูตรดีที่สุด: <strong>${METHODS[b.bestMethod].name}</strong> (${b.pct}%)</h4>`;
+        html += `<div class="bt-row"><div class="bt-item"><b>ทดสอบ:</b> ${b.totalTested} รอบ</div><div class="bt-item ok"><b>ถูก:</b> ${b.ok}</div><div class="bt-item no"><b>ผิด:</b> ${b.no}</div><div class="bt-item ok"><b>ถูกต้อง:</b> ${b.pct}%</div><div class="bt-item warn"><b>ผิดติดต่อมากสุด:</b> ${b.maxMissStreak}</div></div>`;
+        html += `<div class="method-compare">${Object.entries(b.results).map(([m,r])=>`<div class="method-card ${m===b.bestMethod?'best':''}"><div>${METHODS[m].name}</div><div style="font-weight:bold; font-size:16px; margin-top:4px;">${r.pct}%</div><div style="font-size:12px; color:#999;">${r.ok}/${r.ok+r.no}</div></div>`).join('')}</div>`;
+    } else html += `<div style="color:#999;">🔟 เลข 2 ตัว: ข้อมูลไม่พอ (ต้อง ≥5 รอบ)</div>`;
+
+    html += `</div>`;
+
+    // ทำนายรอบถัดไป
+    html += `<div class="section-title">🎯 ทำนายรอบถัดไป (สูตรที่ดีที่สุด)</div><div class="backtest-box">`;
+    if (t.data3.length >= 3) {
+        const pred3 = predictByMethod(t.data3, t.bestMethod.m3);
+        html += `<div style="margin-bottom:12px;"><strong>🔢 เลข 3 ตัว (${METHODS[t.bestMethod.m3].name}):</strong><br><div style="font-size:28px; margin-top:8px;">${pred3.map(n=>`<span class="number-badge">${n}</span>`).join('')}</div></div>`;
+    }
+    if (t.data2.length >= 3) {
+        const pred2 = predictByMethod(t.data2, t.bestMethod.m2);
+        html += `<div><strong>🔟 เลข 2 ตัว (${METHODS[t.bestMethod.m2].name}):</strong><br><div style="font-size:28px; margin-top:8px;">${pred2.map(n=>`<span class="number-badge">${n}</span>`).join('')}</div></div>`;
     }
     html += `</div>`;
 
-    // 2. เลข 2 ตัว
-    html += `<div class="tab-content" id="tab2_${btoa(typeName)}">`;
-    if (t.data2.length > 0) {
-        const r = analyzeNumberSet(t.data2);
-        html += renderResultHTML(r, '2 ตัว');
-    } else {
-        html += `<div class="empty-state">ไม่พบข้อมูลเลข 2 ตัว</div>`;
+    // ประวัติ & บันทึก
+    html += `<div class="section-title">📋 ประวัติ & บันทึกการทดสอบ</div>`;
+    html += `<div class="stat-row"><div class="stat-item">งวดทั้งหมด: <strong>${t.rawEntries.length}</strong> รอบ</div><div class="stat-item">เลข 3 ตัว: <strong>${t.data3.length}</strong> ชุด</div><div class="stat-item">เลข 2 ตัว: <strong>${t.data2.length}</strong> ชุด</div></div>`;
+    
+    if (t.backtest3.enough || t.backtest2.enough) {
+        const logSample = ((t.backtest3.log || []).length > (t.backtest2.log || []).length ? t.backtest3.log : t.backtest2.log || []).slice(-15).reverse();
+        if (logSample.length > 0) {
+            html += `<div class="result-log"><strong>บันทึกการทดสอบล่าสุด:</strong><br>`;
+            logSample.forEach(l => {
+                html += `<div class="log-item ${l.result==='OK'?'ok':'no'}">รอบ${l.round}: ทำนาย ${l.pred.join('')} | จริง ${l.actual.join('')} → ${l.result==='OK'?'✅ ถูก':'❌ ผิด'}</div>`;
+            });
+            html += `</div>`;
+        }
     }
-    html += `</div>`;
-
-    // 3. เลขไหล
-    html += `<div class="tab-content" id="tabFlow_${btoa(typeName)}">`;
-    html += renderFlowHTML(t);
-    html += `</div>`;
-
-    // 4. ประวัติ
-    html += `<div class="tab-content" id="tabHis_${btoa(typeName)}">`;
-    html += `<div class="result-box"><strong>ประวัติทั้งหมด ${t.rawEntries.length} งวด:</strong><br>`;
-    html += t.rawEntries.map(e => `• ${e.date}: ${e.num3?.join('')||'—'} | ${e.num2?.join('')||'—'}`).join('<br>');
-    html += `</div></div>`;
 
     return html;
 }
 
-// --- วิเคราะห์ชุดตัวเลข ---
-function analyzeNumberSet(data) {
-    const len = data[0].length;
-    const freq = Array(10).fill(0);
-    const posFreq = Array.from({length:len}, ()=>Array(10).fill(0));
-    const flat = data.flat();
-    
-    data.forEach(row => {
-        row.forEach(d => freq[d]++);
-        row.forEach((d, idx) => posFreq[idx][d]++);
-    });
-
-    // คำนวณคะแนน
-    const total = flat.length;
-    const avgFreq = total / 10;
-    const scores = Array.from({length:10}, (_,n)=>{
-        let score = freq[n];
-        // เย็น/ร้อน
-        score += freq[n] < avgFreq*0.5 ? 2.5 : 0;
-        score += freq[n] > avgFreq*1.4 ? 1.5 : 0;
-        // ไม่ออกนาน
-        const last = flat.lastIndexOf(n);
-        if (last === -1) score += 4;
-        else score += (flat.length - last - 1) * 0.3;
-        return {num:n, score, freq:freq[n]};
-    }).sort((a,b)=>b.score-a.score);
-
-    // เลขแนะนำแยกตำแหน่ง
-    const bestByPos = posFreq.map(pf => {
-        let max = -1, num = 0;
-        for(let i=0;i<10;i++) if(pf[i]>max){max=pf[i];num=i;}
-        return num;
-    });
-
-    return { freq, scores, bestByPos, posFreq, dataLen: data.length };
-}
-
-// --- แสดงผลการวิเคราะห์ ---
-function renderResultHTML(r, label) {
-    const bestNums = r.bestByPos.map(n => `<span class="number-badge">${n}</span>`).join('');
-    let gridHtml = '';
-    r.scores.forEach((s, idx) => {
-        gridHtml += `<div class="freq-cell ${idx<5?'highlight':''}"><div class="n">${s.num}</div><div class="c">${s.freq} ครั้ง</div></div>`;
-    });
-    let posHtml = r.posFreq.map((pf, idx) => {
-        let top = pf.map((c,n)=>({n,c})).sort((a,b)=>b.c-a.c).slice(0,3);
-        return `<div class="stat-item"><strong>ตำแหน่ง ${idx+1}:</strong> ${top.map(x=>x.n+'('+x.c+')').join(', ')}</div>`;
-    }).join('');
-
-    return `
-        <div class="section-title">🎯 เลข${label}ที่ดีที่สุด รอบถัดไป</div>
-        <div style="text-align:center; margin:20px 0;">${bestNums}</div>
-        <div class="result-box">แนะนำแยกตำแหน่งจากความถี่สูงสุด + คะแนนสถิติรวม</div>
-        
-        <div class="section-title">📈 ความถี่เลข 0-9</div>
-        <div class="freq-grid">${gridHtml}</div>
-        
-        <div class="section-title">📍 ความถี่แยกตำแหน่ง</div>
-        <div class="stat-row">${posHtml}</div>
-    `;
-}
-
-// --- แสดงผลเลขไหล ---
-function renderFlowHTML(t) {
-    const allSeq = [...t.data3.flat(), ...t.data2.flat()];
-    if (allSeq.length < 6) return `<div class="empty-state">ข้อมูลไม่พอสำหรับวิเคราะห์เลขไหล</div>`;
-    
-    const transitions = {}, pairCount = {};
-    for(let i=0;i<allSeq.length-1;i++){
-        const c = allSeq[i], n = allSeq[i+1];
-        transitions[c] = transitions[c]||{};
-        transitions[c][n] = (transitions[c][n]||0)+1;
-        pairCount[`${c}→${n}`] = (pairCount[`${c}→${n}`]||0)+1;
-    }
-    const topPairs = Object.entries(pairCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    
-    // แนวโน้มจากเลขล่าสุด
-    const last3 = allSeq.slice(-3);
-    const trend = Array(10).fill(0);
-    last3.forEach(num=>{
-        if(transitions[num]) Object.entries(transitions[num]).forEach(([n,c])=>trend[parseInt(n)]+=c);
-    });
-    const trendTop = trend.map((s,n)=>({n,s})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5);
-
-    return `
-        <div class="section-title">🔥 คู่เลขที่ตามกันบ่อยสุด</div>
-        <div class="stat-row">${topPairs.map(([p,c])=>`<span class="flow-item">${p} (${c} ครั้ง)</span>`).join('')}</div>
-        
-        <div class="section-title">📌 แนวโน้มรอบถัดไป (จากเลขล่าสุด: ${last3.join(', ')})</div>
-        <div style="text-align:center; margin:15px 0;">
-            ${trendTop.map(x=>`<span class="number-badge small">${x.n}</span>`).join('') || '<span style="color:#78909c;">ไม่พอข้อมูล</span>'}
-        </div>
-        
-        <div class="section-title">📋 รูปแบบการนำ-ตาม</div>
-        <div class="result-box">
-            ${Object.entries(transitions).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).slice(0,8).map(([k,v])=>`
-                <div style="margin:5px 0;">เลข ${k} มักตามด้วย → ${Object.entries(v).sort((x,y)=>y[1]-x[1]).slice(0,3).map(x=>x[0]+'('+x[1]+')').join(', ')}</div>
-            `).join('')}
-        </div>
-    `;
-}
-
-// --- สลับประเภทหวย ---
 function switchType(name) {
-    document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
     event.target.classList.add('active');
-    document.querySelectorAll('[id^="type_"]').forEach(c=>c.classList.remove('active'));
+    document.querySelectorAll('[id^="type_"]').forEach(c => c.classList.remove('active'));
     document.getElementById(`type_${btoa(name)}`).classList.add('active');
     activeType = name;
 }
 
-// --- สลับแท็บย่อย ---
-function switchSubTab(key, tabId) {
-    document.querySelectorAll(`[id^="${tabId.split('_')[0]}_${key}"]`).forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById(`${tabId}_${key}`).classList.add('active');
-}
-
-// --- ล้างข้อมูล ---
 function clearAll() {
-    if (confirm('ยืนยันการล้างข้อมูลทั้งหมด?')) {
+    if (confirm('ยืนยันล้างข้อมูลทั้งหมด?')) {
         document.getElementById('statInput').value = '';
         document.getElementById('resultSection').style.display = 'none';
-        allLotteryTypes = {};
-        activeType = null;
+        document.getElementById('globalSummarySection').style.display = 'none';
+        allData = {};
     }
 }
 </script>
