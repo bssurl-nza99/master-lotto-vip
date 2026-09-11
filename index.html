@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.13 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-2</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.14 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-3</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1416,7 +1416,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.13 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-2</div>
+  <div class="pill">V1.9.14 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-3</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2726,7 +2726,7 @@ function chooseContextRescue(c,rs,risk,baselineRanks){
   alt.rescueGuardApproved=true;alt.rescueBaseRank=altBase;alt.rescueTopBaseRank=topBase;
   return alt;
 }
-/* V1.9.13 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-2
+/* V1.9.14 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-3
    Real selector improvement: late-stage adjustments may push a candidate several
    ranks below its pre-signal position. When that displacement is large, blend the
    final score back toward the pre-signal score. This uses no future outcome data,
@@ -2919,7 +2919,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.13 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-2: cooperative execution helpers.
+// V1.9.14 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-3: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -2982,7 +2982,7 @@ async function candidateBoardCooperative(rs,ad,historyRs=rs,routeProfile=null,ro
   }finally{window.__PERFTRACE__.end("candidateBoardCooperative",__pt0)}
 }
 
-/* V1.9.13 STAGE-AWARE RANK ARBITRATION
+/* V1.9.14 STAGE-AWARE RANK ARBITRATION
    Learns only from prior completed OOS decisions. It records where a target
    digit moved down the REAL selector pipeline, then protects the same harmful
    rank transition on later decisions. No formula body or Board generation is
@@ -2998,48 +2998,64 @@ function __stageRankBand(rank){
 }
 function __stageMemoryNew(){return{route:new Map(),family:new Map(),total:0,hits:0};}
 function __stageMemKey(stage,from,to){return `${stage}|${__stageRankBand(from)}>${__stageRankBand(to)}`;}
+function __stageBaseKey(stage){return `__BASE__|${stage}`;}
 function __stageMemUpdate(mem,routeCtx,row,hit){
   if(!mem||!row)return;
   const family=routingFamily(routeCtx?.name||'');
-  const targetStores=[mem.route.get(routeCtx?.name||'__none__')||new Map(),mem.family.get(family)||new Map()];
-  for(const store of targetStores){
-    for(const [stage,rs] of Object.entries(row.stageRanks||{})){
-      if(!rs||typeof rs!=='number')continue;
-      const prev=row.stagePrevRanks?.[stage];
-      if(!prev)continue;
+  const routeName=routeCtx?.name||'__none__';
+  const routeStore=mem.route.get(routeName)||new Map();
+  const familyStore=mem.family.get(family)||new Map();
+  for(const [stage,rs] of Object.entries(row.stageRanks||{})){
+    if(!rs||typeof rs!=='number')continue;
+    const prev=row.stagePrevRanks?.[stage];
+    if(!prev)continue;
+    const baseKey=__stageBaseKey(stage);
+    for(const store of [routeStore,familyStore]){
+      const b=store.get(baseKey)||{tests:0,hits:0};b.tests++;if(hit)b.hits++;store.set(baseKey,b);
       const key=__stageMemKey(stage,prev,rs),z=store.get(key)||{tests:0,hits:0};
       z.tests++;if(hit)z.hits++;store.set(key,z);
     }
   }
   mem.total++;if(hit)mem.hits++;
-  if(routeCtx?.name)mem.route.set(routeCtx.name,targetStores[0]);
-  mem.family.set(family,targetStores[1]);
+  mem.route.set(routeName,routeStore);mem.family.set(family,familyStore);
 }
 function __stageMemLookup(mem,routeCtx,stage,from,to){
   if(!mem)return null;
-  const key=__stageMemKey(stage,from,to),family=routingFamily(routeCtx?.name||''),r=mem.route.get(routeCtx?.name||'__none__')?.get(key),f=mem.family.get(family)?.get(key);
-  if(r&&r.tests>=8)return{...r,key,source:'route'};
-  if(f&&f.tests>=12)return{...f,key,source:'family'};
-  return null;
+  const key=__stageMemKey(stage,from,to),baseKey=__stageBaseKey(stage),family=routingFamily(routeCtx?.name||''),routeStore=mem.route.get(routeCtx?.name||'__none__'),familyStore=mem.family.get(family);
+  const pick=(store,minTests,source)=>{
+    if(!store)return null;
+    const z=store.get(key),b=store.get(baseKey);
+    if(!z||!b||z.tests<minTests||b.tests<minTests)return null;
+    return{...z,baseTests:b.tests,baseHits:b.hits,source,key};
+  };
+  return pick(routeStore,8,'route')||pick(familyStore,12,'family');
 }
 function __stageRankMap(arr){const m=new Map();(Array.isArray(arr)?arr:[]).forEach((q,i)=>m.set(Number(q.digit),i+1));return m;}
 function __stageAwareApply(c,beforeRanks,memory,stage,routeCtx,risk){
   if(!Array.isArray(c)||!c.length||!memory)return c;
   const afterRanks=__stageRankMap(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit));
-  const baseRate=memory.total?memory.hits/memory.total:.5;
   let applied=0;
   for(const q of c){
     const d=Number(q.digit),from=beforeRanks.get(d)||0,to=afterRanks.get(d)||0;
-    if(!from||!to||to<=from||from>7||to>10)continue;
+    if(!from||!to||to<=from||to>7)continue;
+    const drop=to-from;
+    if(drop<2&&!(from<=2&&to>=3))continue;
     const z=__stageMemLookup(memory,routeCtx,stage,from,to);
     if(!z||z.tests<8)continue;
-    const rate=z.hits/z.tests,lift=rate-baseRate;
-    if(lift<.10||rate<.58)continue;
-    const beforeScore=Number(q.score||0),floor=Math.min(.34,.10+.55*lift);
-    const original=Number(q[`__stageScoreBefore_${stage}`]??beforeScore);
-    q.score=Math.max(0,beforeScore*(1-floor)+original*floor);
-    q.stageAwareApplied=true;q.stageAwareStage=stage;q.stageAwareFromRank=from;q.stageAwareToRank=to;q.stageAwareRate=Math.round(rate*1000)/10;q.stageAwareLift=Math.round(lift*1000)/10;q.stageAwareTests=z.tests;q.stageAwareSource=z.source;
-    applied++;
+    // Shrink both the transition rate and the stage baseline before comparing.
+    // This makes small samples conservative without adding another historical replay.
+    const prior=4;
+    const rate=(z.hits+prior*.5)/(z.tests+prior);
+    const baseRate=(z.baseHits+prior*.5)/(z.baseTests+prior);
+    const lift=rate-baseRate;
+    if(rate<.58||lift<.08)continue;
+    const current=Number(q.score||0),original=Number(q[`__stageScoreBefore_${stage}`]??current);
+    const blend=Math.min(.30,.08+.80*lift);
+    q.score=Math.max(0,current*(1-blend)+original*blend);
+    q.stageAwareApplied=true;q.stageAwareStage=stage;q.stageAwareFromRank=from;q.stageAwareToRank=to;
+    q.stageAwareRate=Math.round(rate*1000)/10;q.stageAwareLift=Math.round(lift*1000)/10;q.stageAwareTests=z.tests;
+    q.stageAwareBaseRate=Math.round(baseRate*1000)/10;q.stageAwareSource=z.source;
+    applied++;if(applied>=2)break;
   }
   if(applied)c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);
   return c;
@@ -3108,7 +3124,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
 }
 async function __coopOosBundle(rs,routeCtx=null){
   const key=__coopRsKey(rs,routeCtx),cached=window.__COOP_OOS_BUNDLE_CACHE__?.get?.(key);
-  if(cached){if(__SELECTOR_DIAGNOSTIC__.enabled&&Array.isArray(cached.diagnostic))cached.diagnostic.forEach(x=>__SELECTOR_DIAGNOSTIC__.add(x));return cached}
+  if(cached){if(routeCtx&&cached.stageMemory)routeCtx.__stageAwareMemory=cached.stageMemory;if(__SELECTOR_DIAGNOSTIC__.enabled&&Array.isArray(cached.diagnostic))cached.diagnostic.forEach(x=>__SELECTOR_DIAGNOSTIC__.add(x));return cached}
   const selection=[],decision=[],diagnostic=[],state={last:performance.now()};
   if(routeCtx&&!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew();
   for(let i=1;i<rs.length-1;i++){
@@ -3141,7 +3157,7 @@ async function __coopOosBundle(rs,routeCtx=null){
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
   }
-  const bundle={selection,decision,diagnostic};
+  const bundle={selection,decision,diagnostic,stageMemory:routeCtx?.__stageAwareMemory||null};
   if(!window.__COOP_OOS_BUNDLE_CACHE__)window.__COOP_OOS_BUNDLE_CACHE__=new Map();
   window.__COOP_OOS_BUNDLE_CACHE__.set(key,bundle);return bundle;
 }
@@ -3249,7 +3265,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.13 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-2</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.14 SELECTOR-STAGE-AWARE-RANK-ARBITRATION-3</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
@@ -3290,7 +3306,7 @@ function runSystemHealth(){
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
   if(!/version:'V1\.9.8'/.test(s))issues.push('config version mismatch');
   const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.8'))issues.push('visible version mismatch');
-  const health={version:'V1.9.13',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
+  const health={version:'V1.9.14',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
@@ -3344,7 +3360,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
   }
 } finally { window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.13',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.14',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth()});
 })();
 </script>
