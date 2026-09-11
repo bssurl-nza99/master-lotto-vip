@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 OPT-TEST</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 OPT-RESPONSIVE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1345,7 +1345,7 @@ body:before{
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.6 OPT-TEST</div>
+  <div class="pill">V1.9.6 OPT-RESPONSIVE</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2685,22 +2685,37 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){const __pt0=window.__PERFTRACE__.begin("render"); try {
+async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){const __pt0=window.__PERFTRACE__.begin("render"); try {
   const root=$('result');if(!root)return;
   let html=`<div class="vip-dashboard v193-dashboard">`;
   const snapshotCards=[];
   let detailHtml="";
   const names=Object.keys(groups).filter(name=>name!=='__THAI_TOP__');
-  for(const name of names){
+  for(let ni=0;ni<names.length;ni++){
+    const name=names[ni];
+    // Yield before every heavy lottery block so the browser can repaint on mobile.
+    await new Promise(r=>setTimeout(r,0));
     const rs=groups[name],hist=historyGroups[name]||rs,rawHist=historyRawGroups[name]||hist,meta=rawMeta[name]||{};
-    const ad=audit(rs),routeCtx={name,groups},routeProfile=formulaRoutingProfile(groups,name),s=select(rs,ad,rawHist,null,routeProfile,routeCtx),pen=penetrationStats(rs);
+    const ad=audit(rs);
+    await new Promise(r=>setTimeout(r,0));
+    const routeCtx={name,groups},routeProfile=formulaRoutingProfile(groups,name);
+    await new Promise(r=>setTimeout(r,0));
+    const s=select(rs,ad,rawHist,null,routeProfile,routeCtx);
+    await new Promise(r=>setTimeout(r,0));
+    const pen=penetrationStats(rs);
+    await new Promise(r=>setTimeout(r,0));
     const p={lotteryName:name,nextDate:meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(rs.at(-1).date,name),...s};
     currentAuditDataMap[name]=ad;
     currentPredictionDataMap[name]={...p,routeCtx,records:rs,historicalRecords:hist,rawRoundCount:meta.rawCount||rs.length,historyRoundCount:meta.histRawCount||hist.length,latestRawRound:meta.lastRound};
     const sorted=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0));
     const bestFormula=sorted[0],bestRate=bestFormula?(ad[bestFormula]?.rate??0):0;
     const bestConfidence=esc(s.selection?.confidence||'ไม่ระบุ');
-    const sx=selectionStats(rs,routeCtx),dx=decisionStats(rs,routeCtx),mem=decisionMemory(rs,routeCtx);
+    const sx=selectionStats(rs,routeCtx);
+    await new Promise(r=>setTimeout(r,0));
+    const dx=decisionStats(rs,routeCtx);
+    await new Promise(r=>setTimeout(r,0));
+    const mem=decisionMemory(rs,routeCtx);
+    await new Promise(r=>setTimeout(r,0));
     const topDigits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r||b.n-a.n).slice(0,5);
     const board=(s.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support).slice(0,3);
     const delta=Number.isFinite(pen.adaptiveRate)&&Number.isFinite(pen.rate)?(pen.adaptiveRate-pen.rate):0;
@@ -2726,7 +2741,7 @@ function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){const __
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.6</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.6 OPT-RESPONSIVE</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
@@ -2811,7 +2826,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     currentAuditDataMap={};currentPredictionDataMap={};
     setProcessingProgress(97,'กำลังสร้างรายงาน','สรุป Global Selection Accuracy Audit และการ์ดทั้งหมด',startedAt,100,97,true);
     await new Promise(r=>setTimeout(r,0));
-    render(groups,historyGroups,rawMeta,historyRawGroups);installLotteryDetailLazy();updateIndicator();
+    await render(groups,historyGroups,rawMeta,historyRawGroups);installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
     setTimeout(()=>window.__SHOW_OPT_VERIFY__?.(),80);
     showToast(`✓ V1.9.6 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
@@ -2846,7 +2861,7 @@ window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=run
 #optVerifyPanel{position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;display:none;background:#fff;border:1px solid #ddd;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:12px;font:13px/1.45 system-ui,sans-serif;max-height:42vh;overflow:auto}
 #optVerifyPanel .ov-title{font-weight:800;margin-bottom:6px}#optVerifyPanel .ov-ok{font-weight:800}#optVerifyPanel .ov-bad{font-weight:800}#optVerifyPanel button{margin-top:8px;border:0;border-radius:10px;padding:7px 10px;background:#eee}
 </style>
-<div id="optVerifyPanel"><div class="ov-title">OPT-TEST · ตรวจสอบความเท่าเทียม Cache</div><div id="optVerifyBody"></div><button onclick="this.parentElement.style.display='none'">ปิด</button></div>
+<div id="optVerifyPanel"><div class="ov-title">OPT-RESPONSIVE · ตรวจสอบ Cache + UI</div><div id="optVerifyBody"></div><button onclick="this.parentElement.style.display='none'">ปิด</button></div>
 <script>
 (function(){
  function showOptVerify(){
