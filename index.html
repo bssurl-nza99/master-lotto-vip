@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 OPT-RESPONSIVE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.6 OPT-RESPONSIVE-2</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1345,7 +1345,7 @@ body:before{
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.6 OPT-RESPONSIVE</div>
+  <div class="pill">V1.9.6 OPT-RESPONSIVE-2</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2685,6 +2685,96 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
+// V1.9.6 OPT-RESPONSIVE-2: cooperative execution helpers.
+// These wrappers preserve the existing synchronous calculation bodies and only
+// split historical work at safe loop boundaries so the browser can repaint.
+const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
+const __COOP_YIELD_MS__=10;
+async function __coopYieldIfNeeded(state,force=false){
+  const now=performance.now();
+  if(force||now-state.last>=__COOP_YIELD_MS__){state.last=now;await new Promise(r=>setTimeout(r,0));}
+}
+async function decisionMemoryCooperative(rs,routeCtx=null){
+  const __pt0=window.__PERFTRACE__.begin("decisionMemoryCooperative");
+  try{
+    const key=routeCtx?.name||'__none__';
+    let cache=__COOP_DECISION_MEMORY_CACHE__.get(rs);
+    if(!cache){cache=new Map();__COOP_DECISION_MEMORY_CACHE__.set(rs,cache)}
+    if(cache.has(key))return cache.get(key);
+    const mem=new Map(),all=[],state={last:performance.now()};
+    for(let i=1;i<rs.length-1;i++){
+      if(rs[i+1]?.breakBefore)continue;
+      const train=rs.slice(0,i+1),ad=audit(train),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,
+        routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,
+        sel=selectRaw(train,ad,routeProfile),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);
+      for(const q of [sel.top,sel.second]){
+        const k=decisionKey(q),ok=target.includes(q.digit),m=mem.get(k)||{key:k,digit:q.digit,tests:0,hits:0,misses:0,rate:null};
+        m.tests++;ok?m.hits++:m.misses++;m.rate=pct(m.hits,m.tests);mem.set(k,m);all.push({source:train.at(-1).date,digit:q.digit,hit:ok,key:k});
+      }
+      await __coopYieldIfNeeded(state);
+    }
+    const out={map:mem,tests:all.length,hits:all.filter(x=>x.hit).length,misses:all.filter(x=>!x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length)};
+    cache.set(key,out);return out;
+  }finally{window.__PERFTRACE__.end("decisionMemoryCooperative",__pt0)}
+}
+async function candidateBoardCooperative(rs,ad,historyRs=rs,routeProfile=null,routeCtx=null){
+  const __pt0=window.__PERFTRACE__.begin("candidateBoardCooperative");
+  try{
+    const c=candidateBoardRaw(rs,ad,historyRs,routeProfile);
+    if(globalThis.__FAST_OOS__)return c;
+    const mem=await decisionMemoryCooperative(rs,routeCtx);
+    for(const q of c){
+      const m=mem.map.get(decisionKey(q));
+      if(m&&m.tests>=6){q.memoryTests=m.tests;q.memoryRate=m.rate;q.memoryScore=Math.max(0,Math.min(100,(m.hits+.5)/(m.tests+1)*100));q.memoryPenalty=m.rate<45?.14:m.rate<50?.06:m.rate>60?.10:0;q.score=Math.max(0,q.score+.02*(q.memoryScore-50)-q.memoryPenalty);if(m.rate<45)q.risk+=.25;else if(m.rate>60)q.risk=Math.max(0,q.risk-.08);q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35}
+    }
+    applySelectionMeta(c,rs);
+    return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
+  }finally{window.__PERFTRACE__.end("candidateBoardCooperative",__pt0)}
+}
+async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
+  const __pt0=window.__PERFTRACE__.begin("selectCooperative");
+  try{
+    const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx),anchor=signalAnchor(c,routeProfile,ad,rs);
+    applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);
+    const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
+    const d2Pool=ordered.filter(x=>x.digit!==top.digit).map(x=>{const a=new Set(x.formulas||[]),b=new Set(top.formulas||[]),shared=[...a].filter(f=>b.has(f)).length,den=Math.max(1,new Set([...a,...b]).size),corr=shared/den;const radarAdj=(x.radarQualified&&top.radarQualified===false)?.045*(x.radarSupport||0):0;return{...x,_d2Score:x.score+.10*(1-corr)+.06*(x.independentSupport||0)+radarAdj,_d2Correlation:corr}}).sort((a,b)=>b._d2Score-a._d2Score||b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);
+    let second=d2Pool[0]||ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
+    const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);if(valid.length>1&&margin0<minMargin){const stronger=d2Pool.find(x=>top.score-x.score>=minMargin);if(stronger)second=stronger}
+    const rescue=chooseContextRescue(c,rs,risk);if(rescue&&rescue.digit!==top.digit){second=top;top=rescue}
+    const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
+    return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)};
+  }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
+}
+async function selectionHistoryCooperative(rs,routeCtx=null){
+  const __pt0=window.__PERFTRACE__.begin("selectionHistoryCooperative");
+  try{
+    const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has('__coop__'+key))return cache.get('__coop__'+key);
+    const out=[],state={last:performance.now()};
+    for(let i=1;i<rs.length-1;i++){
+      if(rs[i+1]?.breakBefore)continue;
+      const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));
+      out.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:ok,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
+      await __coopYieldIfNeeded(state);
+    }
+    cache.set('__coop__'+key,out);return out;
+  }finally{window.__PERFTRACE__.end("selectionHistoryCooperative",__pt0)}
+}
+async function selectionStatsCooperative(rs,routeCtx=null){
+  const h=await selectionHistoryCooperative(rs,routeCtx),st=streak(h),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}});return{total:h.length,hits:h.filter(x=>x.hit).length,misses:h.filter(x=>!x.hit).length,rate:pct(h.filter(x=>x.hit).length,h.length),horizon:hp,displayHorizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss};
+}
+async function decisionLogCooperative(rs,routeCtx=null){
+  const __pt0=window.__PERFTRACE__.begin("decisionLogCooperative");try{
+    const out=[],state={last:performance.now()};
+    for(let i=1;i<rs.length-1;i++){
+      if(rs[i+1]?.breakBefore)continue;
+      const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),d1=target.includes(sel.d1),d2=target.includes(sel.d2);
+      out.push({source:train.at(-1).date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit:d1||d2,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
+      await __coopYieldIfNeeded(state);
+    }return out;
+  }finally{window.__PERFTRACE__.end("decisionLogCooperative",__pt0)}
+}
+async function decisionStatsCooperative(rs,routeCtx=null){const h=await decisionLogCooperative(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}}
+
 async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){const __pt0=window.__PERFTRACE__.begin("render"); try {
   const root=$('result');if(!root)return;
   let html=`<div class="vip-dashboard v193-dashboard">`;
@@ -2700,7 +2790,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){co
     await new Promise(r=>setTimeout(r,0));
     const routeCtx={name,groups},routeProfile=formulaRoutingProfile(groups,name);
     await new Promise(r=>setTimeout(r,0));
-    const s=select(rs,ad,rawHist,null,routeProfile,routeCtx);
+    const s=await selectCooperative(rs,ad,rawHist,null,routeProfile,routeCtx);
     await new Promise(r=>setTimeout(r,0));
     const pen=penetrationStats(rs);
     await new Promise(r=>setTimeout(r,0));
@@ -2710,11 +2800,11 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){co
     const sorted=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0));
     const bestFormula=sorted[0],bestRate=bestFormula?(ad[bestFormula]?.rate??0):0;
     const bestConfidence=esc(s.selection?.confidence||'ไม่ระบุ');
-    const sx=selectionStats(rs,routeCtx);
+    const sx=await selectionStatsCooperative(rs,routeCtx);
     await new Promise(r=>setTimeout(r,0));
-    const dx=decisionStats(rs,routeCtx);
+    const dx=await decisionStatsCooperative(rs,routeCtx);
     await new Promise(r=>setTimeout(r,0));
-    const mem=decisionMemory(rs,routeCtx);
+    const mem=await decisionMemoryCooperative(rs,routeCtx);
     await new Promise(r=>setTimeout(r,0));
     const topDigits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r||b.n-a.n).slice(0,5);
     const board=(s.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support).slice(0,3);
@@ -2741,7 +2831,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={}){co
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.6 OPT-RESPONSIVE</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.6 OPT-RESPONSIVE-2</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
