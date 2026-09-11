@@ -1394,29 +1394,63 @@ window.__PERFTRACE__ = window.__PERFTRACE__ || (() => {
   const data = new Map();
   const stack = [];
   let enabled = true;
-  function rec(name, ms) {
+  let lastRunMs = null;
+  function rec(name, ms, selfMs) {
     if (!enabled) return;
     let x = data.get(name);
-    if (!x) { x = {calls:0,total:0,max:0,min:Infinity}; data.set(name,x); }
-    x.calls++; x.total += ms; if(ms>x.max)x.max=ms; if(ms<x.min)x.min=ms;
+    if (!x) { x = {calls:0,total:0,self:0,max:0,min:Infinity}; data.set(name,x); }
+    x.calls++; x.total += ms; x.self += Math.max(0,selfMs||0); if(ms>x.max)x.max=ms; if(ms<x.min)x.min=ms;
   }
-  function begin(name){ if(!enabled)return 0; return performance.now(); }
-  function end(name,t){ if(!enabled)return; rec(name,performance.now()-t); }
-  function reset(){ data.clear(); }
-  function rows(){ return [...data.entries()].map(([name,x])=>({name,calls:x.calls,total:x.total,avg:x.calls?x.total/x.calls:0,max:x.max,min:x.min===Infinity?0:x.min})).sort((a,b)=>b.total-a.total); }
-  function summary(){ const rs=rows(); const total=rs.reduce((a,b)=>a+b.total,0); return {total,rows:rs}; }
+  function begin(name){
+    if(!enabled)return 0;
+    const t=performance.now();
+    stack.push({name,t,child:0});
+    return t;
+  }
+  function end(name,t){
+    if(!enabled)return;
+    const now=performance.now();
+    let frame=stack.length?stack.pop():null;
+    const elapsed=now-(t||now);
+    const selfMs=Math.max(0,elapsed-(frame?.child||0));
+    rec(name,elapsed,selfMs);
+    if(stack.length)stack[stack.length-1].child+=elapsed;
+    if(name==='runEngine'){
+      lastRunMs=elapsed;
+      setTimeout(()=>show({engineMs:elapsed,auto:true}),80);
+    }
+  }
+  function reset(){ data.clear(); stack.length=0; lastRunMs=null; }
+  function rows(){ return [...data.entries()].map(([name,x])=>({name,calls:x.calls,total:x.total,self:x.self,avg:x.calls?x.total/x.calls:0,max:x.max,min:x.min===Infinity?0:x.min})).sort((a,b)=>b.total-a.total); }
+  function summary(){ const rs=rows(); return {total:lastRunMs,rows:rs}; }
+  function fmt(ms){
+    if(!Number.isFinite(ms))return '—';
+    if(ms<1000)return `${ms.toFixed(0)} ms`;
+    const sec=ms/1000;
+    if(sec<60)return `${sec.toFixed(2)} วินาที`;
+    const m=Math.floor(sec/60),s=sec-m*60;
+    return `${m} นาที ${s.toFixed(1)} วินาที`;
+  }
   function show(extra){
     const old=document.getElementById('__perftrace_panel'); if(old)old.remove();
     const box=document.createElement('div'); box.id='__perftrace_panel';
-    box.style.cssText='position:fixed;z-index:999999;right:12px;bottom:12px;width:min(720px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#111;color:#eee;border:1px solid #555;border-radius:10px;padding:12px;font:12px/1.45 monospace;box-shadow:0 8px 30px rgba(0,0,0,.35)';
+    box.style.cssText='position:fixed;z-index:999999;left:8px;right:8px;bottom:8px;max-height:82vh;overflow:auto;background:#101318;color:#f5f5f5;border:1px solid #596273;border-radius:14px;padding:14px;font:13px/1.5 system-ui,sans-serif;box-shadow:0 10px 35px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch';
     const s=summary();
-    const rows=s.rows.map(r=>`<tr><td>${r.name}</td><td>${r.calls.toLocaleString()}</td><td>${r.total.toFixed(1)}</td><td>${r.avg.toFixed(3)}</td><td>${r.max.toFixed(1)}</td></tr>`).join('');
-    box.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:6px">⚡ Performance Trace</div><div style="margin-bottom:8px">Instrumented runtime (ms). This panel is for diagnosis only.</div><div style="margin-bottom:8px"><b>Tracked total:</b> ${s.total.toFixed(1)} ms${extra?.engineMs?` &nbsp; <b>runEngine:</b> ${extra.engineMs.toFixed(1)} ms`:''}</div><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Function</th><th align="right">Calls</th><th align="right">Total ms</th><th align="right">Avg ms</th><th align="right">Max ms</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px;display:flex;gap:6px"><button id="__perftrace_copy">Copy JSON</button><button id="__perftrace_close">Close</button></div>`;
+    const engineMs=Number.isFinite(extra?.engineMs)?extra.engineMs:s.total;
+    const rs=s.rows;
+    const top=rs.filter(r=>r.name!=='runEngine').slice(0,12);
+    const rows=top.map((r,i)=>`<tr><td style="padding:6px 4px;vertical-align:top"><b>${i+1}. ${r.name}</b><br><span style="opacity:.7">${r.calls.toLocaleString()} ครั้ง · เฉลี่ย ${r.avg.toFixed(1)} ms</span></td><td style="padding:6px 4px;text-align:right;white-space:nowrap">${fmt(r.total)}</td></tr>`).join('');
+    box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:17px;font-weight:800">⚡ สรุปเวลาประมวลผล</div><div style="opacity:.72;margin-top:2px">Performance Trace · โหมดวินิจฉัยเท่านั้น</div></div><button id="__perftrace_close" style="font-size:20px;line-height:1;padding:4px 8px">×</button></div><div style="margin:12px 0;padding:12px;border-radius:10px;background:#1b2029"><div style="opacity:.72">เวลารันจริงทั้งหมด</div><div style="font-size:25px;font-weight:800;margin-top:2px">${fmt(engineMs)}</div><div style="opacity:.72;margin-top:4px">นี่คือเวลาจริงของ runEngine ไม่ใช่ผลรวมฟังก์ชันที่ซ้อนกัน</div></div><div style="font-weight:800;margin:10px 0 6px">🔎 จุดที่ใช้เวลามากที่สุด</div><table style="width:100%;border-collapse:collapse"><tbody>${rows||'<tr><td>ยังไม่มีข้อมูล</td></tr>'}</tbody></table><div style="margin-top:10px;padding:10px;border-radius:10px;background:#191d24;font-size:12px;opacity:.82">หมายเหตุ: เวลาของฟังก์ชันด้านบนเป็นเวลาที่ฟังก์ชันครอบไว้ จึงอาจซ้อนกันได้ ให้ใช้ “เวลารันจริงทั้งหมด” เป็นตัวเลขหลัก แล้วดูอันดับด้านล่างเพื่อหาคอขวด</div><div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap"><button id="__perftrace_copy">คัดลอกผล</button><button id="__perftrace_detail">รายละเอียดทั้งหมด</button></div>`;
     document.body.appendChild(box);
     document.getElementById('__perftrace_close').onclick=()=>box.remove();
-    document.getElementById('__perftrace_copy').onclick=async()=>{ const payload={generatedAt:new Date().toISOString(),engineMs:extra?.engineMs||null,summary:s}; await navigator.clipboard?.writeText(JSON.stringify(payload,null,2)); };
+    document.getElementById('__perftrace_copy').onclick=async()=>{ const payload={generatedAt:new Date().toISOString(),engineMs,rows:rs}; try{await navigator.clipboard?.writeText(JSON.stringify(payload,null,2));showToast?.('✓ คัดลอก Performance Trace แล้ว')}catch(e){} };
+    document.getElementById('__perftrace_detail').onclick=()=>{
+      const old2=document.getElementById('__perftrace_detailbox'); if(old2){old2.remove();return;}
+      const d=document.createElement('div');d.id='__perftrace_detailbox';d.style.cssText='margin-top:10px;border-top:1px solid #394150;padding-top:10px';
+      d.innerHTML='<div style="font-weight:800;margin-bottom:6px">รายละเอียดทุกฟังก์ชัน</div>'+rs.map(r=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #252b35"><span>${r.name}<br><small style="opacity:.65">${r.calls.toLocaleString()} ครั้ง · self ${fmt(r.self)}</small></span><b style="white-space:nowrap">${fmt(r.total)}</b></div>`).join('');box.appendChild(d);
+    };
   }
-  return {begin,end,reset,rows,summary,show,enable(v){enabled=v!==false;},record:rec};
+  return {begin,end,reset,rows,summary,show,enable(v){enabled=v!==false;},record:(name,ms)=>rec(name,ms,ms)};
 })();
 
 (()=>{'use strict';
@@ -2766,23 +2800,17 @@ window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=run
 
 <script>
 (function(){
+  // Mobile-safe: runEngine itself opens the summary automatically when it finishes.
+  // Keep this fallback only for cases where runEngine is not instrumented by the trace.
   let lastStart=0;
-  window.__PERFTRACE__.reset();
-  document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='p'){window.__PERFTRACE__.show({engineMs:lastStart?performance.now()-lastStart:null});}});
   const obs=new MutationObserver(()=>{
     const p=document.getElementById('processingPanel');
-    if(p && (p.hidden || p.style.display==='none') && lastStart){
-      const elapsed=performance.now()-lastStart; lastStart=0;
-      setTimeout(()=>window.__PERFTRACE__.show({engineMs:elapsed}),50);
+    if(p && !p.hidden && p.style.display!=='none' && !lastStart){
+      lastStart=performance.now();
+      window.__PERFTRACE__.reset();
     }
   });
   obs.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['hidden','style','class']});
-  // Detect a new processing run.
-  const obs2=new MutationObserver(()=>{
-    const p=document.getElementById('processingPanel');
-    if(p && !p.hidden && p.style.display!=='none' && !lastStart) { lastStart=performance.now(); window.__PERFTRACE__.reset(); }
-  });
-  obs2.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['hidden','style','class']});
 })();
 </script>
 </body>
