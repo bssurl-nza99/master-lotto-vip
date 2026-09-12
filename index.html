@@ -3,129 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติหวย & Quality Gate</title>
+    <title>ระบบจัดฟอร์แมตการ์ดหวย & วิเคราะห์เลขเด่น</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Tohoma', 'Segoe UI', sans-serif;
-        }
-        body {
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-        h2 {
-            color: #1e3a8a;
-            margin-top: 0;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 10px;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 8px;
-        }
-        textarea {
-            width: 100%;
-            height: 180px;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 14px;
-            resize: vertical;
-        }
-        .btn-group {
-            margin: 15px 0;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        button {
-            padding: 10px 18px;
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        * { box-sizing: border-box; font-family: 'Tohoma', 'Segoe UI', Thonburi, sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 20px; color: #1c1e21; }
+        .container { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h2 { color: #1e3a8a; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 6px; }
+        textarea, input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        textarea { height: 160px; font-family: monospace; resize: vertical; }
+        .setting-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .setting-row div { flex: 1; }
+        
+        .btn-group { margin: 15px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+        button { padding: 10px 16px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         .btn-process { background-color: #27ae60; color: white; }
         .btn-process:hover { background-color: #219150; }
-        .btn-clear-input { background-color: #e67e22; color: white; }
-        .btn-clear-input:hover { background-color: #d35400; }
-        .btn-clear-output { background-color: #e74c3c; color: white; }
-        .btn-clear-output:hover { background-color: #c0392b; }
-        .btn-clear-all { background-color: #7f8c8d; color: white; }
-        .btn-clear-all:hover { background-color: #636e72; }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-            color: #333;
-        }
-        .status-pass { color: green; font-weight: bold; }
-        .status-watch { color: orange; font-weight: bold; }
+        .btn-copy-all { background-color: #2980b9; color: white; }
+        .btn-copy-all:hover { background-color: #1f618d; }
+        .btn-clear { background-color: #e74c3c; color: white; }
+        .btn-clear:hover { background-color: #c0392b; }
+
+        .card-container { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .lotto-card { background: #fafafa; border: 1px solid #e1e4e8; border-left: 5px solid #2980b9; border-radius: 8px; padding: 15px; position: relative; }
+        .card-text { font-family: monospace, sans-serif; white-space: pre-wrap; font-size: 15px; line-height: 1.5; background: #fff; padding: 12px; border-radius: 6px; border: 1px dashed #ccc; }
+        .btn-copy-card { position: absolute; top: 20px; right: 20px; background-color: #34495e; color: white; padding: 6px 12px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📊 ระบบวิเคราะห์สถิติหวย & Quality Gate Engine</h2>
+    <h2>📊 ระบบจัดฟอร์แมตการ์ดหวยอัตโนมัติ</h2>
     
-    <label for="rawInput">วางข้อความสถิติหวย (Raw Text) ที่นี่:</label>
-    <textarea id="rawInput" placeholder="วางข้อความสถิติที่นี่..."></textarea>
-    
-    <div class="btn-group">
-        <button class="btn-process" onclick="processData()">⚡ ประมวลผล</button>
-        <button class="btn-clear-input" onclick="clearInput()">🧹 ล้างช่องกรอก</button>
-        <button class="btn-clear-output" onclick="clearOutput()">🗑️ ล้างผลลัพธ์</button>
-        <button class="btn-clear-all" onclick="clearAll()">🔄 ล้างทั้งหมด</button>
+    <div class="setting-row">
+        <div>
+            <label for="customDate">📅 วันที่แสดงในการ์ด:</label>
+            <input type="text" id="customDate" placeholder="เช่น 9 ส.ค. 69">
+        </div>
+        <div>
+            <label for="customId">📮 ID ท้ายการ์ด:</label>
+            <input type="text" id="customId" value="cpu80">
+        </div>
+        <div>
+            <label for="customAuthor">🪷 ชื่ออาจารย์ ท้ายการ์ด:</label>
+            <input type="text" id="customAuthor" value="อ.อาร์ม   ทรัพย์ทวี">
+        </div>
     </div>
 
-    <h3>📋 ตารางสรุปผลลัพธ์</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>ประเภทหวย</th>
-                <th>เลขเด่นงวดถัดไป</th>
-                <th>แม่นยำอดีต-ปัจจุบัน</th>
-                <th>แม่นยำ 10 งวดล่าสุด</th>
-                <th>สถานะ Quality Gate</th>
-            </tr>
-        </thead>
-        <tbody id="resultTableBody">
-            <tr>
-                <td colspan="5" style="color:#888;">ยังไม่มีข้อมูล กรุณาวางข้อความแล้วกด "ประมวลผล"</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="form-group">
+        <label for="rawInput">วางข้อความสถิติหวย (Raw Text):</label>
+        <textarea id="rawInput" placeholder="วางข้อความสถิติตามรูปแบบเดิมที่นี่..."></textarea>
+    </div>
+    
+    <div class="btn-group">
+        <button class="btn-process" onclick="processAndGenerateCards()">⚡ ประมวลผล & สร้างการ์ดข้อความ</button>
+        <button class="btn-copy-all" onclick="copyAllCards()">📋 คัดลอกการ์ดทั้งหมด (1-Click)</button>
+        <button class="btn-clear" onclick="clearAll()">🔄 ล้างข้อมูล</button>
+    </div>
+
+    <h3>📌 รายการการ์ดสรุปข้อความพร้อมก๊อปปี้</h3>
+    <div id="cardOutput" class="card-container">
+        <div style="color: #888; text-align: center; padding: 30px;">ยังไม่มีข้อมูลการ์ด กรุณาวางข้อความสถิติแล้วกด "ประมวลผล"</div>
+    </div>
 </div>
 
 <script>
-// --- LOGIC ENGINE ---
+// ตั้งค่าวันที่เริ่มต้นเป็นวันปัจจุบันไทย
+document.addEventListener("DOMContentLoaded", () => {
+    const today = new Date();
+    const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const yearShort = (today.getFullYear() + 543).toString().slice(-2);
+    document.getElementById('customDate').value = `${today.getDate()} ${thaiMonths[today.getMonth()]} ${yearShort}`;
+});
+
+// กำหนดสัญลักษณ์ไอคอนธงชาติอัตโนมัติตามชื่อหวย
+function getLottoIcon(name) {
+    if (name.includes("ลาว")) return "🇱🇦";
+    if (name.includes("ฮานอย")) return "🇻🇳";
+    if (name.includes("มาเลย์")) return "🇲🇾";
+    if (name.includes("ไทย") || name.includes("รัฐบาล")) return "🇹🇭";
+    if (name.includes("นิเคอิ")) return "🇯🇵";
+    if (name.includes("จีน")) return "🇨🇳";
+    if (name.includes("ฮั่งเส็ง")) return "🇭🇰";
+    if (name.includes("ไต้หวัน")) return "🇹🇼";
+    if (name.includes("เกาหลี")) return "🇰🇷";
+    if (name.includes("สิงคโปร์")) return "🇸🇬";
+    if (name.includes("หุ้น")) return "📈";
+    return "🎲";
+}
+
+// ระบบวิเคราะห์คำนวณสถิติ
 function parseLotteryRawText(text) {
     const lines = text.split('\n');
     const dataset = {};
-    
     let i = 0;
     while (i < lines.length) {
         const line = lines[i].trim();
@@ -133,161 +104,145 @@ function parseLotteryRawText(text) {
             const parts = line.split('|');
             const lottoName = parts[0].trim();
             const dateStr = parts[1] ? parts[1].trim() : '';
-            
             const top3 = lines[i+1] ? lines[i+1].trim() : '';
             const bot2 = lines[i+2] ? lines[i+2].trim() : '';
-            
             if (/^\d{3}$/.test(top3) && /^\d{2}$/.test(bot2)) {
                 if (!dataset[lottoName]) dataset[lottoName] = [];
-                
-                const digits = (top3 + bot2).split('').map(Number);
-                dataset[lottoName].push({ date: dateStr, digits: digits });
+                dataset[lottoName].push({ date: dateStr, digits: (top3 + bot2).split('').map(Number) });
             }
             i += 3;
-        } else {
-            i++;
-        }
+        } else { i++; }
     }
     return dataset;
 }
 
-function predictTopDigits(history, decay = 0.85, gapW = 1.5, freqW = 1.0) {
+function calculateScores(history) {
     const scores = Array(10).fill(0.0);
+    const decay = 0.85;
     
-    // 1. Frequency & Decay
     history.forEach((draw, idx) => {
         const w = Math.pow(decay, idx);
-        draw.digits.forEach(d => {
-            scores[d] += w * freqW;
-        });
+        draw.digits.forEach(d => { scores[d] += w; });
     });
 
-    // 2. Gap Calculation
     const lastSeen = {};
     history.forEach((draw, idx) => {
-        draw.digits.forEach(d => {
-            if (lastSeen[d] === undefined) lastSeen[d] = idx;
-        });
+        draw.digits.forEach(d => { if (lastSeen[d] === undefined) lastSeen[d] = idx; });
     });
 
     for (let d = 0; d < 10; d++) {
         const gap = lastSeen[d] !== undefined ? lastSeen[d] : history.length;
-        if (gap >= 2 && gap <= 6) {
-            scores[d] += gapW;
-        }
+        if (gap >= 2 && gap <= 6) scores[d] += 1.5;
     }
 
-    // Sort to find top 2
-    const sorted = scores.map((score, digit) => ({ digit, score }))
-                          .sort((a, b) => b.score - a.score);
-                          
-    return [sorted[0].digit, sorted[1].digit];
+    return scores.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
 }
 
-function evaluateAndOptimize(dataset, minConfidence = 60.0) {
-    const summaryResults = [];
+// สร้างการ์ดข้อความตามฟอร์แมตเป๊ะๆ
+function buildCardText(lottoName, history) {
+    const sorted = calculateScores(history);
+    const topDigit = sorted[0].digit; // เลขเด่นอันดับ 1 (เช่น 4)
+    
+    // ดึงเลขตัวรองที่มีคะแนนสูงสุดมาสร้างเลขเจาะ 6 ตัว (ไม่ให้เบิ้ล และไม่วินกับตัวมันเอง)
+    const candidates = sorted.filter(item => item.digit !== topDigit).slice(0, 6).map(item => item.digit);
+    
+    // สร้างเลขเจาะ 2 ตัว 6 คู่ และจัดเรียงเป็นคู่ตัวเลขจากน้อยไปมาก
+    let pairs = candidates.map(d => {
+        let pairNum = [topDigit, d].sort((a, b) => a - b).join('');
+        return pairNum;
+    });
 
-    for (const [lottoName, history] of Object.entries(dataset)) {
-        if (history.length < 5) continue;
-
-        let bestOverallAcc = 0.0;
-        let bestParams = [0.85, 1.5, 1.0];
-        const totalDraws = Math.max(1, history.length - 3);
-
-        // Grid search optimization
-        const decays = [0.80, 0.85, 0.90];
-        const gapWs = [0.5, 1.5, 2.5];
-        const freqWs = [1.0, 2.0];
-
-        decays.forEach(decay => {
-            gapWs.forEach(gapW => {
-                freqWs.forEach(freqW => {
-                    let hits = 0;
-                    for (let i = 0; i < totalDraws; i++) {
-                        const train = history.slice(i + 1);
-                        const actual = history[i].digits;
-                        const pred = predictTopDigits(train, decay, gapW, freqW);
-                        if (pred.some(d => actual.includes(d))) hits++;
-                    }
-                    const acc = (hits / totalDraws) * 100;
-                    if (acc > bestOverallAcc) {
-                        bestOverallAcc = acc;
-                        bestParams = [decay, gapW, freqW];
-                    }
-                });
-            });
-        });
-
-        // Recent 10 accuracy
-        const recentTests = Math.min(10, totalDraws);
-        let recentHits = 0;
-        for (let i = 0; i < recentTests; i++) {
-            const train = history.slice(i + 1);
-            const actual = history[i].digits;
-            const pred = predictTopDigits(train, ...bestParams);
-            if (pred.some(d => actual.includes(d))) recentHits++;
+    // กรองคู่ซ้ำ และเรียงจากน้อยไปหามากตามเงื่อนไข
+    pairs = Array.from(new Set(pairs)).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    // กรณีคู่น้อยกว่า 6 คู่ให้เติมจากตัวรองถัดไป
+    let extraIdx = 6;
+    while (pairs.length < 6 && extraIdx < sorted.length) {
+        let d = sorted[extraIdx].digit;
+        if (d !== topDigit) {
+            let pairNum = [topDigit, d].sort((a, b) => a - b).join('');
+            if (!pairs.includes(pairNum)) pairs.push(pairNum);
         }
-        const recentAcc = recentTests > 0 ? (recentHits / recentTests) * 100 : 0.0;
-        const nextPred = predictTopDigits(history, ...bestParams);
-
-        const isPass = recentAcc >= minConfidence && bestOverallAcc >= minConfidence;
-
-        summaryResults.push({
-            name: lottoName,
-            prediction: `${nextPred[0]}, ${nextPred[1]}`,
-            overallAcc: `${bestOverallAcc.toFixed(1)}% (${totalDraws} งวด)`,
-            recentAcc: `${recentAcc.toFixed(1)}%`,
-            status: isPass ? "✅ PASS" : "⚠️ WATCHLIST",
-            isPass: isPass
-        });
+        extraIdx++;
     }
+    pairs.sort((a, b) => parseInt(a) - parseInt(b));
 
-    return summaryResults;
+    // สร้างเลข 3 ตัว 3 ชุด
+    const c = candidates;
+    let triples = [
+        [c[0], topDigit, c[1]].sort((a,b)=>a-b).join(''),
+        [c[2], topDigit, c[3]].sort((a,b)=>a-b).join(''),
+        [topDigit, c[4], c[5]].sort((a,b)=>a-b).join('')
+    ].sort((a, b) => parseInt(a) - parseInt(b));
+
+    const displayDate = document.getElementById('customDate').value.trim() || "9 ส.ค. 69";
+    const customId = document.getElementById('customId').value.trim() || "cpu80";
+    const customAuthor = document.getElementById('customAuthor').value.trim() || "อ.อาร์ม   ทรัพย์ทวี";
+    const flag = getLottoIcon(lottoName);
+
+    // รวมข้อความเป๊ะตามแพทเทิร์น
+    return `📅 ${displayDate}\n\n${flag} ${lottoName}\n\n✨ ${topDigit}\n───────\n${pairs[0]} — ${pairs[1]} — ${pairs[2]}\n${pairs[3]} — ${pairs[4]} — ${pairs[5]}\n────────\n${triples[0]} — ${triples[1]} — ${triples[2]}\n\n📮 ID : ${customId}\n\n🪷   ${customAuthor}   🪷`;
 }
 
-// --- UI BUTTON ACTIONS ---
-function processData() {
+let generatedCardTexts = [];
+
+function processAndGenerateCards() {
     const rawText = document.getElementById('rawInput').value.trim();
     if (!rawText) {
-        alert('กรุณาวางข้อความสถิติหวยในช่องกรอกก่อนกดประมวลผล');
+        alert('กรุณาวางข้อความสถิติหวยก่อนกดประมวลผล');
         return;
     }
 
     const parsedData = parseLotteryRawText(rawText);
-    const results = evaluateAndOptimize(parsedData);
-    
-    const tbody = document.getElementById('resultTableBody');
-    tbody.innerHTML = '';
+    const container = document.getElementById('cardOutput');
+    container.innerHTML = '';
+    generatedCardTexts = [];
 
-    if (results.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="color:red;">ไม่พบรูปแบบข้อมูลที่ถูกต้อง หรือจำนวนงวดน้อยเกินไป (ต้องมี 5 งวดขึ้นไป)</td></tr>';
+    const lottoNames = Object.keys(parsedData);
+    if (lottoNames.length === 0) {
+        container.innerHTML = '<div style="color:red; text-align:center;">ไม่พบรูปแบบข้อมูลสถิติที่ถูกต้อง</div>';
         return;
     }
 
-    results.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${row.name}</td>
-            <td><b>${row.prediction}</b></td>
-            <td>${row.overallAcc}</td>
-            <td>${row.recentAcc}</td>
-            <td class="${row.isPass ? 'status-pass' : 'status-watch'}">${row.status}</td>
+    lottoNames.forEach((lottoName, index) => {
+        const history = parsedData[lottoName];
+        if (history.length < 3) return;
+
+        const cardText = buildCardText(lottoName, history);
+        generatedCardTexts.push(cardText);
+
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'lotto-card';
+        cardDiv.innerHTML = `
+            <button class="btn-copy-card" onclick="copySingleCard(${index})">📋 คัดลอกการ์ดนี้</button>
+            <div class="card-text" id="card_text_${index}">${cardText}</div>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(cardDiv);
     });
 }
 
-function clearInput() {
-    document.getElementById('rawInput').value = '';
+function copySingleCard(index) {
+    const text = generatedCardTexts[index];
+    navigator.clipboard.writeText(text).then(() => {
+        alert('คัดลอกข้อความการ์ดนี้เรียบร้อยแล้ว!');
+    });
 }
 
-function clearOutput() {
-    document.getElementById('resultTableBody').innerHTML = '<tr><td colspan="5" style="color:#888;">ยังไม่มีข้อมูล กรุณาวางข้อความแล้วกด "ประมวลผล"</td></tr>';
+function copyAllCards() {
+    if (generatedCardTexts.length === 0) {
+        alert('ไม่มีข้อมูลการ์ดให้คัดลอก กรุณากดประมวลผลก่อน');
+        return;
+    }
+    const fullText = generatedCardTexts.join('\n\n=====================\n\n');
+    navigator.clipboard.writeText(fullText).then(() => {
+        alert(`คัดลอกการ์ดทั้งหมด (${generatedCardTexts.length} รายการ) เรียบร้อยแล้ว!`);
+    });
 }
 
 function clearAll() {
-    clearInput();
-    clearOutput();
+    document.getElementById('rawInput').value = '';
+    document.getElementById('cardOutput').innerHTML = '<div style="color: #888; text-align: center; padding: 30px;">ยังไม่มีข้อมูลการ์ด กรุณาวางข้อความสถิติแล้วกด "ประมวลผล"</div>';
+    generatedCardTexts = [];
 }
 </script>
 
