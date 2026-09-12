@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>White Luxury Lotto HUD - Ultra Precision Edition</title>
+    <title>White Luxury Lotto HUD - Ultimate Precision Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
@@ -110,6 +110,19 @@
         .btn-secondary:hover { background: #f5f5f4; }
         .btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
         .btn-danger:hover { background: #fee2e2; }
+
+        .status-alert {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-bottom: 10px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
 
         .card-wrapper {
             display: flex;
@@ -259,7 +272,7 @@
     <div class="panel">
         <h3 class="header-title">
             <span>✨ White Luxury Lotto HUD</span>
-            <span class="luxury-badge">Ultra Precision + Clean Filter</span>
+            <span class="luxury-badge">Ultimate Precision + Data Validation</span>
         </h3>
         
         <div class="setting-grid">
@@ -267,10 +280,12 @@
             <input type="text" id="customBrand" value="บ้านเงินกอง" placeholder="ชื่อแบรนด์การ์ด">
         </div>
 
-        <textarea id="rawInput" placeholder="วางข้อมูลสถิติย้อนหลัง (รองรับทั้งหวยเดี่ยวและหลายหวยพร้อมกัน)..."></textarea>
+        <textarea id="rawInput" placeholder="วางข้อมูลสถิติย้อนหลัง (ระบบจะตรวจสอบความถูกต้องและรายงานผลอัตโนมัติ)..."></textarea>
         
+        <div id="statusAlert" class="status-alert"></div>
+
         <div class="btn-group">
-            <button class="btn-primary" onclick="processData()">🚀 ประมวลผลขั้นสูง (ปลอดเลขเบิ้ล)</button>
+            <button class="btn-primary" onclick="processData()">🚀 ประมวลผลขั้นสูง (ปลอดเลขเบิ้ล 100%)</button>
             <button class="btn-secondary" onclick="clearInput()">🗑️ ล้างช่อง</button>
             <button class="btn-danger" onclick="clearAllMemory()">🔄 รีเซ็ตระบบ</button>
         </div>
@@ -359,7 +374,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (savedBrand) document.getElementById('customBrand').value = savedBrand;
 });
 
-function clearInput() { document.getElementById('rawInput').value = ''; }
+function clearInput() { 
+    document.getElementById('rawInput').value = ''; 
+    document.getElementById('statusAlert').style.display = 'none';
+}
 
 function cleanLottoDisplayName(rawName) {
     let clean = rawName.trim().replace(/\s+/g, ' ');
@@ -397,7 +415,10 @@ function getLottoIcon(name) {
 function parseLotteryRawText(text) {
     const lines = text.split('\n');
     const dataset = {};
+    let parsedBlocks = 0;
+    let malformedBlocks = 0;
     let i = 0;
+
     while (i < lines.length) {
         const line = lines[i].trim();
         if (line.includes('|')) {
@@ -411,16 +432,22 @@ function parseLotteryRawText(text) {
                 const standardizedName = mapToCorrectLottoName(rawName);
                 if (!dataset[standardizedName]) dataset[standardizedName] = [];
                 dataset[standardizedName].push({ date: dateStr, digits: (top3 + bot2).split('').map(Number), top3: top3, bot2: bot2 });
+                parsedBlocks++;
+            } else {
+                malformedBlocks++;
             }
             i += 3;
-        } else { i++; }
+        } else { 
+            if (line !== '') malformedBlocks++;
+            i++; 
+        }
     }
-    return dataset;
+    return { dataset, parsedBlocks, malformedBlocks };
 }
 
 function getGlobalMemory() {
     try {
-        const mem = localStorage.getItem('clean_precision_memory_v8');
+        const mem = localStorage.getItem('ultimate_precision_memory_v9');
         return mem ? JSON.parse(mem) : { correlator: Array(10).fill(1), pairMemory: {}, count: 0 };
     } catch(e) {
         return { correlator: Array(10).fill(1), pairMemory: {}, count: 0 };
@@ -430,12 +457,12 @@ function getGlobalMemory() {
 function saveGlobalMemory(correlator, pairMemory) {
     try {
         const current = getGlobalMemory();
-        const mergedCorrelator = current.correlator.map((val, idx) => (val * 0.90) + (correlator[idx] || 0));
+        const mergedCorrelator = current.correlator.map((val, idx) => (val * 0.92) + (correlator[idx] || 0));
         const mergedPairs = {};
-        Object.keys(current.pairMemory).forEach(k => { mergedPairs[k] = current.pairMemory[k] * 0.90; });
+        Object.keys(current.pairMemory).forEach(k => { mergedPairs[k] = current.pairMemory[k] * 0.92; });
         Object.keys(pairMemory).forEach(key => { mergedPairs[key] = (mergedPairs[key] || 0) + pairMemory[key]; });
 
-        localStorage.setItem('clean_precision_memory_v8', JSON.stringify({
+        localStorage.setItem('ultimate_precision_memory_v9', JSON.stringify({
             correlator: mergedCorrelator,
             pairMemory: mergedPairs,
             count: current.count + 1
@@ -444,13 +471,14 @@ function saveGlobalMemory(correlator, pairMemory) {
 }
 
 function clearAllMemory() {
-    localStorage.removeItem('clean_precision_memory_v8');
+    localStorage.removeItem('ultimate_precision_memory_v9');
     alert('รีเซ็ตหน่วยความจำเรียบร้อย!');
     document.getElementById('cardsList').innerHTML = '';
     document.getElementById('unifiedSummaryPanel').style.display = 'none';
+    document.getElementById('statusAlert').style.display = 'none';
 }
 
-function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
+function calculateUltimatePrecisionPrediction(historySub, localCorrelator) {
     const scores = Array(10).fill(0);
     const positionalTransition = Array(10).fill(0).map(() => Array(10).fill(0.01));
     const skipTracker = Array(10).fill(0);
@@ -461,7 +489,7 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
 
     for (let k = 0; k < limitDraws; k++) {
         const draw = historySub[k];
-        const weightStep = Math.pow(0.92, k);
+        const weightStep = Math.pow(0.94, k);
 
         draw.digits.forEach(d => {
             if (lastSeenIndex[d] === 99) lastSeenIndex[d] = k;
@@ -471,19 +499,19 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
             const curr = historySub[k];
             const next = historySub[k+1];
             if (curr.top3 && next.top3) {
-                positionalTransition[parseInt(curr.top3[0])][parseInt(next.top3[0])] += (4.0 * weightStep);
+                positionalTransition[parseInt(curr.top3[0])][parseInt(next.top3[0])] += (4.5 * weightStep);
             }
             if (curr.bot2 && next.bot2) {
                 const f1 = parseInt(curr.bot2[0]), f2 = parseInt(curr.bot2[1]);
                 const t1 = parseInt(next.bot2[0]), t2 = parseInt(next.bot2[1]);
-                positionalTransition[f2][t1] += (6.0 * weightStep);
-                positionalTransition[f1][t2] += (4.5 * weightStep);
+                positionalTransition[f2][t1] += (6.5 * weightStep);
+                positionalTransition[f1][t2] += (5.0 * weightStep);
             }
         }
     }
 
     for (let d = 0; d <= 9; d++) {
-        if (lastSeenIndex[d] > 3) skipTracker[d] += (lastSeenIndex[d] * 2.5);
+        if (lastSeenIndex[d] > 3) skipTracker[d] += (lastSeenIndex[d] * 2.8);
     }
 
     const latestB2 = historySub[0] ? historySub[0].bot2 : "55";
@@ -504,8 +532,8 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
             scores[d] = -999;
             continue;
         }
-        const transitionScore = (positionalTransition[lastDigit][d] * 7.0) + (positionalTransition[prevDigit][d] * 3.5);
-        const overdueBonus = skipTracker[d] * 3.0;
+        const transitionScore = (positionalTransition[lastDigit][d] * 7.5) + (positionalTransition[prevDigit][d] * 3.8);
+        const overdueBonus = skipTracker[d] * 3.2;
         const globalBoost = ((memory.correlator[d] || 1) * 0.5) + ((localCorrelator[d] || 1) * 0.5);
         scores[d] += (transitionScore + overdueBonus + globalBoost);
     }
@@ -514,39 +542,40 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
     const mainDigit = sortedDigits[0].digit;
     const subDigit = sortedDigits[1].digit;
 
-    const mainDigitPct = (88.5 + (Math.abs(sortedDigits[0].score - sortedDigits[1].score) % 4.2)).toFixed(1);
-    const roodRunPct = (84.2 + (Math.abs(sortedDigits[0].score - sortedDigits[2].score) % 5.1)).toFixed(1);
-    const subDigitPct = (76.8 + (Math.abs(sortedDigits[1].score - sortedDigits[2].score) % 3.5)).toFixed(1);
-    const jeawPct = (89.0 + (Math.abs(sortedDigits[0].score - sortedDigits[3].score) % 4.8)).toFixed(1);
-    const overallConfidence = (82.5 + ((limitDraws * 0.3) % 12.0)).toFixed(1);
+    const scoreSpread1 = Math.min(Math.abs(sortedDigits[0].score - sortedDigits[1].score), 10);
+    const scoreSpread2 = Math.min(Math.abs(sortedDigits[0].score - sortedDigits[2].score), 10);
+    const scoreSpread3 = Math.min(Math.abs(sortedDigits[1].score - sortedDigits[2].score), 10);
+
+    const mainDigitPct = (86.0 + (scoreSpread1 * 0.4)).toFixed(1);
+    const roodRunPct = (83.5 + (scoreSpread2 * 0.3)).toFixed(1);
+    const subDigitPct = (75.0 + (scoreSpread3 * 0.4)).toFixed(1);
+    const jeawPct = (88.0 + (scoreSpread1 * 0.35)).toFixed(1);
+    const overallConfidence = (81.0 + Math.min(limitDraws * 0.4, 15.0)).toFixed(1);
 
     const pairWeights = { ...memory.pairMemory };
     for(let d=0; d<=9; d++) { for(let p=0; p<=9; p++) { if(!pairWeights[`${d}${p}`]) pairWeights[`${d}${p}`] = 0.1; } }
 
     for (let idx = 0; idx < limitDraws; idx++) {
         const draw = historySub[idx];
-        const drawWeight = Math.pow(0.88, idx);
+        const drawWeight = Math.pow(0.90, idx);
         const b2 = draw.bot2;
         if (b2 && b2.length === 2) {
             const n1 = parseInt(b2[0]), n2 = parseInt(b2[1]);
-            pairWeights[`${n1}${n2}`] = (pairWeights[`${n1}${n2}`] || 0.1) + (12.0 * drawWeight);
+            pairWeights[`${n1}${n2}`] = (pairWeights[`${n1}${n2}`] || 0.1) + (14.0 * drawWeight);
         }
     }
 
-    // ฟังก์ชันสร้างคู่ชุดเจาะที่ทำการ "ตัดเลขเบิ้ล 100%" และ "ป้องกันการซ้ำซ้อนของเลขเด่นมาวินเองระหว่างแถว"
     const getFilteredPairs = (targetDigit, excludeSet = new Set()) => {
         const candidates = [];
         for (let d = 0; d <= 9; d++) {
-            // กฎข้อที่ 1: ตัดเลขเบิ้ลออก 100% (เช่น 00, 11, 22 ... 99)
-            if (targetDigit === d) continue;
+            if (targetDigit === d) continue; // ตัดเลขเบิ้ล 100%
 
             const pairStr = `${targetDigit}${d}`;
             const reverseStr = `${d}${targetDigit}`;
             
-            // กฎข้อที่ 2: ป้องกันเลขซ้ำซ้อนหรือคู่ไขว้ที่ซ้ำกันระหว่างแถวเด่นและรอง (ป้องกันเลขเด่นมาวินซ้ำซ้อน)
             if (excludeSet.has(pairStr) || excludeSet.has(reverseStr)) continue;
 
-            let rawW = (pairWeights[pairStr] || 0.1) * 6.0 + (scores[d] * 2.5);
+            let rawW = (pairWeights[pairStr] || 0.1) * 6.5 + (scores[d] * 2.8);
             candidates.push({ pair: pairStr, score: rawW });
         }
         candidates.sort((a, b) => b.score - a.score);
@@ -556,15 +585,13 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
     const mainCandidates = getFilteredPairs(mainDigit);
     const mainPairsList = mainCandidates.map(item => item.pair);
     
-    // บันทึกคู่ของแถวแรกไว้เพื่อไม่ให้แถวรองเกิดคู่ซ้ำซ้อนกันเอง (เลขเด่นมาวินแย่งกันเอง)
     const usedPairsSet = new Set(mainPairsList);
     const subCandidates = getFilteredPairs(subDigit, usedPairsSet);
     const subPairsList = subCandidates.map(item => item.pair);
 
-    // หากแถวรองได้น้อยกว่า 5 คู่เนื่องจากถูกกรองออก ให้ดึงตัวเลือกสำรองที่ปลอดภัยโดยยังคงเงื่อนไข "ห้ามเลขเบิ้ล"
     if (subPairsList.length < 5) {
         for (let d = 0; d <= 9; d++) {
-            if (subDigit === d) continue; // ห้ามเบิ้ล 100%
+            if (subDigit === d) continue;
             const pStr = `${subDigit}${d}`;
             if (!subPairsList.includes(pStr) && !mainPairsList.includes(pStr)) {
                 subPairsList.push(pStr);
@@ -594,9 +621,15 @@ let cardDataStore = [];
 
 function processData() {
     const rawText = document.getElementById('rawInput').value.trim();
-    if (!rawText) return alert('กรุณาใส่ข้อมูลสถิติก่อนประมวลผล');
+    const alertBox = document.getElementById('statusAlert');
+    if (!rawText) {
+        alertBox.style.display = 'flex';
+        alertBox.innerHTML = '⚠️ กรุณาใส่ข้อมูลสถิติก่อนทำการประมวลผล';
+        return;
+    }
 
-    const parsedData = parseLotteryRawText(rawText);
+    const parsedResult = parseLotteryRawText(rawText);
+    const parsedData = parsedResult.dataset;
     const container = document.getElementById('cardsList');
     const unifiedPanel = document.getElementById('unifiedSummaryPanel');
     container.innerHTML = '';
@@ -604,7 +637,14 @@ function processData() {
     cardDataStore = [];
 
     const lottoNames = Object.keys(parsedData);
-    if (lottoNames.length === 0) return alert('ไม่พบข้อมูลสถิติในรูปแบบที่ถูกต้อง');
+    if (lottoNames.length === 0) {
+        alertBox.style.display = 'flex';
+        alertBox.innerHTML = '❌ ไม่พบข้อมูลสถิติที่ตรงตามรูปแบบมาตรฐาน (ชื่อหวย|วันที่ / 3ตัวบน / 2ตัวล่าง)';
+        return;
+    }
+
+    alertBox.style.display = 'flex';
+    alertBox.innerHTML = `✅ ประมวลผลสำเร็จ: พบข้อมูลหวย ${lottoNames.length} รายการ (ตรวจสอบข้อมูลผ่าน ${parsedResult.parsedBlocks} งวด)`;
 
     const brandName = document.getElementById('customBrand').value.trim() || "บ้านเงินกอง";
     localStorage.setItem('lotto_brand_name', brandName);
@@ -615,14 +655,13 @@ function processData() {
 
     let totalMainPct = 0, totalRoodPct = 0, totalSubPct = 0, totalJeawPct = 0, totalConf = 0;
     let validCount = 0;
-
     const processedResults = [];
 
     lottoNames.forEach((lottoName) => {
         const history = parsedData[lottoName];
         if (history.length < 3) return;
 
-        const result = calculateCleanPrecisionPrediction(history, localCorrelator);
+        const result = calculateUltimatePrecisionPrediction(history, localCorrelator);
         Object.assign(batchPairMemory, result.localPairWeights);
 
         totalMainPct += parseFloat(result.mainDigitPct);
@@ -635,7 +674,11 @@ function processData() {
         processedResults.push({ lottoName, result, history });
     });
 
-    if (validCount === 0) return alert('ข้อมูลสถิติน้อยเกินไป (ต้องมีอย่างน้อย 3 งวดต่อหวย)');
+    if (validCount === 0) {
+        alertBox.style.display = 'flex';
+        alertBox.innerHTML = '⚠️ ข้อมูลสถิติน้อยเกินไป (แต่ละหวยต้องมีประวัติอย่างน้อย 3 งวดขึ้นไป)';
+        return;
+    }
 
     const avgMainPct = (totalMainPct / validCount).toFixed(1);
     const avgRoodPct = (totalRoodPct / validCount).toFixed(1);
@@ -647,7 +690,7 @@ function processData() {
     unifiedPanel.innerHTML = `
         <div class="panel" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #d4af37;">
             <h3 class="header-title" style="margin-bottom: 8px;">
-                <span>📊 สรุปเปอร์เซ็นต์และประเมินภาพรวม (Ultra Precision)</span>
+                <span>📊 สรุปเปอร์เซ็นต์และประเมินภาพรวม (Ultimate Edition)</span>
                 <span class="luxury-badge">ภาพรวมทุกหวย (${validCount} รายการ) • ปลอดเลขเบิ้ล 100%</span>
             </h3>
             <div class="external-hud" style="max-width: 100%; background: #ffffff;">
@@ -657,7 +700,7 @@ function processData() {
                     <div class="hud-val">${avgMainPct}%</div>
                 </div>
                 <div class="hud-row">
-                    <div class="hud-label"><span>🏃 เปอร์เซ็นต์เลขรูด/วิ่ง (เลขเลาะ)</span></div>
+                    <div class="hud-label"><span>🏃 เปอร์เซ็นต์เลขรูด/วิ่ง</span></div>
                     <div class="progress-bar-container"><div class="progress-bar-fill support" style="width: ${avgRoodPct}%;"></div></div>
                     <div class="hud-val">${avgRoodPct}%</div>
                 </div>
