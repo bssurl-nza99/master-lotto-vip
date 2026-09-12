@@ -2797,19 +2797,20 @@ function selectorDiagnosticPanel(){
   const dropRows=dropStats.map(x=>`<tr><td>${x.name}</td><td>${x.damage}</td><td>${x.avg}</td><td>${x.max}</td></tr>`).join('');
   const mbRows=mb.map(x=>`<tr><td>${x.name}</td><td>${x.n}</td><td>${x.h}</td><td>${x.rate}%</td></tr>`).join('');
   const report={
-    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.21',
+    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.22',
     total,selection:{hits:selHit,rate:pct2(selHit,total)},formulaUnion:{hits:unionHit,rate:pct2(unionHit,total)},
     boardTop2:{hits:best2,rate:pct2(best2,total)},targetInBoard:{hits:inBoard,rate:pct2(inBoard,total)},
     losses:{formulaLoss,preBoardLoss:boardLoss,selectorLoss,selectorDamage:damage,selectorRescued:rescued},
     digits:{d1Hits, d1Rate:pct2(d1Hits,total), d2Hits, d2Rate:pct2(d2Hits,total)},
     stages:stageStats,rankDrops:dropStats,confidence:conf,marginBuckets:mb,
     byLottery:[...byLottery.entries()].map(([name,a])=>({name,...a,selectionRate:pct2(a.sel,a.n),top2Rate:pct2(a.top2,a.n),inBoardRate:pct2(a.inBoard,a.n),unionRate:pct2(a.union,a.n)})),
-    worstCases:worst
+    worstCases:worst,
+    rounds:rows
   };
   const copyText=esc(JSON.stringify(report,null,2));
   return `<section class="selector-diag-panel">
     <div class="selector-diag-head"><div><b>🔬 Selector Forensic Lab · ตัวจับผิดหลายชั้น</b><small>OOS trace จริง · วิเคราะห์ Formula → Board → ทุก Stage → D1/D2 → Selector · ไม่มีการเปลี่ยนคะแนนจาก Diagnostic</small></div><span>${total} OOS</span></div>
-    <div class="selector-diag-actions"><button id="__selector_diag_copy">คัดลอกผล Forensic ทั้งหมด</button><button id="__selector_diag_copy_worst">คัดลอกเฉพาะเคสเสียหาย</button><button id="__selector_diag_pick_rounds">คัดรอบทั้งหมด</button></div>
+    <div class="selector-diag-actions"><button id="__selector_diag_copy">คัดลอกสรุป + ข้อมูลวิเคราะห์ทั้งหมด</button></div>
     <div class="selector-diag-grid">
       <div><small>Current Selection</small><b>${pct2(selHit,total)}%</b><span>${selHit}/${total}</span></div>
       <div><small>Formula Union</small><b>${pct2(unionHit,total)}%</b><span>สูตรใดสูตรหนึ่งเข้า</span></div>
@@ -2835,35 +2836,51 @@ function selectorDiagnosticPanel(){
 }
 
 document.addEventListener('click',async e=>{
-  const btn=e.target?.closest?.('#__selector_diag_copy,#__selector_diag_copy_worst,#__selector_diag_pick_rounds');
+  const btn=e.target?.closest?.('#__selector_diag_copy');
   if(!btn)return;
   const rows=__SELECTOR_DIAGNOSTIC__.rows||[];
   const pct2=(h,n)=>n?Math.round(h/n*10000)/100:0;
-  const worst=rows.filter(x=>!x.selectionHit).slice().sort((a,b)=>(Number(b.targetRank||99)-Number(a.targetRank||99))).slice(0,50);
-  if(btn.id==='__selector_diag_pick_rounds'){
-    const sorted=rows.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'th')||String(a.source||'').localeCompare(String(b.source||''),'th'));
-    const header=['ลำดับ','หวย','รอบทดสอบ','Target','D1','D2','D1 Hit','D2 Hit','Selection Hit','BoardRank','FinalRank','Raw Top5','Final Top5'];
-    const lines=[header.join('\t'),...sorted.map((x,i)=>[i+1,x.name||'',x.source||'',x.target||'',x.d1??'',x.d2??'',x.d1Hit?'✓':'✗',x.d2Hit?'✓':'✗',x.selectionHit?'✓':'✗',x.targetRank==null?'':x.targetRank,x.targetRanksAll?.afterCandidateOutcome?.join('/')||'',x.stageTop?.raw?.join('·')||'',x.stageTop?.afterCandidateOutcome?.join('·')||''].join('\t'))];
-    const text=lines.join('\n');
-    try{await navigator.clipboard.writeText(text);showToast?.(`✓ คัดรอบทั้งหมดแล้ว ${sorted.length} เคส`)}catch(err){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast?.(`✓ คัดรอบทั้งหมดแล้ว ${sorted.length} เคส`)}
-    return;
-  }
-  const payload=btn.id==='__selector_diag_copy'?{
-    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.21',generatedAt:new Date().toISOString(),
-    total:rows.length,
-    selection:{hits:rows.filter(x=>x.selectionHit).length,rate:pct2(rows.filter(x=>x.selectionHit).length,rows.length)},
-    formulaUnion:{hits:rows.filter(x=>x.unionHit).length,rate:pct2(rows.filter(x=>x.unionHit).length,rows.length)},
-    boardTop2:{hits:rows.filter(x=>x.boardTop2Hit).length,rate:pct2(rows.filter(x=>x.boardTop2Hit).length,rows.length)},
-    targetInBoard:{hits:rows.filter(x=>x.targetInBoard).length,rate:pct2(rows.filter(x=>x.targetInBoard).length,rows.length)},
-    selectorLoss:rows.filter(x=>!x.selectionHit&&x.targetInBoard).length,
-    preBoardLoss:rows.filter(x=>!x.targetInBoard&&x.unionHit).length,
-    selectorDamage:rows.filter(x=>x.selectorDamage).length,
-    selectorRescued:rows.filter(x=>x.selectorRescued).length,
-    d1Rate:pct2(rows.filter(x=>x.d1Hit).length,rows.length),
-    d2Rate:pct2(rows.filter(x=>x.d2Hit).length,rows.length),
-    rows
-  }:{type:'SELECTOR_FORENSIC_WORST_CASES',version:'V1.9.21',generatedAt:new Date().toISOString(),total:worst.length,rows:worst};
-  try{await navigator.clipboard.writeText(JSON.stringify(payload,null,2));showToast?.('✓ คัดลอก Forensic แล้ว')}catch(err){const ta=document.createElement('textarea');ta.value=JSON.stringify(payload,null,2);document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast?.('✓ คัดลอก Forensic แล้ว')}
+  const total=rows.length;
+  const hits=rows.filter(x=>x.selectionHit).length;
+  const unionHits=rows.filter(x=>x.unionHit).length;
+  const top2Hits=rows.filter(x=>x.boardTop2Hit).length;
+  const inBoardHits=rows.filter(x=>x.targetInBoard).length;
+  const selectorLoss=rows.filter(x=>!x.selectionHit&&x.targetInBoard).length;
+  const boardLoss=rows.filter(x=>!x.targetInBoard&&x.unionHit).length;
+  const selectorDamage=rows.filter(x=>x.selectorDamage).length;
+  const selectorRescued=rows.filter(x=>x.selectorRescued).length;
+  const d1Hits=rows.filter(x=>x.d1Hit).length,d2Hits=rows.filter(x=>x.d2Hit).length;
+  const stages=['raw','afterMeta','afterSignal','afterContext','afterStabilizer','afterCalibration','afterGuardrail','afterMidRankRecovery','afterTrajectory','afterRankOutcome','afterCandidateOutcome'];
+  const stageNames={raw:'Raw Board',afterMeta:'Meta',afterSignal:'Signal',afterContext:'Context',afterStabilizer:'Stabilizer',afterCalibration:'Calibration',afterGuardrail:'Guardrail',afterMidRankRecovery:'Mid-Rank',afterTrajectory:'Trajectory',afterRankOutcome:'Rank-Outcome',afterCandidateOutcome:'Candidate-Outcome'};
+  const stageCoverage=stages.map(stage=>{
+    const a=rows.filter(r=>Array.isArray(r.stageTop?.[stage]));
+    const h=a.filter(r=>r.targetDigits?.some(d=>r.stageTop[stage].includes(Number(d)))).length;
+    return {stage,name:stageNames[stage]||stage,tests:a.length,hits:h,rate:pct2(h,a.length)};
+  });
+  const transitions=[
+    ['Raw→Meta','rankDropRawToMeta'],['Meta→Signal','rankDropMetaToSignal'],['Signal→Context','rankDropSignalToContext'],
+    ['Context→Calibration','rankDropContextToCalibration'],['Calibration→Guardrail','rankDropCalibrationToGuardrail'],
+    ['Guardrail→Mid-Rank','rankDropGuardrailToMidRank'],['Mid-Rank→Trajectory','rankDropMidRankToTrajectory'],
+    ['Trajectory→Rank-Outcome','rankDropTrajectoryToRankOutcome'],['Rank-Outcome→Candidate-Outcome','rankDropRankOutcomeToCandidateOutcome']
+  ];
+  const rankDamage=transitions.map(([name,key])=>{const a=rows.map(r=>Number(r[key]||0));return {transition:name,key,tests:a.length,damageCases:a.filter(x=>x>0).length,avgDrop:a.length?Math.round(a.reduce((s,x)=>s+x,0)/a.length*100)/100:0,maxDrop:a.length?Math.max(...a):0};});
+  const marginDefs=[['<0.10',x=>Number(x.selectedMargin||0)<.10],['0.10–0.24',x=>Number(x.selectedMargin||0)>=.10&&Number(x.selectedMargin||0)<.25],['0.25–0.44',x=>Number(x.selectedMargin||0)>=.25&&Number(x.selectedMargin||0)<.45],['≥0.45',x=>Number(x.selectedMargin||0)>=.45]];
+  const margin=marginDefs.map(([name,fn])=>{const a=rows.filter(fn),h=a.filter(x=>x.selectionHit).length;return {band:name,tests:a.length,hits:h,rate:pct2(h,a.length)};});
+  const byLottery=new Map();
+  for(const r of rows){const a=byLottery.get(r.name)||{tests:0,hits:0,unionHits:0,top2Hits:0,inBoardHits:0,selectorLoss:0,boardLoss:0,d1Hits:0,d2Hits:0};a.tests++;a.hits+=!!r.selectionHit;a.unionHits+=!!r.unionHit;a.top2Hits+=!!r.boardTop2Hit;a.inBoardHits+=!!r.targetInBoard;a.selectorLoss+=!r.selectionHit&&r.targetInBoard;a.boardLoss+=!r.targetInBoard&&r.unionHit;a.d1Hits+=!!r.d1Hit;a.d2Hits+=!!r.d2Hit;byLottery.set(r.name,a)}
+  const lottery=Array.from(byLottery.entries()).map(([name,a])=>({name,...a,selectionRate:pct2(a.hits,a.tests),top2Rate:pct2(a.top2Hits,a.tests),inBoardRate:pct2(a.inBoardHits,a.tests),unionRate:pct2(a.unionHits,a.tests),d1Rate:pct2(a.d1Hits,a.tests),d2Rate:pct2(a.d2Hits,a.tests)})).sort((a,b)=>a.selectionRate-b.selectionRate||b.tests-a.tests);
+  const worst=rows.filter(x=>!x.selectionHit).slice().sort((a,b)=>Number(b.targetRank||99)-Number(a.targetRank||99)||((b.rankDropRawToMeta||0)+(b.rankDropMetaToSignal||0)+(b.rankDropSignalToContext||0)+(b.rankDropContextToCalibration||0)+(b.rankDropCalibrationToGuardrail||0))-((a.rankDropRawToMeta||0)+(a.rankDropMetaToSignal||0)+(a.rankDropSignalToContext||0)+(a.rankDropContextToCalibration||0)+(a.rankDropCalibrationToGuardrail||0))).slice(0,100);
+  const confidence={high:rows.filter(x=>x.selectedConfidence==='สูง').length,medium:rows.filter(x=>x.selectedConfidence==='กลาง').length,low:rows.filter(x=>x.selectedConfidence==='ต่ำ').length};
+  const report={
+    type:'SELECTOR_FORENSIC_ONE_CLICK_ANALYSIS_PACK',version:'V1.9.22',generatedAt:new Date().toISOString(),
+    purpose:'ข้อมูลชุดเดียวสำหรับวิเคราะห์และอัปเกรด Selector โดยไม่ต้องคัดหลายช่อง',
+    headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),selectorLoss,boardLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total)},
+    stageCoverage,rankDamage,margin,confidence,lottery,worstCases:worst,
+    allRounds:rows,
+    analysisNote:'ใช้เฉพาะข้อมูล OOS ที่เกิดขึ้นก่อนผลจริงของแต่ละรอบ; ข้อมูลนี้เป็น diagnostic pack ไม่ได้เปลี่ยนคะแนน Selector เอง.'
+  };
+  const text=JSON.stringify(report,null,2);
+  try{await navigator.clipboard.writeText(text);showToast?.(`✓ คัดลอก Analysis Pack แล้ว ${total} OOS`)}catch(err){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast?.(`✓ คัดลอก Analysis Pack แล้ว ${total} OOS`)}
 });
 function selectionHistory(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionHistory"); try {const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));
 const board=(sel.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);const boardDigits=board.map(q=>Number(q.digit));const currentPred=currentPredictions(train);const formulaHits=FORMULAS.filter(f=>Array.isArray(currentPred[f])&&currentPred[f].some(d=>target.includes(Number(d))));const unionHit=formulaHits.length>0;const best2=boardDigits.slice(0,2).some(d=>target.includes(d));const targetRank=boardDigits.findIndex(d=>target.includes(d));const targetInBoard=targetRank>=0;const selectionHit=ok;
@@ -3562,7 +3579,7 @@ function runSystemHealth(){
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
   if(!/version:'V1\.9.8'/.test(s))issues.push('config version mismatch');
   const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.8'))issues.push('visible version mismatch');
-  const health={version:'V1.9.21',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
+  const health={version:'V1.9.22',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
@@ -3616,7 +3633,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
   }
 } finally { window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.21',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.22',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth()});
 })();
 </script>
