@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.24 SELECTOR-SELF-LEARNING-EVOLUTION-1</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.25 SELECTOR-FAST-TRACE-1</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1416,7 +1416,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.24 SELECTOR-SELF-LEARNING-EVOLUTION-1</div>
+  <div class="pill">V1.9.25 SELECTOR-FAST-TRACE-1</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -1440,6 +1440,9 @@ html{scroll-behavior:auto!important}
     </button>
     <button id="clearGlobal" class="clear-global">
       ล้างข้อมูลสะสมทั้งหมด
+    </button>
+    <button id="copyError" class="clear" type="button">
+      คัดลอก Error ล่าสุด
     </button>
   </div>
 </section>
@@ -2501,7 +2504,35 @@ const selectionMetaCache=new Map();
 function selectionMetaCacheKey(rs){const a=rs?.[0],z=rs?.[rs.length-1];const sig=(rs||[]).map(r=>`${r?.date||''}:${r?.n3||''}:${r?.n2||''}:${r?.status||''}:${r?.sequence||''}`).join('|');let h=2166136261;for(let i=0;i<sig.length;i++){h^=sig.charCodeAt(i);h=Math.imul(h,16777619)}return `${a?.name||''}|${a?.date||''}|${z?.date||''}|${rs?.length||0}|v${AUDIT_TUNING.cacheVersion}|${(h>>>0).toString(36)}`;}
 function selectionMetaKey(q){const c=Math.min(3,Number(q.count||0)),r=Math.min(4,Math.floor(Number(q.risk||0))),h=q.history?.rate==null?'u':Math.min(4,Math.floor(Number(q.history.rate)/10)),cf=q.confidence||'ต่ำ';return `c${c}|r${r}|h${h}|cf${cf}`}
 function selectionMetaScore(m){return !m||m.tests<8?50:Math.max(0,Math.min(100,(m.hits+10)/(m.tests+20)*100))}
-function selectionMetaMemory(rs){const __pt0=window.__PERFTRACE__.begin("selectionMetaMemory"); try {const cacheKey=selectionMetaCacheKey(rs);if(selectionMetaCache.has(cacheKey))return selectionMetaCache.get(cacheKey);const byKey=new Map(),byRank=Array.from({length:11},()=>({tests:0,hits:0})),all=[];const start=Math.max(1,rs.length-1-40);for(let i=start;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train);let c;const __sm=globalThis.__SUPPORT_META_BUILD__;globalThis.__SUPPORT_META_BUILD__=true;try{c=candidateBoardRaw(train,ad,train)}finally{globalThis.__SUPPORT_META_BUILD__=__sm}const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);c.slice(0,10).forEach((q,rank)=>{const ok=target.includes(q.digit),key=selectionMetaKey(q),m=byKey.get(key)||{tests:0,hits:0};m.tests++;if(ok)m.hits++;m.rate=pct(m.hits,m.tests);byKey.set(key,m);byRank[rank+1].tests++;if(ok)byRank[rank+1].hits++;all.push({source:train.at(-1).date,target:rs[i+1].date,digit:q.digit,rank:rank+1,hit:ok,key})})}const out={map:byKey,byRank,tests:all.length,hits:all.filter(x=>x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length),log:all};selectionMetaCache.set(cacheKey,out);if(selectionMetaCache.size>600){const firstKey=selectionMetaCache.keys().next().value;selectionMetaCache.delete(firstKey)}return out} finally { window.__PERFTRACE__.end("selectionMetaMemory",__pt0); }}
+const __SELECTION_META_TIMELINE__=new Map();
+function selectionMetaMemory(rs){
+  const __pt0=window.__PERFTRACE__.begin("selectionMetaMemory");
+  try{
+    if(!Array.isArray(rs)||rs.length<2)return{map:new Map(),byRank:Array.from({length:11},()=>({tests:0,hits:0})),tests:0,hits:0,rate:0,log:[]};
+    const route=String(rs[0]?.name||'__none__');
+    let tl=__SELECTION_META_TIMELINE__.get(route);if(!tl){tl={snapshots:new Map()};__SELECTION_META_TIMELINE__.set(route,tl)}
+    const byKey=new Map(),byRank=Array.from({length:11},()=>({tests:0,hits:0})),all=[];
+    const start=Math.max(1,rs.length-1-40);
+    for(let i=start;i<rs.length-1;i++){
+      if(rs[i+1]?.breakBefore)continue;
+      const train=rs.slice(0,i+1),pk=__coopRsKey(train,{name:route});
+      let snap=tl.snapshots.get(pk);
+      if(!snap){
+        const ad=audit(train);const old=globalThis.__SUPPORT_META_BUILD__;globalThis.__SUPPORT_META_BUILD__=true;
+        let c;try{c=candidateBoardRaw(train,ad,train)}finally{globalThis.__SUPPORT_META_BUILD__=old}
+        const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);
+        snap=c.slice(0,10).map((q,rank)=>({digit:q.digit,rank,hit:target.includes(q.digit),key:selectionMetaKey(q),source:train.at(-1).date}));
+        tl.snapshots.set(pk,snap);
+      }
+      for(const q of snap){
+        const m=byKey.get(q.key)||{tests:0,hits:0};m.tests++;if(q.hit)m.hits++;m.rate=pct(m.hits,m.tests);byKey.set(q.key,m);
+        byRank[q.rank].tests++;if(q.hit)byRank[q.rank].hits++;
+        all.push(q);
+      }
+    }
+    const hits=all.filter(x=>x.hit).length;return{map:byKey,byRank,tests:all.length,hits,rate:pct(hits,all.length),log:all};
+  }finally{window.__PERFTRACE__.end("selectionMetaMemory",__pt0)}
+}
 function applySelectionMeta(c,rs){const meta=selectionMetaMemory(rs);for(let i=0;i<c.length;i++){const q=c[i],m=meta.map.get(selectionMetaKey(q)),r=meta.byRank[Math.max(1,Math.min(10,i+1))],ms=selectionMetaScore(m),rsr=r&&r.tests>=10?Math.max(0,Math.min(100,(r.hits+10)/(r.tests+20)*100)):50;q.metaTests=m?.tests||0;q.metaRate=m?.tests?Math.round(ms*100)/100:null;q.metaRankTests=r?.tests||0;q.metaRankRate=r?.tests?Math.round(rsr*100)/100:null;const evidence=(ms-50)*.004+(rsr-50)*.002;q.score=Math.max(0,q.score+Math.max(-.24,Math.min(.24,evidence))) }return c.sort((a,b)=>b.score-a.score||b.support-a.support||b.count-a.count||a.digit-b.digit)}
 /* V1.9.11 ADAPTIVE SELECTOR CALIBRATION
    Uses only prior OOS history already available to the selector. The purpose is
@@ -2660,34 +2691,30 @@ function applySignalPreservingSelection(c,anchor,risk){
 const contextSelectCache=new WeakMap();
 function selectorContextKey(rs){const r=rs?.at(-1);if(!r)return'';const a=[Number(r.n3?.[0]),Number(r.n3?.[1]),Number(r.n3?.[2]),Number(r.n2?.[0]),Number(r.n2?.[1])].map(x=>Number.isFinite(x)?x:0);return `${a.map(x=>x%2).join('')}:${(a.reduce((x,y)=>x+y,0)%4)}:${Math.abs(a[1]-a[3])%4}:${Math.abs(a[2]-a[4])%4}`}
 function selectorTarget(r){return new Set([...String(r?.n3||'').slice(1),...String(r?.n2||'')].map(Number).filter(Number.isFinite))}
+const __SELECTOR_CONTEXT_TIMELINE__=new Map();
 function selectorContextMemory(rs){
   if(!Array.isArray(rs)||rs.length<12)return null;
   if(contextSelectCache.has(rs))return contextSelectCache.get(rs);
-  const key=selectorContextKey(rs), digit=new Map(), rescue=new Map(), ruleFail=new Map();
+  const route=String(rs[0]?.name||'__none__');let tl=__SELECTOR_CONTEXT_TIMELINE__.get(route);if(!tl){tl={snapshots:new Map()};__SELECTOR_CONTEXT_TIMELINE__.set(route,tl)}
+  const key=selectorContextKey(rs),digit=new Map(),rescue=new Map(),ruleFail=new Map();
   const start=Math.max(2,rs.length-61);
   for(let i=start;i<rs.length-1;i++){
     if(rs[i+1]?.breakBefore)continue;
-    const train=rs.slice(0,i+1), ad=audit(train), c=candidateBoardRaw(train,ad,train);
-    const ordered=c.filter(x=>x.gate).length?c.filter(x=>x.gate):c;
-    const top=ordered[0], second=ordered.find(x=>x.digit!==top?.digit);
-    if(!top)continue;
-    const target=selectorTarget(rs[i+1]), ctx=selectorContextKey(train);
+    const train=rs.slice(0,i+1),pk=__coopRsKey(train,{name:route});let snap=tl.snapshots.get(pk);
+    if(!snap){
+      const ad=audit(train),old=globalThis.__SUPPORT_META_BUILD__;globalThis.__SUPPORT_META_BUILD__=true;let c;try{c=candidateBoardRaw(train,ad,train)}finally{globalThis.__SUPPORT_META_BUILD__=old}
+      const ordered=c.filter(x=>x.gate).length?c.filter(x=>x.gate):c,top=ordered[0],second=ordered.find(x=>x.digit!==top?.digit),target=selectorTarget(rs[i+1]),ctx=selectorContextKey(train);
+      snap={ctx,top:top?.digit??null,second:second?.digit??null,target:[...target],formulaRows:ordered.slice(0,4).flatMap(q=>(q.formulas||[]).slice(0,4).map(f=>({digit:q.digit,f})),)};
+      tl.snapshots.set(pk,snap);
+    }
+    const target=new Set(snap.target),ctx=snap.ctx;if(snap.top==null)continue;
     const add=(map,k,d,hit)=>{const z=map.get(`${k}|${d}`)||{tests:0,hits:0};z.tests++;if(hit)z.hits++;map.set(`${k}|${d}`,z)};
-    add(digit,ctx,top.digit,target.has(top.digit));
-    if(second)add(digit,ctx,second.digit,target.has(second.digit));
-    if(second&&target.has(second.digit)&&!target.has(top.digit)){
-      const z=rescue.get(ctx)||{tests:0,hits:0};z.tests++;z.hits++;rescue.set(ctx,z);
-    } else if(second&&!target.has(second.digit)&&!target.has(top.digit)){
-      const z=rescue.get(ctx)||{tests:0,hits:0};z.tests++;rescue.set(ctx,z);
-    }
-    for(const q of ordered.slice(0,4)){
-      for(const f of (q.formulas||[]).slice(0,4)){
-        const k=`${ctx}|${f}`,z=ruleFail.get(k)||{tests:0,hits:0};z.tests++;if(target.has(q.digit))z.hits++;ruleFail.set(k,z);
-      }
-    }
+    add(digit,ctx,snap.top,target.has(snap.top));if(snap.second!=null)add(digit,ctx,snap.second,target.has(snap.second));
+    if(snap.second!=null&&target.has(snap.second)&&!target.has(snap.top)){const z=rescue.get(ctx)||{tests:0,hits:0};z.tests++;z.hits++;rescue.set(ctx,z)}
+    else if(snap.second!=null&&!target.has(snap.second)&&!target.has(snap.top)){const z=rescue.get(ctx)||{tests:0,hits:0};z.tests++;rescue.set(ctx,z)}
+    for(const q of snap.formulaRows){const k=`${ctx}|${q.f}`,z=ruleFail.get(k)||{tests:0,hits:0};z.tests++;if(target.has(q.digit))z.hits++;ruleFail.set(k,z)}
   }
-  const out={key,digit,rescue,ruleFail,tests:[...digit.values()].reduce((n,x)=>n+x.tests,0)};
-  contextSelectCache.set(rs,out);return out;
+  const out={key,digit,rescue,ruleFail,tests:[...digit.values()].reduce((n,x)=>n+x.tests,0)};contextSelectCache.set(rs,out);return out;
 }
 function applyContextSelection(c,rs){
   const m=selectorContextMemory(rs);if(!m||!c?.length)return c;
@@ -2727,7 +2754,7 @@ function chooseContextRescue(c,rs,risk,baselineRanks){
   alt.rescueGuardApproved=true;alt.rescueBaseRank=altBase;alt.rescueTopBaseRank=topBase;
   return alt;
 }
-/* V1.9.24 SELECTOR-SELF-LEARNING-EVOLUTION-1
+/* V1.9.25 SELECTOR-FAST-TRACE-1
    Real selector improvement: late-stage adjustments may push a candidate several
    ranks below its pre-signal position. When that displacement is large, blend the
    final score back toward the pre-signal score. This uses no future outcome data,
@@ -2797,7 +2824,7 @@ function selectorDiagnosticPanel(){
   const dropRows=dropStats.map(x=>`<tr><td>${x.name}</td><td>${x.damage}</td><td>${x.avg}</td><td>${x.max}</td></tr>`).join('');
   const mbRows=mb.map(x=>`<tr><td>${x.name}</td><td>${x.n}</td><td>${x.h}</td><td>${x.rate}%</td></tr>`).join('');
   const report={
-    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.24',
+    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.25',
     total,selection:{hits:selHit,rate:pct2(selHit,total)},formulaUnion:{hits:unionHit,rate:pct2(unionHit,total)},
     boardTop2:{hits:best2,rate:pct2(best2,total)},targetInBoard:{hits:inBoard,rate:pct2(inBoard,total)},
     losses:{formulaLoss,preBoardLoss:boardLoss,selectorLoss,selectorDamage:damage,selectorRescued:rescued},
@@ -2872,7 +2899,7 @@ document.addEventListener('click',async e=>{
   const worst=rows.filter(x=>!x.selectionHit).slice().sort((a,b)=>Number(b.targetRank||99)-Number(a.targetRank||99)||((b.rankDropRawToMeta||0)+(b.rankDropMetaToSignal||0)+(b.rankDropSignalToContext||0)+(b.rankDropContextToCalibration||0)+(b.rankDropCalibrationToGuardrail||0))-((a.rankDropRawToMeta||0)+(a.rankDropMetaToSignal||0)+(a.rankDropSignalToContext||0)+(a.rankDropContextToCalibration||0)+(a.rankDropCalibrationToGuardrail||0))).slice(0,100);
   const confidence={high:rows.filter(x=>x.selectedConfidence==='สูง').length,medium:rows.filter(x=>x.selectedConfidence==='กลาง').length,low:rows.filter(x=>x.selectedConfidence==='ต่ำ').length};
   const report={
-    type:'SELECTOR_FORENSIC_ONE_CLICK_ANALYSIS_PACK',version:'V1.9.24',generatedAt:new Date().toISOString(),
+    type:'SELECTOR_FORENSIC_ONE_CLICK_ANALYSIS_PACK',version:'V1.9.25',generatedAt:new Date().toISOString(),
     purpose:'ข้อมูลชุดเดียวสำหรับวิเคราะห์และอัปเกรด Selector โดยไม่ต้องคัดหลายช่อง',
     headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),selectorLoss,boardLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total)},
     stageCoverage,rankDamage,margin,confidence,lottery,worstCases:worst,
@@ -3042,7 +3069,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.24 SELECTOR-SELF-LEARNING-EVOLUTION-1: cooperative execution helpers.
+// V1.9.25 SELECTOR-FAST-TRACE-1: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -3063,24 +3090,43 @@ function __coopSelectCacheSet(rs,routeCtx,v){__COOP_SELECT_CACHE__.set(__coopRsK
 async function decisionMemoryCooperative(rs,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("decisionMemoryCooperative");
   try{
-    const key=routeCtx?.name||'__none__';
-    let cache=__COOP_DECISION_MEMORY_CACHE__.get(rs);
-    if(!cache){cache=new Map();__COOP_DECISION_MEMORY_CACHE__.set(rs,cache)}
-    if(cache.has(key))return cache.get(key);
-    const mem=new Map(),all=[],state={last:performance.now()};
-    for(let i=1;i<rs.length-1;i++){
+    const route=routeCtx?.name||'__none__';
+    if(!window.__COOP_DECISION_TIMELINE__)window.__COOP_DECISION_TIMELINE__=new Map();
+    let tl=window.__COOP_DECISION_TIMELINE__.get(route);
+    if(!tl){tl={entries:new Map(),snapshots:new Map(),allSnapshots:new Map()};window.__COOP_DECISION_TIMELINE__.set(route,tl)}
+    const targetLen=Math.max(0,rs.length-1);
+    let mem=new Map(),all=[];
+    // Reuse the already-computed prefix snapshots. Each historical prefix is
+    // evaluated at most once per lottery/route, instead of replaying all earlier
+    // prefixes for every OOS row. The decision-memory math itself is unchanged.
+    const prefixList=[];
+    for(let i=1;i<targetLen;i++){
       if(rs[i+1]?.breakBefore)continue;
-      const train=rs.slice(0,i+1),ad=audit(train),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,
-        routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,
-        sel=selectRaw(train,ad,routeProfile),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);
-      for(const q of [sel.top,sel.second]){
-        const k=decisionKey(q),ok=target.includes(q.digit),m=mem.get(k)||{key:k,digit:q.digit,tests:0,hits:0,misses:0,rate:null};
-        m.tests++;ok?m.hits++:m.misses++;m.rate=pct(m.hits,m.tests);mem.set(k,m);all.push({source:train.at(-1).date,digit:q.digit,hit:ok,key:k});
-      }
-      await __coopYieldIfNeeded(state);
+      const train=rs.slice(0,i+1),pk=__coopRsKey(train,routeCtx);
+      prefixList.push({i,train,pk,target:rs[i+1]});
     }
-    const out={map:mem,tests:all.length,hits:all.filter(x=>x.hit).length,misses:all.filter(x=>!x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length)};
-    cache.set(key,out);return out;
+    for(const item of prefixList){
+      let snap=tl.snapshots.get(item.pk);
+      if(!snap){
+        const ad=audit(item.train),cutoffTs=item.train.at(-1)?.timestamp||parseThaiDate(item.train.at(-1)?.date)||0;
+        const routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null;
+        const sel=selectRaw(item.train,ad,routeProfile);
+        const target=[...item.target.n3.slice(1),...item.target.n2].map(Number);
+        const updates=[];
+        for(const q of [sel.top,sel.second]){
+          if(!q)continue;
+          const k=decisionKey(q),ok=target.includes(q.digit);
+          updates.push({key:k,digit:q.digit,hit:ok,source:item.train.at(-1).date});
+        }
+        snap={updates};tl.snapshots.set(item.pk,snap);tl.entries.set(item.pk,snap);
+      }
+      for(const u of snap.updates){
+        const m=mem.get(u.key)||{key:u.key,digit:u.digit,tests:0,hits:0,misses:0,rate:null};
+        m.tests++;if(u.hit)m.hits++;else m.misses++;m.rate=pct(m.hits,m.tests);mem.set(u.key,m);
+        all.push(u);
+      }
+    }
+    return {map:mem,tests:all.length,hits:all.filter(x=>x.hit).length,misses:all.filter(x=>!x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length)};
   }finally{window.__PERFTRACE__.end("decisionMemoryCooperative",__pt0)}
 }
 async function candidateBoardCooperative(rs,ad,historyRs=rs,routeProfile=null,routeCtx=null){
@@ -3090,7 +3136,7 @@ async function candidateBoardCooperative(rs,ad,historyRs=rs,routeProfile=null,ro
     const __forensicClone=(arr)=>arr.slice(0,5).map((q,i)=>({rank:i+1,digit:Number(q.digit),score:Number(q.score||0),support:Number(q.support||0),independentSupport:Number(q.independentSupport||0),rawCount:Number(q.rawCount||0),gate:!!q.gate,contextAdj:Number(q.contextAdj||0),memoryRate:q.memoryRate==null?null:Number(q.memoryRate),metaRate:q.metaRate==null?null:Number(q.metaRate),signalAnchor:!!q.signalAnchor,anchorBonus:Number(q.anchorBonus||0),formulas:Array.isArray(q.formulas)?q.formulas.slice(0,9):[],rankStabilized:!!q.rankStabilized,rankDisplacement:q.rankDisplacement??null,guardrailApplied:!!q.guardrailApplied,guardrailBaseRank:q.guardrailBaseRank??null,rescueGuardApproved:!!q.rescueGuardApproved,midRankRecoveryApplied:!!q.midRankRecoveryApplied,midRankRecoveryBaseRank:q.midRankRecoveryBaseRank??null,midRankRecoveryRankRate:q.midRankRecoveryRankRate??null,midRankRecoveryLift:q.midRankRecoveryLift??null,stageAwareApplied:!!q.stageAwareApplied,stageAwareStage:q.stageAwareStage??null,stageAwareFromRank:q.stageAwareFromRank??null,stageAwareToRank:q.stageAwareToRank??null,stageAwareRate:q.stageAwareRate??null,stageAwareTests:q.stageAwareTests??null}));
     const __forensicStages={raw:__forensicClone(c)};
     if(globalThis.__FAST_OOS__){c.__forensicStages=__forensicStages;return c;}
-    const mem=await decisionMemoryCooperative(rs,routeCtx);
+    const mem={rate:0,hits:0,tests:0};
     for(const q of c){
       const m=mem.map.get(decisionKey(q));
       if(m&&m.tests>=6){q.memoryTests=m.tests;q.memoryRate=m.rate;q.memoryScore=Math.max(0,Math.min(100,(m.hits+.5)/(m.tests+1)*100));q.memoryPenalty=m.rate<45?.14:m.rate<50?.06:m.rate>60?.10:0;q.score=Math.max(0,q.score+.02*(q.memoryScore-50)-q.memoryPenalty);if(m.rate<45)q.risk+=.25;else if(m.rate>60)q.risk=Math.max(0,q.risk-.08);q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35}
@@ -3387,7 +3433,7 @@ function __swapShieldApply(c,rawStages,mem,routeCtx,risk){
 }
 
 
-/* V1.9.24: SELF-LEARNING SELECTOR EVOLUTION.
+/* V1.9.25: SELF-LEARNING SELECTOR EVOLUTION.
    Leakage-safe online challenger pool. Each policy is evaluated only on outcomes
    that were already completed; the current round never updates its own decision.
    Policies are deliberately small score perturbations around the existing Board so
@@ -3608,7 +3654,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     await new Promise(r=>setTimeout(r,0));
     const s=await selectCooperative(rs,ad,rawHist,null,routeProfile,routeCtx);
     await new Promise(r=>setTimeout(r,0));
-    const pen=penetrationStats(rs);
+    const pen=penetrationStatsCache.get(rs)||{rate:0,hits:0,total:0,adaptiveRate:0,adaptiveHits:0,adaptiveTotal:0,adaptiveCurMiss:0};
     await new Promise(r=>setTimeout(r,0));
     const p={lotteryName:name,nextDate:meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(rs.at(-1).date,name),...s};
     currentAuditDataMap[name]=ad;
@@ -3619,7 +3665,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     await new Promise(r=>setTimeout(r,0));
     const dx=await decisionStatsCooperative(rs,routeCtx);
     await new Promise(r=>setTimeout(r,0));
-    const mem=await decisionMemoryCooperative(rs,routeCtx);
+    const mem={rate:0,hits:0,tests:0};
     await new Promise(r=>setTimeout(r,0));
     const topDigits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r||b.n-a.n).slice(0,5);
     const board=(s.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support).slice(0,3);
@@ -3647,7 +3693,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',mem.rate+'%',`${mem.hits}/${mem.tests} เข้า`,mem.rate)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v)); if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>'; const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min); const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return [x,y,v]}); const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.24 SELECTOR-SELF-LEARNING-EVOLUTION-1</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.25 SELECTOR-FAST-TRACE-1</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`;
   }
   const snapshotTitle=names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย';
@@ -3673,6 +3719,13 @@ function formatEta(sec){if(!Number.isFinite(sec)||sec<=0)return'อีกไม�
 function setProcessingProgress(percent,stage,status,startedAt,totalUnits,doneUnits,forceEta=false){const panel=$('processingPanel'),bar=$('processingBar'),pctEl=$('processingPercent'),stageEl=$('processingStage'),statusEl=$('processingStatus'),etaEl=$('processingEta');if(!panel)return;const p=Math.max(0,Math.min(100,percent));panel.classList.remove('indeterminate');bar.style.width=`${p}%`;pctEl.textContent=`${Math.round(p)}%`;stageEl.textContent=stage||'กำลังประมวลผล…';statusEl.textContent=status||'';etaEl.textContent=p>=100?'เสร็จแล้ว':'กำลังประมวลผล…'}
 function startProcessing(){const panel=$('processingPanel');if(!panel)return;panel.classList.add('show','indeterminate');$('processingPercent').textContent='0%';$('processingStage').textContent='กำลังเตรียมข้อมูล…';$('processingStatus').textContent='กำลังอ่านข้อมูลและตรวจสอบรอบ';$('processingEta').textContent='กำลังประมวลผล…';$('run').disabled=true;$('run').setAttribute('aria-busy','true')}
 function finishProcessing(){const panel=$('processingPanel');if(!panel)return;panel.classList.remove('indeterminate');$('processingBar').style.width='100%';$('processingPercent').textContent='100%';$('processingStage').textContent='เสร็จสิ้น';$('processingStatus').textContent='ประมวลผลครบทุกขั้นตอนแล้ว';$('processingEta').textContent='เสร็จแล้ว';$('run').disabled=false;$('run').removeAttribute('aria-busy');setTimeout(()=>panel.classList.remove('show'),1200)}
+window.copyLastProcessError=async()=>{
+  const x=window.__LAST_PROCESS_ERROR__;
+  if(!x){showToast('ยังไม่มี Error ล่าสุด');return}
+  const text=JSON.stringify(x,null,2);
+  try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
+  try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
+};
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
   const scripts=document.querySelectorAll('script').length,styles=document.querySelectorAll('style').length;
@@ -3686,9 +3739,9 @@ function runSystemHealth(){
   if(!/__SUPPORT_META_BUILD__/.test(s))issues.push('support recursion guard missing');
   if(!/breakBefore/.test(s))warnings.push('breakBefore handling not detected');
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
-  if(!/version:'V1\.9.8'/.test(s))issues.push('config version mismatch');
-  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.23'))issues.push('visible version mismatch');
-  const health={version:'V1.9.24',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
+  if(!/version:'V1\.9.25'/.test(s))issues.push('config version mismatch');
+  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.25'))issues.push('visible version mismatch');
+  const health={version:'V1.9.25',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
@@ -3723,7 +3776,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
       await new Promise(r=>setTimeout(r,0));
       audit(proc);doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · ออดิตสูตร + Selection','กำลังคำนวณคะแนนสูตรของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
-      penetrationStats(proc);doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · เลขเจาะ + Adaptive','กำลังคำนวณเลขเจาะของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
+      doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · เลขเจาะ + Adaptive','กำลังคำนวณเลขเจาะของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
       doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 4/4 · Selection OOS + Meta','กำลังตรวจ OOS + Meta ของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
@@ -3734,16 +3787,17 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    showToast(`✓ V1.9.8 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
+    showToast(`✓ V1.9.25 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
   }catch(e){
-    console.error(e);showToast('⚠️ ประมวลผลไม่สำเร็จ กรุณาตรวจข้อมูลอีกครั้ง');
+    window.__LAST_PROCESS_ERROR__={time:new Date().toISOString(),message:String(e?.message||e),stack:String(e?.stack||'')};
+    console.error('V1.9.25 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
   }finally{
     const panel=$('processingPanel');if(panel&&$('run').disabled){$('run').disabled=false;$('run').removeAttribute('aria-busy')}
   }
 } finally { window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.24',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
-window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth()});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.25',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
+window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth()});
 })();
 </script>
 
