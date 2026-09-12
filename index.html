@@ -136,7 +136,7 @@
             margin-bottom: 12px;
         }
 
-        /* โครงสร้างการ์ดคงเดิมตามที่ท่านชอบ */
+        /* โครงสร้างการ์ดสีเดิมตามที่ท่านชอบ */
         .lotto-card-ui {
             width: 100%;
             max-width: 380px;
@@ -308,6 +308,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function clearInput() { document.getElementById('rawInput').value = ''; }
 
+function cleanLottoDisplayName(name) {
+    if (name.includes("หุ้นไทย")) return name; // คงคำว่า "หุ้นไทย" ไว้ตามเงื่อนไข
+    // ลบคำว่า "หวย" และ "หุ้น" ออกจากชื่อ
+    return name.replace(/หวย/g, '').replace(/หุ้น/g, '').trim().replace(/\s+/g, ' ');
+}
+
 function mapToCorrectLottoName(rawName) {
     let clean = rawName.trim().replace(/\s+/g, ' ');
     
@@ -400,7 +406,7 @@ function clearAllMemory() {
     document.getElementById('aiDashboard').style.display = 'none';
 }
 
-function calculateAdvancedPrediction(historySub, localCorrelator, accuracyScore) {
+function calculateAdvancedPrediction(historySub, localCorrelator, accuracyScore, dMainFixed = null, dSubFixed = null) {
     const scores = Array(10).fill(0);
     const positionalTransition = Array(10).fill(0).map(() => Array(10).fill(0.01));
     const skipFrequencyMap = Array(10).fill(0);
@@ -435,8 +441,8 @@ function calculateAdvancedPrediction(historySub, localCorrelator, accuracyScore)
     }
 
     const sortedDigits = scores.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
-    const mainDigit = sortedDigits[0].digit;
-    const subDigit = sortedDigits[1].digit;
+    const mainDigit = dMainFixed !== null ? dMainFixed : sortedDigits[0].digit;
+    const subDigit = dSubFixed !== null ? dSubFixed : sortedDigits.find(x => x.digit !== mainDigit).digit;
 
     const pairWeights = { ...memory.pairMemory };
     for(let d=0; d<=9; d++) { for(let p=0; p<=9; p++) { if(!pairWeights[`${d}${p}`]) pairWeights[`${d}${p}`] = 0.1; } }
@@ -450,14 +456,23 @@ function calculateAdvancedPrediction(historySub, localCorrelator, accuracyScore)
         }
     });
 
+    // เงื่อนไข: เลขเด่นวินกันเองในชุดเจาะ และตัดเลขเบิ้ลทิ้ง 100%
+    const validPool = [0,1,2,3,4,5,6,7,8,9].filter(n => n !== mainDigit && n !== subDigit && n !== mainDigit && n !== subDigit);
+    // วินกันเองระหว่าง [mainDigit, subDigit] และตัดเลขเบิ้ล (เช่น xx) ออก 100%
+    const poolForPairs = [mainDigit, subDigit];
+    
     const getFilteredPairsForTarget = (targetDigit) => {
-        const allDigits = [0,1,2,3,4,5,6,7,8,9];
-        allDigits.sort((a, b) => {
-            const weightA = (pairWeights[`${targetDigit}${a}`] || 0.1) * 4.0 + (scores[a] * 1.5);
-            const weightB = (pairWeights[`${targetDigit}${b}`] || 0.1) * 4.0 + (scores[b] * 1.5);
-            return weightB - weightA;
-        });
-        return allDigits.slice(0, 5).map(p => `${targetDigit}${p}`);
+        const candidates = [];
+        // วินไขว้ระหว่างเด่นและรอง และตัวเลขอื่นๆ ที่ไม่เบิ้ล
+        for (let d = 0; d <= 9; d++) {
+            if (d === targetDigit) continue; // ตัดเลขเบิ้ลออก 100%
+            candidates.push({
+                pair: `${targetDigit}${d}`,
+                score: (pairWeights[`${targetDigit}${d}`] || 0.1) * 4.0 + (scores[d] * 1.5)
+            });
+        }
+        candidates.sort((a, b) => b.score - a.score);
+        return candidates.slice(0, 5).map(item => item.pair);
     };
 
     return { 
@@ -531,10 +546,11 @@ function processData() {
         const row1Pairs = result.mainPairs;
         const row2Pairs = result.subPairs;
         const flag = getLottoIcon(lottoName);
+        const cleanDisplayName = cleanLottoDisplayName(lottoName);
 
         cardDataStore.push({
-            name: lottoName,
-            text: `📅 ${displayDate}\n${flag} ${lottoName}\n\n✨ เด่น ${dMain} | รอง ${dSub}\n───────\n${row1Pairs.join(' — ')}\n${row2Pairs.join(' — ')}\n\n✦ ${brandName} ✦`
+            name: cleanDisplayName,
+            text: `📅 ${displayDate}\n${flag} ${cleanDisplayName}\n\n✨ เด่น ${dMain} | รอง ${dSub}\n───────\n${row1Pairs.join(' — ')}\n${row2Pairs.join(' — ')}\n\n✦ ${brandName} ✦`
         });
 
         const wrapper = document.createElement('div');
@@ -546,7 +562,7 @@ function processData() {
                         <div class="flag-icon">${flag}</div>
                         <div>
                             <div class="date-text">${displayDate}</div>
-                            <h3 class="lotto-title">${lottoName}</h3>
+                            <h3 class="lotto-title">${cleanDisplayName}</h3>
                         </div>
                     </div>
                     <div class="brand-badge">✦ ${brandName} ✦</div>
@@ -582,7 +598,7 @@ function processData() {
             </div>
 
             <div class="card-actions">
-                <button class="btn-act btn-download" onclick="downloadCardImage(${index}, '${lottoName}')">🖼️ บันทึกภาพ HD</button>
+                <button class="btn-act btn-download" onclick="downloadCardImage(${index}, '${cleanDisplayName}')">🖼️ บันทึกภาพ HD</button>
                 <button class="btn-act btn-copy" onclick="copyCardText(${index})">📋 คัดลอกข้อความ</button>
             </div>
         `;
@@ -623,7 +639,7 @@ function renderAIDashboard(scores) {
 function downloadCardImage(index, name) {
     html2canvas(document.getElementById(`card_ui_${index}`), { scale: 3, backgroundColor: null, logging: false }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `การ์ดหวย_${name}.png`;
+        link.download = `การ์ด_${name}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     });
