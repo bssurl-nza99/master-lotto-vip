@@ -122,7 +122,7 @@
 
         .lotto-card-ui {
             width: 100%;
-            max-width: 480px; /* พอดีหน้าจอมือถือ */
+            max-width: 480px;
             background-color: #fffdf7;
             border-radius: 24px;
             padding: 22px;
@@ -183,7 +183,6 @@
         }
         .pairs-row { display: flex; justify-content: space-between; gap: 6px; }
         
-        /* สไตล์กล่องเลขเจาะ & ลำดับสีเน้น */
         .pair-box {
             flex: 1;
             background: #ffffff;
@@ -270,6 +269,27 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('customDate').value = `${today.getDate()} ${thaiMonths[today.getMonth()]} ${yearShort}`;
 });
 
+// ฟังก์ชันจัดฟอร์แมตเว้นวรรคระหว่าง "ชื่อหวย" กับ "ประเภท/รอบหวย"
+function formatLottoName(rawName) {
+    let name = rawName.trim().replace(/\s+/g, ' ');
+    const subtypes = [
+        'พัฒนา', 'สามัคคี', 'พิเศษ', 'ปกติ', 'VIP', 'Vip', 'vip', 
+        'เช้า', 'บ่าย', 'เที่ยง', 'เย็น', 'ทั้งวัน', 'สตาร์', 
+        'สาละวัน', 'เอ็กซ์ตร้า', 'HD', 'hd', 'TV', 'tv', '5D', '5d', 
+        'กาชาด', 'ประตูชัย'
+    ];
+
+    for (let st of subtypes) {
+        // ตรวจสอบว่ามีประเภทหวยต่อท้ายโดยที่ยังไม่ได้เว้นวรรคหรือไม่
+        const regex = new RegExp(`^(.*?)(?<!\\s)(${st})$`, 'i');
+        const match = name.match(regex);
+        if (match && match[1].trim()) {
+            return `${match[1].trim()} ${match[2].trim()}`;
+        }
+    }
+    return name;
+}
+
 function getLottoIcon(name) {
     if (name.includes("ลาว")) return "🇱🇦";
     if (name.includes("ฮานอย")) return "🇻🇳";
@@ -340,38 +360,35 @@ function processData() {
     const lottoNames = Object.keys(parsedData);
     if (lottoNames.length === 0) return alert('ไม่พบข้อมูลสถิติในรูปแบบที่ถูกต้อง');
 
-    // สถิติรวมสำหรับแสดง Chart
     const overallScores = Array(10).fill(0);
-
     const displayDate = document.getElementById('customDate').value.trim() || "12 ก.ย. 69";
     const brandName = document.getElementById('customBrand').value.trim() || "บ้านเงินกอง";
 
-    lottoNames.forEach((lottoName, index) => {
-        const history = parsedData[lottoName];
+    lottoNames.forEach((rawLottoName, index) => {
+        const history = parsedData[rawLottoName];
         if (history.length < 3) return;
+
+        // จัดฟอร์แมตชื่อหวยพร้อมเว้นวรรค
+        const lottoName = formatLottoName(rawLottoName);
 
         const sorted = calculateScores(history);
         sorted.forEach(item => overallScores[item.digit] += item.score);
 
-        const dMain = sorted[0].digit; // เด่น 1
-        const dSub = sorted[1].digit;  // รอง 2
+        const dMain = sorted[0].digit;
+        const dSub = sorted[1].digit;
 
-        // ตัวรอง 5 ลำดับถัดไป (สำหรับเจาะ)
         const subDigits = sorted.slice(2, 7).map(item => item.digit);
 
-        // เลขเจาะเรียงลำดับจากความแม่นยำคะแนนสูงสุด -> น้อย
-        const row1Pairs = subDigits.map(p => `${dMain}${p}`); // 5 คู่ของเด่น
-        const row2Pairs = subDigits.map(p => `${dSub}${p}`);  // 5 คู่ของรอง
+        const row1Pairs = subDigits.map(p => `${dMain}${p}`);
+        const row2Pairs = subDigits.map(p => `${dSub}${p}`);
 
         const flag = getLottoIcon(lottoName);
 
-        // เก็บข้อมูลสำหรับก๊อปปี้ข้อความ
         cardDataStore.push({
             name: lottoName,
             text: `📅 ${displayDate}\n${flag} ${lottoName}\n\n✨ เด่น ${dMain} | รอง ${dSub}\n───────\nเน้นทอง: ${row1Pairs[0]} | ${row2Pairs[0]}\nเน้นเงิน: ${row1Pairs[1]} | ${row2Pairs[1]}\nเน้นโรสโกลด์: ${row1Pairs[2]} | ${row2Pairs[2]}\n───────\n${row1Pairs.join(' — ')}\n${row2Pairs.join(' — ')}\n\n✦ ${brandName} ✦`
         });
 
-        // สร้างการ์ด UI
         const wrapper = document.createElement('div');
         wrapper.className = 'card-wrapper';
         wrapper.innerHTML = `
@@ -399,7 +416,6 @@ function processData() {
                 </div>
 
                 <div class="pairs-container-ui">
-                    <!-- แถวเด่น (ไฮไลท์เน้น 1, 2, 3 ตามสี) -->
                     <div class="pairs-row">
                         <div class="pair-box rank-gold">${row1Pairs[0]}</div>
                         <div class="pair-box rank-silver">${row1Pairs[1]}</div>
@@ -407,7 +423,6 @@ function processData() {
                         <div class="pair-box">${row1Pairs[3]}</div>
                         <div class="pair-box">${row1Pairs[4]}</div>
                     </div>
-                    <!-- แถวรอง (ไฮไลท์เน้น 1, 2, 3 ตามสี) -->
                     <div class="pairs-row">
                         <div class="pair-box rank-gold">${row2Pairs[0]}</div>
                         <div class="pair-box rank-silver">${row2Pairs[1]}</div>
@@ -426,7 +441,6 @@ function processData() {
         container.appendChild(wrapper);
     });
 
-    // แสดงแดชบอร์ด AI สรุปภาพรวม
     renderAIDashboard(lottoNames.length, overallScores);
 }
 
@@ -434,7 +448,6 @@ function renderAIDashboard(count, scores) {
     document.getElementById('aiDashboard').style.display = 'block';
     document.getElementById('analyzedCount').innerText = count;
     
-    // สุ่มค่าความเชื่อมั่นจำลองให้ดูล้ำสมัย
     const scoreVal = (92.5 + Math.random() * 5).toFixed(1);
     document.getElementById('confidenceScore').innerText = `${scoreVal}%`;
 
@@ -468,8 +481,6 @@ function renderAIDashboard(count, scores) {
 
 function downloadCardImage(index, name) {
     const cardElement = document.getElementById(`card_ui_${index}`);
-    
-    // ใช้ html2canvas Render ภาพระดับ HD คมชัดสัดส่วนเป๊ะ
     html2canvas(cardElement, {
         scale: 3, 
         backgroundColor: null,
