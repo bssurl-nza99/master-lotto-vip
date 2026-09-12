@@ -1,100 +1,295 @@
-import re
-import math
-from collections import defaultdict, Counter
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบวิเคราะห์สถิติหวย & Quality Gate</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Tohoma', 'Segoe UI', sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        h2 {
+            color: #1e3a8a;
+            margin-top: 0;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .btn-group {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-process { background-color: #27ae60; color: white; }
+        .btn-process:hover { background-color: #219150; }
+        .btn-clear-input { background-color: #e67e22; color: white; }
+        .btn-clear-input:hover { background-color: #d35400; }
+        .btn-clear-output { background-color: #e74c3c; color: white; }
+        .btn-clear-output:hover { background-color: #c0392b; }
+        .btn-clear-all { background-color: #7f8c8d; color: white; }
+        .btn-clear-all:hover { background-color: #636e72; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+        .status-pass { color: green; font-weight: bold; }
+        .status-watch { color: orange; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-def parse_lottery_raw_text(raw_text):
-    """
-    อ่านข้อความดิบ ตัดคำ และแยกแยะ ประเภทหวย, วันที่, เลขบน (3 ตัว), เลขล่าง (2 ตัว)
-    โดยแยกประเภทหวยออกจากกันโดยสิ้นเชิง ไม่ปะปนกัน
-    """
-    lines = [line.strip() for line in raw_text.strip().split('\n') if line.strip()]
-    structured_data = defaultdict(list)
+<div class="container">
+    <h2>📊 ระบบวิเคราะห์สถิติหวย & Quality Gate Engine</h2>
     
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        # ตรวจสอบแพทเทิร์น "ชื่อหวย | วันที่"
-        if '|' in line:
-            parts = line.split('|')
-            lottery_name = parts[0].strip()
-            draw_date = parts[1].strip()
-            
-            # อ่านบรรทัดถัดไปเป็น เลขบน และ เลขล่าง
-            top3 = lines[i+1] if (i+1 < len(lines)) else ""
-            bot2 = lines[i+2] if (i+2 < len(lines)) else ""
-            
-            # กรองเฉพาะบรรทัดที่ออกผลปกติ (ข้ามกรณี "งดออกผล")
-            if top3.isdigit() and bot2.isdigit():
-                structured_data[lottery_name].append({
-                    'date': draw_date,
-                    'top3': top3,
-                    'bot2': bot2,
-                    'all_digits': [int(d) for d in (top3 + bot2)] # รวมตัวเลข 0-9 ที่ปรากฏในงวดนั้น
-                })
-                i += 3
-            else:
-                i += 1
-        else:
-            i += 1
-            
-    return structured_data
-
-def calculate_ensemble_top2(draw_history):
-    """
-    ประมวลผลสถิติของหวยประเภทนั้นๆ (ใช้ 30 งวดล่าสุด)
-    คำนวณผ่าน 2 โมเดลหลัก:
-    1. Weighted Frequency (ให้น้ำหนักงวดล่าสุดมากกว่า)
-    2. Gap & Skip Interval (ดูจังหวะรอบการเว้นงวด)
-    """
-    scores = {d: 0.0 for d in range(10)}
-    total_draws = len(draw_history)
+    <label for="rawInput">วางข้อความสถิติหวย (Raw Text) ที่นี่:</label>
+    <textarea id="rawInput" placeholder="วางข้อความสถิติที่นี่..."></textarea>
     
-    if total_draws == 0:
-        return [0, 1]
+    <div class="btn-group">
+        <button class="btn-process" onclick="processData()">⚡ ประมวลผล</button>
+        <button class="btn-clear-input" onclick="clearInput()">🧹 ล้างช่องกรอก</button>
+        <button class="btn-clear-output" onclick="clearOutput()">🗑️ ล้างผลลัพธ์</button>
+        <button class="btn-clear-all" onclick="clearAll()">🔄 ล้างทั้งหมด</button>
+    </div>
 
-    # --- Model 1: Weighted Frequency Analysis (Exponential Decay) ---
-    decay_factor = 0.92
-    for idx, record in enumerate(draw_history):
-        weight = math.pow(decay_factor, idx) # งวดล่าสุด (idx=0) น้ำหนัก = 1.0
-        digit_counts = Counter(record['all_digits'])
-        for digit, count in digit_counts.items():
-            scores[digit] += count * weight * 1.5
+    <h3>📋 ตารางสรุปผลลัพธ์</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ประเภทหวย</th>
+                <th>เลขเด่นงวดถัดไป</th>
+                <th>แม่นยำอดีต-ปัจจุบัน</th>
+                <th>แม่นยำ 10 งวดล่าสุด</th>
+                <th>สถานะ Quality Gate</th>
+            </tr>
+        </thead>
+        <tbody id="resultTableBody">
+            <tr>
+                <td colspan="5" style="color:#888;">ยังไม่มีข้อมูล กรุณาวางข้อความแล้วกด "ประมวลผล"</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
-    # --- Model 2: Gap & Skip Analysis (ระยะเว้นงวด) ---
-    last_seen = {}
-    for idx, record in enumerate(draw_history):
-        for digit in record['all_digits']:
-            if digit not in last_seen:
-                last_seen[digit] = idx # บันทึกระยะห่างจากงวดล่าสุด
+<script>
+// --- LOGIC ENGINE ---
+function parseLotteryRawText(text) {
+    const lines = text.split('\n');
+    const dataset = {};
+    
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        if (line.includes('|')) {
+            const parts = line.split('|');
+            const lottoName = parts[0].trim();
+            const dateStr = parts[1] ? parts[1].trim() : '';
+            
+            const top3 = lines[i+1] ? lines[i+1].trim() : '';
+            const bot2 = lines[i+2] ? lines[i+2].trim() : '';
+            
+            if (/^\d{3}$/.test(top3) && /^\d{2}$/.test(bot2)) {
+                if (!dataset[lottoName]) dataset[lottoName] = [];
                 
-    for digit in range(10):
-        gap = last_seen.get(digit, total_draws)
-        # ให้คะแนนพิเศษกับเลขที่มีระยะเว้นงวดในจังหวะกำลังกลับมา (3-7 งวด)
-        if 3 <= gap <= 7:
-            scores[digit] += 2.5
-        elif gap == 0: # เลขเพิ่งออกงวดที่แล้ว (มีโอกาสไหลซ้ำ)
-            scores[digit] += 1.0
+                const digits = (top3 + bot2).split('').map(Number);
+                dataset[lottoName].push({ date: dateStr, digits: digits });
+            }
+            i += 3;
+        } else {
+            i++;
+        }
+    }
+    return dataset;
+}
 
-    # จัดอันดับตัวเลข 0-9 จากคะแนนรวม
-    sorted_digits = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    top_2 = [digit for digit, score in sorted_digits[:2]]
+function predictTopDigits(history, decay = 0.85, gapW = 1.5, freqW = 1.0) {
+    const scores = Array(10).fill(0.0);
     
-    return top_2, sorted_digits
+    // 1. Frequency & Decay
+    history.forEach((draw, idx) => {
+        const w = Math.pow(decay, idx);
+        draw.digits.forEach(d => {
+            scores[d] += w * freqW;
+        });
+    });
 
-# ==========================================
-# ส่วนประมวลผลตัวอย่างข้อมูลที่คุณส่งมา
-# ==========================================
+    // 2. Gap Calculation
+    const lastSeen = {};
+    history.forEach((draw, idx) => {
+        draw.digits.forEach(d => {
+            if (lastSeen[d] === undefined) lastSeen[d] = idx;
+        });
+    });
 
-raw_input_data = """[ใส่ข้อความสถิติหวยทั้งหมดที่นี่]"""
+    for (let d = 0; d < 10; d++) {
+        const gap = lastSeen[d] !== undefined ? lastSeen[d] : history.length;
+        if (gap >= 2 && gap <= 6) {
+            scores[d] += gapW;
+        }
+    }
 
-# 1. อ่านและแยกแยะประเภทหวย
-parsed_lottery_db = parse_lottery_raw_text(raw_input_data)
+    // Sort to find top 2
+    const sorted = scores.map((score, digit) => ({ digit, score }))
+                          .sort((a, b) => b.score - a.score);
+                          
+    return [sorted[0].digit, sorted[1].digit];
+}
 
-# 2. ประมวลผลคัดเลือกเลขเด่น Top 2 แยกตามประเภทหวย
-print("=== ผลการประมวลผลคัดเลือกเลขเด่น (Top 2) แยกตามประเภทหวย ===\n")
+function evaluateAndOptimize(dataset, minConfidence = 60.0) {
+    const summaryResults = [];
 
-for lotto_name, history in parsed_lottery_db.items():
-    top2_digits, full_scores = calculate_ensemble_top2(history)
-    print(f"📌 ประเภทหวย: {lotto_name} (จำนวนข้อมูลที่ประมวลผล: {len(history)} งวด)")
-    print(f"👉 เลขเด่น Top 2 คัดเลือกแล้ว: {top2_digits[0]} และ {top2_digits[1]}")
-    print(f"   (คะแนนจัดอันดับ 0-9: {[d for d, s in full_scores]})\n" + "-"*50)
+    for (const [lottoName, history] of Object.entries(dataset)) {
+        if (history.length < 5) continue;
+
+        let bestOverallAcc = 0.0;
+        let bestParams = [0.85, 1.5, 1.0];
+        const totalDraws = Math.max(1, history.length - 3);
+
+        // Grid search optimization
+        const decays = [0.80, 0.85, 0.90];
+        const gapWs = [0.5, 1.5, 2.5];
+        const freqWs = [1.0, 2.0];
+
+        decays.forEach(decay => {
+            gapWs.forEach(gapW => {
+                freqWs.forEach(freqW => {
+                    let hits = 0;
+                    for (let i = 0; i < totalDraws; i++) {
+                        const train = history.slice(i + 1);
+                        const actual = history[i].digits;
+                        const pred = predictTopDigits(train, decay, gapW, freqW);
+                        if (pred.some(d => actual.includes(d))) hits++;
+                    }
+                    const acc = (hits / totalDraws) * 100;
+                    if (acc > bestOverallAcc) {
+                        bestOverallAcc = acc;
+                        bestParams = [decay, gapW, freqW];
+                    }
+                });
+            });
+        });
+
+        // Recent 10 accuracy
+        const recentTests = Math.min(10, totalDraws);
+        let recentHits = 0;
+        for (let i = 0; i < recentTests; i++) {
+            const train = history.slice(i + 1);
+            const actual = history[i].digits;
+            const pred = predictTopDigits(train, ...bestParams);
+            if (pred.some(d => actual.includes(d))) recentHits++;
+        }
+        const recentAcc = recentTests > 0 ? (recentHits / recentTests) * 100 : 0.0;
+        const nextPred = predictTopDigits(history, ...bestParams);
+
+        const isPass = recentAcc >= minConfidence && bestOverallAcc >= minConfidence;
+
+        summaryResults.push({
+            name: lottoName,
+            prediction: `${nextPred[0]}, ${nextPred[1]}`,
+            overallAcc: `${bestOverallAcc.toFixed(1)}% (${totalDraws} งวด)`,
+            recentAcc: `${recentAcc.toFixed(1)}%`,
+            status: isPass ? "✅ PASS" : "⚠️ WATCHLIST",
+            isPass: isPass
+        });
+    }
+
+    return summaryResults;
+}
+
+// --- UI BUTTON ACTIONS ---
+function processData() {
+    const rawText = document.getElementById('rawInput').value.trim();
+    if (!rawText) {
+        alert('กรุณาวางข้อความสถิติหวยในช่องกรอกก่อนกดประมวลผล');
+        return;
+    }
+
+    const parsedData = parseLotteryRawText(rawText);
+    const results = evaluateAndOptimize(parsedData);
+    
+    const tbody = document.getElementById('resultTableBody');
+    tbody.innerHTML = '';
+
+    if (results.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:red;">ไม่พบรูปแบบข้อมูลที่ถูกต้อง หรือจำนวนงวดน้อยเกินไป (ต้องมี 5 งวดขึ้นไป)</td></tr>';
+        return;
+    }
+
+    results.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.name}</td>
+            <td><b>${row.prediction}</b></td>
+            <td>${row.overallAcc}</td>
+            <td>${row.recentAcc}</td>
+            <td class="${row.isPass ? 'status-pass' : 'status-watch'}">${row.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function clearInput() {
+    document.getElementById('rawInput').value = '';
+}
+
+function clearOutput() {
+    document.getElementById('resultTableBody').innerHTML = '<tr><td colspan="5" style="color:#888;">ยังไม่มีข้อมูล กรุณาวางข้อความแล้วกด "ประมวลผล"</td></tr>';
+}
+
+function clearAll() {
+    clearInput();
+    clearOutput();
+}
+</script>
+
+</body>
+</html>
