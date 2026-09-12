@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>White Luxury Lotto HUD - High Precision Edition</title>
+    <title>White Luxury Lotto HUD - Ultra Precision Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
@@ -175,7 +175,7 @@
         
         .pill-info { display: flex; flex-direction: column; }
         .pill-label { font-size: 9px; font-weight: 600; color: #78716c; }
-        .pill-pct { font-size: 11px; font-weight: 700; color: #aa771c; }
+        .pill-pct { font-size: 10px; font-weight: 700; color: #aa771c; }
 
         .pairs-container-ui {
             background: #faf8f5;
@@ -231,7 +231,7 @@
     <div class="panel">
         <h3 class="header-title">
             <span>✨ White Luxury Lotto HUD</span>
-            <span class="luxury-badge">High-Precision 30-Draw Mode</span>
+            <span class="luxury-badge">Ultra-Precision 30-Draw Engine</span>
         </h3>
         
         <div class="setting-grid">
@@ -242,7 +242,7 @@
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติย้อนหลัง (30 งวด หรือเท่าที่มี) ที่นี่..."></textarea>
         
         <div class="btn-group">
-            <button class="btn-primary" onclick="processData()">🚀 ประมวลผลขั้นสูง (30 งวด)</button>
+            <button class="btn-primary" onclick="processData()">🚀 ประมวลผลขั้นสูง (Ultra-Precision)</button>
             <button class="btn-secondary" onclick="clearInput()">🗑️ ล้างช่อง</button>
             <button class="btn-danger" onclick="clearAllMemory()">🔄 รีเซ็ตระบบ</button>
         </div>
@@ -390,8 +390,6 @@ function parseLotteryRawText(text) {
                 if (standardizedName.includes("หุ้นไทย")) {
                     if (!dataset["หุ้นไทยชุดทั้งวัน"]) dataset["หุ้นไทยชุดทั้งวัน"] = [];
                     dataset["หุ้นไทยชุดทั้งวัน"].push({ date: dateStr, digits: (top3 + bot2).split('').map(Number), top3: top3, bot2: bot2 });
-                    if (!dataset["หุ้นไทยบนตรงๆ"]) dataset["หุ้นไทยบนตรงๆ"] = [];
-                    dataset["หุ้นไทยบนตรงๆ"].push({ date: dateStr, digits: (top3 + bot2).split('').map(Number), top3: top3, bot2: bot2 });
                 }
             }
             i += 3;
@@ -402,7 +400,7 @@ function parseLotteryRawText(text) {
 
 function getGlobalMemory() {
     try {
-        const mem = localStorage.getItem('neural_global_memory_precision_v3');
+        const mem = localStorage.getItem('ultra_precision_memory_v4');
         return mem ? JSON.parse(mem) : { correlator: Array(10).fill(1), pairMemory: {}, count: 0 };
     } catch(e) {
         return { correlator: Array(10).fill(1), pairMemory: {}, count: 0 };
@@ -417,7 +415,7 @@ function saveGlobalMemory(correlator, pairMemory) {
         Object.keys(current.pairMemory).forEach(k => { mergedPairs[k] = current.pairMemory[k] * 0.90; });
         Object.keys(pairMemory).forEach(key => { mergedPairs[key] = (mergedPairs[key] || 0) + pairMemory[key]; });
 
-        localStorage.setItem('neural_global_memory_precision_v3', JSON.stringify({
+        localStorage.setItem('ultra_precision_memory_v4', JSON.stringify({
             correlator: mergedCorrelator,
             pairMemory: mergedPairs,
             count: current.count + 1
@@ -426,34 +424,62 @@ function saveGlobalMemory(correlator, pairMemory) {
 }
 
 function clearAllMemory() {
-    localStorage.removeItem('neural_global_memory_precision_v3');
+    localStorage.removeItem('ultra_precision_memory_v4');
     alert('รีเซ็ตหน่วยความจำเรียบร้อย!');
     document.getElementById('cardsList').innerHTML = '';
 }
 
-function calculateHighPrecisionPrediction(historySub, localCorrelator) {
+// ฟังก์ชันแปลคะแนนเป็นระดับกระแสพลังงานสถิติ (แทนเปอร์เซ็นต์ลอยๆ)
+function getMomentumLabel(scoreRank) {
+    if (scoreRank === 0) return "🔥 กระแสสูง";
+    if (scoreRank === 1) return "⚡ กำลังแรง";
+    if (scoreRank === 2) return "❄️ ค้างเต้า";
+    return "💡 เฝ้าจับตา";
+}
+
+function calculateUltraPrecisionPrediction(historySub, localCorrelator) {
     const scores = Array(10).fill(0);
     const positionalTransition = Array(10).fill(0).map(() => Array(10).fill(0.01));
-    const skipFrequencyMap = Array(10).fill(0);
+    const skipTracker = Array(10).fill(0); // ติดตามงวดที่หายไป (Mean Reversion)
+    const lastSeenIndex = Array(10).fill(99);
     const memory = getGlobalMemory();
     
-    // วิเคราะห์ลึกสูงสุด 30 งวด (ถ้าข้อมูลมีถึง)
     const limitDraws = Math.min(historySub.length, 30);
-    for (let k = 0; k < limitDraws - 1; k++) {
-        const curr = historySub[k];
-        const next = historySub[k+1];
-        // ใช้น้ำหนักถ่วงแบบ Exponential Decay (งวดล่าสุดมีน้ำหนักมากที่สุด และค่อยๆ ลดหลั่นลงไปลึกถึง 30 งวด)
+
+    // วิเคราะห์สถิติย้อนหลัง พร้อมระบบ Gap & Mean Reversion
+    for (let k = 0; k < limitDraws; k++) {
+        const draw = historySub[k];
         const weightStep = Math.pow(0.92, k);
 
-        curr.digits.forEach(d => { skipFrequencyMap[d] += (1.5 * weightStep); });
+        draw.digits.forEach(d => {
+            if (lastSeenIndex[d] === 99) lastSeenIndex[d] = k;
+        });
 
-        if (curr.bot2 && next.bot2) {
-            const f1 = parseInt(curr.bot2[0]);
-            const f2 = parseInt(curr.bot2[1]);
-            const t1 = parseInt(next.bot2[0]);
-            const t2 = parseInt(next.bot2[1]);
-            positionalTransition[f2][t1] += (5.0 * weightStep);
-            positionalTransition[f1][t2] += (3.5 * weightStep);
+        if (k < limitDraws - 1) {
+            const curr = historySub[k];
+            const next = historySub[k+1];
+            
+            // แยกมิติ: บน (top3) กับ ล่าง (bot2)
+            if (curr.top3 && next.top3) {
+                const topPrev = parseInt(curr.top3[0]);
+                const topNext = parseInt(next.top3[0]);
+                positionalTransition[topPrev][topNext] += (4.0 * weightStep);
+            }
+            if (curr.bot2 && next.bot2) {
+                const f1 = parseInt(curr.bot2[0]), f2 = parseInt(curr.bot2[1]);
+                const t1 = parseInt(next.bot2[0]), t2 = parseInt(next.bot2[1]);
+                positionalTransition[f2][t1] += (6.0 * weightStep);
+                positionalTransition[f1][t2] += (4.5 * weightStep);
+            }
+        }
+    }
+
+    // คำนวณเลขค้างเต้า (Overdue / Mean Reversion)
+    for (let d = 0; d <= 9; d++) {
+        const gap = lastSeenIndex[d];
+        if (gap > 3) {
+            // ยิ่งหายไปนาน ยิ่งบวกคะแนนดึงกลับสูง (Mean Reversion)
+            skipTracker[d] += (gap * 2.5);
         }
     }
 
@@ -461,20 +487,34 @@ function calculateHighPrecisionPrediction(historySub, localCorrelator) {
     const lastDigit = latestB2.length === 2 ? parseInt(latestB2[1]) : 5;
     const prevDigit = latestB2.length === 2 ? parseInt(latestB2[0]) : 5;
 
+    // คำนวณ Anti-Pattern / เลขดับเชิงสถิติเพื่อคัดกรองทิ้ง
+    const deadDigits = new Set();
+    const rawScoresForDead = Array(10).fill(0);
     for (let d = 0; d <= 9; d++) {
-        const transitionScore = (positionalTransition[lastDigit][d] * 6.0) + (positionalTransition[prevDigit][d] * 3.0);
-        const frequencyScore = skipFrequencyMap[d] * 2.0;
+        rawScoresForDead[d] = positionalTransition[lastDigit][d] + skipTracker[d];
+    }
+    const sortedForDead = rawScoresForDead.map((s, d) => ({d, s})).sort((a,b)=>a.s - b.s);
+    // เลขที่คะแนนต่ำสุด 2 ตัวท้ายถือเป็นเลขดับในงวดนี้
+    deadDigits.add(sortedForDead[0].d);
+    deadDigits.add(sortedForDead[1].d);
+
+    for (let d = 0; d <= 9; d++) {
+        if (deadDigits.has(d)) {
+            scores[d] = -999; // ตัดทิ้งจากเลขเด่นหลัก
+            continue;
+        }
+        const transitionScore = (positionalTransition[lastDigit][d] * 7.0) + (positionalTransition[prevDigit][d] * 3.5);
+        const overdueBonus = skipTracker[d] * 3.0; // ดึงเลขค้างเต้ากลับมาสู้
         const globalBoost = ((memory.correlator[d] || 1) * 0.5) + ((localCorrelator[d] || 1) * 0.5);
-        scores[d] += (transitionScore + frequencyScore + globalBoost);
+        scores[d] += (transitionScore + overdueBonus + globalBoost);
     }
 
     const sortedDigits = scores.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
     const mainDigit = sortedDigits[0].digit;
-    const subDigit = sortedDigits.find(x => x.digit !== mainDigit).digit;
+    const subDigit = sortedDigits[1].digit;
 
-    // เปอร์เซ็นต์ความเชื่อมั่นแม่นยำ สมจริง (เด่น ~86-91%, รอง ~74-80%)
-    const mainDigitPct = (86.4 + (Math.abs(sortedDigits[0].score - sortedDigits[1].score) % 4.5)).toFixed(1) + "%";
-    const subDigitPct = (75.2 + (Math.abs(sortedDigits[1].score - sortedDigits[2].score) % 4.2)).toFixed(1) + "%";
+    const mainMomentum = getMomentumLabel(0);
+    const subMomentum = getMomentumLabel(1);
 
     const pairWeights = { ...memory.pairMemory };
     for(let d=0; d<=9; d++) { for(let p=0; p<=9; p++) { if(!pairWeights[`${d}${p}`]) pairWeights[`${d}${p}`] = 0.1; } }
@@ -485,35 +525,32 @@ function calculateHighPrecisionPrediction(historySub, localCorrelator) {
         const b2 = draw.bot2;
         if (b2 && b2.length === 2) {
             const n1 = parseInt(b2[0]), n2 = parseInt(b2[1]);
-            pairWeights[`${n1}${n2}`] = (pairWeights[`${n1}${n2}`] || 0.1) + (10.0 * drawWeight);
+            pairWeights[`${n1}${n2}`] = (pairWeights[`${n1}${n2}`] || 0.1) + (12.0 * drawWeight);
         }
     }
 
     const getFilteredPairsForTarget = (targetDigit) => {
         const candidates = [];
         for (let d = 0; d <= 9; d++) {
-            if (d === targetDigit) continue; // ตัดเลขเบิ้ลออกเพื่อความคมชัด
-            const rawW = (pairWeights[`${targetDigit}${d}`] || 0.1) * 4.5 + (scores[d] * 1.8);
+            // อนุญาตให้เลขเบิ้ลเข้าได้ ถ้าน้ำหนักสะสมถึงเกณฑ์ ไม่บล็อก 100%
+            const isDouble = (targetDigit === d);
+            const rawW = (pairWeights[`${targetDigit}${d}`] || 0.1) * 5.0 + (scores[d] * 2.0) + (isDouble ? 15.0 : 0);
             candidates.push({ pair: `${targetDigit}${d}`, score: rawW });
         }
         candidates.sort((a, b) => b.score - a.score);
         const top5 = candidates.slice(0, 5);
 
-        // เปอร์เซ็นต์เลขเจาะไล่ระดับความน่าเชื่อถือสมจริง (เริ่มต้น ~83% ลงมาถึง ~66%)
-        return top5.map((item, idx) => {
-            const basePct = 83.5 - (idx * 4.0);
-            return {
-                pair: item.pair,
-                pct: Math.max(65.0, basePct).toFixed(1) + "%"
-            };
-        });
+        return top5.map((item, idx) => ({
+            pair: item.pair,
+            momentum: getMomentumLabel(idx)
+        }));
     };
 
     return { 
         mainDigit, 
         subDigit, 
-        mainDigitPct,
-        subDigitPct,
+        mainMomentum,
+        subMomentum,
         mainPairs: getFilteredPairsForTarget(mainDigit), 
         subPairs: getFilteredPairsForTarget(subDigit), 
         localPairWeights: pairWeights 
@@ -545,21 +582,21 @@ function processData() {
         const history = parsedData[lottoName];
         if (history.length < 3) return;
 
-        const result = calculateHighPrecisionPrediction(history, localCorrelator);
+        const result = calculateUltraPrecisionPrediction(history, localCorrelator);
         Object.assign(batchPairMemory, result.localPairWeights);
 
         const dMain = result.mainDigit;
         const dSub = result.subDigit;
-        const mainPct = result.mainDigitPct;
-        const subPct = result.subDigitPct;
+        const mainMom = result.mainMomentum;
+        const subMom = result.subMomentum;
         const row1Pairs = result.mainPairs;
         const row2Pairs = result.subPairs;
         const flag = getLottoIcon(lottoName);
         const cleanDisplayName = cleanLottoDisplayName(lottoName);
 
-        const textOutput = `📅 ${displayDate}\n${flag} ${cleanDisplayName}\n\n✨ เด่น ${dMain} (${mainPct}) | รอง ${dSub} (${subPct})\n───────\n` +
-            `เด่นหลัก: ` + row1Pairs.map(p=>`${p.pair}(${p.pct})`).join(', ') + `\n` +
-            `รองหลัก: ` + row2Pairs.map(p=>`${p.pair}(${p.pct})`).join(', ') + `\n\n✦ ${brandName} ✦`;
+        const textOutput = `📅 ${displayDate}\n${flag} ${cleanDisplayName}\n\n✨ เด่น ${dMain} (${mainMom}) | รอง ${dSub} (${subMom})\n───────\n` +
+            `เด่นหลัก: ` + row1Pairs.map(p=>`${p.pair}(${p.momentum})`).join(', ') + `\n` +
+            `รองหลัก: ` + row2Pairs.map(p=>`${p.pair}(${p.momentum})`).join(', ') + `\n\n✦ ${brandName} ✦`;
 
         cardDataStore.push({ name: cleanDisplayName, text: textOutput });
 
@@ -583,32 +620,32 @@ function processData() {
                         <div class="circle-num circle-gold">${dMain}</div>
                         <div class="pill-info">
                             <span class="pill-label">เด่นหลัก</span>
-                            <span class="pill-pct">${mainPct}</span>
+                            <span class="pill-pct">${mainMom}</span>
                         </div>
                     </div>
                     <div class="digit-pill">
                         <div class="circle-num circle-silver">${dSub}</div>
                         <div class="pill-info">
                             <span class="pill-label">รองหลัก</span>
-                            <span class="pill-pct">${subPct}</span>
+                            <span class="pill-pct">${subMom}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="pairs-container-ui">
                     <div class="pairs-row">
-                        <div class="pair-box rank-gold"><span class="pair-num">${row1Pairs[0].pair}</span><span class="pair-pct">${row1Pairs[0].pct}</span></div>
-                        <div class="pair-box rank-silver"><span class="pair-num">${row1Pairs[1].pair}</span><span class="pair-pct">${row1Pairs[1].pct}</span></div>
-                        <div class="pair-box rank-rosegold"><span class="pair-num">${row1Pairs[2].pair}</span><span class="pair-pct">${row1Pairs[2].pct}</span></div>
-                        <div class="pair-box"><span class="pair-num">${row1Pairs[3].pair}</span><span class="pair-pct">${row1Pairs[3].pct}</span></div>
-                        <div class="pair-box"><span class="pair-num">${row1Pairs[4].pair}</span><span class="pair-pct">${row1Pairs[4].pct}</span></div>
+                        <div class="pair-box rank-gold"><span class="pair-num">${row1Pairs[0].pair}</span><span class="pair-pct">${row1Pairs[0].momentum}</span></div>
+                        <div class="pair-box rank-silver"><span class="pair-num">${row1Pairs[1].pair}</span><span class="pair-pct">${row1Pairs[1].momentum}</span></div>
+                        <div class="pair-box rank-rosegold"><span class="pair-num">${row1Pairs[2].pair}</span><span class="pair-pct">${row1Pairs[2].momentum}</span></div>
+                        <div class="pair-box"><span class="pair-num">${row1Pairs[3].pair}</span><span class="pair-pct">${row1Pairs[3].momentum}</span></div>
+                        <div class="pair-box"><span class="pair-num">${row1Pairs[4].pair}</span><span class="pair-pct">${row1Pairs[4].momentum}</span></div>
                     </div>
                     <div class="pairs-row">
-                        <div class="pair-box rank-gold"><span class="pair-num">${row2Pairs[0].pair}</span><span class="pair-pct">${row2Pairs[0].pct}</span></div>
-                        <div class="pair-box rank-silver"><span class="pair-num">${row2Pairs[1].pair}</span><span class="pair-pct">${row2Pairs[1].pct}</span></div>
-                        <div class="pair-box rank-rosegold"><span class="pair-num">${row2Pairs[2].pair}</span><span class="pair-pct">${row2Pairs[2].pct}</span></div>
-                        <div class="pair-box"><span class="pair-num">${row2Pairs[3].pair}</span><span class="pair-pct">${row2Pairs[3].pct}</span></div>
-                        <div class="pair-box"><span class="pair-num">${row2Pairs[4].pair}</span><span class="pair-pct">${row2Pairs[4].pct}</span></div>
+                        <div class="pair-box rank-gold"><span class="pair-num">${row2Pairs[0].pair}</span><span class="pair-pct">${row2Pairs[0].momentum}</span></div>
+                        <div class="pair-box rank-silver"><span class="pair-num">${row2Pairs[1].pair}</span><span class="pair-pct">${row2Pairs[1].momentum}</span></div>
+                        <div class="pair-box rank-rosegold"><span class="pair-num">${row2Pairs[2].pair}</span><span class="pair-pct">${row2Pairs[2].momentum}</span></div>
+                        <div class="pair-box"><span class="pair-num">${row2Pairs[3].pair}</span><span class="pair-pct">${row2Pairs[3].momentum}</span></div>
+                        <div class="pair-box"><span class="pair-num">${row2Pairs[4].pair}</span><span class="pair-pct">${row2Pairs[4].momentum}</span></div>
                     </div>
                 </div>
             </div>
