@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดฟอร์แมตการ์ดหวย & วิเคราะห์เลขเด่น</title>
+    <title>ระบบวิเคราะห์สถิติหวย & จัดการ์ดเลขเด่น 2 ตัว</title>
     <style>
         * { box-sizing: border-box; font-family: 'Tohoma', 'Segoe UI', Thonburi, sans-serif; }
         body { background-color: #f0f2f5; margin: 0; padding: 20px; color: #1c1e21; }
@@ -34,12 +34,12 @@
 <body>
 
 <div class="container">
-    <h2>📊 ระบบจัดฟอร์แมตการ์ดหวยอัตโนมัติ</h2>
+    <h2>📊 ระบบวิเคราะห์สถิติ & จัดการ์ดเลขเด่น 2 ตัว</h2>
     
     <div class="setting-row">
         <div>
             <label for="customDate">📅 วันที่แสดงในการ์ด:</label>
-            <input type="text" id="customDate" placeholder="เช่น 9 ส.ค. 69">
+            <input type="text" id="customDate">
         </div>
         <div>
             <label for="customId">📮 ID ท้ายการ์ด:</label>
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('customDate').value = `${today.getDate()} ${thaiMonths[today.getMonth()]} ${yearShort}`;
 });
 
-// กำหนดสัญลักษณ์ไอคอนธงชาติอัตโนมัติตามชื่อหวย
+// ไอคอนธงชาติประจำประเภทหวย
 function getLottoIcon(name) {
     if (name.includes("ลาว")) return "🇱🇦";
     if (name.includes("ฮานอย")) return "🇻🇳";
@@ -93,7 +93,7 @@ function getLottoIcon(name) {
     return "🎲";
 }
 
-// ระบบวิเคราะห์คำนวณสถิติ
+// 1. PARSE RAW TEXT
 function parseLotteryRawText(text) {
     const lines = text.split('\n');
     const dataset = {};
@@ -116,15 +116,18 @@ function parseLotteryRawText(text) {
     return dataset;
 }
 
-function calculateScores(history) {
+// 2. ALGORITHM (หาเลขเด่น 2 ตัว สูตรแม่นยำเดิม)
+function calculateTop2Digits(history) {
     const scores = Array(10).fill(0.0);
     const decay = 0.85;
     
+    // Decay Weighting
     history.forEach((draw, idx) => {
         const w = Math.pow(decay, idx);
         draw.digits.forEach(d => { scores[d] += w; });
     });
 
+    // Gap Weighting
     const lastSeen = {};
     history.forEach((draw, idx) => {
         draw.digits.forEach(d => { if (lastSeen[d] === undefined) lastSeen[d] = idx; });
@@ -135,53 +138,41 @@ function calculateScores(history) {
         if (gap >= 2 && gap <= 6) scores[d] += 1.5;
     }
 
-    return scores.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
+    const sorted = scores.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
+    return {
+        topDigits: [sorted[0].digit, sorted[1].digit],
+        others: sorted.slice(2).map(item => item.digit)
+    };
 }
 
-// สร้างการ์ดข้อความตามฟอร์แมตเป๊ะๆ
+// 3. BUILD CARD TEXT
 function buildCardText(lottoName, history) {
-    const sorted = calculateScores(history);
-    const topDigit = sorted[0].digit; // เลขเด่นอันดับ 1 (เช่น 4)
-    
-    // ดึงเลขตัวรองที่มีคะแนนสูงสุดมาสร้างเลขเจาะ 6 ตัว (ไม่ให้เบิ้ล และไม่วินกับตัวมันเอง)
-    const candidates = sorted.filter(item => item.digit !== topDigit).slice(0, 6).map(item => item.digit);
-    
-    // สร้างเลขเจาะ 2 ตัว 6 คู่ และจัดเรียงเป็นคู่ตัวเลขจากน้อยไปมาก
-    let pairs = candidates.map(d => {
-        let pairNum = [topDigit, d].sort((a, b) => a - b).join('');
-        return pairNum;
-    });
+    const { topDigits, others } = calculateTop2Digits(history);
+    const d1 = topDigits[0]; // เด่นตัวที่ 1 (แถวบน)
+    const d2 = topDigits[1]; // เด่นตัวที่ 2 (แถวล่าง)
 
-    // กรองคู่ซ้ำ และเรียงจากน้อยไปหามากตามเงื่อนไข
-    pairs = Array.from(new Set(pairs)).sort((a, b) => parseInt(a) - parseInt(b));
-    
-    // กรณีคู่น้อยกว่า 6 คู่ให้เติมจากตัวรองถัดไป
-    let extraIdx = 6;
-    while (pairs.length < 6 && extraIdx < sorted.length) {
-        let d = sorted[extraIdx].digit;
-        if (d !== topDigit) {
-            let pairNum = [topDigit, d].sort((a, b) => a - b).join('');
-            if (!pairs.includes(pairNum)) pairs.push(pairNum);
-        }
-        extraIdx++;
-    }
-    pairs.sort((a, b) => parseInt(a) - parseInt(b));
+    // คัดเฉพาะตัวรองที่ไม่ซ้ำกับ d1 และ d2
+    const subCandidates = others.filter(x => x !== d1 && x !== d2);
+
+    // ดึงตัวจับคู่แถวละ 3 ตัว
+    const row1Partners = subCandidates.slice(0, 3).sort((a, b) => a - b);
+    const row2Partners = subCandidates.slice(3, 6).sort((a, b) => a - b);
+
+    // สร้างเลขเจาะโดยเอาเลขเด่นไว้ข้างหน้า (หลักสิบ)
+    const row1Pairs = row1Partners.map(p => `${d1}${p}`);
+    const row2Pairs = row2Partners.map(p => `${d2}${p}`);
 
     // สร้างเลข 3 ตัว 3 ชุด
-    const c = candidates;
-    let triples = [
-        [c[0], topDigit, c[1]].sort((a,b)=>a-b).join(''),
-        [c[2], topDigit, c[3]].sort((a,b)=>a-b).join(''),
-        [topDigit, c[4], c[5]].sort((a,b)=>a-b).join('')
-    ].sort((a, b) => parseInt(a) - parseInt(b));
+    const t1 = [d1, row1Partners[0], row1Partners[1]].sort((a,b)=>a-b).join('');
+    const t2 = [d1, d2, row1Partners[2] !== undefined ? row1Partners[2] : row2Partners[0]].sort((a,b)=>a-b).join('');
+    const t3 = [d2, row2Partners[1] !== undefined ? row2Partners[1] : 5, row2Partners[2] !== undefined ? row2Partners[2] : 7].sort((a,b)=>a-b).join('');
 
-    const displayDate = document.getElementById('customDate').value.trim() || "9 ส.ค. 69";
+    const displayDate = document.getElementById('customDate').value.trim() || "12 ก.ย. 69";
     const customId = document.getElementById('customId').value.trim() || "cpu80";
     const customAuthor = document.getElementById('customAuthor').value.trim() || "อ.อาร์ม   ทรัพย์ทวี";
     const flag = getLottoIcon(lottoName);
 
-    // รวมข้อความเป๊ะตามแพทเทิร์น
-    return `📅 ${displayDate}\n\n${flag} ${lottoName}\n\n✨ ${topDigit}\n───────\n${pairs[0]} — ${pairs[1]} — ${pairs[2]}\n${pairs[3]} — ${pairs[4]} — ${pairs[5]}\n────────\n${triples[0]} — ${triples[1]} — ${triples[2]}\n\n📮 ID : ${customId}\n\n🪷   ${customAuthor}   🪷`;
+    return `📅 ${displayDate}\n\n${flag} ${lottoName}\n\n✨ ${d1} — ${d2}\n───────\n${row1Pairs[0]} — ${row1Pairs[1]} — ${row1Pairs[2]}\n${row2Pairs[0]} — ${row2Pairs[1]} — ${row2Pairs[2]}\n────────\n${t1} — ${t2} — ${t3}\n\n📮 ID : ${customId}\n\n🪷   ${customAuthor}   🪷`;
 }
 
 let generatedCardTexts = [];
