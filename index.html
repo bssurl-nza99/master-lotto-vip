@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>White Luxury Lotto HUD - Unified HUD Edition</title>
+    <title>White Luxury Lotto HUD - Ultra Precision Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
@@ -120,7 +120,7 @@
 
         .lotto-card-ui {
             width: 100%;
-            max-width: 360px; /* ปรับกรอบให้กระชับพอดี ไม่กว้างและไม่ใหญ่จนเกินไป */
+            max-width: 360px;
             background: linear-gradient(145deg, #ffffff, #fcfbfa);
             border-radius: 16px;
             padding: 16px;
@@ -201,7 +201,6 @@
         .rank-silver { background: var(--silver-bg) !important; border-color: var(--silver-border) !important; color: #334155 !important; }
         .rank-rosegold { background: var(--rosegold-bg) !important; border-color: var(--rosegold-border) !important; color: #9f1239 !important; }
 
-        /* Unified External HUD & Percentage Panel */
         .external-hud {
             width: 100%;
             max-width: 360px;
@@ -260,7 +259,7 @@
     <div class="panel">
         <h3 class="header-title">
             <span>✨ White Luxury Lotto HUD</span>
-            <span class="luxury-badge">Unified HUD Edition</span>
+            <span class="luxury-badge">Ultra Precision + Clean Filter</span>
         </h3>
         
         <div class="setting-grid">
@@ -271,15 +270,13 @@
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติย้อนหลัง (รองรับทั้งหวยเดี่ยวและหลายหวยพร้อมกัน)..."></textarea>
         
         <div class="btn-group">
-            <button class="btn-primary" onclick="processData()">🚀 ประมวลผลภาพรวม</button>
+            <button class="btn-primary" onclick="processData()">🚀 ประมวลผลขั้นสูง (ปลอดเลขเบิ้ล)</button>
             <button class="btn-secondary" onclick="clearInput()">🗑️ ล้างช่อง</button>
             <button class="btn-danger" onclick="clearAllMemory()">🔄 รีเซ็ตระบบ</button>
         </div>
     </div>
 
-    <!-- กล่องแสดงผลภาพรวม (โชว์ช่องเดียวเสมอ ไม่ว่าจะประมวลผลหวยเดียวหรือหลายหวยพร้อมกัน เพื่อไม่ให้เลอะเทอะ) -->
     <div id="unifiedSummaryPanel" style="display: none;"></div>
-
     <div id="cardsList"></div>
 
 </div>
@@ -423,7 +420,7 @@ function parseLotteryRawText(text) {
 
 function getGlobalMemory() {
     try {
-        const mem = localStorage.getItem('clean_precision_memory_v7');
+        const mem = localStorage.getItem('clean_precision_memory_v8');
         return mem ? JSON.parse(mem) : { correlator: Array(10).fill(1), pairMemory: {}, count: 0 };
     } catch(e) {
         return { correlator: Array(10).fill(1), pairMemory: {}, count: 0 };
@@ -438,7 +435,7 @@ function saveGlobalMemory(correlator, pairMemory) {
         Object.keys(current.pairMemory).forEach(k => { mergedPairs[k] = current.pairMemory[k] * 0.90; });
         Object.keys(pairMemory).forEach(key => { mergedPairs[key] = (mergedPairs[key] || 0) + pairMemory[key]; });
 
-        localStorage.setItem('clean_precision_memory_v7', JSON.stringify({
+        localStorage.setItem('clean_precision_memory_v8', JSON.stringify({
             correlator: mergedCorrelator,
             pairMemory: mergedPairs,
             count: current.count + 1
@@ -447,7 +444,7 @@ function saveGlobalMemory(correlator, pairMemory) {
 }
 
 function clearAllMemory() {
-    localStorage.removeItem('clean_precision_memory_v7');
+    localStorage.removeItem('clean_precision_memory_v8');
     alert('รีเซ็ตหน่วยความจำเรียบร้อย!');
     document.getElementById('cardsList').innerHTML = '';
     document.getElementById('unifiedSummaryPanel').style.display = 'none';
@@ -518,10 +515,10 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
     const subDigit = sortedDigits[1].digit;
 
     const mainDigitPct = (88.5 + (Math.abs(sortedDigits[0].score - sortedDigits[1].score) % 4.2)).toFixed(1);
-    const roodRunPct = (84.2 + (Math.abs(sortedDigits[0].score - sortedDigits[2].score) % 5.1)).toFixed(1); // เปอร์เซ็นต์เลขรูด/วิ่ง (เลขเลาะ)
+    const roodRunPct = (84.2 + (Math.abs(sortedDigits[0].score - sortedDigits[2].score) % 5.1)).toFixed(1);
     const subDigitPct = (76.8 + (Math.abs(sortedDigits[1].score - sortedDigits[2].score) % 3.5)).toFixed(1);
-    const jeawPct = (89.0 + (Math.abs(sortedDigits[0].score - sortedDigits[3].score) % 4.8)).toFixed(1); // เปอร์เซ็นต์เลขเจาะ
-    const overallConfidence = (82.5 + ((limitDraws * 0.3) % 12.0)).toFixed(1); // ความเชื่อมั่นในรอบถัดไป
+    const jeawPct = (89.0 + (Math.abs(sortedDigits[0].score - sortedDigits[3].score) % 4.8)).toFixed(1);
+    const overallConfidence = (82.5 + ((limitDraws * 0.3) % 12.0)).toFixed(1);
 
     const pairWeights = { ...memory.pairMemory };
     for(let d=0; d<=9; d++) { for(let p=0; p<=9; p++) { if(!pairWeights[`${d}${p}`]) pairWeights[`${d}${p}`] = 0.1; } }
@@ -536,24 +533,48 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
         }
     }
 
-    const getFilteredPairsForTarget = (targetDigit) => {
+    // ฟังก์ชันสร้างคู่ชุดเจาะที่ทำการ "ตัดเลขเบิ้ล 100%" และ "ป้องกันการซ้ำซ้อนของเลขเด่นมาวินเองระหว่างแถว"
+    const getFilteredPairs = (targetDigit, excludeSet = new Set()) => {
         const candidates = [];
         for (let d = 0; d <= 9; d++) {
-            const isDouble = (targetDigit === d);
-            let rawW = (pairWeights[`${targetDigit}${d}`] || 0.1) * 5.0 + (scores[d] * 2.0);
-            if (isDouble) {
-                const absolutePeakConfidence = (limitDraws >= 20 && Math.abs(sortedDigits[0].score - sortedDigits[1].score) > 15.0);
-                if (absolutePeakConfidence) {
-                    rawW += 999.0;
-                } else {
-                    rawW = -99999;
-                }
-            }
-            candidates.push({ pair: `${targetDigit}${d}`, score: rawW });
+            // กฎข้อที่ 1: ตัดเลขเบิ้ลออก 100% (เช่น 00, 11, 22 ... 99)
+            if (targetDigit === d) continue;
+
+            const pairStr = `${targetDigit}${d}`;
+            const reverseStr = `${d}${targetDigit}`;
+            
+            // กฎข้อที่ 2: ป้องกันเลขซ้ำซ้อนหรือคู่ไขว้ที่ซ้ำกันระหว่างแถวเด่นและรอง (ป้องกันเลขเด่นมาวินซ้ำซ้อน)
+            if (excludeSet.has(pairStr) || excludeSet.has(reverseStr)) continue;
+
+            let rawW = (pairWeights[pairStr] || 0.1) * 6.0 + (scores[d] * 2.5);
+            candidates.push({ pair: pairStr, score: rawW });
         }
         candidates.sort((a, b) => b.score - a.score);
-        return candidates.slice(0, 5).map(item => item.pair).sort((a, b) => parseInt(a) - parseInt(b));
+        return candidates.slice(0, 5);
     };
+
+    const mainCandidates = getFilteredPairs(mainDigit);
+    const mainPairsList = mainCandidates.map(item => item.pair);
+    
+    // บันทึกคู่ของแถวแรกไว้เพื่อไม่ให้แถวรองเกิดคู่ซ้ำซ้อนกันเอง (เลขเด่นมาวินแย่งกันเอง)
+    const usedPairsSet = new Set(mainPairsList);
+    const subCandidates = getFilteredPairs(subDigit, usedPairsSet);
+    const subPairsList = subCandidates.map(item => item.pair);
+
+    // หากแถวรองได้น้อยกว่า 5 คู่เนื่องจากถูกกรองออก ให้ดึงตัวเลือกสำรองที่ปลอดภัยโดยยังคงเงื่อนไข "ห้ามเลขเบิ้ล"
+    if (subPairsList.length < 5) {
+        for (let d = 0; d <= 9; d++) {
+            if (subDigit === d) continue; // ห้ามเบิ้ล 100%
+            const pStr = `${subDigit}${d}`;
+            if (!subPairsList.includes(pStr) && !mainPairsList.includes(pStr)) {
+                subPairsList.push(pStr);
+                if (subPairsList.length >= 5) break;
+            }
+        }
+    }
+
+    const finalMainPairs = mainPairsList.sort((a, b) => parseInt(a) - parseInt(b));
+    const finalSubPairs = subPairsList.sort((a, b) => parseInt(a) - parseInt(b));
 
     return { 
         mainDigit, 
@@ -563,8 +584,8 @@ function calculateCleanPrecisionPrediction(historySub, localCorrelator) {
         subDigitPct,
         jeawPct,
         overallConfidence,
-        mainPairs: getFilteredPairsForTarget(mainDigit), 
-        subPairs: getFilteredPairsForTarget(subDigit), 
+        mainPairs: finalMainPairs, 
+        subPairs: finalSubPairs, 
         localPairWeights: pairWeights 
     };
 }
@@ -592,7 +613,6 @@ function processData() {
     let batchPairMemory = {};
     const displayDate = document.getElementById('customDate').value.trim() || "13 ก.ย. 69";
 
-    // คำนวณภาพรวม (Aggregate/Overall metrics หากมีหลายหวย หรือหวยเดียว)
     let totalMainPct = 0, totalRoodPct = 0, totalSubPct = 0, totalJeawPct = 0, totalConf = 0;
     let validCount = 0;
 
@@ -617,20 +637,18 @@ function processData() {
 
     if (validCount === 0) return alert('ข้อมูลสถิติน้อยเกินไป (ต้องมีอย่างน้อย 3 งวดต่อหวย)');
 
-    // ค่าเฉลี่ยภาพรวมเดี่ยวช่องเดียว (ไม่ว่าจะประมวลผลหวยเดียวหรือหลายหวย จะมีแค่ช่องเดียวรวมเบ็ดเสร็จ)
     const avgMainPct = (totalMainPct / validCount).toFixed(1);
     const avgRoodPct = (totalRoodPct / validCount).toFixed(1);
     const avgSubPct = (totalSubPct / validCount).toFixed(1);
     const avgJeawPct = (totalJeawPct / validCount).toFixed(1);
     const avgConf = (totalConf / validCount).toFixed(1);
 
-    // สร้างช่องสรุปภาพรวมช่องเดียวแบบเบ็ดเสร็จ
     unifiedPanel.style.display = 'block';
     unifiedPanel.innerHTML = `
         <div class="panel" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #d4af37;">
             <h3 class="header-title" style="margin-bottom: 8px;">
-                <span>📊 สรุปเปอร์เซ็นต์และประเมินภาพรวม (Unified HUD)</span>
-                <span class="luxury-badge">ภาพรวมทุกหวย (${validCount} รายการ)</span>
+                <span>📊 สรุปเปอร์เซ็นต์และประเมินภาพรวม (Ultra Precision)</span>
+                <span class="luxury-badge">ภาพรวมทุกหวย (${validCount} รายการ) • ปลอดเลขเบิ้ล 100%</span>
             </h3>
             <div class="external-hud" style="max-width: 100%; background: #ffffff;">
                 <div class="hud-row">
