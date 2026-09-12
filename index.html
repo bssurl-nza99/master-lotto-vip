@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.36 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.37 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1416,7 +1416,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.36 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1</div>
+  <div class="pill">V1.9.37 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2760,7 +2760,7 @@ function chooseContextRescue(c,rs,risk,baselineRanks){
   alt.rescueGuardApproved=true;alt.rescueBaseRank=altBase;alt.rescueTopBaseRank=topBase;
   return alt;
 }
-/* V1.9.36 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1
+/* V1.9.37 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1
    Real selector improvement: late-stage adjustments may push a candidate several
    ranks below its pre-signal position. When that displacement is large, blend the
    final score back toward the pre-signal score. This uses no future outcome data,
@@ -2841,7 +2841,7 @@ function selectorDiagnosticPanel(){
   const dropRows=dropStats.map(x=>`<tr><td>${x.name}</td><td>${x.damage}</td><td>${x.avg}</td><td>${x.max}</td></tr>`).join('');
   const mbRows=mb.map(x=>`<tr><td>${x.name}</td><td>${x.n}</td><td>${x.h}</td><td>${x.rate}%</td></tr>`).join('');
   const report={
-    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.36',
+    type:'SELECTOR_FORENSIC_REPORT',version:'V1.9.37',
     total,selection:{hits:selHit,rate:pct2(selHit,total)},formulaUnion:{hits:unionHit,rate:pct2(unionHit,total)},
     boardTop2:{hits:best2,rate:pct2(best2,total)},targetInBoard:{hits:inBoard,rate:pct2(inBoard,total)},
     losses:{formulaLoss,preBoardLoss:boardLoss,selectorLoss,selectorDamage:damage,selectorRescued:rescued},
@@ -2851,7 +2851,8 @@ function selectorDiagnosticPanel(){
     worstCases:worst,
     rounds:rows
   };
-  const copyText=esc(JSON.stringify(report,null,2));
+  // V1.9.37: NEVER stringify/HTML-escape the full OOS report during render.
+  // The full machine pack is generated only when the user presses Copy.
   return `<section class="selector-diag-panel">
     <div class="selector-diag-head"><div><b>🔬 Selector Forensic Lab · ตัวจับผิดหลายชั้น</b><small>OOS trace จริง · วิเคราะห์ Formula → Board → ทุก Stage → D1/D2 → Selector · ไม่มีการเปลี่ยนคะแนนจาก Diagnostic</small></div><span>${total} OOS</span></div>
     <div class="selector-diag-actions"><button id="__selector_diag_copy">คัดลอกสรุป + ข้อมูลวิเคราะห์ทั้งหมด</button></div>
@@ -2878,7 +2879,6 @@ function selectorDiagnosticPanel(){
     <details class="selector-diag-details"><summary>⑤ รายหวย — เจาะประเภทที่อ่อนที่สุด</summary><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Selection</th><th>Top2</th><th>InBoard</th><th>Union</th><th>SelectorLoss</th><th>BoardLoss</th><th>D1</th><th>D2</th></tr></thead><tbody>${lotRows}</tbody></table></div></details>
     <details class="selector-diag-details"><summary>⑥ Worst 30 — เคสที่เลขถูกหาย/ถูกดันตก</summary><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>Source</th><th>Target</th><th>เลือก</th><th>BoardRank</th><th>FinalRank</th><th>Raw Top5</th><th>Final Top5</th><th>RankDrop R→M→S→C→Cal→G</th><th>Rescue</th></tr></thead><tbody>${worstRows||'<tr><td colspan=10>ไม่พบเคสเสียหาย</td></tr>'}</tbody></table></div></details>
 <details class="selector-diag-details"><summary>⑦ Performance + Champion/Challenger — เวลารันและสถานะการเรียนรู้</summary><div class="summary-table-container"><div class="selector-diag-note">เวลารันล่าสุด: <b>${window.__LAST_RUN_TIMING__?.ms?Math.round(window.__LAST_RUN_TIMING__.ms/1000*100)/100+' วินาที':'ยังไม่มีข้อมูล'}</b> · Champion Registry จะถูกเก็บแยกรายหวย และหวยที่ LOCK แล้วจะข้ามการค้นหา Challenger รอบถัดไป</div><table class="audit-table"><thead><tr><th>หวย</th><th>Champion</th><th>ทดสอบ</th><th>Rate</th><th>สถานะ</th></tr></thead><tbody>${(()=>{let o={};try{o=JSON.parse(localStorage.getItem(__EVO_STORE_KEY)||'{}')}catch(_){ }const a=Object.entries(o).sort((x,y)=>(Number(x[1]?.rate)||0)-(Number(y[1]?.rate)||0));return a.map(([n,x])=>`<tr><td>${esc(formatDisplayTitle(n))}</td><td>${esc(x.id||'P00')}</td><td>${x.tests||0}</td><td>${x.rate==null?'—':x.rate+'%'}</td><td>${x.locked?'🔒 LOCK':'🔍 SEARCH'}</td></tr>`).join('')||'<tr><td colspan="5">ยังไม่มี Champion ที่บันทึก</td></tr>'})()}</tbody></table></div></details>
-        <textarea id="__selector_diag_payload" style="position:absolute;left:-99999px;top:-99999px">${copyText}</textarea>
   </section>`;
 }
 
@@ -2906,9 +2906,9 @@ document.addEventListener('click',async e=>{
   const confidence={high:rows.filter(x=>x.selectedConfidence==='สูง').length,medium:rows.filter(x=>x.selectedConfidence==='กลาง').length,low:rows.filter(x=>x.selectedConfidence==='ต่ำ').length};
   let champions={};try{const raw=localStorage.getItem(__EVO_STORE_KEY);champions=raw?JSON.parse(raw)||{}:{}}catch(_){champions={}};
   const timing=window.__LAST_RUN_TIMING__||null;
-  const report={type:'SELECTOR_FORENSIC_ONE_CLICK_ANALYSIS_PACK',version:'V1.9.36',generatedAt:new Date().toISOString(),purpose:'ชุดเดียวสำหรับวิเคราะห์และอัปเกรด Selector; ใช้ OOS trace จริงโดยไม่เปลี่ยนคะแนนจาก Diagnostic',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),selectorLoss,boardLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,allRounds:rows};
+  const report={type:'SELECTOR_FORENSIC_ONE_CLICK_ANALYSIS_PACK',version:'V1.9.37',generatedAt:new Date().toISOString(),purpose:'ชุดเดียวสำหรับวิเคราะห์และอัปเกรด Selector; ใช้ OOS trace จริงโดยไม่เปลี่ยนคะแนนจาก Diagnostic',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),selectorLoss,boardLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,allRounds:rows};
   const fmtMs=ms=>{if(!Number.isFinite(ms))return '—';if(ms<1000)return Math.round(ms)+' ms';const sec=ms/1000;return sec<60?sec.toFixed(2)+' วินาที':Math.floor(sec/60)+' นาที '+(sec%60).toFixed(1)+' วินาที'};
-  const lines=[];lines.push('SELECTOR FORENSIC LAB · V1.9.36');lines.push('='.repeat(56));lines.push(`OOS ${total} | Selection ${pct2(hits,total)}% (${hits}/${total}) | Formula Union ${pct2(unionHits,total)}% | Board Top2 ${pct2(top2Hits,total)}% | InBoard ${pct2(inBoardHits,total)}%`);lines.push(`Pre-Board Loss ${boardLoss} | Selector Loss ${selectorLoss} | Damage ${selectorDamage} | Rescue ${selectorRescued} | D1 ${pct2(d1Hits,total)}% | D2 ${pct2(d2Hits,total)}% | D1/D2 ${report.headline.d1d2Consistency}`);lines.push(`Run time: ${fmtMs(timing?.ms)} | Finish: ${timing?.finishedAt||'—'}`);lines.push('');
+  const lines=[];lines.push('SELECTOR FORENSIC LAB · V1.9.37');lines.push('='.repeat(56));lines.push(`OOS ${total} | Selection ${pct2(hits,total)}% (${hits}/${total}) | Formula Union ${pct2(unionHits,total)}% | Board Top2 ${pct2(top2Hits,total)}% | InBoard ${pct2(inBoardHits,total)}%`);lines.push(`Pre-Board Loss ${boardLoss} | Selector Loss ${selectorLoss} | Damage ${selectorDamage} | Rescue ${selectorRescued} | D1 ${pct2(d1Hits,total)}% | D2 ${pct2(d2Hits,total)}% | D1/D2 ${report.headline.d1d2Consistency}`);lines.push(`Run time: ${fmtMs(timing?.ms)} | Finish: ${timing?.finishedAt||'—'}`);lines.push('');
   lines.push('① STAGE COVERAGE');for(const x of stageCoverage)lines.push(`${x.name}: ${x.rate}% (${x.hits}/${x.tests})`);lines.push('');lines.push('② RANK DAMAGE');for(const x of rankDamage)lines.push(`${x.transition}: damage ${x.damageCases}/${x.tests}, avgDrop ${x.avgDrop}, maxDrop ${x.maxDrop}`);lines.push('');lines.push('③ STAGE IMPACT');for(const x of stageImpact)lines.push(`${x.name}: help ${x.helped}, hurt ${x.hurt}, net ${x.net>=0?'+':''}${x.net}`);lines.push('');lines.push('④ MARGIN AUDIT');for(const x of margin)lines.push(`${x.band}: ${x.rate}% (${x.hits}/${x.tests}), miss ${x.misses}`);lines.push('');lines.push('⑤ CONFIDENCE');lines.push(`สูง ${confidence.high} | กลาง ${confidence.medium} | ต่ำ ${confidence.low}`);lines.push('');lines.push('⑥ รายหวย');for(const x of lottery)lines.push(`${x.name} | OOS ${x.tests} | Sel ${x.selectionRate}% | Top2 ${x.top2Rate}% | InBoard ${x.inBoardRate}% | Union ${x.unionRate}% | Loss ${x.selectorLoss} | Damage ${x.selectorDamage} | Rescue ${x.selectorRescued} | D1 ${x.d1Rate}% | D2 ${x.d2Rate}%`);lines.push('');lines.push('⑦ CHAMPION REGISTRY');for(const [name,x] of Object.entries(champions))lines.push(`${name} | ${x.id||'P00'} | ${x.rate??'—'}% | tests ${x.tests||0} | ${x.locked?'LOCKED':'SEARCHING'}`);lines.push('');lines.push('⑧ GEMINI SIGNAL + SELF-CORRECTION');
   const gmRows=rows.filter(x=>x.geminiApplied);const gmLift=gmRows.length?gmRows.reduce((a,x)=>a+Number(x.geminiLift||0),0)/gmRows.length:0;lines.push(`Applied ${gmRows.length}/${total} | avg learned lift ${(gmLift*100).toFixed(2)} pp`);
   lines.push('⑨ WORST CASES (สูงสุด 100)');for(const x of worst)lines.push(`${x.name} | ${x.source}→${x.target} | target ${x.target} | pick ${x.d1}/${x.d2} | boardRank ${x.targetRank??'—'} | finalRank ${x.targetRanksAll?.afterCandidateOutcome?.join('/')||'—'} | raw ${x.stageTop?.raw?.join('/')||'—'} | final ${x.stageTop?.afterCandidateOutcome?.join('/')||'—'} | drops ${x.rankDropRawToMeta||0}/${x.rankDropMetaToSignal||0}/${x.rankDropSignalToContext||0}/${x.rankDropContextToCalibration||0}/${x.rankDropCalibrationToGuardrail||0}`);lines.push('');lines.push('⑩ MACHINE DATA (JSON)');lines.push(JSON.stringify(report,null,2));
@@ -2917,7 +2917,7 @@ document.addEventListener('click',async e=>{
   let copied=copySync();
   if(!copied){try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);copied=true}}catch(_){} }
   if(copied){const hidden=document.getElementById('__selector_diag_payload');if(hidden){hidden.style.cssText='position:absolute;left:-99999px;top:-99999px';hidden.setAttribute('readonly','');}btn.textContent='✓ คัดลอกแล้ว';showToast?.(`✓ คัดลอก Forensic Analysis Pack แล้ว ${total} OOS`);setTimeout(()=>{if(btn.isConnected)btn.textContent='คัดลอกสรุป + ข้อมูลวิเคราะห์ทั้งหมด'},1500)}
-  else{const ta=document.getElementById('__selector_diag_payload');if(ta){ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='260px';ta.style.zIndex='100000';ta.style.opacity='1';ta.style.background='#fff';ta.style.color='#111';ta.style.padding='10px';ta.removeAttribute('readonly');ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length)}showToast?.('⚠️ คัดลอกอัตโนมัติไม่ได้ — เปิดข้อความทั้งหมดให้เลือกคัดลอกแล้ว')}
+  else{let ta=document.getElementById('__selector_diag_payload');if(!ta){ta=document.createElement('textarea');ta.id='__selector_diag_payload';ta.setAttribute('aria-label','Forensic Analysis Pack');document.body.appendChild(ta)}ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='260px';ta.style.zIndex='100000';ta.style.opacity='1';ta.style.background='#fff';ta.style.color='#111';ta.style.padding='10px';ta.removeAttribute('readonly');ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);showToast?.('⚠️ คัดลอกอัตโนมัติไม่ได้ — เปิดข้อความทั้งหมดให้เลือกคัดลอกแล้ว')}
 });
 
 function selectionHistory(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionHistory"); try {const key=routeCtx?.name||'__none__';let cache=selectionHistoryCache.get(rs);if(!cache){cache=new Map();selectionHistoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),risk=selectionRiskFromHistory(out),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=select(train,ad,train,risk,routeProfile,routeCtx),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),ok=[sel.d1,sel.d2].some(d=>target.includes(d));
@@ -3067,7 +3067,7 @@ function installLazyPanels(groups){
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
 }
-// V1.9.36 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1: cooperative execution helpers.
+// V1.9.37 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1: cooperative execution helpers.
 // These wrappers preserve the existing synchronous calculation bodies and only
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
@@ -3128,7 +3128,7 @@ async function decisionMemoryCooperative(rs,routeCtx=null){
   }finally{window.__PERFTRACE__.end("decisionMemoryCooperative",__pt0)}
 }
 
-/* V1.9.36 GEMINI-INSPIRED D1/D2 SIGNAL
+/* V1.9.37 GEMINI-INSPIRED D1/D2 SIGNAL
    Extracted from the supplied independent selector idea: frequency + recency decay + gap.
    It is an evidence layer only; F1-F9, Board generation, and UI remain unchanged.
    Learning is route-local and leakage-safe: only completed OOS rows update the signal weight. */
@@ -3176,7 +3176,7 @@ function __geminiUpdate(mem,routeCtx,rs,targetSet,boardTop2){
   gm.route.set(route,upd(gm.route.get(route)));gm.family.set(family,upd(gm.family.get(family)));gm.base=upd(gm.base);
 }
 
-/* V1.9.36 TRANSITION + D1/D2 PAIR EVIDENCE
+/* V1.9.37 TRANSITION + D1/D2 PAIR EVIDENCE
    Uses only lightweight evidence from the existing recent history. It does not
    replace Formula/Board logic. The signal is learned per route and only updated
    after the current OOS target is evaluated. */
@@ -3237,7 +3237,7 @@ function __tpUpdate(mem,routeCtx,rs,targetSet,boardTop2){
   tm.route.set(route,upd(tm.route.get(route)));tm.family.set(family,upd(tm.family.get(family)));tm.base=upd(tm.base);
 }
 
-/* V1.9.36 ROLE-PAIR LEARNING
+/* V1.9.37 ROLE-PAIR LEARNING
    Learns D1→partner and D2→partner from completed OOS selections only.
    This is deliberately separate from positional digits: the learner uses the
    actual D1/D2 chosen by the selector, then records which target digits co-occurred.
@@ -3248,7 +3248,7 @@ function __rolePairUpdate(mem,routeCtx,d1,d2,targetSet){const rp=__rolePairEnsur
 function __rolePairLookup(mem,routeCtx,anchor,candidate){const rp=__rolePairEnsure(mem);if(!rp)return null;const route=routeCtx?.name||'__none__',family=routingFamily(route),pick=(st,min,src)=>{const row=st?.get(anchor);if(!row||row.tests<min)return null;const x=Number(candidate),base=row.tests||1,rate=((row.partnerHits?.[x]||0)+4*.5)/(base+4);return{...row,rate,source:src}};return pick(rp.route.get(route),8,'route')||pick(rp.family.get(family),12,'family')||pick(rp.base,20,'base')}
 function __rolePairApply(c,d1,mem,routeCtx){if(!Array.isArray(c)||!c.length)return{applied:false,weight:0,source:'none',tests:0,lift:null,top:[]};const out=[];for(const q of c){const z=__rolePairLookup(mem,routeCtx,Number(d1),Number(q.digit));if(!z)continue;const prior=.5,rate=z.rate,adj=Math.max(-.035,Math.min(.035,(rate-prior)*.10));if(Math.abs(adj)>=.004){q.score=Math.max(0,Number(q.score||0)+adj);q.rolePairAdj=+adj.toFixed(3);q.rolePairRate=+(rate*100).toFixed(1);q.rolePairTests=z.tests;q.rolePairSource=z.source;q.rolePairApplied=true;}out.push({digit:Number(q.digit),rate,tests:z.tests})}c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);return{applied:out.length>0,weight:.10,source:out[0]?.tests?out[0].source:'none',tests:out[0]?.tests||0,lift:out.length?out[0].rate-.5:null,top:out.sort((a,b)=>b.rate-a.rate).slice(0,5).map(x=>x.digit)} }
 
-/* V1.9.36 SELF-CORRECTION EVIDENCE
+/* V1.9.37 SELF-CORRECTION EVIDENCE
    Extracted from the useful idea in Gemini v5: learn from recent misses.
    Unlike the source code's fixed penalty, this layer is leakage-safe, route-aware,
    smoothed, and only nudges candidates when completed OOS evidence is sufficient.
@@ -3773,7 +3773,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __afterSwapShield=__cloneRank(c);
     const __selfLearning=__evoApply(c,__forensicStages,__stageMemory,routeCtx,risk);
     const __afterSelfLearning=__cloneRank(c);
-    // V1.9.36 HEALTH FIX: cooperative OOS path must actually execute the Role-Pair and
+    // V1.9.37 HEALTH FIX: cooperative OOS path must actually execute the Role-Pair and
     // Self-Correction digit layers that its forensic result already referenced.
     // This is backend-only; F1-F9, raw board and card/UI presentation remain untouched.
     const __preRolePair=__cloneRank(c);
@@ -3885,15 +3885,15 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   const root=$("result");if(!root)return;
   const names=Object.keys(groups).filter(name=>name!=="__THAI_TOP__");
   const globalStats=[];
-  // V1.9.36 CRASH-SAFE RENDER:
+  // V1.9.37 CRASH-SAFE RENDER:
   // Do not accumulate 65 lottery detail templates into one giant innerHTML string.
   // Build the shell first, then append each lottery block incrementally so Android
   // WebView can reclaim intermediate strings/DOM work and repaint between blocks.
-  root.innerHTML=`<div class="vip-dashboard v193-dashboard"><div id="__v193_snapshot_mount"></div><div id="__v193_details_heading_mount"></div><div id="__v193_details_mount"></div><div id="__v193_global_mount"></div><div id="__v193_diag_mount"></div></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.36</span><span class="brand-star">✦</span></div>`;
+  root.innerHTML=`<div class="vip-dashboard v193-dashboard"><div id="__v193_snapshot_mount"></div><div id="__v193_details_heading_mount"></div><div id="__v193_details_mount"></div><div id="__v193_global_mount"></div><div id="__v193_diag_mount"></div></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.37</span><span class="brand-star">✦</span></div>`;
   const dash=root.querySelector('.vip-dashboard'),snapMount=$("__v193_snapshot_mount"),headMount=$("__v193_details_heading_mount"),detailsMount=$("__v193_details_mount"),globalMount=$("__v193_global_mount"),diagMount=$("__v193_diag_mount");
   snapMount.innerHTML=`<section class="ai-snapshot"><div class="ai-snapshot-head"><div><span class="ai-eyebrow">AI หลายมุม</span><b>${names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย'}</b><small>${names.length>1?`รวมการ์ด ${names.length} หวย · เรียงตามลำดับการประมวลผล`:'การ์ดผลลัพธ์ของหวยที่ประมวลผล'}</small></div><div class="ai-snapshot-actions"><span class="ai-live-dot">● LIVE</span><button class="ai-snapshot-capture" onclick="captureSnapshotImage()">📸 แคปภาพรวม</button></div></div><div id="__v193_snapshot_grid" class="ai-snapshot-grid ${names.length===1?'single':''}"></div></section>`;
   const snapshotGrid=$("__v193_snapshot_grid");
-  if(!dash||!snapMount||!snapshotGrid||!headMount||!detailsMount||!globalMount||!diagMount)throw new Error('V1.9.36 render mount initialization failed');
+  if(!dash||!snapMount||!snapshotGrid||!headMount||!detailsMount||!globalMount||!diagMount)throw new Error('V1.9.37 render mount initialization failed');
   const yieldFrame=()=>new Promise(r=>setTimeout(r,0));
   const appendLotteryDetail=async (name,rs,hist,rawHist,meta,ad,routeCtx,sx,s,pen,p,sorted,bestFormula,bestRate,bestConfidence,dx,topDigits,board,delta)=>{
     const rateClass=r=>r>=65?'strong':r>=55?'good':r>=45?'warn':'weak';
@@ -3909,7 +3909,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.36 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.37 SELECTOR-SELF-CORRECTION-EVIDENCE-HEALTHFIX-1</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
@@ -3943,6 +3943,9 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   globalMount.innerHTML=globalSummaryPanel(globalStats);
   if(startedAt)setProcessingProgress(99.35,'กำลังสร้างรายงาน','สร้าง Global Summary แล้ว · กำลังสร้าง Forensic Diagnostics',startedAt,100,99.35,true);
   await yieldFrame();
+  // V1.9.37 FORENSIC LAZY FIX: selectorDiagnosticPanel renders summary/tables only.
+  // Full OOS JSON + allRounds stays in JS memory and is serialized only on Copy,
+  // preventing a second multi-MB string + hidden DOM textarea from being created at 99%.
   diagMount.innerHTML=selectorDiagnosticPanel();
   if(startedAt)setProcessingProgress(99.7,'กำลังสร้างรายงาน','สร้าง Forensic Diagnostics แล้ว · กำลังติดตั้ง Lazy Detail',startedAt,100,99.7,true);
   await yieldFrame();
@@ -3982,11 +3985,11 @@ function runSystemHealth(){
   if(!/breakBefore/.test(s))warnings.push('breakBefore handling not detected');
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
   if(!/version:'V1\.9\.35'/.test(s))issues.push('config version mismatch');
-  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.36'))issues.push('visible version mismatch');
+  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.37'))issues.push('visible version mismatch');
   if(!/function\s+__rolePairApply\(/.test(s)||!/__rolePairMeta=/.test(s))issues.push('role-pair layer not wired into cooperative selector');
   if(!/function\s+__scApply\(/.test(s)||!/__selfCorrectionMeta=__scApply\(/.test(s))issues.push('self-correction digit layer not wired into cooperative selector');
   if(!/afterSelfCorrection/.test(s))issues.push('self-correction forensic stage missing');
-  const health={version:'V1.9.36',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/D1\/D2 Consistency/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
+  const health={version:'V1.9.37',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/D1\/D2 Consistency/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s)}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
@@ -4032,16 +4035,16 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    showToast(`✓ V1.9.36 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
+    showToast(`✓ V1.9.37 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
   }catch(e){
     window.__LAST_PROCESS_ERROR__={time:new Date().toISOString(),message:String(e?.message||e),stack:String(e?.stack||'')};
-    console.error('V1.9.36 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
+    console.error('V1.9.37 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
   }finally{
     const panel=$('processingPanel');if(panel&&$('run').disabled){$('run').disabled=false;$('run').removeAttribute('aria-busy')}
   }
 } finally { window.__LAST_RUN_TIMING__={ms:performance.now()-(window.__RUN_STARTED_AT__||performance.now()),finishedAt:new Date().toISOString()}; window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.36',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9.36+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
+window.runEngine=runEngine;window.__V1_CONFIG__=Object.freeze({version:'V1.9.37',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9.37+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth()});
 })();
 </script>
