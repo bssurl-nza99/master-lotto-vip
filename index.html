@@ -4063,33 +4063,48 @@ async function runSelectorAutoOptimizer(opts={}){
   const rows=(__SELECTOR_DIAGNOSTIC__.rows||[]).filter(r=>Array.isArray(r.optimizerCandidates)&&r.optimizerCandidates.length&&Array.isArray(r.targetDigits));
   if(rows.length<20){showToast?.('ยังไม่มี OOS snapshot สำหรับ Auto-Optimizer');return null}
   __SELECTOR_AUTO_OPT__.running=true;
-  const budget=Math.max(1000,Math.min(Number(opts.budget||__SELECTOR_AUTO_OPT__.budget),__SELECTOR_AUTO_OPT__.maxBudget));
-  const r=__optRand(Number(opts.seed||__SELECTOR_AUTO_OPT__.seed));
-  const snapRows=rows.map(r=>{const z=__optSnapshot(r);if(z)r.__optSnap=z;return r});
-  const idx=snapRows.map((_,i)=>i),train=idx.slice(0,Math.max(10,Math.floor(idx.length*.70))),hold=idx.slice(Math.floor(idx.length*.70)),full=idx;
-  // Fast deterministic screen: sample at most 8% of train rows, then successive-halving finalists.
-  const sampleN=Math.max(30,Math.min(train.length,Math.floor(train.length*.08)));const sample=[];for(let i=0;i<sampleN;i++)sample.push(train[Math.floor(i*train.length/sampleN)]);
-  let pop=[];const seen=new Set();for(let i=0;i<budget;i++){const p=__optPolicy(r),k=__optPolicyKey(p);if(!seen.has(k)){seen.add(k);pop.push(p)}}
-  const score=(p,ix)=>{const e=__optEval(rows,p,ix);return e.rate+Math.min(5,e.d1Rate*.03)+Math.min(5,e.d2Rate*.02)};
-  // Cap the expensive full-policy stage by successive halving.
-  let keep=Math.min(800,pop.length);pop.sort((a,b)=>score(b,sample)-score(a,sample));pop=pop.slice(0,keep);
-  await new Promise(requestAnimationFrame||((f)=>setTimeout(f,0)));
-  keep=Math.min(120,pop.length);pop.sort((a,b)=>score(b,train.slice(0,Math.max(30,Math.floor(train.length*.45))))-score(a,train.slice(0,Math.max(30,Math.floor(train.length*.45)))));pop=pop.slice(0,keep);
-  // Refine finalists around the leaders, keeping the best original policy in the pool.
-  const refined=[];for(const base of pop){refined.push(base);for(let j=0;j<8;j++)refined.push(__optMutate(base,r,.10))}pop=refined;
-  await new Promise(requestAnimationFrame||((f)=>setTimeout(f,0)));
-  pop.sort((a,b)=>score(b,train)-score(a,train));const bestTrain=pop[0];
-  const holdout=__optEval(rows,bestTrain,hold),tr=__optEval(rows,bestTrain,train),fu=__optEval(rows,bestTrain,full);
-  // Baseline reference from recorded OOS selection rate.
-  const baseHits=rows.filter(x=>x.selectionHit).length,baseRate=rows.length?baseHits/rows.length*100:0;
-  const report={type:'SELECTOR_AUTO_OPTIMIZER_REPORT',version:'V1.9.44',generatedAt:new Date().toISOString(),search:{requestedBudget:budget,generatedPolicies:seen.size,screenRows:sample.length,trainRows:train.length,holdoutRows:hold.length,fullRows:full.length,method:'successive-halving + deterministic mutation; no F1-F9 mutation'},baseline:{selectionRate:+baseRate.toFixed(2),selectionHits:baseHits,total:rows.length},best:{selectionRate:+fu.rate.toFixed(2),delta:+(fu.rate-baseRate).toFixed(2),train:+tr.rate.toFixed(2),holdout:+holdout.rate.toFixed(2),d1:+fu.d1Rate.toFixed(2),d2:+fu.d2Rate.toFixed(2),inBoard:+fu.inBoardRate.toFixed(2),avgMargin:+fu.avgMargin.toFixed(4),policy:__optDescribe(bestTrain)},decision:fu.rate>=65?'PASS_TARGET_65_PLUS':fu.rate>baseRate?'IMPROVED_BUT_BELOW_65':'NO_IMPROVEMENT',note:'Best policy is a selector-layer research candidate. Apply to production only after review of this exact report.'};
-  __SELECTOR_AUTO_OPTIMIZER__.last=report;__SELECTOR_AUTO_OPTIMIZER__.running=false;
-  return report;
+  try{
+    const budget=Math.max(1000,Math.min(Number(opts.budget||__SELECTOR_AUTO_OPT__.budget),__SELECTOR_AUTO_OPT__.maxBudget));
+    const r=__optRand(Number(opts.seed||__SELECTOR_AUTO_OPT__.seed));
+    const snapRows=rows.map(row=>{if(!row.__optSnap){const z=__optSnapshot(row);if(z)row.__optSnap=z}return row});
+    const idx=snapRows.map((_,i)=>i),cut=Math.floor(idx.length*.70),train=idx.slice(0,Math.max(10,cut)),hold=idx.slice(Math.max(10,cut)),full=idx;
+    const sampleN=Math.max(30,Math.min(train.length,Math.floor(train.length*.08))),sample=[];
+    for(let i=0;i<sampleN;i++)sample.push(train[Math.floor(i*train.length/sampleN)]);
+    const score=(p,ix)=>{const e=__optEval(rows,p,ix);return e.rate+Math.min(5,e.d1Rate*.03)+Math.min(5,e.d2Rate*.02)};
+    // Memory-safe successive halving: never keep the requested 100k/1m policies in RAM.
+    // Stream policies through the cheap screen and retain only the top 800.
+    const keepN=Math.min(800,budget),pool=[];
+    const pushTop=(p,v)=>{
+      pool.push({p,v});
+      if(pool.length>keepN*2){pool.sort((a,b)=>b.v-a.v);pool.length=keepN}
+    };
+    for(let i=0;i<budget;i++){
+      const p=__optPolicy(r),v=score(p,sample);pushTop(p,v);
+      if((i&2047)===0)await new Promise(resolve=>setTimeout(resolve,0));
+    }
+    pool.sort((a,b)=>b.v-a.v);pool.length=Math.min(keepN,pool.length);
+    let pop=pool.map(x=>x.p);pool.length=0;
+    await new Promise(resolve=>setTimeout(resolve,0));
+    const midIx=train.slice(0,Math.max(30,Math.floor(train.length*.45)));
+    pop.sort((a,b)=>score(b,midIx)-score(a,midIx));pop=pop.slice(0,Math.min(120,pop.length));
+    const refined=[];for(const base of pop){refined.push(base);for(let j=0;j<8;j++)refined.push(__optMutate(base,r,.10))}
+    pop=refined;refined.length=0;
+    await new Promise(resolve=>setTimeout(resolve,0));
+    pop.sort((a,b)=>score(b,train)-score(a,train));
+    const bestTrain=pop[0];
+    const holdout=__optEval(rows,bestTrain,hold),tr=__optEval(rows,bestTrain,train),fu=__optEval(rows,bestTrain,full);
+    const baseHits=rows.filter(x=>x.selectionHit).length,baseRate=rows.length?baseHits/rows.length*100:0;
+    const report={type:'SELECTOR_AUTO_OPTIMIZER_REPORT',version:'V1.9.44',generatedAt:new Date().toISOString(),search:{requestedBudget:budget,generatedPolicies:budget,retainedAfterScreen:Math.min(800,budget),finalists:Math.min(120,pop.length),screenRows:sample.length,trainRows:train.length,holdoutRows:hold.length,fullRows:full.length,method:'memory-safe successive-halving + deterministic mutation; no F1-F9 mutation'},baseline:{selectionRate:+baseRate.toFixed(2),selectionHits:baseHits,total:rows.length},best:{selectionRate:+fu.rate.toFixed(2),delta:+(fu.rate-baseRate).toFixed(2),train:+tr.rate.toFixed(2),holdout:+holdout.rate.toFixed(2),d1:+fu.d1Rate.toFixed(2),d2:+fu.d2Rate.toFixed(2),inBoard:+fu.inBoardRate.toFixed(2),avgMargin:+fu.avgMargin.toFixed(4),policy:__optDescribe(bestTrain)},decision:fu.rate>=65?'PASS_TARGET_65_PLUS':fu.rate>baseRate?'IMPROVED_BUT_BELOW_65':'NO_IMPROVEMENT',note:'Best policy is a selector-layer research candidate. Apply to production only after review of this exact report.'};
+    __SELECTOR_AUTO_OPT__.last=report;return report;
+  }catch(e){
+    __SELECTOR_AUTO_OPT__.last={type:'SELECTOR_AUTO_OPTIMIZER_ERROR',version:'V1.9.44',time:new Date().toISOString(),message:String(e?.message||e),stack:String(e?.stack||'')};
+    console.error('V1.9.44 AUTO OPT ERROR',e);showToast?.('Auto-Optimizer หยุดอย่างปลอดภัย: '+String(e?.message||e));return __SELECTOR_AUTO_OPT__.last;
+  }finally{__SELECTOR_AUTO_OPT__.running=false}
 }
-function selectorAutoOptimizerPanel(){const r=__SELECTOR_AUTO_OPTIMIZER__.last;if(!r)return `<section class="selector-diag-panel" id="__selector_auto_optimizer"><div class="selector-diag-head"><div><b>🧠 Selector Auto-Optimizer · V1.9.44</b><small>ค้นหานโยบาย Selector อัตโนมัติจาก OOS snapshot แล้วเลือกตัวที่ดีที่สุด</small></div><span>READY</span></div><div class="insight-box">หลังจาก OOS เสร็จ ระบบจะค้นหา policy จำนวนมากแบบคัดกรองหลายรอบ แล้วรายงาน <b>ตัวเดียวที่ดีที่สุด</b> พร้อมค่าที่ต้องนำกลับไปแก้ Selector จริง</div><button class="forensic-copy-btn" id="__run_selector_optimizer">▶ เริ่ม Auto-Optimizer</button></section>`;
+function selectorAutoOptimizerPanel(){const r=__SELECTOR_AUTO_OPT__.last;if(!r)return `<section class="selector-diag-panel" id="__selector_auto_optimizer"><div class="selector-diag-head"><div><b>🧠 Selector Auto-Optimizer · V1.9.44</b><small>ค้นหานโยบาย Selector อัตโนมัติจาก OOS snapshot แบบประหยัดหน่วยความจำ แล้วเลือกตัวที่ดีที่สุด</small></div><span>READY</span></div><div class="insight-box">หลังจาก OOS เสร็จ ระบบจะค้นหา policy จำนวนมากแบบคัดกรองหลายรอบ แล้วรายงาน <b>ตัวเดียวที่ดีที่สุด</b> พร้อมค่าที่ต้องนำกลับไปแก้ Selector จริง</div><button class="forensic-copy-btn" id="__run_selector_optimizer">▶ เริ่ม Auto-Optimizer</button></section>`;
   const b=r.best,p=r.best.policy;return `<section class="selector-diag-panel" id="__selector_auto_optimizer"><div class="selector-diag-head"><div><b>🧠 Selector Auto-Optimizer · V1.9.44</b><small>Best policy จาก OOS snapshot</small></div><span>${r.decision}</span></div><div class="selector-diag-grid"><div><small>Baseline</small><b>${r.baseline.selectionRate}%</b></div><div><small>Best Full OOS</small><b>${b.selectionRate}%</b></div><div><small>Δ</small><b>${b.delta>=0?'+':''}${b.delta}%</b></div><div><small>Train</small><b>${b.train}%</b></div><div><small>Holdout</small><b>${b.holdout}%</b></div><div><small>D1</small><b>${b.d1}%</b></div><div><small>D2</small><b>${b.d2}%</b></div><div><small>InBoard</small><b>${b.inBoard}%</b></div></div><div class="insight-box"><b>ตัวที่ดีที่สุด</b><br>${p.stageWeights.map(x=>`${x.stage}: ${x.weight}`).join(' · ')}<br><br><b>Features</b>: independent ${p.features.independent} · support ${p.features.support} · Gemini ${p.features.gemini} · radar ${p.features.radar} · rankPrior ${p.features.rankPrior}<br><b>D2</b>: independent ${p.d2.independent} · score ${p.d2.score} · support ${p.d2.support}</div><button class="forensic-copy-btn" id="__copy_selector_optimizer">📋 คัดลอก Best Policy + รายงาน</button></section>`;
 }
-function __installSelectorAutoOptimizer(){const root=document.getElementById('__selector_auto_optimizer');if(!root||root.dataset.bound)return;root.dataset.bound='1';const run=root.querySelector('#__run_selector_optimizer');if(run)run.onclick=async()=>{run.disabled=true;run.textContent='⏳ กำลังค้นหา...';const rep=await runSelectorAutoOptimizer({budget:__SELECTOR_AUTO_OPT__.budget});root.outerHTML=selectorAutoOptimizerPanel();__installSelectorAutoOptimizer();};const cp=root.querySelector('#__copy_selector_optimizer');if(cp)cp.onclick=async()=>{const txt=JSON.stringify(__SELECTOR_AUTO_OPTIMIZER__.last,null,2);try{await navigator.clipboard?.writeText(txt);showToast?.('✓ คัดลอก Best Policy + รายงานแล้ว')}catch(_){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast?.('✓ คัดลอกแล้ว')}}}
+function __installSelectorAutoOptimizer(){const root=document.getElementById('__selector_auto_optimizer');if(!root||root.dataset.bound)return;root.dataset.bound='1';const run=root.querySelector('#__run_selector_optimizer');if(run)run.onclick=async()=>{run.disabled=true;run.textContent='⏳ กำลังค้นหา...';const rep=await runSelectorAutoOptimizer({budget:__SELECTOR_AUTO_OPT__.budget});root.outerHTML=selectorAutoOptimizerPanel();__installSelectorAutoOptimizer();};const cp=root.querySelector('#__copy_selector_optimizer');if(cp)cp.onclick=async()=>{const txt=JSON.stringify(__SELECTOR_AUTO_OPT__.last,null,2);try{await navigator.clipboard?.writeText(txt);showToast?.('✓ คัดลอก Best Policy + รายงานแล้ว')}catch(_){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast?.('✓ คัดลอกแล้ว')}}}
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
@@ -4333,7 +4348,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   diagMount.innerHTML=selectorDiagnosticPanel();
   installForensicLazy();
   __installSelectorAutoOptimizer();
-  setTimeout(async()=>{try{if((__SELECTOR_DIAGNOSTIC__.rows||[]).some(r=>Array.isArray(r.optimizerCandidates))&&!__SELECTOR_AUTO_OPTIMIZER__.last){const panel=document.getElementById('__selector_auto_optimizer');const btn=panel?.querySelector('#__run_selector_optimizer');if(btn)btn.click();}}catch(e){console.error('V1.9.44 AUTO OPT ERROR',e)}},80);
+  setTimeout(async()=>{try{if((__SELECTOR_DIAGNOSTIC__.rows||[]).some(r=>Array.isArray(r.optimizerCandidates))&&!__SELECTOR_AUTO_OPT__.last){const panel=document.getElementById('__selector_auto_optimizer');const btn=panel?.querySelector('#__run_selector_optimizer');if(btn)btn.click();}}catch(e){console.error('V1.9.44 AUTO OPT ERROR',e)}},80);
   if(startedAt)setProcessingProgress(99.7,'กำลังสร้างรายงาน','สร้าง Forensic Diagnostics แล้ว · กำลังติดตั้ง Lazy Detail',startedAt,100,99.7,true);
   await yieldFrame();
   installLotteryDetailLazy();
