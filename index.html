@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.108 SELF-LEARNING OOS · V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.109 MAX-IQ SELF-LEARNING · V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -2111,7 +2111,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.108 SELF-LEARNING OOS · V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</div>
+  <div class="pill">V1.9.109 MAX-IQ SELF-LEARNING · V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -4377,61 +4377,73 @@ function applyMaxEvidenceStack(c,rs,ad,routeCtx){
  const cand=metrics.slice(0,7);let best=null;for(let i=0;i<cand.length;i++)for(let j=i+1;j<cand.length;j++){const a=cand[i],b=cand[j],sy=__mesPairSynergy(rs,a.d,b.d),balance=100-Math.min(100,Math.abs(a.q.score-b.q.score)*1.25),joint=.72*((a.q.score+b.q.score)/2)+.18*sy+.10*Math.min(a.q.score,b.q.score)+.02*balance;if(!best||joint>best.joint)best={a,b,joint,sy};}
  return{applied:true,weights:{conditional:.24,recent:.12,frequency:.08,position:.07,transition:.06,gap:.06,stability:.08,regime:.05,empirical:.05,formulaQuality:.06,breadth:.06},pairGate:best?{d1:best.a.d,d2:best.b.d,joint:+best.joint.toFixed(2),synergy:+best.sy.toFixed(2)}:null};
 }
-/* V1.9.108 SELF-LEARNING OOS SEARCH
-   Bounded walk-forward strategy evolution. It learns from prior misses only;
-   no future target is used to build a training score. The search is deliberately
-   separated from Production Selector recursion and is capped for runtime safety.
+/* V1.9.109 MAX-IQ SELF-LEARNING / EVOLUTIONARY CHAMPION
+   Purpose: raise the selector's decision intelligence, not merely add score.
+   Each lottery type/history gets its own walk-forward Champion. Strategies are
+   searched on prior rows only, validated on a later slice, and only then used
+   as a bounded production modifier. Failure memory is context-aware and never
+   sees the target row while building its decision features.
 */
 const __SELF_LEARN_CACHE__=new WeakMap();
+const __SL_EV_CACHE__=new WeakMap();
 function __slTargetDigits(r){return new Set([...String(r?.n3||'').slice(1),...String(r?.n2||'')].map(Number));}
+function __slDigits(r){return [...String(r?.n3||'').padStart(3,'0'),...String(r?.n2||'').padStart(2,'0')].map(Number);}
 function __slFeat(train,d){
   const a=Array.isArray(train)?train:[], x=String(d), n=a.length;
-  const rate=(w,dec=.94)=>{const z=a.slice(-w);let W=0,H=0;for(let i=z.length-1,k=0;i>=0;i--,k++){const q=Math.pow(dec,k);W+=q;const t=String(z[i]?.n2||'').padStart(2,'0');if(t.includes(x))H+=q;}return W?H/W:0.5;};
-  const recent=.55*rate(3,.985)+.30*rate(6,.985)+.15*rate(12,.985);
-  let posN=0,posH=0;for(const r of a.slice(-36)){const t=String(r?.n2||'').padStart(2,'0');posN+=2;if(t[0]===x)posH++;if(t[1]===x)posH++;}
+  const rate=(w,dec=.94)=>{const z=a.slice(-Math.min(w,n));let W=0,H=0;for(let i=z.length-1,k=0;i>=0;i--,k++){const q=Math.pow(dec,k);W+=q;if(String(z[i]?.n2||'').padStart(2,'0').includes(x))H+=q;}return W?H/W:.5;};
+  const recent=.52*rate(3,.985)+.28*rate(6,.985)+.20*rate(12,.97);
+  let posN=0,posH=0,n3H=0,n3N=0;for(const r of a.slice(-48)){const t=String(r?.n2||'').padStart(2,'0');posN+=2;if(t[0]===x)posH++;if(t[1]===x)posH++;const q=String(r?.n3||'').padStart(3,'0');for(const ch of q.slice(1)){n3N++;if(ch===x)n3H++;}}
   let gap=n+1;for(let i=n-1;i>=0;i--){if(String(a[i]?.n2||'').includes(x)){gap=n-i;break;}}
-  const gapScore=1-Math.min(1,gap/24);
-  let transN=0,transH=0;for(let i=Math.max(1,n-36);i<n;i++){const prev=String(a[i-1]?.n2||'');if(prev.includes(x)){transN++;if(String(a[i]?.n2||'').includes(x))transH++;}}
-  const transition=transN?transH/transN:.5;
-  const freq=rate(Math.min(24,n),.97);
-  return {recent,frequency:freq,position:posN?posH/posN:.5,transition,gap:gapScore};
+  const gapScore=1-Math.min(1,gap/30);
+  let transN=0,transH=0,crossN=0,crossH=0;for(let i=Math.max(1,n-48);i<n;i++){const prev=String(a[i-1]?.n2||'').padStart(2,'0'),cur=String(a[i]?.n2||'').padStart(2,'0');if(prev.includes(x)){transN++;if(cur.includes(x))transH++;}if(prev[1]===x){crossN++;if(cur.includes(x))crossH++;}}
+  const transition=transN?transH/transN:.5,cross=crossN?crossH/crossN:.5;
+  const freq=rate(Math.min(36,n),.975), n3=n3N?n3H/n3N:.5;
+  let stability=0;const wins=[3,6,12,24];for(const w of wins)stability+=rate(Math.min(w,n),.985);stability/=wins.length;
+  return {recent,frequency:freq,position:posN?posH/posN:.5,transition,cross,gap:gapScore,n3,stability};
 }
-function __slNormalizeWeights(w){const keys=['recent','frequency','position','transition','gap'];const z={};let sum=0;for(const k of keys){z[k]=Math.max(.03,Number(w[k]||0));sum+=z[k];}for(const k of keys)z[k]/=sum;return z;}
-function __slScore(f,w){return 100*(w.recent*f.recent+w.frequency*f.frequency+w.position*f.position+w.transition*f.transition+w.gap*f.gap);}
+function __slNormalizeWeights(w){const keys=['recent','frequency','position','transition','cross','gap','n3','stability'];const z={};let sum=0;for(const k of keys){z[k]=Math.max(.015,Number(w[k]||0));sum+=z[k];}for(const k of keys)z[k]/=sum;return z;}
+function __slScore(f,w){let s=0;for(const k of Object.keys(w))s+=(w[k]||0)*(f[k]??.5);return 100*s;}
+function __slFeatureCache(rs){let c=__SL_EV_CACHE__.get(rs);if(c)return c;c=new Map();for(let i=0;i<rs.length;i++){const m=new Array(10);const train=rs.slice(0,i);for(let d=0;d<10;d++)m[d]=__slFeat(train,d);c.set(i,m)}__SL_EV_CACHE__.set(rs,c);return c;}
+function __slPolicyGrid(){
+  const P=[];
+  const bases=[
+    [.28,.12,.10,.14,.06,.08,.10,.12], [.12,.24,.10,.10,.04,.14,.08,.18],
+    [.20,.16,.12,.18,.08,.08,.08,.10], [.16,.14,.08,.24,.10,.10,.08,.10],
+    [.18,.14,.10,.12,.16,.08,.08,.14], [.14,.16,.12,.10,.04,.22,.08,.14],
+    [.22,.10,.10,.10,.06,.08,.20,.14], [.12,.18,.08,.08,.04,.10,.20,.20]
+  ];
+  const deltas=[[-.06,.06,0,0,0,0,0,0],[.05,-.05,0,0,0,0,0,0],[0,0,.06,-.06,0,0,0,0],[0,0,0,.06,-.03,-.03,0,0],[0,0,0,0,.06,-.04,0,-.02],[0,0,0,0,0,.06,-.03,-.03],[0,0,0,0,0,0,.06,-.06],[0,0,0,0,0,0,-.04,.04]];
+  for(const b of bases){for(const d of deltas){const w={};const k=['recent','frequency','position','transition','cross','gap','n3','stability'];k.forEach((x,i)=>w[x]=b[i]+d[i]);P.push(__slNormalizeWeights(w));}}
+  return P;
+}
+function __slEvalPolicy(rs,w,lo,hi,cache){
+  let hit1=0,hit2=0,n=0;const misses=[];
+  for(let i=lo;i<hi;i++){
+    const target=__slTargetDigits(rs[i]);if(!target.size)continue;const fs=cache.get(i);const rank=[];for(let d=0;d<10;d++)rank.push({d,s:__slScore(fs[d],w)});rank.sort((a,b)=>b.s-a.s||a.d-b.d);const a=rank[0],b=rank.find(x=>x.d!==a.d)||rank[1];if(target.has(a.d))hit1++;if(target.has(a.d)||target.has(b.d))hit2++;n++;if(!target.has(a.d)&&misses.length<16)misses.push({i,digit:a.d,target:[...target],features:fs[a.d]});
+  }
+  return {n,hit1,hit2,rate1:n?pct(hit1,n):0,rate2:n?pct(hit2,n):0,misses};
+}
 function __selfLearnFor(rs){
-  if(!Array.isArray(rs)||rs.length<28)return null;
-  let hit=__SELF_LEARN_CACHE__.get(rs);if(hit)return hit;
-  const start=Math.max(12,rs.length-84),tests=[];
-  // 18 deterministic candidate policies: exploit, balanced, recent-heavy, transition-heavy,
-  // gap-aware and frequency-heavy. This is a search space, not a promise of accuracy.
-  const policies=[];
-  for(let r=0;r<6;r++)for(let g=0;g<3;g++){
-    const w={recent:.18+.06*r,frequency:.26-.025*r,position:.14,transition:.18+.025*g,gap:.24-.025*g};
-    policies.push(__slNormalizeWeights(w));
+  if(!Array.isArray(rs)||rs.length<36)return null;let hit=__SELF_LEARN_CACHE__.get(rs);if(hit)return hit;
+  const cache=__slFeatureCache(rs), end=rs.length, total=Math.min(120,end-18), lo=Math.max(18,end-total), span=end-lo, trainEnd=lo+Math.max(12,Math.floor(span*.55)), valEnd=lo+Math.max(20,Math.floor(span*.78));
+  const policies=__slPolicyGrid();let champion=null;
+  for(const w of policies){const tr=__slEvalPolicy(rs,w,lo,trainEnd,cache),va=__slEvalPolicy(rs,w,trainEnd,valEnd,cache),ho=__slEvalPolicy(rs,w,valEnd,end,cache);if(!va.n||!ho.n)continue;
+    const confidence=.42*va.rate1+.23*va.rate2+.20*ho.rate1+.10*ho.rate2+.05*Math.min(100,tr.rate1);
+    const stability=Math.min(va.rate1,ho.rate1), objective=confidence-(stability<45?(45-stability)*.12:0);
+    if(!champion||objective>champion.objective)champion={weights:w,train:tr,validation:va,holdout:ho,confidence:+confidence.toFixed(2),stability:+stability.toFixed(2),objective:+objective.toFixed(2),iterations:policies.length,missContexts:ho.misses};
   }
-  let best=null;
-  for(const w of policies){let h=0,n=0,missContexts=[];
-    for(let i=start;i<rs.length;i++){
-      const train=rs.slice(0,i),target=__slTargetDigits(rs[i]);if(!train.length||!target.size)continue;
-      let top=-1,bs=-1;for(let d=0;d<10;d++){const sc=__slScore(__slFeat(train,d),w);if(sc>bs){bs=sc;top=d;}}
-      const ok=target.has(top);if(ok)h++;else if(missContexts.length<12)missContexts.push({digit:top,target:[...target],features:__slFeat(train,top)});n++;
-    }
-    const rate=n?pct(h,n):0;
-    // Stability: require the policy to perform across three temporal slices.
-    const slice=Math.max(6,Math.floor(n/3));const sliceRates=[];
-    for(let s=0;s<3;s++){const lo=start+s*slice,hi=s===2?rs.length:Math.min(rs.length,lo+slice);let hh=0,nn=0;for(let i=lo;i<hi;i++){const train=rs.slice(0,i),target=__slTargetDigits(rs[i]);let top=-1,bs=-1;for(let d=0;d<10;d++){const sc=__slScore(__slFeat(train,d),w);if(sc>bs){bs=sc;top=d;}}if(target.size){nn++;if(target.has(top))hh++;}}sliceRates.push(nn?pct(hh,nn):0);}
-    const floor=Math.min(...sliceRates),mean=sliceRates.reduce((a,b)=>a+b,0)/3,confidence=.60*rate+.25*floor+.15*mean;
-    if(!best||confidence>best.confidence)best={weights:w,rate:+rate.toFixed(2),floor:+floor.toFixed(2),mean:+mean.toFixed(2),confidence:+confidence.toFixed(2),tests:n,hits:h,misses:n-h,missContexts};
+  if(champion){
+    champion.status=champion.holdout.rate1>champion.validation.rate1-2?'CHAMPION':'CAUTIOUS';
+    champion.learnedFrom=champion.missContexts.length;
   }
-  __SELF_LEARN_CACHE__.set(rs,best);return best;
+  __SELF_LEARN_CACHE__.set(rs,champion);return champion;
 }
 function applySelfLearning(c,rs){
-  const b=__selfLearnFor(rs);if(!b||!Array.isArray(c)||c.length<2)return{applied:false};
-  const vals=c.map(q=>__slScore(__slFeat(rs,Number(q.digit)),b.weights));
-  const lo=Math.min(...vals),hi=Math.max(...vals),sp=Math.max(1e-6,hi-lo);
-  c.forEach((q,i)=>{const z=(vals[i]-lo)/sp*100;q.selfLearnScore=+z.toFixed(3);q.selfLearnConfidence=b.confidence;q.selfLearnWeights=b.weights;const lift=__v146fClamp((z-50)*.10,-5,5);q.score=Number(q.score||0)+lift;});
+  const b=__selfLearnFor(rs);if(!b||!Array.isArray(c)||c.length<2)return{applied:false,status:'INSUFFICIENT_EVIDENCE'};
+  const vals=c.map(q=>__slScore(__slFeat(rs,Number(q.digit)),b.weights));const lo=Math.min(...vals),hi=Math.max(...vals),sp=Math.max(1e-6,hi-lo);
+  c.forEach((q,i)=>{const z=(vals[i]-lo)/sp*100;q.selfLearnScore=+z.toFixed(3);q.selfLearnConfidence=b.confidence;q.selfLearnWeights=b.weights;q.selfLearnStatus=b.status;const reliability=Math.max(0,Math.min(1,(b.confidence-50)/20));const lift=__v146fClamp((z-50)*(.05+.07*reliability),-6,6);q.score=Number(q.score||0)+lift;});
   c.sort((a,b)=>b.score-a.score||a.digit-b.digit);
-  return{applied:true,tests:b.tests,hits:b.hits,rate:b.rate,floor:b.floor,mean:b.mean,confidence:b.confidence,weights:b.weights,missContexts:b.missContexts};
+  return{applied:true,status:b.status,tests:b.holdout.n,trainRate:b.train.rate1,validationRate:b.validation.rate1,holdoutRate:b.holdout.rate1,top2Holdout:b.holdout.rate2,stability:b.stability,confidence:b.confidence,iterations:b.iterations,learnedFrom:b.learnedFrom,weights:b.weights,missContexts:b.missContexts};
 }
 
 /* V1.9.107 ADAPTIVE WEIGHT CONTROLLER
@@ -6852,7 +6864,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.108 SELF-LEARNING OOS · V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.109 MAX-IQ SELF-LEARNING · V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
