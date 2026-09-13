@@ -2078,7 +2078,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill" id="appVersionBadge" title="เวอร์ชันปัจจุบันของไฟล์นี้">V1.9.85 · STABLE</div>
+  <div class="pill" id="appVersionBadge" title="เวอร์ชันปัจจุบันของไฟล์นี้">V1.9.86 · STABLE</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2104,7 +2104,7 @@ html{scroll-behavior:auto!important}
       ล้างข้อมูลสะสมทั้งหมด
     </button>
     <button id="sendResearch" class="research-btn" type="button" onclick="(async()=>{try{if(window.runFullResearchHarvest)await window.runFullResearchHarvest();if(window.exportResearchLatest)await window.exportResearchLatest()}catch(e){try{showToast('⚠️ เตรียมข้อมูลส่งไม่สำเร็จ')}catch(_){}}})()">
-      📤 ส่งข้อมูลให้ ChatGPT
+      📤 เตรียมข้อมูลส่งให้ ChatGPT
     </button>
   </div>
 </section>
@@ -6424,7 +6424,7 @@ async function __runFullResearchHarvest(){
     try{const parsed=parseInput($('bulkInput')?.value||'');if(Array.isArray(parsed.records)&&parsed.records.length)records=mergeStoredRecords(records,parsed.records)}catch(_){ }
     if(!records.length){showToast('ยังไม่มีข้อมูลสำหรับ Harvest · กดประมวลผลหรือวางข้อมูลก่อน');__researchPanel(null,'NO DATA');return null}
     const names=[...new Set(records.map(r=>String(r.name||'').trim()).filter(Boolean))],groups={};for(const name of names){const rs=results(sortRecords(records.filter(r=>String(r.name||'').trim()===name)));if(rs.length>=2)groups[name]=rs}
-    const bundles=[];let i=0;for(const [name,rs] of Object.entries(groups)){const route={name,groups,__stageAwareMemory:__stageMemoryNew()};const b=await __coopOosBundle(rs,route);bundles.push(b);i++;const pct=5+(i/Math.max(1,Object.keys(groups).length))*90;setProcessingProgress(pct,'🧬 Full-history Forensic Harvest',`กำลังเก็บ ${formatDisplayTitle(name)} · ${i}/${Object.keys(groups).length} หวย`,started,100,i);await yieldFrame()}
+    const bundles=[];let i=0;for(const [name,rs] of Object.entries(groups)){const route={name,groups,__stageAwareMemory:__stageMemoryNew()};const b=await __coopOosBundle(rs,route);bundles.push(b);i++;const typeRows=arr(b?.diagnostic);if(typeRows.length){const saved=await window.__RESEARCH_VAULT__?.capture?.(`full-history:${name}`,typeRows);if(!saved?.manifest?.writeVerified)throw new Error(`Research checkpoint failed: ${name}`);}const pct=5+(i/Math.max(1,Object.keys(groups).length))*90;setProcessingProgress(pct,'🧬 Full-history Forensic Harvest',`เก็บแล้ว ${formatDisplayTitle(name)} · ${i}/${Object.keys(groups).length} หวย · checkpoint ปลอดภัย`,started,100,i);await yieldFrame()}
     let __dnaHarvest=null;
     try{__dnaHarvest=await __runTypeDNA()}catch(e){__dnaHarvest={type:'LOTTERY_TYPE_DNA_INTELLIGENCE_ERROR',version:'V1.9.80',error:String(e?.message||e)}}
     const snap=__researchBuildSnapshot(records,groups,bundles,started);
@@ -6436,7 +6436,7 @@ async function __runFullResearchHarvest(){
   }catch(e){__SELECTOR_ERROR_BUS__.set({source:'ResearchHarvest',phase:'full-history',stage:'harvest-catch',rows:0,message:String(e?.message||e),stack:String(e?.stack||'')});__researchPanel(null,'ERROR');showToast(`⚠️ Harvest ไม่สำเร็จ: ${String(e?.message||e).slice(0,100)}`);return null}
   finally{__RESEARCH_BUSY__=false;if(btn){btn.disabled=false;btn.textContent='🧬 เก็บข้อมูล Forensic ทั้งระบบ'}}
 }
-async function __exportResearchLatest(){const x=__researchValidSnapshot(window.__RESEARCH_ARCHIVE__)?window.__RESEARCH_ARCHIVE__:(__researchBackupGet()||await __researchIndexedGet());if(!x){showToast('ยังไม่มี Research Pack ที่สมบูรณ์ · กดเก็บข้อมูล Forensic ก่อน');return false}const check=__researchExportReady(x);if(!check.ok){showToast(`⚠️ Research Pack ไม่ครบ: ${check.reason}`);return false}window.__RESEARCH_ARCHIVE__=x;__researchPanel(x,'READY');return __researchDownload(`LOTTERY-FORENSIC-V1.9.80-${Date.now()}.json`,x)}
+async function __exportResearchLatest(){try{if(window.__RESEARCH_VAULT__?.exportAll)return await window.__RESEARCH_VAULT__.exportAll();}catch(e){showToast(`⚠️ Export Research Vault ไม่สำเร็จ: ${String(e?.message||e).slice(0,90)}`);return false}return false}
 window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
   const startedAt=performance.now();window.__RUN_STARTED_AT__=startedAt;__SELECTOR_DIAGNOSTIC__.reset();startProcessing();
@@ -6491,9 +6491,9 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
 } finally { try{if(window.__RESEARCH_VAULT__?.capture)await window.__RESEARCH_VAULT__.capture('runEngine')}catch(e){console.warn('V1.9.85 Research Vault capture failed',e)} window.__LAST_RUN_TIMING__={ms:performance.now()-(window.__RUN_STARTED_AT__||performance.now()),finishedAt:new Date().toISOString()}; window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
 
-/* ================= V1.9.83 TYPE DNA / PAIR / BOUNDARY RESEARCH VAULT =================
+/* ================= V1.9.86 TYPE DNA / PAIR / BOUNDARY RESEARCH VAULT =================
    Research-only layer. Production scoring, F1-F9 and Champion remain untouched.
-   V1.9.83 fixes the V1.9.81 research-schema weaknesses:
+   V1.9.86 fixes the V1.9.81 research-schema weaknesses:
    - append-only run identity (no per-type overwrite)
    - stable row identity includes source index + hash
    - real pair DNA / targeted-digit evidence
@@ -6503,11 +6503,11 @@ function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)
 */
 (function installResearchVaultV1984(){
   'use strict';
-  const RV_VERSION='V1.9.85';
-  const RV_DB='lottery_research_v1984_type_dna_lab';
+  const RV_VERSION='V1.9.86';
+  const RV_DB='lottery_research_v1986_type_dna_lab';
   const RV_STORES=['runs','rows','typeRuns','digitRuns','pairRuns','formulaRuns','rankRuns','stageRuns','boundaryRuns','failureRuns','regimeRuns','evidenceRuns','dnaRuns','health'];
-  const RV_META_KEY='lottery_research_v1984_manifest';
-  const RV_INDEX_KEY='lottery_research_v1984_type_index';
+  const RV_META_KEY='lottery_research_v1986_manifest';
+  const RV_INDEX_KEY='lottery_research_v1986_type_index';
   const RV_LEGACY_KEYS=['lottery_research_latest_v1980','lottery_research_v1981_manifest','lottery_research_v1981_type_index'];
   let dbp=null;
   const now=()=>new Date().toISOString();
@@ -6596,10 +6596,10 @@ function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)
     return out;
   }
 
-  async function capture(source='runEngine'){
-    const rows=arr(window.__SELECTOR_DIAGNOSTIC__?.rows);
+  async function capture(source='runEngine', rowsOverride=null, runIdOverride=null){
+    const rows=arr(rowsOverride?.rows||rowsOverride||window.__SELECTOR_DIAGNOSTIC__?.rows);
     if(!rows.length){try{showToast('ℹ️ Research Vault: รอบนี้ไม่มี Diagnostic rows ให้บันทึก')}catch(_){};return {captured:0,reason:'NO_DIAGNOSTIC_ROWS'};}
-    const runId=`${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+    const runId=runIdOverride||`${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
     const built=rows.map((r,i)=>buildRow(r,runId,i));const ag=buildAggregates(built);const types=[...new Set(built.map(x=>x.type))];
     const writes={runs:0,rows:0};
     writes.runs=await put('runs',{id:runId,version:RV_VERSION,source,createdAt:now(),rowCount:built.length,typeCount:types.length,typeNames:types,productionMutation:false,leakagePolicy:'capture-after-observation'});
@@ -6611,7 +6611,9 @@ function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)
     const storedDnaRuns=(await all('dnaRuns')).filter(x=>x.runId===runId).length;
     const writeVerified=writes.runs===true&&storedRows===built.length&&storedTypeRuns===types.length&&storedDnaRuns===types.length;
     const counts={};for(const st of RV_STORES)counts[st]=(await all(st)).length;
-    const manifest={version:RV_VERSION,updatedAt:now(),lastRunId:runId,lastCaptureSource:source,totalRows:built.length,typeCount:types.length,storedRows,storedTypeRuns,storedDnaRuns,stores:RV_STORES,architecture:'APPEND_ONLY_TYPE_DNA_PAIR_BOUNDARY',productionCoreMutation:false,currentTargetLeakage:false,features:['effective-targeted-digits','pair-dna','formula-combination','rank-boundary','stage-forensic','regime-windows','confidence-margin-capture','self-family-global-ready'],writeVerified,writeStats:{runsWrite:writes.runs,rowsWrite:writes.rows,aggregateWrites,runRowsReadback:storedRows,runTypeRunsReadback:storedTypeRuns,runDnaRunsReadback:storedDnaRuns},integrity:{expectedRows:built.length,storedRows,expectedTypes:types.length,storedTypes:storedTypeRuns,allStoreCounts:counts,ok:writeVerified}};
+    const allRuns=await all('runs'),allTypes=await all('typeRuns'),uniqueTypes=[...new Set(allTypes.map(x=>name(x.type)))];
+    const cumulativeRows=allRuns.reduce((n,x)=>n+Number(x.rowCount||0),0);
+    const manifest={version:RV_VERSION,updatedAt:now(),lastRunId:runId,lastCaptureSource:source,totalRows:cumulativeRows,typeCount:uniqueTypes.length,lastRunRows:built.length,lastRunTypes:types.length,storedRows,storedTypeRuns,storedDnaRuns,stores:RV_STORES,architecture:'APPEND_ONLY_CHECKPOINTED_TYPE_DNA_PAIR_BOUNDARY',productionCoreMutation:false,currentTargetLeakage:false,resumeSupported:true,features:['effective-targeted-digits','pair-dna','formula-combination','rank-boundary','stage-forensic','regime-windows','confidence-margin-capture','self-family-global-ready','checkpoint-per-type','readback-verification','append-only-runs'],writeVerified,writeStats:{runsWrite:writes.runs,rowsWrite:writes.rows,aggregateWrites,runRowsReadback:storedRows,runTypeRunsReadback:storedTypeRuns,runDnaRunsReadback:storedDnaRuns},integrity:{expectedRows:built.length,storedRows,expectedTypes:types.length,storedTypes:storedTypeRuns,cumulativeRows,cumulativeTypes:uniqueTypes.length,allStoreCounts:counts,ok:writeVerified}};
     try{localStorage.setItem(RV_META_KEY,JSON.stringify(manifest));localStorage.setItem(RV_INDEX_KEY,JSON.stringify(ag.typeRuns.map(x=>({type:x.type,runId:x.runId,sample:x.sample,id:x.id}))));}catch(_){manifest.localStorageManifestWrite=false}
     const health=await healthReport(false,runId,built.length,types.length);await put('health',{id:`${runId}|health`,...health,verified:writeVerified});
     render(manifest,ag.typeRuns);
@@ -6626,7 +6628,7 @@ function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)
     const checks=[];const scripts=[...document.scripts].map(x=>x.textContent||'').filter(Boolean);let syntax=true;for(const code of scripts){try{new Function(code)}catch(e){syntax=false;checks.push({check:'JS syntax',status:'FAIL',detail:String(e?.message||e)})}}if(syntax)checks.push({check:'JS syntax',status:'PASS'});
     const ids=[...document.querySelectorAll('[id]')].map(x=>x.id),dupes=ids.filter((id,i)=>ids.indexOf(id)!==i);checks.push({check:'Duplicate DOM IDs',status:dupes.length?'WARN':'PASS',detail:dupes.slice(0,20)});
     const required=['run','bulkInput','result','researchPanel'];const missing=required.filter(id=>!document.getElementById(id));checks.push({check:'Required UI',status:missing.length?'FAIL':'PASS',detail:missing});
-    const body=document.documentElement.outerHTML;checks.push({check:'Production Core mutation',status:'PASS',detail:'V1.9.85 Research Vault is append-only and does not rewrite Production scoring/F1-F9/Champion'});checks.push({check:'Current-target leakage',status:'PASS',detail:'Research capture occurs only after the processing cycle has produced its diagnostic rows; observed targets are never used to alter the same selection'});
+    const body=document.documentElement.outerHTML;checks.push({check:'Production Core mutation',status:'PASS',detail:'V1.9.86 Research Vault is append-only and does not rewrite Production scoring/F1-F9/Champion'});checks.push({check:'Current-target leakage',status:'PASS',detail:'Research capture occurs only after the processing cycle has produced its diagnostic rows; observed targets are never used to alter the same selection'});
     checks.push({check:'Record Identity',status:'PASS',detail:'runId + rowIndex + source/target + candidate hash'});checks.push({check:'Type DNA',status:/typeDNAAdaptive/i.test(body)?'PASS':'WARN'});checks.push({check:'Deep DNA',status:/deepTypeAnalysis/i.test(body)?'PASS':'WARN'});checks.push({check:'Forensic',status:/FORENSIC|forensic/i.test(body)?'PASS':'WARN'});
     const db=await openDB();checks.push({check:'IndexedDB',status:db?'PASS':'FAIL',detail:db?'available':'unavailable'});
     const m=(()=>{try{return JSON.parse(localStorage.getItem(RV_META_KEY)||'null')}catch(_){return null}})();
@@ -6636,10 +6638,10 @@ function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)
     checks.push({check:'Research capture persistence',status:hasData?'PASS':(m?.totalRows>0?'FAIL':'WAIT'),detail:{rows:storeCounts.rows,runs:storeCounts.runs,typeRuns:storeCounts.typeRuns,dnaRuns:storeCounts.dnaRuns}});
     const manifestMatches=!m||m?.totalRows==null||Number(m.totalRows)===Number(m.storedRows||m.totalRows);
     checks.push({check:'Stored-count integrity',status:manifestMatches?'PASS':'FAIL',detail:m?.integrity||storeCounts});
-    checks.push({check:'Research Export',status:hasData?'PASS':'WAIT',detail:'Export reads directly from the V1.9.85 IndexedDB stores'});
+    checks.push({check:'Research Export',status:hasData?'PASS':'WAIT',detail:'Export reads directly from the V1.9.86 IndexedDB stores'});
     const report={schema:`${RV_VERSION}_HEALTH`,checkedAt:now(),runId,rowCount,typeCount,storeCounts,manifest:m,checks,critical:checks.filter(x=>x.status==='FAIL')};if(show)await copy(report);return report;
   }
-  async function cleanup(confirmIt=true){if(confirmIt&&!confirm('ล้างเฉพาะ Research รุ่นเก่า V1.9.80/V1.9.81? ข้อมูล Production และ V1.9.83 จะไม่ถูกลบ'))return false;for(const k of RV_LEGACY_KEYS)try{localStorage.removeItem(k)}catch(_){}try{indexedDB.deleteDatabase('lottery_research_v1980')}catch(_){}try{indexedDB.deleteDatabase('lottery_research_v1981_vault')}catch(_){}try{localStorage.removeItem('lottery_research_v1980')}catch(_){}try{showToast('✓ เกษียณเฉพาะ Research เก่าแล้ว')}catch(_){}return true}
+  async function cleanup(confirmIt=true){if(confirmIt&&!confirm('ล้างเฉพาะ Research รุ่นเก่า V1.9.80/V1.9.81? ข้อมูล Production และ V1.9.86 จะไม่ถูกลบ'))return false;for(const k of RV_LEGACY_KEYS)try{localStorage.removeItem(k)}catch(_){}try{indexedDB.deleteDatabase('lottery_research_v1980')}catch(_){}try{indexedDB.deleteDatabase('lottery_research_v1981_vault')}catch(_){}try{localStorage.removeItem('lottery_research_v1980')}catch(_){}try{showToast('✓ เกษียณเฉพาะ Research เก่าแล้ว')}catch(_){}return true}
   async function exportAll(){
     const manifest=(()=>{try{return JSON.parse(localStorage.getItem(RV_META_KEY)||'null')}catch(_){return null}})();
     const pack={schema:RV_VERSION,exportedAt:now(),exportReady:!!manifest?.writeVerified,manifest,runs:await all('runs'),rows:await all('rows'),typeRuns:await all('typeRuns'),digitRuns:await all('digitRuns'),pairRuns:await all('pairRuns'),formulaRuns:await all('formulaRuns'),rankRuns:await all('rankRuns'),stageRuns:await all('stageRuns'),boundaryRuns:await all('boundaryRuns'),failureRuns:await all('failureRuns'),regimeRuns:await all('regimeRuns'),evidenceRuns:await all('evidenceRuns'),dnaRuns:await all('dnaRuns'),health:await all('health')};
@@ -6650,11 +6652,11 @@ function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)
     root.querySelector('[data-a="manifest"]').onclick=()=>copy(manifest||{schema:RV_VERSION});root.querySelector('[data-a="export"]').onclick=exportAll;root.querySelector('[data-a="health"]').onclick=()=>healthReport(true);root.querySelector('[data-a="cleanup"]').onclick=()=>cleanup(true);
     root.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>copyBox(b.dataset.t,b.dataset.k));
   }
-  window.__RESEARCH_VAULT__={version:'V1.9.84',capture,health:healthReport,cleanup,copy:copy,copyBox,exportBox,exportAll};
+  window.__RESEARCH_VAULT__={version:'V1.9.86',capture,health:healthReport,cleanup,copy:copy,copyBox,exportBox,exportAll};
   window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{latest();},0)});
 })();
 
-window.runEngine=runEngine;window.runSelectorAutoOptimizer=runSelectorAutoOptimizer;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V1.9.85',coreVersion:'V1.9.80',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9.82+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
+window.runEngine=runEngine;window.runSelectorAutoOptimizer=runSelectorAutoOptimizer;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V1.9.86',coreVersion:'V1.9.80',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9.82+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+walk-forward-simulator+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('harvestResearch'))$('harvestResearch').addEventListener('click',()=>{void __runFullResearchHarvest()});if($('exportResearch'))$('exportResearch').addEventListener('click',()=>{void __exportResearchLatest()});if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth();const __savedResearch=__researchBackupGet();if(__savedResearch){window.__RESEARCH_ARCHIVE__=__savedResearch;__researchPanel(__savedResearch,'SAVED')}else{__researchIndexedGet().then(x=>{if(x){window.__RESEARCH_ARCHIVE__=x;__researchPanel(x,'SAVED')}})} });
 })();
 </script>
