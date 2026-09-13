@@ -1,66 +1,84 @@
-class BanNgernKongAIEngine {
-    constructor(historicalData) {
-        this.historicalData = historicalData; // ข้อมูลสถิติย้อนหลัง
-        this.formulasCount = 9; // 9-Formula Core Engine[span_1](start_span)[span_1](end_span)
+from collections import Counter
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+
+
+class LotteryBehaviorAnalyzer:
+
+  def __init__(self, data):
+    # เตรียมข้อมูลให้อยู่ในรูปแบบ DataFrame
+    # data ควรมีคอลัมน์: ['lottery_type', 'date', 'three_digit', 'two_digit']
+    self.df = pd.DataFrame(data)
+    self.models = {}
+    self._train_models()
+
+  def _train_models(self):
+    # แยกฝึกโมเดลเรียนรู้พฤติกรรมแยกตาม "ประเภทหวย"
+    for l_type, group in self.df.groupby('lottery_type'):
+      # ตัวอย่างการใช้ Machine Learning เบื้องต้นเพื่อดูความถี่และแพทเทิร์นเลข
+      # แปลงเลข 3 ตัว และ 2 ตัว เป็น features
+      corpus_three = group['three_digit'].tolist()
+      corpus_two = group['two_digit'].tolist()
+
+      # เก็บสถิติความถี่พื้นฐานแยกตามประเภทหวย
+      self.models[l_type] = {
+          'three_freq': Counter(corpus_three),
+          'two_freq': Counter(corpus_two),
+          'total_draws': len(group),
+      }
+
+  def predict_best_numbers(self, lottery_type, top_n=3):
+    """คัดเลือกเลขเจาะ (3 ตัว) และเลขเด่น (2 ตัว) ที่ดีที่สุดสำหรับหวยแต่ละประเภท
+
+    โดยอ้างอิงจากความถี่และพฤติกรรมในอดีต
+    """
+    if lottery_type not in self.models:
+      return (
+          f'ไม่พบข้อมูลสถิติของประเภทหวย: {lottery_type} กรุณาตรวจสอบชื่อประเภทอีกครั้ง'
+      )
+
+    model = self.models[lottery_type]
+
+    # คัดเลือกเลข 3 ตัวยอดฮิต (เลขเจาะ)
+    best_three = model['three_freq'].most_common(top_n)
+
+    # คัดเลือกเลข 2 ตัวยอดฮิต (เลขเด่น)
+    best_two = model['two_freq'].most_common(top_n)
+
+    return {
+        'lottery_type': lottery_type,
+        'analyzed_draws': model['total_draws'],
+        'top_three_digits': [
+            {'number': num, 'count': freq} for num, freq in best_three
+        ],
+        'top_two_digits': [
+            {'number': num, 'count': freq} for num, freq in best_two
+        ],
     }
 
-    // ฟังก์ชันคำนวณน้ำหนักความน่าจะเป็นจาก 9 สูตร
-    calculateNineFormulas() {
-        let formulaScores = {};
-        
-        for (let i = 1; i <= this.formulasCount; i++) {
-            let result = this.runFormula(i, this.historicalData);
-            formulaScores[`formula_${i}`] = {
-                prediction: result,
-                weight: this.getFormulaWeight(i)
-            };
-        }
-        return formulaScores;
-    }
 
-    runFormula(formulaId, data) {
-        // จำลองตรรกะการวิเคราะห์เฉพาะตัวของแต่ละสูตร (เช่น Moving Average, Frequency Analysis, Pattern Matrix)
-        // เพื่อให้ได้เลขเด่น 2 ตัว และ 3 ตัวที่มีความแม่นยำสูงสุด
-        const lastDraw = data[data.length - 1];
-        let baseNum = (lastDraw * formulaId) % 100;
-        return {
-            twoDigit: String(baseNum).padStart(2, '0'),
-            threeDigit: String((baseNum * 3) % 1000).padStart(3, '0')
-        };
-    }
+# ==========================================
+# ตัวอย่างการนำข้อมูลจากไฟล์สถิติมาประมวลผล
+# ==========================================
+raw_data = [
+    # ตัวอย่างข้อมูลหุ้นไทยเช้า[span_1](start_span)[span_1](end_span)
+    {'lottery_type': 'หุ้นไทยเช้า', 'date': '10 ก.ย. 69', 'three_digit': '047', 'two_digit': '42'},
+    {'lottery_type': 'หุ้นไทยเช้า', 'date': '09 ก.ย. 69', 'three_digit': '027', 'two_digit': '38'},
+    {'lottery_type': 'หุ้นไทยเช้า', 'date': '8 ก.ย. 69', 'three_digit': '398', 'two_digit': '16'},
+    # ตัวอย่างข้อมูลลาวประตูชัย[span_2](start_span)[span_2](end_span)
+    {'lottery_type': 'ลาวประตูชัย', 'date': '13 ก.ย. 69', 'three_digit': '036', 'two_digit': '08'},
+    {'lottery_type': 'ลาวประตูชัย', 'date': '12 ก.ย. 69', 'three_digit': '363', 'two_digit': '34'},
+    {'lottery_type': 'ลาวประตูชัย', 'date': '11 ก.ย. 69', 'three_digit': '332', 'two_digit': '80'},
+]
 
-    getFormulaWeight(formulaId) {
-        // ระบบให้น้ำหนักความแม่นยำย้อนหลังแบบ Dynamic Weighting
-        const weights = { 1: 1.2, 2: 1.5, 3: 1.1, 4: 1.4, 5: 1.3, 6: 1.6, 7: 1.1, 8: 1.4, 9: 1.5 };
-        return weights[formulaId] || 1.0;
-    }
+# เริ่มต้นระบบวิเคราะห์
+analyzer = LotteryBehaviorAnalyzer(raw_data)
 
-    // ระบบวิเคราะห์ DNA Intelligence และการจัดอันดับความแม่นยำ
-    generateDNATypeIntelligence() {
-        const scores = this.calculateNineFormulas();
-        let aggregatedResults = {};
+# ทดสอบคัดเลือกเลขสำหรับ "หุ้นไทยเช้า"
+result_thai = analyzer.predict_best_numbers('หุ้นไทยเช้า', top_n=2)
+print('ผลวิเคราะห์ หุ้นไทยเช้า:', result_thai)
 
-        for (let key in scores) {
-            let item = scores[key];
-            let num = item.prediction.twoDigit;
-            if (!aggregatedResults[num]) {
-                aggregatedResults[num] = 0;
-            }
-            aggregatedResults[num] += item.weight;
-        }
-
-        // เรียงลำดับความน่าจะเป็นจากมากไปน้อย (Confidence Score)
-        let sortedPredictions = Object.entries(aggregatedResults)
-            .sort((a, b) => b[1] - a[1])
-            .map(([number, score]) => ({
-                number,
-                confidenceScore: (score * 10).toFixed(2) + '%'
-            }));
-
-        return {
-            status: "SUCCESS",
-            auditVersion: "V1.9.80-DNA-OPTIMIZED",
-            topPredictions: sortedPredictions.slice(0, 5) // คัดเลือก 5 ชุดที่ดีที่สุด
-        };
-    }
-}
+# ทดสอบคัดเลือกเลขสำหรับ "ลาวประตูชัย"
+result_lao = analyzer.predict_best_numbers('ลาวประตูชัย', top_n=2)
+print('ผลวิเคราะห์ ลาวประตูชัย:', result_lao)
