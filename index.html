@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V1.9.106 V146 Fusion + Adaptive Weight Controller; formulas 1-9 preserved -->
+<!-- V1.9.107 V146 Fusion + Adaptive Weight Controller; formulas 1-9 preserved -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
 <head>
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.106 V146 FUSION · ADAPTIVE DECISION LAB</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.107 V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -2111,7 +2111,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.106 V146 FUSION · ADAPTIVE DECISION LAB</div>
+  <div class="pill">V1.9.107 V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -4244,7 +4244,7 @@ function applyTypeDigitDNA(c,rs){
   return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);
 }
 function top2DNAStatus(rs){const m=top2DNAMemory(rs);if(!m)return{rate:null,tests:0};return{rate:m.globalRate,tests:m.total};}
-/* V1.9.106 ADAPTIVE OOS HISTORICAL SELECTOR
+/* V1.9.107 ADAPTIVE OOS HISTORICAL SELECTOR
    Production policy: 90% learned historical model + 10% existing formula/system support.
    Trains only on completed prior rounds of the same lottery type. No future result is used.
    Features: multi-window frequency, recency, momentum/flow, transition, repeat and gap. */
@@ -4305,14 +4305,14 @@ function applyHistoricalAI(c,rs,routeCtx=null){
   c.sort((a,b)=>b.score-a.score||b.aiProbability-a.aiProbability||a.digit-b.digit);
   return{applied:true,weight:.90,supportWeight:.10,tests:model.tests,expertTests:ex.tests,positive:model.positive,type:routeCtx?.name||rs?.[0]?.name||'',expertWeights:ex.weights,top:c.slice(0,3).map(q=>Number(q.digit))};
 }
-/* V1.9.106 MAX EVIDENCE STACK */
+/* V1.9.107 MAX EVIDENCE STACK */
 const __CHAMPION_CACHE__=new WeakMap();
 function __championScoreSet(rs){const h=Array.isArray(rs)?rs:[],n=h.length;if(n<10)return null;const td=r=>__aiTargetDigits(r);const keys=['freq','recent','trans','gap'];const hit=Object.fromEntries(keys.map(k=>[k,0])),from=Math.max(10,n-60),tests=n-from;
  for(let i=from;i<n;i++){const hist=h.slice(0,i),target=td(h[i]),rows=[];for(let d=0;d<10;d++){const a5=hist.slice(-5),a20=hist.slice(-20),f=a5.filter(r=>td(r).has(d)).length/5, m=a20.filter(r=>td(r).has(d)).length/20;let g=hist.length+1;for(let j=hist.length-1;j>=0;j--){if(td(hist[j]).has(d)){g=hist.length-j;break}}const rec=Math.exp(-g/7),tr=td(hist.at(-1)).has(d)?1:td(hist.at(-2)).has(d)?.6:.1;rows.push({d,freq:.65*f+.35*m,recent:rec,trans:tr,gap:1-Math.min(1,g/30)})}for(const k of keys){const q=rows.slice().sort((a,b)=>b[k]-a[k]||a.d-b.d)[0];if(target.has(q.d))hit[k]++}}
  const raw=Object.fromEntries(keys.map(k=>[k,(hit[k]+3)/(tests+6)])),sum=Object.values(raw).reduce((a,b)=>a+b,0)||1;return{weights:Object.fromEntries(keys.map(k=>[k,raw[k]/sum])),tests};}
 function __championFor(rs){if(!Array.isArray(rs)||rs.length<10)return null;let x=__CHAMPION_CACHE__.get(rs);if(x)return x;x=__championScoreSet(rs);__CHAMPION_CACHE__.set(rs,x);return x;}
 function applyAdaptiveChampion(c,rs){const bt=__championFor(rs);if(!bt||!Array.isArray(c)||c.length<2)return{applied:false};const rows=c.map(q=>{const d=Number(q.digit);return{q,d}});const latest=rs;const vals=[];for(const x of rows){const hist=latest;const a5=hist.slice(-5),a20=hist.slice(-20),f=.65*a5.filter(r=>__aiTargetDigits(r).has(x.d)).length/5+.35*a20.filter(r=>__aiTargetDigits(r).has(x.d)).length/20;let g=hist.length+1;for(let j=hist.length-1;j>=0;j--){if(__aiTargetDigits(hist[j]).has(x.d)){g=hist.length-j;break}}const rec=Math.exp(-g/7),tr=__aiTargetDigits(hist.at(-1)).has(x.d)?1:__aiTargetDigits(hist.at(-2)).has(x.d)?.6:.1,gap=1-Math.min(1,g/30);x.fusion=bt.weights.freq*f+bt.weights.recent*rec+bt.weights.trans*tr+bt.weights.gap*gap;vals.push(x.fusion)}const lo=Math.min(...vals),hi=Math.max(...vals),sp=Math.max(.0001,hi-lo),base=c.map(q=>Number(q.score||0)),blo=Math.min(...base),bhi=Math.max(...base),bsp=Math.max(.0001,bhi-blo);rows.forEach((x,i)=>{const ch=(x.fusion-lo)/sp,b=(Number(x.q.score||0)-blo)/bsp;x.q.score=78*ch+22*b;x.q.championScore=+ch.toFixed(4);x.q.championTests=bt.tests;x.q.championWeights=bt.weights});c.sort((a,b)=>b.score-a.score||a.digit-b.digit);return{applied:true,tests:bt.tests,weights:bt.weights};}
-/* V1.9.106 MAX EVIDENCE STACK
+/* V1.9.107 MAX EVIDENCE STACK
    Source-derived selector layer: frequency decay + positional transition + momentum + pair recurrence.
    All weights are learned walk-forward from prior rows of the same lottery type.
 */
@@ -4345,7 +4345,7 @@ function applyGeminiMatrixFusion(c,rs){
   c.forEach(q=>{const d=Number(q.digit),g=p.weights.freq*F[d]+p.weights.momentum*M[d]+p.weights.transition*T[d]+p.weights.pair*P[d];q.geminiMatrixScore=+g.toFixed(5);q.preGeminiScore=Number(q.score||0);q.score=84*g+16*B[d];});
   c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);return{applied:true,tests:p.tests,weights:p.weights};
 }
-/* V1.9.106 MAX EVIDENCE STACK — source-derived concepts from V.146/V85-V107.1
+/* V1.9.107 MAX EVIDENCE STACK — source-derived concepts from V.146/V85-V107.1
    Purpose: strengthen digit selection without replacing F1-F9, card/UI, names, calendar, or pair contract.
    Chronological/shrinkage-aware: only rows in rs/historyRs are used.
    Layers: formula-conditional precision, multi-window recency, position, transition, gap,
@@ -4377,7 +4377,7 @@ function applyMaxEvidenceStack(c,rs,ad,routeCtx){
  const cand=metrics.slice(0,7);let best=null;for(let i=0;i<cand.length;i++)for(let j=i+1;j<cand.length;j++){const a=cand[i],b=cand[j],sy=__mesPairSynergy(rs,a.d,b.d),balance=100-Math.min(100,Math.abs(a.q.score-b.q.score)*1.25),joint=.72*((a.q.score+b.q.score)/2)+.18*sy+.10*Math.min(a.q.score,b.q.score)+.02*balance;if(!best||joint>best.joint)best={a,b,joint,sy};}
  return{applied:true,weights:{conditional:.24,recent:.12,frequency:.08,position:.07,transition:.06,gap:.06,stability:.08,regime:.05,empirical:.05,formulaQuality:.06,breadth:.06},pairGate:best?{d1:best.a.d,d2:best.b.d,joint:+best.joint.toFixed(2),synergy:+best.sy.toFixed(2)}:null};
 }
-/* V1.9.106 ADAPTIVE WEIGHT CONTROLLER
+/* V1.9.107 ADAPTIVE WEIGHT CONTROLLER
    AI controls trust allocation; it does not directly own the digit decision.
    Uses only prior rows of the same runtime history and bounded/shrunk expert signals.
 */
@@ -4425,7 +4425,7 @@ function applyAdaptiveWeightController(c,rs){
   return{applied:true,weights:a.weights,tests:a.tests,source:a.source};
 }
 
-/* V1.9.106 V146 FUSION — bounded evidence arbitration
+/* V1.9.107 V146 HEAD-TO-HEAD — bounded evidence arbitration
    Uses only signals already available in this production selector. V146-inspired
    layers: conditional formula trust, multi-window recent stability, position,
    transition/cross-transition, gap-conditional, empirical baseline, supporter
@@ -4655,7 +4655,7 @@ function selectionDecisionAuditPanel(groups){const entries=Object.entries(groups
 function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[],logs=decisionLog(rs,base.routeCtx||null).slice(-12).reverse();const rows=logs.map(x=>`<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${x.d1}</td><td>${x.d1Hit?'✓':'✗'}</td><td>${x.d2}</td><td>${x.d2Hit?'✓':'✗'}</td><td>${x.margin}</td><td>${x.confidence}</td><td>${x.curMissBefore}</td></tr>`).join('');$('decisionTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔎 Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุดของหวยนี้ · d1/d2 ถูกตรวจแยก และ curMissBefore แสดงความเสี่ยงก่อนการตัดสินใจ</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>d1</th><th>d1 Hit</th><th>d2</th><th>d2 Hit</th><th>Margin</th><th>Confidence</th><th>Miss ก่อนหน้า</th></tr></thead><tbody>${rows}</tbody></table></div>`;document.getElementById('decisionTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})}
 function decisionStats(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionStats"); try {const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}} finally { window.__PERFTRACE__.end("decisionStats",__pt0); }}
 function decisionMemorySummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>decisionMemory(rs)),n=xs.reduce((s,x)=>s+x.tests,0),h=xs.reduce((s,x)=>s+x.hits,0);return{n,h,r:pct(h,n)}}
-/* V1.9.106 V146 AUDIT SCORE — diagnostic-only, 0-100, separate from production score. */
+/* V1.9.107 V146 AUDIT SCORE — diagnostic-only, 0-100, separate from production score. */
 function __v146StandaloneScore(c,rs){
   const arr=Array.isArray(rs)?rs:[], d=String(c?.digit??'').slice(-1); if(!d)return 50;
   const recent=.35*__v146fRecent(arr,d,3)+.30*__v146fRecent(arr,d,6)+.22*__v146fRecent(arr,d,12)+.13*__v146fRecent(arr,d,24);
@@ -4849,6 +4849,42 @@ function formulaRoutingPanel(groups){
   const rows=fams.map(fam=>{const same=entries.filter(([n])=>routingFamily(n)===fam),profiles=same.map(([name])=>formulaRoutingProfile(groups,name)).filter(Boolean),agg=FORMULAS.map(f=>{const xs=profiles.map(p=>p.ranked.find(x=>x.f===f)).filter(x=>x&&x.n>=8&&Number.isFinite(x.rate));return{f,n:xs.reduce((a,x)=>a+x.n,0),rate:xs.length?avg(xs.map(x=>x.rate)):null}}).filter(x=>Number.isFinite(x.rate)).sort((a,b)=>b.rate-a.rate||b.n-a.n).slice(0,4);return`<tr><td><b>${esc(fam)}</b></td><td>${same.length}</td><td>${agg.map((x,i)=>`<span class="score-chip" style="margin-right:3px">${i+1}. ${esc(x.f.replace(/^สูตร /,'F'))} ${x.rate}%</span>`).join(' ')||'—'}</td></tr>`}).join('');
   return `<div class="research-panel" style="margin-bottom:12px"><div class="research-head"><b>🧭 Formula Routing · สูตรแม่ตามประเภทหวย</b><span>เลือกทีมหลัก 3–4 สูตรจาก 9 สูตรล็อก · ไม่สร้างสูตรใหม่</span></div><div class="research-grid"><div class="research-item primary"><small>ประเภท/Family</small><b>${fams.length}</b><span>จัดกลุ่มจากชื่อหวย</span></div><div class="research-item"><small>สูตรแม่</small><b>9</b><span>ล็อกเหมือนเดิม</span></div><div class="research-item"><small>ทีมหลัก</small><b>Top 4</b><span>ถ่วงน้ำหนักตาม OOS</span></div><div class="research-item"><small>Guard</small><b>≥8 OOS</b><span>ไม่พอข้อมูลใช้ค่าเดิม</span></div></div><div class="research-note">Routing จะเรียนรู้จากข้อมูลในอดีตเท่านั้นใน OOS: แบ่งตาม family ก่อน แล้วจัดอันดับสูตร 1–9; สูตรที่ข้อมูลน้อยจะไม่ถูกดันขึ้นเป็นตัวหลัก และน้ำหนักถูกจำกัดเพื่อไม่ให้ routing ครอบงำ กระดานตัวเลือก จนเละเทะ</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ประเภทหวย</th><th>จำนวนหวย</th><th>Top 4 สูตรแม่</th></tr></thead><tbody>${rows||'<tr><td colspan="3">ยังไม่มีข้อมูล</td></tr>'}</tbody></table></div></div>`;
 }
+
+/* V1.9.107 — V146 HEAD-TO-HEAD REFERENCE ENGINE
+   Source basis: V.146 / V107.1 evidence stack. This is intentionally isolated
+   from Production Selector scoring so the comparison cannot contaminate OUR result.
+*/
+const __V146_REF_CACHE__=new WeakMap();
+function v146RefTarget(r){const n3=String(r?.n3||'').padStart(3,'0'),n2=String(r?.n2||'').padStart(2,'0');return [Number(n3[1]),Number(n3[2]),Number(n2[0]),Number(n2[1])].filter(Number.isFinite);}
+function v146RefRecent(a,d,w){const x=a.slice(-Math.min(w,a.length));return x.length?100*x.filter(r=>v146RefTarget(r).includes(d)).length/x.length:50;}
+function v146RefWeighted(a,d,dec=.985){if(!a.length)return 50;let sw=0,sh=0;a.forEach((r,i)=>{const w=Math.pow(dec,a.length-1-i);sw+=w;if(v146RefTarget(r).includes(d))sh+=w});return sw?100*sh/sw:50;}
+function v146RefGap(a,d){let g=0;for(let i=a.length-1;i>=0;i--){if(v146RefTarget(a[i]).includes(d))break;g++}return g;}
+function v146RefGapConditional(a,d){if(a.length<12)return v146RefWeighted(a,d);let n=0,h=0;for(let i=1;i<a.length;i++){let g=0;for(let j=i-1;j>=0&&g<12;j--){if(v146RefTarget(a[j]).includes(d))break;g++}const cur=v146RefTarget(a[i]).includes(d);const prev=Math.min(8,g),now=Math.min(8,v146RefGap(a.slice(0,i),d));if(prev===now){n++;if(cur)h++}}const base=v146RefWeighted(a,d),raw=n?h/n*100:base;return base+(raw-base)*(n/(n+10));}
+function v146RefPosition(a,d){if(!a.length)return 50;const den=[0,0,0,0],hit=[0,0,0,0];a.forEach(r=>{const n3=String(r.n3||'').padStart(3,'0'),n2=String(r.n2||'').padStart(2,'0'),p=[+n3[1],+n3[2],+n2[0],+n2[1]];p.forEach((x,i)=>{den[i]++;if(x===d)hit[i]++})});const v=den.map((n,i)=>n?100*hit[i]/n:50);return .18*v[0]+.28*v[1]+.27*v[2]+.27*v[3];}
+function v146RefTransition(a,d){if(a.length<4)return 50;let n=0,h=0,bd=0;for(let i=1;i<a.length;i++){const p=v146RefTarget(a[i-1]),c=v146RefTarget(a[i]);if(c.includes(d))bd++;if(p.includes(d)){n++;if(c.includes(d))h++}}const g=100*bd/(a.length-1),q=n?100*h/n:g;return n?g+(q-g)*(n/(n+12)):g;}
+function v146RefCross(a,d){if(a.length<4)return 50;let n=0,h=0;for(let i=1;i<a.length;i++){const p=v146RefTarget(a[i-1]),c=v146RefTarget(a[i]);if(p.some(x=>x!==d)){n++;if(c.includes(d))h++}}return n?50+(100*h/n-50)*(n/(n+15)):50;}
+function v146RefStability(a,d){const ws=[6,9,12,18,24,30].filter(w=>a.length>=Math.min(w,12));if(!ws.length)return 50;const v=ws.map(w=>v146RefRecent(a,d,w)),m=avg(v),variance=avg(v.map(x=>(x-m)**2));return Math.max(0,Math.min(100,100-Math.sqrt(variance)*1.25));}
+function v146RefRegime(a,d){if(a.length<12)return 50;const r=a.slice(-12),p=a.slice(-24,-12),rr=v146RefRecent(r,d,12),pp=p.length?v146RefRecent(p,d,12):rr,conc=new Set(r.flatMap(v146RefTarget)).size;return Math.max(0,Math.min(100,50+(rr-pp)*.35+(conc<=6?2:0)));}
+function v146RefEntropy(a){const c=Array(10).fill(0);a.forEach(r=>v146RefTarget(r).forEach(d=>c[d]++));const n=c.reduce((x,y)=>x+y,0)||1;let e=0;c.forEach(x=>{if(x){const q=x/n;e-=q*Math.log(q)}});return 1-e/Math.log(10);}
+function v146RefEntropyFit(a,d){if(a.length<12)return 50;const r=a.slice(-12),p=a.slice(-24,-12),er=v146RefEntropy(r),ep=p.length?v146RefEntropy(p):er,rr=v146RefRecent(r,d,12),pp=p.length?v146RefRecent(p,d,12):rr;return Math.max(0,Math.min(100,50+(rr-pp)*.25+(er-ep)*12));}
+function v146RefPair(a,d,o){if(a.length<12)return 50;let n=0,h=0;for(const r of a){const t=v146RefTarget(r);if(t.includes(o)){n++;if(t.includes(d))h++}}return n?100*h/n:50;}
+function v146RefScore(a,d){
+  const frequency=v146RefWeighted(a,d),recent=.35*v146RefRecent(a,d,3)+.30*v146RefRecent(a,d,6)+.22*v146RefRecent(a,d,12)+.13*v146RefRecent(a,d,24),position=v146RefPosition(a,d),transition=v146RefTransition(a,d),cross=v146RefCross(a,d),gap=v146RefGapConditional(a,d),stability=v146RefStability(a,d),regime=v146RefRegime(a,d),entropy=v146RefEntropyFit(a,d),direct=50+(frequency-50)*.65+(position-50)*.35;
+  const peers=[];for(let o=0;o<10;o++)if(o!==d)peers.push(v146RefPair(a,d,o));
+  const pair=peers.length?avg(peers):50;
+  /* V107.1 MaxAuthority weights preserved; unavailable formula-specific dependencies are
+     represented neutrally at 50 rather than fabricated. The result is an isolated reference score. */
+  const conditional=50, empirical=50, topSupport=50, breadth=50, layerMedian=50;
+  return .27*conditional+.10*recent+.08*frequency+.07*position+.06*transition+.04*cross+.04*gap+.07*stability+.05*regime+.03*entropy+.05*empirical+.04*direct+.04*topSupport+.04*breadth+.02*layerMedian;
+}
+function v146RefSelect(a){const rows=Array.from({length:10},(_,d)=>({digit:d,score:v146RefScore(a,d)})).sort((x,y)=>y.score-x.score||x.digit-y.digit);return{rows,d1:rows[0]?.digit??0,d2:rows[1]?.digit??1};}
+function v146ReferenceBacktest(groups){
+  const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)&&v.length>=4),types=[];let n=0,h=0,t2=0;
+  for(const [name,rs0] of entries){const rs=rs0.slice().sort((a,b)=>(Number(a.timestamp)||parseThaiDate(a.date)||0)-(Number(b.timestamp)||parseThaiDate(b.date)||0));let tn=0,th=0,tth=0;for(let i=1;i<rs.length-1;i++){const train=rs.slice(0,i+1),sel=v146RefSelect(train),target=v146RefTarget(rs[i+1]),hit=target.includes(sel.d1)||target.includes(sel.d2),top2=target.includes(sel.rows[0]?.digit)||target.includes(sel.rows[1]?.digit);tn++;if(hit)th++;if(top2)tth++;}if(tn){types.push({name,n:tn,h:th,rate:pct(th,tn),top2:pct(tth,tn)});n+=tn;h+=th;t2+=tth}}
+  return{n,h,rate:pct(h,n),top2:pct(t2,n),types};
+}
+function v146ReferencePanel(groups){const r=v146ReferenceBacktest(groups),ours=Object.values(currentPredictionDataMap||{});return `<div class="research-panel"><div class="research-head"><b>⚔️ V146 HEAD-TO-HEAD · Reference OOS</b><span>V146/V107.1 core แยกจาก Production Selector</span></div><div class="research-grid"><div class="research-item"><small>V146 Selection</small><b>${r.rate}%</b><span>${r.h}/${r.n}</span></div><div class="research-item"><small>V146 Top2</small><b>${r.top2}%</b><span>2 อันดับแรก</span></div><div class="research-item"><small>ทดสอบ</small><b>${r.n}</b><span>ทุกประเภทที่มีข้อมูล</span></div><div class="research-item"><small>Production</small><b>แยกอิสระ</b><span>ไม่ถูกแก้คะแนน</span></div></div><div class="research-note">นี่คือ Reference OOS จากแกน V146/V107.1 ที่ฝังแยกไว้สำหรับเปรียบเทียบ ไม่ใช่การอ้างว่าเป็น runtime V146 ทั้งไฟล์ และจะไม่ถูกนำไปเปลี่ยน D1/D2 ของ Production</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ประเภทหวย</th><th>ทดสอบ</th><th>เข้า</th><th>Selection</th><th>Top2</th></tr></thead><tbody>${r.types.sort((a,b)=>b.rate-a.rate).map(x=>`<tr><td>${esc(x.name)}</td><td>${x.n}</td><td>${x.h}</td><td><span class="score-chip">${x.rate}%</span></td><td>${x.top2}%</td></tr>`).join('')||'<tr><td colspan="5">ยังไม่มีข้อมูล</td></tr>'}</tbody></table></div></div>`}
+
 function globalTable(groups){
   const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v));
   const audits=entries.map(([,v])=>audit(v));
@@ -4858,11 +4894,12 @@ function globalTable(groups){
   <details class="secondary-section" data-lazy-global="routing"><summary>🧭 Formula Routing · ทีม Main 3 ตามประเภทหวย <span>โหลดเมื่อเปิด</span></summary><div class="secondary-body"><div class="loading-placeholder">กดเปิดเพื่อโหลด</div></div></details>
   <details class="secondary-section" data-lazy-global="research"><summary>🧪 Formula Research Stack · ห้องวิจัยสูตร <span>โหลดเมื่อเปิด</span></summary><div class="secondary-body"><div class="loading-placeholder">กดเปิดเพื่อโหลด</div></div></details>
   <details class="secondary-section"><summary>📐 สูตร F1–F9 · OOS รวม <span>ข้อมูลตรวจสอบ</span></summary><div class="secondary-body"><div class="summary-table-container"><h3 style="color:#78590f;margin:0 0 8px">ภาพรวมสูตรทั้งหมด · OOS จริง</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>ชื่อสูตร</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div></details>
+  <details class="secondary-section" data-lazy-global="v146"><summary>⚔️ V146 Head-to-Head · OOS แยกจากเรา <span>โหลดเมื่อเปิด</span></summary><div class="secondary-body"><div class="loading-placeholder">กดเปิดเพื่อโหลด V146 OOS</div></div></details>
   <details class="secondary-section" data-lazy-global="penetration"><summary>🎯 เลขเจาะ · OOS รวม <span>เดิม / Adaptive · โหลดเมื่อเปิด</span></summary><div class="secondary-body"><div class="loading-placeholder">กดเปิดเพื่อโหลด</div></div></details>`
 }
 function installLazyPanels(groups){
   const root=$('result');if(!root)return;
-  root.querySelectorAll('details[data-lazy-global]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const kind=d.dataset.lazyGlobal,body=d.querySelector('.secondary-body');try{if(kind==='routing')body.innerHTML=formulaRoutingPanel(groups);else if(kind==='research')body.innerHTML=formulaResearchStackPanel(groups);else if(kind==='selection')body.innerHTML=selectionDecisionAuditPanel(groups);else if(kind==='penetration'){const pen=penetrationSummary(groups);body.innerHTML=`<div class="summary-table-container"><table class="audit-table"><thead><tr><th>ระบบ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>หลุดสูงสุด</th><th>หลุดปัจจุบัน</th></tr></thead><tbody><tr><td>เดิม</td><td>${pen.n}</td><td>${pen.h}</td><td>${pen.n-pen.h}</td><td><span class="score-chip">${pen.r}%</span></td>${pen.hp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}<td>${pen.maxMiss}</td><td>${pen.maxCurMiss}</td></tr><tr><td><b>Adaptive</b></td><td>${pen.an}</td><td>${pen.ah}</td><td>${pen.an-pen.ah}</td><td><span class="score-chip">${pen.ar}%</span></td>${pen.ahp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}<td>${pen.adaptiveMaxMiss}</td><td>${pen.adaptiveCurMiss}</td></tr></tbody></table></div>`}d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}));
+  root.querySelectorAll('details[data-lazy-global]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const kind=d.dataset.lazyGlobal,body=d.querySelector('.secondary-body');try{if(kind==='v146')body.innerHTML=v146ReferencePanel(groups);else if(kind==='routing')body.innerHTML=formulaRoutingPanel(groups);else if(kind==='research')body.innerHTML=formulaResearchStackPanel(groups);else if(kind==='selection')body.innerHTML=selectionDecisionAuditPanel(groups);else if(kind==='penetration'){const pen=penetrationSummary(groups);body.innerHTML=`<div class="summary-table-container"><table class="audit-table"><thead><tr><th>ระบบ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>หลุดสูงสุด</th><th>หลุดปัจจุบัน</th></tr></thead><tbody><tr><td>เดิม</td><td>${pen.n}</td><td>${pen.h}</td><td>${pen.n-pen.h}</td><td><span class="score-chip">${pen.r}%</span></td>${pen.hp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}<td>${pen.maxMiss}</td><td>${pen.maxCurMiss}</td></tr><tr><td><b>Adaptive</b></td><td>${pen.an}</td><td>${pen.ah}</td><td>${pen.an-pen.ah}</td><td><span class="score-chip">${pen.ar}%</span></td>${pen.ahp.map(v=>`<td>${v==null?'—':v+'%'}</td>`).join('')}<td>${pen.adaptiveMaxMiss}</td><td>${pen.adaptiveCurMiss}</td></tr></tbody></table></div>`}d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}));
   root.querySelectorAll('details[data-lazy-selection]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazySelection),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?selectionDashboard(base.records,base.routeCtx):'<div class="error-box">ไม่พบข้อมูลหวย</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลด Selection Diagnostics ไม่สำเร็จ</div>';console.error(e)}}));
   root.querySelectorAll('details[data-lazy-formulas]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const name=decodeURIComponent(d.dataset.lazyFormulas),base=currentPredictionDataMap[name],body=d.querySelector('.secondary-body');try{body.innerHTML=base?table(name,base.records,currentAuditDataMap[name]):'<div class="error-box">ไม่พบข้อมูลสูตร</div>';d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดสูตรไม่สำเร็จ</div>';console.error(e)}}));
   const jobs=[...root.querySelectorAll('[data-async-selection]')];const runJob=()=>{const el=jobs.shift();if(!el)return;const name=decodeURIComponent(el.dataset.asyncSelection),base=currentPredictionDataMap[name];if(!base){el.textContent='ไม่พบข้อมูล';return runJob()}try{const sx=selectionStats(base.records,base.routeCtx),dx=decisionStats(base.records,base.routeCtx),mem=decisionMemory(base.records,base.routeCtx),c=(base.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).slice(0,4).map(q=>`${q.digit} ${q.r}%`).join(' · ');el.classList.remove('loading');el.innerHTML=`<div class="audit-pills"><span class="audit-pill good">WF OOS ${sx.rate}% (${sx.hits}/${sx.total})</span><span class="audit-pill">Memory ${mem.rate}% (${mem.hits}/${mem.tests})</span><span class="audit-pill">Digit ${dx.digitRate}% (${dx.digitHits}/${dx.digitTotal})</span><span class="audit-pill">คู่ ${dx.pairRate}%</span><span class="audit-pill">Board ${c[0]?.digit??'-'} / ${c[1]?.digit??'-'}</span></div><div class="audit-master-note">5/10/15/20/25: ${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' / ')} · Digit เด่น: ${digits||'—'}</div>`}catch(e){el.textContent='โหลด Selection summary ไม่สำเร็จ';console.error(e)}setTimeout(runJob,0)};setTimeout(runJob,60);
@@ -6757,7 +6794,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.106 V146 FUSION · ADAPTIVE DECISION LAB</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.107 V146 HEAD-TO-HEAD · ADAPTIVE DECISION LAB</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
