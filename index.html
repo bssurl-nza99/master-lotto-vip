@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.118 PREDICTION CORE REBUILD · POSITION × REGIME × JOINT INTELLIGENCE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.119 PREDICTION CORE REBUILD · 5 CHANNEL DNA × POSITION × REGIME × JOINT INTELLIGENCE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -2799,7 +2799,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.118 PREDICTION CORE REBUILD · POSITION × REGIME × JOINT INTELLIGENCE</div>
+  <div class="pill">V1.9.119 PREDICTION CORE REBUILD · 5 CHANNEL DNA × POSITION × REGIME × JOINT INTELLIGENCE</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -3270,16 +3270,20 @@ const decisionMemoryCache=new WeakMap();
 function selectRaw(rs,ad,routeProfile=null){const __pt0=window.__PERFTRACE__.begin("selectRaw"); try {const c=candidateBoardRaw(rs,ad,rs,routeProfile),valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false},second=ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};return{d1:top.digit,d2:second.digit,c,top,second}} finally { window.__PERFTRACE__.end("selectRaw",__pt0); }}
 function decisionMemory(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionMemory"); try {const key=routeCtx?.name||'__none__';let cache=decisionMemoryCache.get(rs);if(!cache){cache=new Map();decisionMemoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const mem=new Map(),all=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=selectRaw(train,ad,routeProfile),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);for(const q of [sel.top,sel.second]){const key=decisionKey(q),ok=target.includes(q.digit),m=mem.get(key)||{key,digit:q.digit,tests:0,hits:0,misses:0,rate:null};m.tests++;ok?m.hits++:m.misses++;m.rate=pct(m.hits,m.tests);mem.set(key,m);all.push({source:train.at(-1).date,digit:q.digit,hit:ok,key})}}const out={map:mem,tests:all.length,hits:all.filter(x=>x.hit).length,misses:all.filter(x=>!x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length)};cache.set(key,out);return out} finally { window.__PERFTRACE__.end("decisionMemory",__pt0); }}
 function multiWindowDigitHistory(historyRs){const raw=sortRecords(historyRs).slice(-HIST_MAX),all=results(raw),w30=results(raw.slice(-RECENT_MAX)),w50=results(raw.slice(-MEDIUM_MAX)),w100=all,h30=digitHistory(w30),h50=digitHistory(w50),h100=digitHistory(w100),ha=h100,blend=d=>{const xs=[[h30[d],.55],[h50[d],.25],[h100[d],.15],[ha[d],.05]].filter(([x])=>x&&x.tests>0),weight=xs.reduce((s,x)=>s+x[1],0);if(!weight)return{tests:0,hits:0,last:null,miss:0,maxMiss:0,rate:null,score:50};const rate=xs.reduce((s,[x,w])=>s+x.rate*w,0)/weight,score=xs.reduce((s,[x,w])=>s+x.score*w,0)/weight;return{...h30[d],rate,score,window30:h30[d],window50:h50[d],window100:h100[d],all:ha[d]}};return Array.from({length:10},(_,d)=>blend(d))} 
-/* V1.9.118 CHANNEL DNA ARCHITECTURE
+/* V1.9.119 CHANNEL DNA ARCHITECTURE
    Four independent learning channels are the primary routing boundary:
    HANOI = every Hanoi variant, LAO = every Lao variant,
    NORMAL = all non-VIP market names, VIP = all names explicitly marked VIP.
    Channel DNA is a prior for formula selection; exact-lottery evidence remains
    stronger when sample size is sufficient. No UI names/types are rewritten. */
 function lotteryChannel(name){
+  /* V1.9.119: FIVE truly independent processing brains.
+     Classification order is intentional: Thai first, then Hanoi/Lao families,
+     then VIP/Normal for the remaining international markets. UI names are untouched. */
   const n=String(name||'').toLowerCase().replace(/\s+/g,'');
-  if(n.includes('ฮานอย'))return'ฮานอย';
-  if(n.includes('ลาว'))return'ลาว';
+  if(n.includes('หุ้นไทย')||n.includes('ไทยเย็น')||n.includes('ไทยเช้า')||n.includes('ไทยเที่ยง')||n.includes('ไทยบ่าย'))return'ไทย';
+  if(n.includes('ฮานอย')||n.includes('เวียดนาม')||n.includes('vietnam')&&n.includes('ฮานอย'))return'ฮานอย';
+  if(n.includes('ลาว')||n.includes('laos')&&n.includes('ลาว'))return'ลาว';
   if(n.includes('vip')||n.includes('วีไอพี'))return'VIP';
   return'ปกติ';
 }
@@ -3292,7 +3296,7 @@ function channelStatsRows(groups,channel){
   const entries=channelEntries(groups,channel),flat=entries.flat();
   return{channel,lotteries:entries.length,records:flat.length,entries};
 }
-const __CHANNEL_DNA__={version:'V1.9.118',channels:['ฮานอย','ลาว','ปกติ','VIP'],last:null};
+const __CHANNEL_DNA__={version:'V1.9.119',channels:['ฮานอย','ลาว','ปกติ','VIP','ไทย'],last:null};
 function __channelFormulaRate(entries,f,cutoffTs){return routingRate(entries,f,cutoffTs)}
 function __channelFormulaRecent(entries,f,cutoffTs,n=18){
   let h=0,total=0;
@@ -3321,12 +3325,45 @@ function __channelFormulaDNA(groups,channel,name,cutoffTs){
     }else if(familyRate!=null){score=familyRate;source='family-fallback';}
     return{f,n:e.n,h:e.h,rate:exactRate,channelN:cr.n,channelHits:cr.h,channelRate,recentN:er.n,recentRate,familyN:fr.n,familyRate,score:score==null?null:Math.round(score*100)/100,source};
   }).filter(x=>Number.isFinite(x.score));
-  const ranked=rows.slice().sort((a,b)=>b.score-a.score||b.channelN-a.channelN||b.n-a.n),main3=ranked.slice(0,3),weights=Object.fromEntries(FORMULAS.map(f=>[f,1]));
-  ranked.forEach((x,i)=>{weights[x.f]=i===0?1.16:i===1?1.10:i===2?1.04:i<5?1:.94});
+  const ranked=rows.slice().sort((a,b)=>b.score-a.score||b.channelN-a.channelN||b.n-a.n),main3=ranked.slice(0,3);
+  /* Adaptive formula weights: the channel brain tunes magnitude from OOS evidence,
+     not merely rank. Rank is only a tie-breaker/regularizer. */
+  const scoreCenter=ranked.length?avg(ranked.map(x=>Number(x.score||50))):50;
+  const weights=Object.fromEntries(FORMULAS.map(f=>[f,1]));
+  ranked.forEach((x,i)=>{
+    const spread=Math.max(-12,Math.min(12,(Number(x.score||50)-scoreCenter)*0.55));
+    const rankPrior=i===0?.035:i===1?.022:i===2?.012:i<5?0:-.015;
+    weights[x.f]=Math.max(.86,Math.min(1.16,1+spread/100+rankPrior));
+  });
   const exactN=exact.length, channelN=channelRs.reduce((z,r)=>z+r.length,0),confidence=exactN>=10?'สูง':channelN>=24?'กลาง':'ข้อมูลน้อย';
   return{channel,name,lotteries:channelRs.length,exactN,channelN,ranked,main3,top4:ranked.slice(0,4),activeSet:new Set(main3.map(x=>x.f)),weights,confidence};
 }
 function __channelDNAProfile(groups,name,cutoffTs=null){return __channelFormulaDNA(groups,lotteryChannel(name),name,cutoffTs)}
+
+/* V1.9.119 CHANNEL NEEDLE BRAIN
+   Independent from formula/Prominent optimization. It learns a bounded channel prior
+   for each legal tens→unit pair from records available at the current chronological cutoff.
+   Exact-lottery evidence remains dominant; channel evidence can only nudge the pair score. */
+const __CHANNEL_NEEDLE_CACHE__=new WeakMap();
+function __channelNeedleProfile(groups,channel,cutoffTs=null){
+  if(!groups||typeof groups!=='object')return null;
+  let cm=__CHANNEL_NEEDLE_CACHE__.get(groups);if(!cm){cm=new Map();__CHANNEL_NEEDLE_CACHE__.set(groups,cm)}
+  const key=`${channel}|${cutoffTs||0}`;if(cm.has(key))return cm.get(key);
+  const cnt=Array.from({length:10},()=>Array.from({length:10},()=>({n:0,h:0})));
+  const entries=channelEntries(groups,channel);
+  for(const rs0 of entries){
+    const rs=routingFilteredRecords(rs0,cutoffTs);
+    for(let i=0;i<rs.length;i++){
+      const r=rs[i];if(!r?.n3||!r?.n2)continue;
+      const pairs0=[String(r.n3).padStart(3,'0').slice(-2),String(r.n2).padStart(2,'0')];
+      for(const pair of pairs0){const a=Number(pair[0]),b=Number(pair[1]);if(!Number.isFinite(a)||!Number.isFinite(b))continue;cnt[a][b].n++;cnt[b][a].n++;cnt[a][b].h++;cnt[b][a].h++;}
+    }
+  }
+  const weight=Array.from({length:10},()=>Array(10).fill(1));
+  for(let a=0;a<10;a++)for(let b=0;b<10;b++){const z=cnt[a][b],rate=(z.h+2)/(z.n+50);weight[a][b]=Math.max(.88,Math.min(1.12,.92+rate*.50));}
+  const out={channel,cutoffTs,weight,entries:entries.length,records:entries.reduce((n,r)=>n+r.length,0)};cm.set(key,out);return out;
+}
+function __channelNeedleWeight(profile,tens,unit){return profile?.weight?.[Number(tens)]?.[Number(unit)]??1}
 
 /* V1.7.1.15 FORMULA ROUTING — type-family routing over locked formulas 1-9. No formula body changes. */
 function routingFamily(name){
@@ -5190,7 +5227,7 @@ function candidateBoardRaw(rs,ad,historyRs=rs,routeProfile=null){const __pt0=win
   }
   const dh=multiWindowDigitHistory(historyRs),votes=Array.from({length:10},(_,digit)=>({digit,score:0,support:0,count:0,rawCount:0,independentSupport:0,independence:0,formulas:[],clusters:[],risk:0,history:dh[digit],evidence:[]}));
   const rankedRoute=routeProfile?.ranked||[],routeRank=new Map(rankedRoute.map((x,i)=>[x.f,i])),formulaRows=[];
-  for(const f of FORMULAS){const x=ad?.[f],p=execFormula(f,last,prev);if(!p||!x)continue;const quality=routingFormulaQuality(routeProfile,f,ad),qBase=.72+.28*clamp01((quality-50)/30),rel=reliabilityWeight(x),recent=recentShift(x),recentBoost=1+.10*Math.max(-1,Math.min(1,recent/10)),rr=routeRank.has(f)?routeRank.get(f):99,routeW=rr===0?1.14:rr===1?1.09:rr===2?1.05:rr<5?1.00:.96;let fw=rel*qBase*recentBoost*routeW;if(x.curMiss>=4)fw*=.72;else if(x.curMiss>=2)fw*=.88;formulaRows.push({f,x,pred:[...new Set(p.map(Number).filter(Number.isFinite))],fw,quality,rr})}
+  for(const f of FORMULAS){const x=ad?.[f],p=execFormula(f,last,prev);if(!p||!x)continue;const quality=routingFormulaQuality(routeProfile,f,ad),qBase=.72+.28*clamp01((quality-50)/30),rel=reliabilityWeight(x),recent=recentShift(x),recentBoost=1+.10*Math.max(-1,Math.min(1,recent/10)),rr=routeRank.has(f)?routeRank.get(f):99,routeW=routingWeight(routeProfile,f);let fw=rel*qBase*recentBoost*routeW;if(x.curMiss>=4)fw*=.72;else if(x.curMiss>=2)fw*=.88;formulaRows.push({f,x,pred:[...new Set(p.map(Number).filter(Number.isFinite))],fw,quality,rr})}
   formulaRows.sort((a,b)=>b.fw-a.fw||a.rr-b.rr);const accepted=[];
   for(const row of formulaRows){let redundancy=0;for(const prevRow of accepted){const a=new Set(row.pred),b=new Set(prevRow.pred),inter=[...a].filter(d=>b.has(d)).length,union=new Set([...a,...b]).size;redundancy=Math.max(redundancy,union?inter/union:0)}const independenceFactor=redundancy>=.80?.48:redundancy>=.50?.68:redundancy>=.25?.84:1,effectiveWeight=row.fw*independenceFactor;accepted.push(row);for(const dg of row.pred){const q=votes[dg];q.support+=effectiveWeight;q.independentSupport+=effectiveWeight;q.count++;q.rawCount++;q.formulas.push(row.f);q.clusters.push(row.f);q.evidence.push({f:row.f,weight:Math.round(effectiveWeight*1000)/1000,rawWeight:Math.round(row.fw*1000)/1000,quality:Math.round(row.quality*100)/100,independence:Math.round(independenceFactor*100)/100})}}
   for(const q of votes){const h=q.history,hr=h.rate==null?34.39:h.rate,hs=h.score==null?50:h.score,historyAdj=.16*Math.max(-1,Math.min(1,(hs-50)/18)),rawFreq=q.rawCount>=3?.18:q.rawCount===2?.10:q.rawCount===1?.02:0,indepBonus=q.independentSupport>=1.35?.24:q.independentSupport>=.90?.14:q.independentSupport>=.55?.06:0,diversityBonus=q.evidence.length>=2?.08*Math.min(1,q.independentSupport/1.5):0;q.independence=q.rawCount?Math.max(0,Math.min(1,q.independentSupport/(q.rawCount*.95))):0;q.risk+=(q.rawCount?0:1.15)+(hr<25?.65:hr<30?.28:0);const supportBase=Math.min(q.support,AUDIT_TUNING.supportCap);q.supportCompressed=q.support-supportBase;q.score=Math.max(0,supportBase+historyAdj+rawFreq+indepBonus+diversityBonus-.30*q.risk);q.scoreBreakdown={formulaSupport:supportBase,formulaSupportCompressed:q.supportCompressed,history:historyAdj,frequency:rawFreq,independence:indepBonus,diversity:diversityBonus,risk:-.30*q.risk};q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35;q.evidenceSummary=q.evidence.slice().sort((a,b)=>b.weight-a.weight).map(e=>e.f).join(', ')}
@@ -5794,7 +5831,7 @@ function needleIQTune(rs,d,other,anchor){
   const out={...stable.cfg,metaRate:100*(stable.h+1.5)/(stable.n+3),metaTests:stable.n,metaHits:stable.h,family};
   __NEEDLE_IQ_CACHE__.set(key,out);return out;
 }
-function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false,__iqOverride=null){
+function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false,__iqOverride=null,__channelNeedleProfile=null){
   /* V1.9.113 SHARP JOINT-COVERAGE NEEDLE SELECTOR
      - Tens is ALWAYS the prominent digit; units is ALWAYS the needle digit.
      - Evaluate every legal unit 0..9, not only an anchor neighborhood.
@@ -5828,7 +5865,8 @@ function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false,__iqOverride=nul
       const posAdj=Math.max(-4,Math.min(7,(posUnit-50)*.18));
       const marginal=iq.coverage*coverage+iq.base*c.base+iq.stability*c.stability+posAdj;
       const diversity=selected.length?Math.min(...selected.map(x=>Math.abs(x.partner-c.partner))):9;
-      const final=marginal+Math.min(diversity,3)*iq.diversity;
+      const channelW=__channelNeedleWeight(__channelNeedleProfile,dd,c.partner);
+      const final=(marginal+Math.min(diversity,3)*iq.diversity)*channelW;
       if(!best||final>best.final||final===best.final&&c.base>best.c.base||final===best.final&&c.base===best.c.base&&c.partner<best.c.partner)
         best={c,final,coverage};
     }
@@ -5886,8 +5924,8 @@ function deterministicNeedleOverall(groups){
 }
 function penetrationSummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>penetrationStats(rs)),n=xs.reduce((a,x)=>a+x.total,0),h=xs.reduce((a,x)=>a+x.hits,0),an=xs.reduce((a,x)=>a+x.adaptiveTotal,0),ah=xs.reduce((a,x)=>a+x.adaptiveHits,0),hp=DISPLAY_WIN.map(w=>{let hh=0,nn=0;xs.forEach(x=>{const q=x.displayHorizon.find(z=>z.w===w);if(q&&q.n>=w){hh+=q.hits;nn+=q.n}});return nn>=w?pct(hh,nn):null}),ahp=DISPLAY_WIN.map(w=>{let hh=0,nn=0;xs.forEach(x=>{const q=x.displayAdaptiveHorizon.find(z=>z.w===w);if(q&&q.n>=w){hh+=q.hits;nn+=q.n}});return nn>=w?pct(hh,nn):null}),maxMiss=Math.max(0,...xs.map(x=>x.maxMiss)),maxCurMiss=Math.max(0,...xs.map(x=>x.curMiss)),adaptiveMaxMiss=Math.max(0,...xs.map(x=>x.adaptiveMaxMiss)),adaptiveCurMiss=Math.max(0,...xs.map(x=>x.adaptiveCurMiss));return{n,h,r:pct(h,n),an,ah,ar:pct(ah,an),hp,ahp,maxMiss,maxCurMiss,adaptiveMaxMiss,adaptiveCurMiss}}
 const penetrationStatsCache=new WeakMap();function penetrationStats(rs){const __pt0=window.__PERFTRACE__.begin("penetrationStats"); try {if(penetrationStatsCache.has(rs))return penetrationStatsCache.get(rs);const h=penetrationHistory(rs),ah=penetrationAdaptiveHistory(rs),st=streak(h.map(x=>({hit:x.hit}))),ast=streak(ah.map(x=>({hit:x.hit}))),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}}),ahp=WIN.map(w=>{const a=ah.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}}),displayHorizon=DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),displayAdaptiveHorizon=DISPLAY_WIN.map(w=>{const a=ah.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),lh=h.filter(x=>x.hit).length,aa=ah.filter(x=>x.hit).length;const out={total:h.length,hits:lh,misses:h.length-lh,rate:pct(lh,h.length),horizon:hp,curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss,adaptiveTotal:ah.length,adaptiveHits:aa,adaptiveMisses:ah.length-aa,adaptiveRate:pct(aa,ah.length),adaptiveHorizon:ahp,displayHorizon,displayAdaptiveHorizon,adaptiveCurHit:ast.curHit,adaptiveMaxHit:ast.maxHit,adaptiveCurMiss:ast.curMiss,adaptiveMaxMiss:ast.maxMiss,latest:h.at(-1)||null};penetrationStatsCache.set(rs,out);return out} finally { window.__PERFTRACE__.end("penetrationStats",__pt0); }}
-function pairs(d,other,anchor,rs,evidenceRs=rs){
-  return productionNeedlePairs(d,other,anchor,evidenceRs||rs);
+function pairs(d,other,anchor,rs,evidenceRs=rs,channelNeedleProfile=null){
+  return productionNeedlePairs(d,other,anchor,evidenceRs||rs,false,null,channelNeedleProfile);
 }
 function currentPredictions(rs){const last=rs.at(-1),prev=rs.at(-2)||null,out={};if(!last)return out;for(const f of FORMULAS){const p=execFormula(f,last,prev);if(p)out[f]=p}return out}
 function selectionRiskFromHistory(h){const a=Array.isArray(h)?h:[];if(!a.length)return{curMiss:0,curHit:0,maxMiss:0,maxHit:0,miss2:0,miss3:0};const st=streak(a),miss2=a.reduce((n,x,i)=>n+(i>0&&!x.hit&&!a[i-1].hit?1:0),0),miss3=a.reduce((n,x,i)=>n+(i>1&&!x.hit&&!a[i-1].hit&&!a[i-2].hit?1:0),0);return{curMiss:st.curMiss,curHit:st.curHit,maxMiss:st.maxMiss,maxHit:st.maxHit,miss2,miss3}}
@@ -6086,7 +6124,7 @@ function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=
   let second=d2Pool[0]||ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
   const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);if(valid.length>1&&margin0<minMargin){const stronger=d2Pool.find(x=>top.score-x.score>=minMargin);if(stronger)second=stronger}
   const rescue=chooseContextRescue(c,rs,risk,__baselineRankMap);if(rescue&&rescue.digit!==top.digit){second=top;top=rescue;}const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-  return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)}} finally { window.__PERFTRACE__.end("select",__pt0); }}
+  return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs,__channelNeedle),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs,__channelNeedle),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)}} finally { window.__PERFTRACE__.end("select",__pt0); }}
 const __SELECTOR_DIAGNOSTIC__={enabled:true,rows:[],reset(){this.rows=[]},add(row){this.rows.push(row)}};
 function __buildForensicAnalysisPack(){
   const rows=__SELECTOR_DIAGNOSTIC__.rows||[];
@@ -8482,7 +8520,11 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
     if(!riskOverride){const cached=__coopSelectCacheGet(rs,routeCtx);if(cached)return cached}
-    const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx);const __qCoreMeta=__qCoreApply__(c,historyRs,routeCtx);c.__qCoreMeta=__qCoreMeta;const __dnaPatternMeta=__dnaPatternApply__(c,historyRs,routeCtx);c.__dnaPatternMeta=__dnaPatternMeta;const __rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1]));
+    const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx);
+    const __channel=lotteryChannel(routeCtx?.name||rs?.[0]?.name||'');
+    const __channelCutoff=historyRs?.at?.(-1)?.timestamp||parseThaiDate(historyRs?.at?.(-1)?.date)||null;
+    const __channelNeedle=routeCtx?.groups?__channelNeedleProfile(routeCtx.groups,__channel,__channelCutoff):null;
+    if(routeCtx){routeCtx.channel=__channel;routeCtx.__channelBrain={channel:__channel,cutoffTs:__channelCutoff,needleProfile:__channelNeedle,formulaWeights:routeProfile?.weights||{}};}const __qCoreMeta=__qCoreApply__(c,historyRs,routeCtx);c.__qCoreMeta=__qCoreMeta;const __dnaPatternMeta=__dnaPatternApply__(c,historyRs,routeCtx);c.__dnaPatternMeta=__dnaPatternMeta;const __rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1]));
     const __cloneRank=(arr)=>arr.slice(0,10).map((q,i)=>({rank:i+1,digit:Number(q.digit),score:Math.round(Number(q.score||0)*1000)/1000,support:Math.round(Number(q.support||0)*1000)/1000,independentSupport:Math.round(Number(q.independentSupport||0)*1000)/1000,gate:!!q.gate,contextAdj:Math.round(Number(q.contextAdj||0)*1000)/1000,memoryRate:q.memoryRate==null?null:Number(q.memoryRate),metaRate:q.metaRate==null?null:Number(q.metaRate),signalAnchor:!!q.signalAnchor,anchorBonus:Math.round(Number(q.anchorBonus||0)*1000)/1000,formulas:Array.isArray(q.formulas)?q.formulas.slice(0,9):[],rankStabilized:!!q.rankStabilized,rankDisplacement:q.rankDisplacement??null,guardrailApplied:!!q.guardrailApplied,guardrailBaseRank:q.guardrailBaseRank??null,rescueGuardApproved:!!q.rescueGuardApproved,rolePairApplied:!!q.rolePairApplied,rolePairAdj:q.rolePairAdj??0,rolePairRate:q.rolePairRate??null,rolePairTests:q.rolePairTests??null,selfCorrectionApplied:!!q.selfCorrectionApplied,selfCorrectionAdj:q.selfCorrectionAdj??0,selfCorrectionRate:q.selfCorrectionRate??null,selfCorrectionTests:q.selfCorrectionTests??null,typeDNAAdaptiveApplied:!!q.typeDNAAdaptiveApplied,typeDNAAdaptiveLift:q.typeDNAAdaptiveLift??0,typeDNAAdaptiveFormulaRate:q.typeDNAAdaptiveFormulaRate??null,typeDNAAdaptiveDigitRate:q.typeDNAAdaptiveDigitRate??null,typeDNAAdaptiveRankRate:q.typeDNAAdaptiveRankRate??null,typeDNAAdaptiveBaseRank:q.typeDNAAdaptiveBaseRank??null,typeDNAAdaptiveSource:q.typeDNAAdaptiveSource??null,geminiPairApplied:!!q.geminiPairApplied,geminiPairAdj:q.geminiPairAdj??0,geminiPairScore:q.geminiPairScore??null,geminiPairFreq:q.geminiPairFreq??null,geminiPairMomentum:q.geminiPairMomentum??null,geminiPairTransition:q.geminiPairTransition??null,geminiPairEvidence:q.geminiPairEvidence??null,dnaPatternApplied:!!q.dnaPatternApplied,dnaPatternAdj:q.dnaPatternAdj??0,dnaPatternScore:q.dnaPatternScore??null,dnaPatternRate:q.dnaPatternRate??null,dnaPatternTests:q.dnaPatternTests??0,dnaPatternSource:q.dnaPatternSource??null}));
     const __forensicStages=c.__forensicStages||{raw:__cloneRank(c),afterMemory:__cloneRank(c),afterMeta:__cloneRank(c)};__forensicStages.afterQCore=__cloneRank(c);
     const __diagRawBoard=c.slice().map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas}));
@@ -8574,7 +8616,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     if(rescue&&rescue.digit!==top.digit){second=top;top=rescue}
     const __afterRescue={top:top.digit,second:second.digit,rescueApplied:!!rescue&&rescue.digit===top.digit&&__beforeRescue.top!==top.digit,rescueDigit:rescue?.digit??null};
     const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,qCoreMeta:__qCoreMeta||c.__qCoreMeta||null,dnaPatternMeta:__dnaPatternMeta||c.__dnaPatternMeta||null,championGateMeta:__championGateMeta||null,damageFirewallMeta:__damageFirewallMeta(),championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs,__channelNeedle),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs,__channelNeedle),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,qCoreMeta:__qCoreMeta||c.__qCoreMeta||null,dnaPatternMeta:__dnaPatternMeta||c.__dnaPatternMeta||null,championGateMeta:__championGateMeta||null,damageFirewallMeta:__damageFirewallMeta(),championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -8749,7 +8791,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.118 PREDICTION CORE REBUILD · POSITION × REGIME × JOINT INTELLIGENCE</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.119 PREDICTION CORE REBUILD · 5 CHANNEL DNA × POSITION × REGIME × JOINT INTELLIGENCE</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
@@ -8959,7 +9001,7 @@ function __positionDNATable(groups){
 }
 function __channelExecutiveSummary(){
   const map=currentPredictionDataMap||{}, names=Object.keys(map).filter(n=>n!=='__THAI_ALLDAY__'&&Array.isArray(map[n]?.records)&&map[n].records.length);
-  const channels=['ฮานอย','ลาว','ปกติ','VIP'];
+  const channels=['ฮานอย','ลาว','ปกติ','VIP','ไทย'];
   const rows=channels.map(channel=>{
     const items=names.filter(n=>lotteryChannel(n)===channel).map(n=>map[n]);
     let selH=0,selN=0,needH=0,needN=0;
@@ -8969,7 +9011,7 @@ function __channelExecutiveSummary(){
     return{channel,items:items.length,selH,selN,needH,needN,sel,need,health};
   });
   const html=rows.map(x=>`<tr><td><b>${x.channel}</b></td><td>${x.items}</td><td>${x.sel==null?'—':x.sel+'%'}</td><td>${x.selH}/${x.selN}</td><td>${x.need==null?'—':x.need+'%'}</td><td>${x.needH}/${x.needN}</td><td><span class="global-badge ${x.health==='แข็งแรง'?'good':x.health==='อ่อน'?'bad':''}">${x.health}</span></td></tr>`).join('');
-  return `<div class="summary-table-container"><h3 class="formula-global-title">🧬 CHANNEL DNA EXECUTIVE — 4 สมองแยกจากกัน</h3><div class="global-note">เปอร์เซ็นต์ด้านล่างคำนวณแยก Channel โดยตรง: <b>ฮานอย</b> รวมฮานอยทุกประเภท · <b>ลาว</b> รวมลาวทุกประเภท · <b>ปกติ</b> รวมรายการที่ไม่ใช่ VIP · <b>VIP</b> รวมรายการที่ระบุ VIP/วีไอพี · ไม่รวมข้าม Channel</div><div class="global-table-wrap"><table class="audit-table"><thead><tr><th>Channel</th><th>หวย</th><th>เลขเด่น OOS</th><th>เข้า/ทดสอบ</th><th>เลขเจาะ OOS</th><th>เข้า/ทดสอบ</th><th>สถานะ</th></tr></thead><tbody>${html}</tbody></table></div><div class="global-note">เลขเด่นและเลขเจาะเป็นคนละ metric และไม่มีการนำเปอร์เซ็นต์ของสองส่วนมารวมเป็นความแม่นยำเดียว</div></div>`;
+  return `<div class="summary-table-container"><h3 class="formula-global-title">🧬 CHANNEL DNA EXECUTIVE — 5 สมองแยกจากกัน</h3><div class="global-note">เปอร์เซ็นต์ด้านล่างคำนวณแยก Channel โดยตรง: <b>ฮานอย</b> รวมฮานอยทุกประเภท · <b>ลาว</b> รวมลาวทุกประเภท · <b>ปกติ</b> รวมตลาดต่างประเทศที่ไม่ใช่ VIP · <b>VIP</b> รวมตลาดต่างประเทศที่ระบุ VIP/วีไอพี · <b>ไทย</b> = หุ้นไทย · ไม่รวมข้าม Channel</div><div class="global-table-wrap"><table class="audit-table"><thead><tr><th>Channel</th><th>หวย</th><th>เลขเด่น OOS</th><th>เข้า/ทดสอบ</th><th>เลขเจาะ OOS</th><th>เข้า/ทดสอบ</th><th>สถานะ</th></tr></thead><tbody>${html}</tbody></table></div><div class="global-note">เลขเด่นและเลขเจาะเป็นคนละ metric และไม่มีการนำเปอร์เซ็นต์ของสองส่วนมารวมเป็นความแม่นยำเดียว</div></div>`;
 }
 function __dnaExecutivePanel(){
   const r=__TYPE_DNA__.last||null;
