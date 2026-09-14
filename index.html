@@ -5419,26 +5419,17 @@ function productionNeedlePairs(d,other,anchor,rs){
     }).slice(0,5);
     return fallback.sort((a,b)=>a-b).map((u,i)=>({pair:`${dd}${u}`,score:0,rank:i+1,tests:0,hitRate:null,confidence:'ต่ำ',partner:u}));
   }
-  let ev=null;
-  try{ev=pairEvidenceMap(rs)}catch(_){ev=null}
-  const ctx=ev?.context?.get(`${dd}|${oo}`)||[];
-  const glob=ev?.global?.get(String(dd))||[];
-  const byPartner=new Map(ctx.map(x=>[Number(x.partner),x]));
-  const byGlobal=new Map(glob.map(x=>[Number(x.partner),x]));
+  /* V1.9.99 FIX: the prior build referenced optional evidence helpers that
+     are not part of this engine. Keep the stable OOS model self-contained.
+     This also makes the production/evaluation path deterministic and avoids
+     silently falling back through an undefined function. */
   const scored=eligible.map(u=>{
     const direct=needlePairStableScore(rs,dd,u,aa);
-    const e=byPartner.get(u)||{partner:u,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0};
-    const g=byGlobal.get(u)||{partner:u,tests:0,hits:0};
-    const evs=adaptivePairScore(e,g);
-    const support=Math.min(1,(Number(e.tests)||0)/16);
-    const globalSupport=Math.min(1,(Number(g.tests)||0)/30);
-    /* Ensemble: OOS dominates. Evidence provides shrinkage only when it has support. */
-    const evidence=(Number(evs.score)||0)*.16*support + (Number(evs.score)||0)*.06*globalSupport;
-    const score=(Number(direct.score)||0)*.78 + evidence;
+    const score=(Number(direct.score)||0);
     return {
       pair:`${dd}${u}`, partner:u, score, tests:direct.tests,
       hitRate:direct.rate, stability:direct.stability,
-      evidenceScore:Number(evs.score)||0, dist:direct.dist,
+      evidenceScore:0, dist:direct.dist,
       confidence:direct.tests>=15?'สูง':direct.tests>=7?'กลาง':'ต่ำ'
     };
   });
