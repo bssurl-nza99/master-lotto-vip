@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.119 PREDICTION CORE REBUILD · 5 CHANNEL DNA × POSITION × REGIME × JOINT INTELLIGENCE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V1.9.120 FORMULA EVOLUTION · 5 CHANNEL DNA × TRANSFORMATION × POSITION × REGIME × JOINT INTELLIGENCE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -2799,7 +2799,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.119 PREDICTION CORE REBUILD · 5 CHANNEL DNA × POSITION × REGIME × JOINT INTELLIGENCE</div>
+  <div class="pill">V1.9.120 FORMULA EVOLUTION · 5 CHANNEL DNA × TRANSFORMATION × POSITION × REGIME × JOINT INTELLIGENCE</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -3249,6 +3249,53 @@ function processingWindow(a,max=30){const sorted=sortRecords(a);return sorted.le
 function historicalIntelligenceWindow(a,max=HIST_MAX){return processingWindow(a,max)}
 function canonicalDateKey(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function execFormula(name,r,prev){const fn=formulas[name];if(!fn||!r||r.status!=='result')return null;const safePrev=r.breakBefore?null:prev,t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),p=safePrev?.n2?Number(safePrev.n2[1]):NaN;return fn(t[0],t[1],t[2],b[0],b[1],p)}
+
+/* V1.9.120 FORMULA EVOLUTION / TRANSFORMATION ENGINE
+   The engine does not invent a preferred number by hand. It searches a bounded,
+   reproducible library of transformations over each formula's own output, then
+   compares the transformed rule with the original rule on chronological OOS data.
+   Search and validation are separated so a lucky 30-draw fit cannot silently become
+   production champion. The same engine is available independently to Prominent and
+   Needle brains through their own profiles. */
+const __FORMULA_TRANSFORMS__=Object.freeze((()=>{
+  const a=[{id:'BASE',name:'สูตรเดิม',fn:d=>d}];
+  for(let k=-5;k<=5;k++)if(k!==0)a.push({id:`ADD${k>=0?'+':''}${k}`,name:`บวก/ลบ ${k}`,fn:d=>d+k});
+  for(let k=2;k<=5;k++)a.push({id:`MUL${k}`,name:`คูณ ${k}`,fn:d=>d*k});
+  for(let k=2;k<=4;k++){
+    a.push({id:`DIVF${k}`,name:`หารลง ${k}`,fn:d=>Math.floor(d/k)});
+    a.push({id:`DIVC${k}`,name:`หารขึ้น ${k}`,fn:d=>Math.ceil(d/k)});
+  }
+  a.push({id:'NEG',name:'กลับเครื่องหมาย',fn:d=>-d});
+  a.push({id:'COMP',name:'กลับสิบ',fn:d=>10-d});
+  a.push({id:'DOUBLE',name:'สองเท่า',fn:d=>2*d});
+  a.push({id:'SQUARE',name:'กำลังสอง',fn:d=>d*d});
+  a.push({id:'ROOT',name:'Digital Root',fn:d=>{let x=Math.abs(Math.trunc(d));return x===0?0:1+((x-1)%9)}});
+  a.push({id:'REV10',name:'กลับเลขฐานสิบ',fn:d=>Number(String(Math.abs(Math.trunc(d))).split('').reverse().join('')||0)});
+  return a;
+})());
+function __tfNorm(v){return ((Math.round(Number(v)||0)%10)+10)%10}
+function __tfApply(t,p){const a=Array.isArray(p)?p:[];if(a.length<2)return null;const x=__tfNorm(t.fn(Number(a[0]))),y=__tfNorm(t.fn(Number(a[1])));return [...new Set([x,y])];}
+function __tfTarget(r){return [...String(r?.n3||'').slice(1),...String(r?.n2||'')].map(Number).filter(Number.isFinite)}
+function __tfPositionCoverage(pred,r){if(!pred||!r)return 0;const t=String(r.n3||'').padStart(3,'0'),b=String(r.n2||'').padStart(2,'0'),pos=[Number(t[1]),Number(t[2]),Number(b[0]),Number(b[1])];return pos.length?pos.filter(d=>pred.includes(d)).length/pos.length:0}
+function __tfEval(rows,f,t,from,to){let n=0,h=0,pos=0,miss=0,missRun=0,maxMiss=0;const rs=rows.slice(from,to);for(let i=0;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const p=__tfApply(t,execFormula(f,rs[i],i?rs[i-1]:null));if(!p)continue;const target=__tfTarget(rs[i+1]);const ok=p.some(d=>target.includes(d));n++;if(ok){h++;missRun=0}else{miss++;missRun++;maxMiss=Math.max(maxMiss,missRun)}pos+=__tfPositionCoverage(p,rs[i+1]);}const rate=n?pct(h,n):null,pc=n?pct(pos,n):null,stability=n?Math.max(0,100-Math.min(100,(maxMiss/n)*100*1.7)):0;return{n,h,miss,maxMiss,rate,positionRate:pc,stability,score:rate==null?null:.62*rate+.23*(pc||0)+.15*stability};}
+const __FORMULA_TRANSFORM_CACHE__=new WeakMap();
+function __formulaTransformProfile(rs,f,cutoffTs=null){
+  const baseRows=routingFilteredRecords(rs,cutoffTs),key=`${f}|${cutoffTs||0}`;let m=__FORMULA_TRANSFORM_CACHE__.get(rs);if(!m){m=new Map();__FORMULA_TRANSFORM_CACHE__.set(rs,m)}if(m.has(key))return m.get(key);
+  const rows=baseRows.slice(-30),baseline=__tfEval(rows,f,__FORMULA_TRANSFORMS__[0],0,rows.length),split=Math.max(3,Math.floor(rows.length*.70));
+  if(rows.length<10){const out={formula:f,transform:'BASE',name:'สูตรเดิม',pred:null,baseline,search:baseline,validation:baseline,improvement:0,accepted:false,stability:baseline?.stability??0};m.set(key,out);return out;}
+  const cand=__FORMULA_TRANSFORMS__.map(t=>{const search=__tfEval(rows,f,t,0,split),validation=__tfEval(rows,f,t,split,rows.length);const valScore=validation.score??-1,searchScore=search.score??-1;return{t,search,validation,valScore,searchScore}});
+  const baseVal=__tfEval(rows,f,__FORMULA_TRANSFORMS__[0],split,rows.length),baseScore=baseVal.score??-1;
+  cand.sort((a,b)=>b.valScore-a.valScore||b.searchScore-a.searchScore||b.validation.maxMiss-a.validation.maxMiss);
+  const best=cand[0]||cand[0];const gain=(best?.validation?.rate??0)-(baseVal?.rate??0);
+  const accepted=!!best&&best.t.id!=='BASE'&&best.validation.n>=4&&best.search.n>=6&&best.valScore>=baseScore-.8&&gain>=0;
+  const chosen=accepted?best:cand.find(x=>x.t.id==='BASE')||best;
+  const pred=chosen?__tfApply(chosen.t,execFormula(f,rows.at(-1),rows.at(-2)||null)):null;
+  const out={formula:f,transform:chosen?.t?.id||'BASE',name:chosen?.t?.name||'สูตรเดิม',pred,baseline:{...baseline},search:chosen?.search||baseline,validation:chosen?.validation||baseVal,improvement:Math.round(((chosen?.validation?.rate??baseline?.rate??0)-(baseVal?.rate??baseline?.rate??0))*100)/100,accepted,stability:chosen?.validation?.stability??baseline?.stability??0,window:rows.length,cutoffTs};
+  m.set(key,out);return out;
+}
+function __formulaTransformSummary(rs,formulas,cutoffTs=null){return Object.fromEntries((formulas||FORMULAS).map(f=>[f,__formulaTransformProfile(rs,f,cutoffTs)]));}
+function __transformedFormulaQuality(routeRow,ad){return Number(routeRow?.transformedScore??routeRow?.score??ad?.[routeRow?.f]?.rel??50)}
+
 function hit(pred,r){if(!pred)return{hit:false,hundredsOnly:false};const t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),target=[t[1],t[2],b[0],b[1]],ok=pred.some(d=>target.includes(d)),ho=!ok&&pred.some(d=>d===t[0]);return{hit:ok,hundredsOnly:ho}}
 const __FORMULA_HISTORY_CACHE__=new WeakMap();
 function formulaHistory(rs,name){const __pt0=window.__PERFTRACE__.begin("formulaHistory"); try {if(!Array.isArray(rs)||rs.length<2)return [];const last=rs.at(-1),prev=rs.at(-2)||null;let by=__FORMULA_HISTORY_CACHE__.get(last);if(!by){by=new Map();__FORMULA_HISTORY_CACHE__.set(last,by)}if(by.has(name))return by.get(name);let out=[];if(prev){const pby=__FORMULA_HISTORY_CACHE__.get(prev);const prior=pby?.get(name);if(Array.isArray(prior))out=prior.slice();}const i=rs.length-2;if(out.length!==Math.max(0,i)){out=[];for(let j=0;j<rs.length-1;j++){if(rs[j+1]?.breakBefore)continue;const p=execFormula(name,rs[j],j?rs[j-1]:null);if(!p||rs[j+1]?.status!=='result')continue;const h=hit(p,rs[j+1]);out.push({source:rs[j].date,target:rs[j+1].date,pred:p,hit:h.hit,hundredsOnly:h.hundredsOnly})}}else if(!rs[rs.length-1]?.breakBefore){const p=execFormula(name,last,prev);if(p&&last?.status==='result'){/* current last predicts a future row; do not append */}}by.set(name,out);return out} finally { window.__PERFTRACE__.end("formulaHistory",__pt0); }}
@@ -3296,7 +3343,7 @@ function channelStatsRows(groups,channel){
   const entries=channelEntries(groups,channel),flat=entries.flat();
   return{channel,lotteries:entries.length,records:flat.length,entries};
 }
-const __CHANNEL_DNA__={version:'V1.9.119',channels:['ฮานอย','ลาว','ปกติ','VIP','ไทย'],last:null};
+const __CHANNEL_DNA__={version:'V1.9.120',channels:['ฮานอย','ลาว','ปกติ','VIP','ไทย'],last:null};
 function __channelFormulaRate(entries,f,cutoffTs){return routingRate(entries,f,cutoffTs)}
 function __channelFormulaRecent(entries,f,cutoffTs,n=18){
   let h=0,total=0;
@@ -3309,7 +3356,7 @@ function __channelFormulaDNA(groups,channel,name,cutoffTs){
   const family=routingFamily(name);
   const familyRs=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&k!=='__THAI_TOP__'&&Array.isArray(v)&&routingFamily(k)===family).map(([,v])=>v);
   const rows=FORMULAS.map(f=>{
-    const e=routingRate([exact],f,cutoffTs), cr=__channelFormulaRate(channelRs,f,cutoffTs), er=__channelFormulaRecent(channelRs,f,cutoffTs,18), fr=routingRate(familyRs,f,cutoffTs);
+    const e=routingRate([exact],f,cutoffTs), cr=__channelFormulaRate(channelRs,f,cutoffTs), er=__channelFormulaRecent(channelRs,f,cutoffTs,18), fr=routingRate(familyRs,f,cutoffTs), tf=__formulaTransformProfile(exact,f,cutoffTs);
     const exactEnough=e.n>=10, channelEnough=cr.n>=24, recentEnough=er.n>=8;
     const exactRate=e.rate==null?null:Number(e.rate), channelRate=cr.rate==null?null:Number(cr.rate), recentRate=er.rate==null?null:Number(er.rate), familyRate=fr.rate==null?null:Number(fr.rate);
     let score=null,source='none';
@@ -3323,7 +3370,7 @@ function __channelFormulaDNA(groups,channel,name,cutoffTs){
       if(recentEnough&&recentRate!=null)score=.72*score+.28*recentRate;
       source='channel';
     }else if(familyRate!=null){score=familyRate;source='family-fallback';}
-    return{f,n:e.n,h:e.h,rate:exactRate,channelN:cr.n,channelHits:cr.h,channelRate,recentN:er.n,recentRate,familyN:fr.n,familyRate,score:score==null?null:Math.round(score*100)/100,source};
+    if(score!=null&&tf?.accepted)score=.68*score+.22*(tf.validation?.rate??exactRate)+.10*(tf.stability??50);return{f,n:e.n,h:e.h,rate:exactRate,channelN:cr.n,channelHits:cr.h,channelRate,recentN:er.n,recentRate,familyN:fr.n,familyRate,score:score==null?null:Math.round(score*100)/100,source,transform:tf?.transform||'BASE',transformName:tf?.name||'สูตรเดิม',baselineRate:tf?.baseline?.rate??exactRate,transformedRate:tf?.validation?.rate??exactRate,transformImprovement:tf?.improvement??0,transformStability:tf?.stability??50,transformAccepted:!!tf?.accepted};
   }).filter(x=>Number.isFinite(x.score));
   const ranked=rows.slice().sort((a,b)=>b.score-a.score||b.channelN-a.channelN||b.n-a.n),main3=ranked.slice(0,3);
   /* Adaptive formula weights: the channel brain tunes magnitude from OOS evidence,
@@ -3393,7 +3440,7 @@ const __formulaRoutingProfileRaw=function __formulaRoutingProfileRaw(groups,name
   const exact=Array.isArray(groups?.[name])?groups[name]:[],family=routingFamily(name),channel=lotteryChannel(name);
   const familyEntries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&k!=='__THAI_TOP__'&&Array.isArray(v)&&routingFamily(k)===family).map(([,v])=>v);
   const channelEntries0=channelEntries(groups,channel);
-  const rows=FORMULAS.map(f=>{const e=routingRate([exact],f,cutoffTs),r=routingRateRecent(exact,f,cutoffTs,18),g=routingRate(familyEntries,f,cutoffTs),ch=routingRate(channelEntries0,f,cutoffTs);const exactEnough=e.n>=10,channelEnough=ch.n>=24,recentEnough=r.n>=6,exactRate=e.rate==null?null:Number(e.rate),recentRate=r.rate==null?null:Number(r.rate),channelRate=ch.rate==null?null:Number(ch.rate),familyRate=g.rate==null?null:Number(g.rate);let score=exactRate,source='exact';if(!exactEnough&&channelEnough){score=channelRate;source='channel'}else if(!exactEnough){score=familyRate;source='family-fallback'}else if(recentEnough&&recentRate!=null){score=.62*exactRate+.18*recentRate+.15*(channelRate==null?exactRate:channelRate)+.05*(familyRate==null?exactRate:familyRate);source='exact+channel'}else if(channelRate!=null){score=.78*exactRate+.17*channelRate+.05*(familyRate==null?exactRate:familyRate);source='exact+channel'}else if(familyRate!=null){score=.82*exactRate+.18*familyRate;source='exact+family'}if(score==null)score=channelRate??familyRate;return{f,n:e.n,h:e.h,rate:exactRate,recentN:r.n,recentRate,recentH:r.h,channelN:ch.n,channelHits:ch.h,channelRate,familyN:g.n,familyRate,score:score==null?null:Math.round(score*100)/100,source}}).filter(x=>Number.isFinite(x.score));
+  const rows=FORMULAS.map(f=>{const e=routingRate([exact],f,cutoffTs),r=routingRateRecent(exact,f,cutoffTs,18),g=routingRate(familyEntries,f,cutoffTs),ch=routingRate(channelEntries0,f,cutoffTs),tf=__formulaTransformProfile(exact,f,cutoffTs);const exactEnough=e.n>=10,channelEnough=ch.n>=24,recentEnough=r.n>=6,exactRate=e.rate==null?null:Number(e.rate),recentRate=r.rate==null?null:Number(r.rate),channelRate=ch.rate==null?null:Number(ch.rate),familyRate=g.rate==null?null:Number(g.rate);let score=exactRate,source='exact';if(!exactEnough&&channelEnough){score=channelRate;source='channel'}else if(!exactEnough){score=familyRate;source='family-fallback'}else if(recentEnough&&recentRate!=null){score=.62*exactRate+.18*recentRate+.15*(channelRate==null?exactRate:channelRate)+.05*(familyRate==null?exactRate:familyRate);source='exact+channel'}else if(channelRate!=null){score=.78*exactRate+.17*channelRate+.05*(familyRate==null?exactRate:familyRate);source='exact+channel'}else if(familyRate!=null){score=.82*exactRate+.18*familyRate;source='exact+family'}if(score==null)score=channelRate??familyRate;const transformedRate=tf?.validation?.rate??exactRate, transformedStability=tf?.stability??50; if(score!=null&&tf?.accepted) score=.68*score+.22*transformedRate+.10*transformedStability; return{f,n:e.n,h:e.h,rate:exactRate,recentN:r.n,recentRate,recentH:r.h,channelN:ch.n,channelHits:ch.h,channelRate,familyN:g.n,familyRate,score:score==null?null:Math.round(score*100)/100,source,transform:tf?.transform||'BASE',transformName:tf?.name||'สูตรเดิม',baselineRate:tf?.baseline?.rate??exactRate,transformedRate,transformImprovement:tf?.improvement??0,transformStability:transformedStability,transformAccepted:!!tf?.accepted}}).filter(x=>Number.isFinite(x.score));
   const ranked=rows.slice().sort((a,b)=>b.score-a.score||b.n-a.n),main3=ranked.slice(0,3),challenger=ranked[3]||null,activeSet=new Set(main3.map(x=>x.f)),avgScore=ranked.length?avg(ranked.map(x=>x.score)):null,weights=Object.fromEntries(FORMULAS.map(f=>[f,1]));
   ranked.forEach((x,i)=>{if(i===0)weights[x.f]=1.16;else if(i===1)weights[x.f]=1.10;else if(i===2)weights[x.f]=1.04;else weights[x.f]=.94});
   const confidence=main3.length<3?'ต่ำ':main3.every(x=>x.n>=10)?'สูง':'กลาง';
@@ -5227,7 +5274,7 @@ function candidateBoardRaw(rs,ad,historyRs=rs,routeProfile=null){const __pt0=win
   }
   const dh=multiWindowDigitHistory(historyRs),votes=Array.from({length:10},(_,digit)=>({digit,score:0,support:0,count:0,rawCount:0,independentSupport:0,independence:0,formulas:[],clusters:[],risk:0,history:dh[digit],evidence:[]}));
   const rankedRoute=routeProfile?.ranked||[],routeRank=new Map(rankedRoute.map((x,i)=>[x.f,i])),formulaRows=[];
-  for(const f of FORMULAS){const x=ad?.[f],p=execFormula(f,last,prev);if(!p||!x)continue;const quality=routingFormulaQuality(routeProfile,f,ad),qBase=.72+.28*clamp01((quality-50)/30),rel=reliabilityWeight(x),recent=recentShift(x),recentBoost=1+.10*Math.max(-1,Math.min(1,recent/10)),rr=routeRank.has(f)?routeRank.get(f):99,routeW=routingWeight(routeProfile,f);let fw=rel*qBase*recentBoost*routeW;if(x.curMiss>=4)fw*=.72;else if(x.curMiss>=2)fw*=.88;formulaRows.push({f,x,pred:[...new Set(p.map(Number).filter(Number.isFinite))],fw,quality,rr})}
+  for(const f of FORMULAS){const x=ad?.[f],p=execFormula(f,last,prev);if(!p||!x)continue;const tr=routeProfile?.ranked?.find(z=>z.f===f),quality=routingFormulaQuality(routeProfile,f,ad),qBase=.72+.28*clamp01((quality-50)/30),rel=reliabilityWeight(x),recent=recentShift(x),recentBoost=1+.10*Math.max(-1,Math.min(1,recent/10)),rr=routeRank.has(f)?routeRank.get(f):99,routeW=routingWeight(routeProfile,f);let fw=rel*qBase*recentBoost*routeW;if(tr?.transformAccepted)fw*=Math.max(.94,Math.min(1.18,1+(Number(tr.transformImprovement||0)/100)*.45));if(x.curMiss>=4)fw*=.72;else if(x.curMiss>=2)fw*=.88;const transformedPred=tr?.transformAccepted&&Array.isArray(tr?.pred)?tr.pred:[...new Set(p.map(Number).filter(Number.isFinite))];formulaRows.push({f,x,pred:[...new Set(transformedPred.map(Number).filter(Number.isFinite))],fw,quality,rr,transform:tr?.transform||'BASE',transformName:tr?.transformName||'สูตรเดิม',baselineRate:tr?.baselineRate??null,transformedRate:tr?.transformedRate??null,transformImprovement:tr?.transformImprovement??0,transformStability:tr?.transformStability??null})}
   formulaRows.sort((a,b)=>b.fw-a.fw||a.rr-b.rr);const accepted=[];
   for(const row of formulaRows){let redundancy=0;for(const prevRow of accepted){const a=new Set(row.pred),b=new Set(prevRow.pred),inter=[...a].filter(d=>b.has(d)).length,union=new Set([...a,...b]).size;redundancy=Math.max(redundancy,union?inter/union:0)}const independenceFactor=redundancy>=.80?.48:redundancy>=.50?.68:redundancy>=.25?.84:1,effectiveWeight=row.fw*independenceFactor;accepted.push(row);for(const dg of row.pred){const q=votes[dg];q.support+=effectiveWeight;q.independentSupport+=effectiveWeight;q.count++;q.rawCount++;q.formulas.push(row.f);q.clusters.push(row.f);q.evidence.push({f:row.f,weight:Math.round(effectiveWeight*1000)/1000,rawWeight:Math.round(row.fw*1000)/1000,quality:Math.round(row.quality*100)/100,independence:Math.round(independenceFactor*100)/100})}}
   for(const q of votes){const h=q.history,hr=h.rate==null?34.39:h.rate,hs=h.score==null?50:h.score,historyAdj=.16*Math.max(-1,Math.min(1,(hs-50)/18)),rawFreq=q.rawCount>=3?.18:q.rawCount===2?.10:q.rawCount===1?.02:0,indepBonus=q.independentSupport>=1.35?.24:q.independentSupport>=.90?.14:q.independentSupport>=.55?.06:0,diversityBonus=q.evidence.length>=2?.08*Math.min(1,q.independentSupport/1.5):0;q.independence=q.rawCount?Math.max(0,Math.min(1,q.independentSupport/(q.rawCount*.95))):0;q.risk+=(q.rawCount?0:1.15)+(hr<25?.65:hr<30?.28:0);const supportBase=Math.min(q.support,AUDIT_TUNING.supportCap);q.supportCompressed=q.support-supportBase;q.score=Math.max(0,supportBase+historyAdj+rawFreq+indepBonus+diversityBonus-.30*q.risk);q.scoreBreakdown={formulaSupport:supportBase,formulaSupportCompressed:q.supportCompressed,history:historyAdj,frequency:rawFreq,independence:indepBonus,diversity:diversityBonus,risk:-.30*q.risk};q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35;q.evidenceSummary=q.evidence.slice().sort((a,b)=>b.weight-a.weight).map(e=>e.f).join(', ')}
@@ -5831,6 +5878,23 @@ function needleIQTune(rs,d,other,anchor){
   const out={...stable.cfg,metaRate:100*(stable.h+1.5)/(stable.n+3),metaTests:stable.n,metaHits:stable.h,family};
   __NEEDLE_IQ_CACHE__.set(key,out);return out;
 }
+
+/* V1.9.120 NEEDLE TRANSFORMATION BRAIN
+   Needle does not inherit the Prominent transform. It tests the same bounded
+   transformation library against concrete tens→units pairs. The output is a
+   stable transform recipe (formula + transform) that can be reported separately. */
+const __NEEDLE_TRANSFORM_CACHE__=new WeakMap();
+function __needleTransformProfile(rs,cutoffTs=null){
+  const rows=routingFilteredRecords(rs,cutoffTs).slice(-30),key=String(cutoffTs||0);let m=__NEEDLE_TRANSFORM_CACHE__.get(rs);if(!m){m=new Map();__NEEDLE_TRANSFORM_CACHE__.set(rs,m)}if(m.has(key))return m.get(key);
+  const evalPair=(t,from,to)=>{let n=0,h=0,missRun=0,maxMiss=0;for(let i=from;i<to;i++){if(i+1>=rows.length||rows[i+1]?.breakBefore)continue;let tested=false;for(const f of FORMULAS){const p=execFormula(f,rows[i],i?rows[i-1]:null);if(!p)continue;const q=__tfApply(t,p);if(!q)continue;const pairs=[];for(const tens of q){for(const delta of [0,1,-1,2,-2]){const unit=__tfNorm(q[1]+delta);if(unit!==tens&&!pairs.some(x=>x[0]===tens&&x[1]===unit))pairs.push([tens,unit]);}}const target=__tfTarget(rows[i+1]);const ok=pairs.some(([a,u])=>target.includes(a)&&target.includes(u)||target.includes(u)&&target.includes(a));n++;tested=true;if(ok){h++;missRun=0}else{missRun++;maxMiss=Math.max(maxMiss,missRun)}break;}if(!tested)continue;}const rate=n?pct(h,n):null;return{n,h,rate,stability:n?Math.max(0,100-(maxMiss/n)*100*1.7):0,score:rate==null?null:.78*rate+.22*(n?Math.max(0,100-(maxMiss/n)*100*1.7):0)}};
+  if(rows.length<10){const base=evalPair(__FORMULA_TRANSFORMS__[0],0,rows.length),out={transform:'BASE',name:'สูตรเดิม',baseline:base,search:base,validation:base,improvement:0,accepted:false,window:rows.length};m.set(key,out);return out}
+  const split=Math.max(3,Math.floor(rows.length*.70)),base=evalPair(__FORMULA_TRANSFORMS__[0],split,rows.length),all=__FORMULA_TRANSFORMS__.map(t=>({t,search:evalPair(t,0,split),validation:evalPair(t,split,rows.length)})).sort((a,b)=>(b.validation.score??-1)-(a.validation.score??-1)||(b.search.score??-1)-(a.search.score??-1));
+  const best=all[0],gain=(best?.validation?.rate??0)-(base?.rate??0),accepted=!!best&&best.t.id!=='BASE'&&best.validation.n>=4&&best.search.n>=6&&gain>=0&&((best.validation.score??-1)>=(base.score??-1)-.8),chosen=accepted?best:all.find(x=>x.t.id==='BASE')||best;
+  const out={transform:chosen?.t.id||'BASE',name:chosen?.t.name||'สูตรเดิม',baseline:base,search:chosen?.search||base,validation:chosen?.validation||base,improvement:Math.round(gain*100)/100,accepted,window:rows.length};m.set(key,out);return out;
+}
+function __needleTransformBonus(rs,tens,unit){const prof=__needleTransformProfile(rs);if(!prof?.accepted)return 1;let bonus=1;for(const f of FORMULAS){const p=execFormula(f,rs?.at(-1),rs?.at(-2)||null);const q=__tfApply(__FORMULA_TRANSFORMS__.find(x=>x.id===prof.transform)||__FORMULA_TRANSFORMS__[0],p);if(!q)continue;for(const td of q){for(const delta of [0,1,-1,2,-2]){if(Number(tens)===td&&Number(unit)===__tfNorm(q[1]+delta))bonus=Math.max(bonus,Math.min(1.16,1+Math.max(0,prof.improvement)/100*.55));}}}return bonus;}
+
+
 function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false,__iqOverride=null,__channelNeedleProfile=null){
   /* V1.9.113 SHARP JOINT-COVERAGE NEEDLE SELECTOR
      - Tens is ALWAYS the prominent digit; units is ALWAYS the needle digit.
@@ -5866,7 +5930,7 @@ function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false,__iqOverride=nul
       const marginal=iq.coverage*coverage+iq.base*c.base+iq.stability*c.stability+posAdj;
       const diversity=selected.length?Math.min(...selected.map(x=>Math.abs(x.partner-c.partner))):9;
       const channelW=__channelNeedleWeight(__channelNeedleProfile,dd,c.partner);
-      const final=(marginal+Math.min(diversity,3)*iq.diversity)*channelW;
+      const transformW=__needleTransformBonus(rs,dd,c.partner);const final=(marginal+Math.min(diversity,3)*iq.diversity)*channelW*transformW;
       if(!best||final>best.final||final===best.final&&c.base>best.c.base||final===best.final&&c.base===best.c.base&&c.partner<best.c.partner)
         best={c,final,coverage};
     }
@@ -5880,7 +5944,7 @@ function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false,__iqOverride=nul
     x.hitRate=Math.round(x.hitRate*100)/100;
     x.rank=i+1;
     x.evidenceScore=Math.round(x.jointCoverage*100)/100;
-    x.iqModel=iq.name;x.iqFamily=iq.family||routingFamily(rs?.[0]?.name||'อื่นๆ');x.iqMetaRate=iq.metaRate||null;x.iqMetaTests=iq.metaTests||0;
+    x.iqModel=iq.name;x.iqFamily=iq.family||routingFamily(rs?.[0]?.name||'อื่นๆ');x.iqMetaRate=iq.metaRate||null;x.iqMetaTests=iq.metaTests||0;const nt=__needleTransformProfile(rs);x.transform=nt?.transform||'BASE';x.transformName=nt?.name||'สูตรเดิม';x.transformBaselineRate=nt?.baseline?.rate??null;x.transformRate=nt?.validation?.rate??null;x.transformImprovement=nt?.improvement??0;x.transformAccepted=!!nt?.accepted;
   });
   return selected.sort((a,b)=>a.partner-b.partner);
 }
@@ -6527,8 +6591,8 @@ function formulaResearchStackPanel(groups){
 function formulaRoutingPanel(groups){
   const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&k!=='__THAI_TOP__'&&Array.isArray(v));
   const fams=[...new Set(entries.map(([n])=>routingFamily(n)))].sort();
-  const rows=fams.map(fam=>{const same=entries.filter(([n])=>routingFamily(n)===fam),profiles=same.map(([name])=>formulaRoutingProfile(groups,name)).filter(Boolean),agg=FORMULAS.map(f=>{const xs=profiles.map(p=>p.ranked.find(x=>x.f===f)).filter(x=>x&&x.n>=8&&Number.isFinite(x.rate));return{f,n:xs.reduce((a,x)=>a+x.n,0),rate:xs.length?avg(xs.map(x=>x.rate)):null}}).filter(x=>Number.isFinite(x.rate)).sort((a,b)=>b.rate-a.rate||b.n-a.n).slice(0,4);return`<tr><td><b>${esc(fam)}</b></td><td>${same.length}</td><td>${agg.map((x,i)=>`<span class="score-chip" style="margin-right:3px">${i+1}. ${esc(x.f.replace(/^สูตร /,'F'))} ${x.rate}%</span>`).join(' ')||'—'}</td></tr>`}).join('');
-  return `<div class="research-panel" style="margin-bottom:12px"><div class="research-head"><b>🧭 Formula Routing · สูตรแม่ตามประเภทหวย</b><span>เลือกทีมหลัก 3–4 สูตรจาก 9 สูตรล็อก · ไม่สร้างสูตรใหม่</span></div><div class="research-grid"><div class="research-item primary"><small>ประเภท/Family</small><b>${fams.length}</b><span>จัดกลุ่มจากชื่อหวย</span></div><div class="research-item"><small>สูตรแม่</small><b>9</b><span>ล็อกเหมือนเดิม</span></div><div class="research-item"><small>ทีมหลัก</small><b>Top 4</b><span>ถ่วงน้ำหนักตาม OOS</span></div><div class="research-item"><small>Guard</small><b>≥8 OOS</b><span>ไม่พอข้อมูลใช้ค่าเดิม</span></div></div><div class="research-note">Routing จะเรียนรู้จากข้อมูลในอดีตเท่านั้นใน OOS: แบ่งตาม family ก่อน แล้วจัดอันดับสูตร 1–9; สูตรที่ข้อมูลน้อยจะไม่ถูกดันขึ้นเป็นตัวหลัก และน้ำหนักถูกจำกัดเพื่อไม่ให้ routing ครอบงำ กระดานตัวเลือก จนเละเทะ</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ประเภทหวย</th><th>จำนวนหวย</th><th>Top 4 สูตรแม่</th></tr></thead><tbody>${rows||'<tr><td colspan="3">ยังไม่มีข้อมูล</td></tr>'}</tbody></table></div></div>`;
+  const rows=fams.map(fam=>{const same=entries.filter(([n])=>routingFamily(n)===fam),profiles=same.map(([name])=>formulaRoutingProfile(groups,name)).filter(Boolean),agg=FORMULAS.map(f=>{const xs=profiles.map(p=>p.ranked.find(x=>x.f===f)).filter(x=>x&&x.n>=8&&Number.isFinite(x.rate));return{f,n:xs.reduce((a,x)=>a+x.n,0),rate:xs.length?avg(xs.map(x=>x.rate)):null,ti:xs.filter(x=>x.transformAccepted).length,imp:xs.length?avg(xs.map(x=>Number(x.transformImprovement||0))):0}}).filter(x=>Number.isFinite(x.rate)).sort((a,b)=>b.rate-a.rate||b.n-a.n).slice(0,4);return`<tr><td><b>${esc(fam)}</b></td><td>${same.length}</td><td>${agg.map((x,i)=>`<span class="score-chip" style="margin-right:3px">${i+1}. ${esc(x.f.replace(/^สูตร /,'F'))} ${x.rate}%${x.ti?` · พลิก ${x.imp>=0?'+':''}${x.imp.toFixed(1)}pp`:''}</span>`).join(' ')||'—'}</td></tr>`}).join('');
+  return `<div class="research-panel" style="margin-bottom:12px"><div class="research-head"><b>🧭 Formula Routing · สูตรแม่ตามประเภทหวย</b><span>เลือกทีมหลักจาก 9 สูตร + ค้นหา Transformation ที่ผ่าน OOS/Validation</span></div><div class="research-grid"><div class="research-item primary"><small>ประเภท/Family</small><b>${fams.length}</b><span>จัดกลุ่มจากชื่อหวย</span></div><div class="research-item"><small>สูตรแม่</small><b>9</b><span>ล็อกเหมือนเดิม</span></div><div class="research-item"><small>ทีมหลัก</small><b>Top 4</b><span>ถ่วงน้ำหนักตาม OOS</span></div><div class="research-item"><small>Guard</small><b>≥8 OOS</b><span>ไม่พอข้อมูลใช้ค่าเดิม</span></div></div><div class="research-note">Routing ใช้ OOS ตามลำดับเวลา และแต่ละสูตรจะถูกทดสอบทั้งสูตรเดิมและ Transformation หลายแบบในหน้าต่างล่าสุด 30 งวด; Transformation จะขึ้นเป็น Champion ได้ก็ต่อเมื่อ Validation ไม่ด้อยกว่าสูตรเดิมและมีหลักฐานเพียงพอ น้ำหนักยังถูกจำกัดเพื่อกัน overfit</div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>ประเภทหวย</th><th>จำนวนหวย</th><th>Top 4 สูตร + วิธีพลิกแพลง</th></tr></thead><tbody>${rows||'<tr><td colspan="3">ยังไม่มีข้อมูล</td></tr>'}</tbody></table></div></div>`;
 }
 function globalTable(groups){
   const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v));
@@ -8791,7 +8855,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.119 PREDICTION CORE REBUILD · 5 CHANNEL DNA × POSITION × REGIME × JOINT INTELLIGENCE</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.120 FORMULA EVOLUTION · 5 CHANNEL DNA × TRANSFORMATION × POSITION × REGIME × JOINT INTELLIGENCE</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
