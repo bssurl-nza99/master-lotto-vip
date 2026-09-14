@@ -690,7 +690,7 @@ table.audit-table th:nth-child(3),table.audit-table td:nth-child(3){min-width:82
   justify-content:space-between;
   gap:9px
 }
-/* V1.9.105 TOP2 DNA + TARGETED NUMBER PERCENTAGE + NEEDLE RANK */
+/* V1.9.107 TOP2 DNA + TARGETED NUMBER PERCENTAGE + NEEDLE RANK */
 .formula-global-title{color:#4b3607;font-size:.72rem;margin:12px 0 8px;font-weight:800}
 .floating-pill{min-width:0;flex-direction:column;gap:3px;height:auto;padding:6px 9px;line-height:1}
 
@@ -1175,7 +1175,7 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
 
 
 
-/* V1.9.105 READABILITY + CLEAN LAB */
+/* V1.9.107 READABILITY + CLEAN LAB */
 .ai-details-heading,.selector-diag-head,.forensic-box,.dna-type-box,.dna-mini-box{color:#2f2922!important}
 .ai-details-heading b,.selector-diag-head b,.forensic-box b,.dna-type-box b,.dna-mini-box b{color:#2f2922!important}
 .ai-details-heading small,.selector-diag-head small,.forensic-box small,.dna-type-box small{color:#5d5143!important}
@@ -2715,7 +2715,7 @@ html{scroll-behavior:auto!important}
 @media(max-width:650px){.selector-diag-grid{grid-template-columns:1fr 1fr}.selector-diag-panel{padding:10px}.selector-diag-head{flex-direction:column}.selector-diag-head>span{align-self:flex-start}}
 
 
-/* V1.9.105 EXECUTIVE SUMMARY VISIBILITY — UI ONLY */
+/* V1.9.107 EXECUTIVE SUMMARY VISIBILITY — UI ONLY */
 .dna-executive{background:linear-gradient(145deg,#fffaf0 0%,#fff 46%,#f7fbff 100%)!important;border:2px solid #c79a2b!important;box-shadow:0 10px 28px rgba(90,68,20,.10)!important}
 .dna-executive .selector-diag-head{padding:10px 12px;border-radius:12px;background:linear-gradient(90deg,#fff1c9,#fffaf0);border:1px solid #ead49a;color:#5d4308!important}
 .dna-executive .selector-diag-head b{color:#5d4308!important;font-size:.78rem!important}
@@ -2736,7 +2736,7 @@ html{scroll-behavior:auto!important}
 
 
 <style id="v1987-dna-contrast-target-detail">
-/* V1.9.105 READABILITY + TARGET DETAIL — UI/diagnostic display only; no scoring/formula changes */
+/* V1.9.107 READABILITY + TARGET DETAIL — UI/diagnostic display only; no scoring/formula changes */
 .dna-executive .summary-table-container table.audit-table tbody td,
 .dna-executive .summary-table-container table.audit-table tbody td b,
 .dna-executive .summary-table-container table.audit-table tbody td span{
@@ -2799,7 +2799,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V1.9.105 TYPE-DNA INTELLIGENCE LAB</div>
+  <div class="pill">V1.9.107 TYPE-DNA INTELLIGENCE LAB</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -4934,6 +4934,72 @@ function __candidateRawStable__(value){try{return JSON.stringify(value);}catch(e
 function __cloneCandidateRaw__(value){try{return typeof structuredClone==='function'?structuredClone(value):value.map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas,clusters:Array.isArray(q.clusters)?q.clusters.slice():q.clusters,evidence:Array.isArray(q.evidence)?q.evidence.map(e=>({...e})):q.evidence,scoreBreakdown:q.scoreBreakdown?{...q.scoreBreakdown}:q.scoreBreakdown}));}catch(e){return value.map(q=>({...q,formulas:Array.isArray(q.formulas)?q.formulas.slice():q.formulas,clusters:Array.isArray(q.clusters)?q.clusters.slice():q.clusters,evidence:Array.isArray(q.evidence)?q.evidence.map(e=>({...e})):q.evidence,scoreBreakdown:q.scoreBreakdown?{...q.scoreBreakdown}:q.scoreBreakdown}));}}
 function __candidateRawRouteSig__(routeProfile){const r=routeProfile?.ranked||[];return r.map(x=>`${x.f||''}:${x.score??''}:${x.recentRate??''}:${x.rate??''}`).join('|')}
 function __candidateRawAdSig__(ad){return FORMULAS.map(f=>{const x=ad?.[f]||{};return `${x.rate??''},${x.curMiss??''},${x.rel??''},${x.horizon?.[0]?.rate??''},${x.horizon?.[1]?.rate??''},${x.horizon?.[4]?.rate??''},${x.horizon?.[5]?.rate??''}`}).join('|')}
+
+/* V1.9.107 POSITION DNA — learns each physical digit position separately.
+   Top: hundreds/tens/units (n3[0]/n3[1]/n3[2]); Bottom: tens/units (n2[0]/n2[1]).
+   This is a bounded evidence layer: it never reads the target row while scoring
+   a prediction point, and it shrinks small samples toward the global prior. */
+const __POSITION_DNA_CACHE__=new WeakMap();
+function __posPriorRate__(role,pos){return role==='top'&&pos===0?10:10;}
+function __positionDNA__(rs){
+  const rows=Array.isArray(rs)?rs:[]; if(!rows.length)return null;
+  const last=rows.at(-1), old=__POSITION_DNA_CACHE__.get(last);
+  const sig=`${rows.length}|${rows[0]?.date||''}|${last?.date||''}`;
+  if(old?.sig===sig)return old.value;
+  const roles={top:{0:Array.from({length:10},()=>({n:0,h:0})),1:Array.from({length:10},()=>({n:0,h:0})),2:Array.from({length:10},()=>({n:0,h:0}))},bottom:{0:Array.from({length:10},()=>({n:0,h:0})),1:Array.from({length:10},()=>({n:0,h:0}))}};
+  for(let i=0;i<rows.length-1;i++){
+    if(rows[i+1]?.breakBefore)continue;
+    const tar=rows[i+1],t3=String(tar?.n3??'').padStart(3,'0').slice(-3),b2=String(tar?.n2??'').padStart(2,'0').slice(-2);
+    for(const [role,str] of [['top',t3],['bottom',b2]]){
+      for(let pos=0;pos<str.length;pos++){
+        const actual=Number(str[pos]); if(!Number.isFinite(actual))continue;
+        for(let d=0;d<10;d++){roles[role][pos][d].n++;if(actual===d)roles[role][pos][d].h++;}
+      }
+    }
+  }
+  const out={roles};__POSITION_DNA_CACHE__.set(last,{sig,value:out});return out;
+}
+function __positionTargetEvidence__(historyRs,digit){
+  const rows=Array.isArray(historyRs)?historyRs:[]; if(rows.length<8)return {score:50,details:{}};
+  const z=__positionDNA__(rows), out={};
+  const specs=[['top',1,.27,'บน-สิบ'],['top',2,.25,'บน-หน่วย'],['bottom',0,.25,'ล่าง-สิบ'],['bottom',1,.23,'ล่าง-หน่วย']];
+  let wsum=0,acc=0;
+  for(const [role,pos,w,label] of specs){const q=z.roles[role]?.[pos]?.[digit];const n=q?.n||0,h=q?.h||0;const rate=n?100*(h+.5)/(n+1):50;const shrink=Math.min(1,n/30);const adj=50+(rate-50)*shrink;out[label]={n,h,rate:Math.round(rate*100)/100,adj:Math.round(adj*100)/100};acc+=adj*w;wsum+=w;}
+  const global=z.fam[digit],gn=global?.n||0,gr=gn?100*(global.h+.5)/(gn+1):50,gs=50+(gr-50)*Math.min(1,gn/80);
+  return {score:wsum?acc/wsum*.82+gs*.18:50,details:out,global:{n:gn,rate:Math.round(gr*100)/100}};
+}
+function __positionTransitionEvidence__(historyRs,digit){
+  const rows=Array.isArray(historyRs)?historyRs:[]; if(rows.length<12)return 50;
+  let n=0,h=0;
+  // For each historical prediction state, ask: when the immediately preceding
+  // result had the same position digit, how often did the next result repeat it?
+  for(let i=0;i<rows.length-1;i++){
+    if(rows[i+1]?.breakBefore)continue;
+    const a=rows[i],b=rows[i+1],a3=String(a?.n3??'').padStart(3,'0').slice(-3),b3=String(b?.n3??'').padStart(3,'0').slice(-3),a2=String(a?.n2??'').padStart(2,'0').slice(-2),b2=String(b?.n2??'').padStart(2,'0').slice(-2);
+    const pairs=[[a3[1],b3[1]],[a3[2],b3[2]],[a2[0],b2[0]],[a2[1],b2[1]]];
+    for(const [prev,next] of pairs)if(Number(prev)===Number(digit)){n++;if(Number(next)===Number(digit))h++;}
+  }
+  return n?50+(100*(h+.5)/(n+1)-50)*Math.min(1,n/20):50;
+}
+function __positionFamilyEvidence__(historyRs,digit){
+  const rows=Array.isArray(historyRs)?historyRs:[]; if(!rows.length)return 50;
+  const fam=routingFamily(rows[0]?.name||'อื่น');
+  const all=__positionDNA__(rows),base=__positionTargetEvidence__(rows,digit).score;
+  // Family-local records are passed by callers when available; within a single
+  // lottery this acts as the exact-type DNA, while global/family routing remains
+  // the existing selector responsibility. Keep this layer deliberately bounded.
+  return base*.88+__positionTransitionEvidence__(rows,digit)*.12;
+}
+function __positionDigitScore__(historyRs,digit){
+  const a=__positionTargetEvidence__(historyRs,digit),tr=__positionTransitionEvidence__(historyRs,digit),score=.76*a.score+.24*tr;
+  return {score:Math.round(score*100)/100,position:a.details,global:a.global,transition:Math.round(tr*100)/100};
+}
+function __needlePositionUnitScore__(historyRs,tens,unit){
+  const rows=Array.isArray(historyRs)?historyRs:[]; if(rows.length<8)return 50;
+  const a=__positionDigitScore__(rows,unit), pair=needlePairStableScore(rows,Number(tens),Number(unit),needleAnchorFromHundreds(Number(String(rows.at(-1)?.n3??'').padStart(3,'0').slice(0,1))));
+  // Units are specifically judged as units, then blended with concrete pair OOS.
+  return .58*a.score+.42*(Number(pair?.score)||50);
+}
 function candidateBoardRaw(rs,ad,historyRs=rs,routeProfile=null){const __pt0=window.__PERFTRACE__.begin("candidateBoardRaw"); try {
   const last=rs.at(-1),prev=rs.at(-2)||null;if(!last)return[];
   const flagSig=`${globalThis.__SUPPORT_META_BUILD__?'S':'-'}${globalThis.__TEN_SELECTOR_META_BUILD__?'T':'-'}`;
@@ -4950,7 +5016,14 @@ function candidateBoardRaw(rs,ad,historyRs=rs,routeProfile=null){const __pt0=win
   for(const row of formulaRows){let redundancy=0;for(const prevRow of accepted){const a=new Set(row.pred),b=new Set(prevRow.pred),inter=[...a].filter(d=>b.has(d)).length,union=new Set([...a,...b]).size;redundancy=Math.max(redundancy,union?inter/union:0)}const independenceFactor=redundancy>=.80?.48:redundancy>=.50?.68:redundancy>=.25?.84:1,effectiveWeight=row.fw*independenceFactor;accepted.push(row);for(const dg of row.pred){const q=votes[dg];q.support+=effectiveWeight;q.independentSupport+=effectiveWeight;q.count++;q.rawCount++;q.formulas.push(row.f);q.clusters.push(row.f);q.evidence.push({f:row.f,weight:Math.round(effectiveWeight*1000)/1000,rawWeight:Math.round(row.fw*1000)/1000,quality:Math.round(row.quality*100)/100,independence:Math.round(independenceFactor*100)/100})}}
   for(const q of votes){const h=q.history,hr=h.rate==null?34.39:h.rate,hs=h.score==null?50:h.score,historyAdj=.16*Math.max(-1,Math.min(1,(hs-50)/18)),rawFreq=q.rawCount>=3?.18:q.rawCount===2?.10:q.rawCount===1?.02:0,indepBonus=q.independentSupport>=1.35?.24:q.independentSupport>=.90?.14:q.independentSupport>=.55?.06:0,diversityBonus=q.evidence.length>=2?.08*Math.min(1,q.independentSupport/1.5):0;q.independence=q.rawCount?Math.max(0,Math.min(1,q.independentSupport/(q.rawCount*.95))):0;q.risk+=(q.rawCount?0:1.15)+(hr<25?.65:hr<30?.28:0);const supportBase=Math.min(q.support,AUDIT_TUNING.supportCap);q.supportCompressed=q.support-supportBase;q.score=Math.max(0,supportBase+historyAdj+rawFreq+indepBonus+diversityBonus-.30*q.risk);q.scoreBreakdown={formulaSupport:supportBase,formulaSupportCompressed:q.supportCompressed,history:historyAdj,frequency:rawFreq,independence:indepBonus,diversity:diversityBonus,risk:-.30*q.risk};q.confidence=q.independentSupport>=1.45&&q.score>=1.45?'สูง':q.independentSupport>=.80&&q.score>=.90?'กลาง':'ต่ำ';q.gate=q.rawCount>0&&(q.independentSupport>=.48||q.history?.rate>=50)&&q.risk<2.35;q.evidenceSummary=q.evidence.slice().sort((a,b)=>b.weight-a.weight).map(e=>e.f).join(', ')}
   const radar=radarBuild(historyRs);applyRadarSelection(votes,historyRs);applyRadarEnsemble(votes,historyRs);applyRadarMatrix(votes,historyRs);applySupportFilter(votes,historyRs);applySupportGranularity(votes,historyRs);applyVolatilityShield(votes,historyRs);applyTenSelectorEnsemble(votes,historyRs);applyFlowRadar(votes,historyRs);applyFlowOutcomeMeta(votes,historyRs);applyPairTripletIntelligence(votes,historyRs);applyRegimeAndReplacementDirection(votes,historyRs);applyEvidenceArbitration(votes,historyRs);
-  /* V1.9.105 NEEDLE-AWARE PROMINENT RE-RANK
+  /* Position DNA: learn top/bottom physical positions separately. The adjustment
+     is intentionally small so existing formula evidence stays dominant. */
+  if(Array.isArray(historyRs)&&historyRs.length>=12){
+    const pos=votes.map(q=>({digit:q.digit,score:__positionDigitScore__(historyRs,q.digit).score}));
+    const med=[...pos].sort((a,b)=>a.score-b.score)[Math.floor(pos.length/2)]?.score??50;
+    for(const q of votes){const ps=pos.find(x=>x.digit===q.digit)?.score??50;const adj=Math.max(-.14,Math.min(.26,(ps-med)/100*.70));q.score+=adj;q.positionDNA=__positionDigitScore__(historyRs,q.digit);q.scoreBreakdown=q.scoreBreakdown||{};q.scoreBreakdown.positionDNA=adj;}
+  }
+  /* V1.9.107 NEEDLE-AWARE PROMINENT RE-RANK
      Promote tens digits that historically produce strong concrete needle pairs.
      This is only a bounded final tie-breaker; formula evidence remains dominant. */
   if(Array.isArray(historyRs)&&historyRs.length>=10){
@@ -5305,7 +5378,7 @@ function simulateVariant(rs,routeCtx,variant){const __pt0=window.__PERFTRACE__.b
 function adaptiveMetaSimulation(rs,routeCtx){const __pt0=window.__PERFTRACE__.begin("adaptiveMetaSimulation"); try {const stats=Object.fromEntries(SELECTION_SIM_VARIANTS.map(v=>[v.id,{tests:0,hits:0}])),logs=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,c=candidateBoard(train,ad,train,routeProfile,routeCtx),eligible=SELECTION_SIM_VARIANTS.map(v=>{const p=simulatorPick(c,v),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),hit=[p.d1,p.d2].some(d=>target.includes(d));return{v,p,hit}}),ranked=eligible.map(x=>{const z=stats[x.v.id];return{...x,priorRate:(z.hits+5)/(z.tests+10)}}).sort((a,b)=>b.priorRate-a.priorRate||a.v.id.localeCompare(b.v.id)),chosen=ranked[0];stats[chosen.v.id].tests++;if(chosen.hit)stats[chosen.v.id].hits++;logs.push({source:train.at(-1).date,target:rs[i+1].date,strategy:chosen.v.name,d1:chosen.p.d1,d2:chosen.p.d2,hit:chosen.hit})}const rows=SELECTION_SIM_VARIANTS.map(v=>{const z=stats[v.id];return{...v,tests:z.tests,hits:z.hits,rate:z.tests?pct(z.hits,z.tests):0}}).sort((a,b)=>b.rate-a.rate||b.hits-a.hits);return{rows,logs,chosen:rows[0]||null}} finally { window.__PERFTRACE__.end("adaptiveMetaSimulation",__pt0); }}
 function selectionSimulator(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionSimulator"); try {if(!Array.isArray(rs)||rs.length<5)return{variants:[],adaptive:null,total:0};const variants=SELECTION_SIM_VARIANTS.map(v=>{const h=simulateVariant(rs,routeCtx,v),hits=h.filter(x=>x.hit).length;return{...v,tests:h.length,hits,misses:h.length-hits,rate:pct(hits,h.length),horizon:DISPLAY_WIN.map(w=>{const a=h.slice(-w),hh=a.filter(x=>x.hit).length;return{w,n:a.length,rate:a.length>=w?pct(hh,a.length):null}})}}).sort((a,b)=>b.rate-a.rate||b.hits-a.hits);return{variants,adaptive:adaptiveMetaSimulation(rs,routeCtx),total:variants[0]?.tests||0}} finally { window.__PERFTRACE__.end("selectionSimulator",__pt0); }}
 function selectionSimulatorPanel(groups){const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>({name,rs,sim:selectionSimulator(rs,{name,groups})})).filter(x=>x.sim.total>0),agg=new Map();for(const e of entries)for(const v of e.sim.variants){const z=agg.get(v.id)||{id:v.id,name:v.name,tests:0,hits:0};z.tests+=v.tests;z.hits+=v.hits;z.rate=pct(z.hits,z.tests);agg.set(v.id,z)}const ar=entries.reduce((a,e)=>{a.tests+=e.sim.adaptive?.logs?.length||0;a.hits+=(e.sim.adaptive?.logs||[]).filter(x=>x.hit).length;return a},{tests:0,hits:0}),rows=[...agg.values()].sort((a,b)=>b.rate-a.rate||b.hits-a.hits).map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${x.tests}</td><td>${x.hits}</td><td>${x.tests-x.hits}</td><td><span class="score-chip">${x.rate}%</span></td></tr>`).join(''),best=[...agg.values()].sort((a,b)=>b.rate-a.rate||b.hits-a.hits)[0];return `<div class="lottery-audit-block"><div class="lottery-audit-title">🎛️ Selection Simulator · จำลองการคัดเลือกแบบ Walk-Forward</div><div class="lottery-audit-sub">ทดสอบหลายรูปแบบย้อนหลังทีละงวด โดยแต่ละงวดใช้เฉพาะข้อมูลที่มีอยู่ก่อนหน้านั้น เพื่อวัดคุณภาพของ “ตัวเลือกเลข” · ไม่แตะสูตร F1–F9 และไม่แก้หน้าตาการ์ด</div><div class="audit-grid"><div class="metric-box"><small>งวดที่จำลอง</small><b>${ar.tests||0}</b><span>ทุกหวยรวมกัน</span></div><div class="metric-box"><small>Adaptive Strategy</small><b>${ar.tests?pct(ar.hits,ar.tests):0}%</b><span>เลือกกลยุทธ์จากผลก่อนหน้า</span></div><div class="metric-box"><small>วิธีเดี่ยวที่ดีที่สุด</small><b>${esc(best?.name||'-')}</b><span>${best?best.rate+'%':'—'}</span></div><div class="metric-box"><small>การใช้งาน</small><b>OOS</b><span>ไม่ใช้ผลอนาคต</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>กลยุทธ์</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>Digit Hit Rate</th></tr></thead><tbody>${rows||'<tr><td colspan="5">ข้อมูลไม่พอสำหรับจำลอง</td></tr>'}</tbody></table></div><div class="insight-box"><b>Navigation Radar:</b> สร้างโซน 3 ตัวจาก operator หลายแบบของงวดก่อน แล้วเรียนรู้ความสำเร็จแบบ Walk-Forward แยกตามหวย ก่อนใช้เป็นน้ำหนักสนับสนุนตัวคัดเลือก · <b>หลักการ:</b> Simulator คือสนามทดลองของ “ตัวคัดเลือก” ไม่ใช่เครื่องทำนายผลล่วงหน้า หากแนวทางใดชนะ OOS อย่างสม่ำเสมอ จึงมีเหตุผลให้ใช้เป็นชั้นสนับสนุน production โดยไม่เปลี่ยนสูตรหลัก</div></div>`}
-/* V1.9.94 NEEDLE ENGINE — fixed-base 7 / hundreds anchor + deterministic ±2/±3 expansion.
+/* V1.9.94 NEEDLE ENGINE — adaptive production needle selector with hundreds-anchor prior and OOS evidence.
    Rules:
    1) Anchor = |7 - hundreds digit of latest 3-digit top|, normalized to 0-9.
    2) Build ±2 first => exactly 5 digits [anchor-2 ... anchor+2].
@@ -5340,13 +5413,13 @@ function legacyPairs(d,other,anchor){
 /* Production needle refinement:
    - The tens digit is ALWAYS the selected prominent digit (d1/d2).
    - The units digit is ALWAYS the needle partner.
-   - Candidate partners stay inside the deterministic ±2 / collision-±3 pool.
+   - Candidate partners are evaluated across all legal units 0–9, excluding the two prominent digits.
    - When that pool has 6 eligible partners, historical OOS evidence chooses the
      strongest 5; this changes selection quality, not the digit positions.
    - Final display order is ALWAYS ascending by units digit, while colors show
      the evidence rank (gold/silver/copper/top-3) so ranking remains visible. */
 function needlePairOOSScore(rs,tens,unit,anchor){
-  /* V1.9.105 WALK-FORWARD PAIR MODEL
+  /* V1.9.107 WALK-FORWARD PAIR MODEL
      Scores a concrete tens+units pair directly against historical targets.
      No future row is read: only rows strictly before the current decision are used. */
   const t=Number(tens),u=Number(unit),a=norm(anchor),rows=Array.isArray(rs)?rs:[];
@@ -5375,31 +5448,50 @@ function needlePairOOSScore(rs,tens,unit,anchor){
   return {tens:t,unit:u,score,rate:base,recentRate:recent,contextRate:context,tests:Math.round(wn*10)/10,dist};
 }
 function needlePairStableScore(rs,tens,unit,anchor){
-  /* V1.9.105 STABLE ENSEMBLE NEEDLE MODEL
-     Direct concrete-pair OOS evidence is combined across 20/40/60-row
-     walk-forward windows.  This prevents a short hot/cold streak from
-     dominating the five needle partners.  No future row is read. */
+  /* V1.9.107 TYPE-DNA NEEDLE SCORE
+     - Direct concrete-pair OOS evidence over 20/40/60 windows.
+     - Window weights adapt to the observed behavior of this lottery series:
+       recent-drift increases recency weight; stable distributions increase
+       longer-window evidence.
+     - Adds a small transition prior learned only from rows already in rs.
+     - All terms are bounded so no single short streak can dominate. */
   const rows=Array.isArray(rs)?rs:[], N=rows.length, t=Number(tens), u=Number(unit), a=norm(anchor);
-  if(N<8) return {score:0,rate:0,tests:0,stability:0,dist:Math.min(Math.abs(u-a),10-Math.abs(u-a))};
-  const windows=[Math.min(20,N),Math.min(40,N),Math.min(60,N)];
-  const parts=[];
+  if(N<8)return{score:0,rate:0,tests:0,stability:0,dist:Math.min(Math.abs(u-a),10-Math.abs(u-a)),dnaRate:0,transitionRate:0};
+  const windows=[Math.min(20,N),Math.min(40,N),Math.min(60,N)],parts=[];
   for(const w of windows){
     const sub=rows.slice(Math.max(0,N-w));
-    const z=needlePairOOSScore(sub,t,u,a);
-    parts.push(z);
+    parts.push(needlePairOOSScore(sub,t,u,a));
   }
-  const weights=[.24,.34,.42].slice(3-parts.length);
-  let score=0,rate=0,tests=0;
-  for(let i=0;i<parts.length;i++){score+=parts[i].score*weights[i];rate+=parts[i].rate*weights[i];tests+=parts[i].tests*weights[i];}
-  const rates=parts.map(x=>Number(x.rate)||0);
-  const mean=rates.length?rates.reduce((x,y)=>x+y,0)/rates.length:0;
+  /* Detect whether the target-pair environment is drifting.  This uses only
+     historical target rows and changes weights by a small bounded amount. */
+  const recentRows=rows.slice(Math.max(0,N-20)), olderRows=rows.slice(Math.max(0,N-60),Math.max(0,N-20));
+  const pairHitRate=(arr)=>{
+    if(!arr.length)return .245;
+    let h=0;for(const r of arr){const top=String(r?.n3??'').padStart(3,'0').slice(-2),bot=String(r?.n2??'').padStart(2,'0'),p=`${t}${u}`,rev=`${u}${t}`;if(top===p||top===rev||bot===p||bot===rev)h++;}
+    return h/arr.length;
+  };
+  const recentPair=pairHitRate(recentRows),olderPair=pairHitRate(olderRows),drift=Math.min(1,Math.abs(recentPair-olderPair)/.25);
+  const baseW=[.24,.34,.42];
+  const wts=[baseW[0]+.12*drift,baseW[1],Math.max(.18,baseW[2]-.12*drift)];
+  const sw=wts.reduce((x,y)=>x+y,0);for(let i=0;i<wts.length;i++)wts[i]/=sw;
+  let score=0,rate=0,tests=0;for(let i=0;i<parts.length;i++){score+=parts[i].score*wts[i];rate+=parts[i].rate*wts[i];tests+=parts[i].tests*wts[i];}
+  const rates=parts.map(x=>Number(x.rate)||0),mean=rates.length?rates.reduce((x,y)=>x+y,0)/rates.length:0;
   const variance=rates.length?rates.reduce((x,y)=>x+(y-mean)*(y-mean),0)/rates.length:0;
   const stability=Math.max(0,12-Math.sqrt(variance));
+  /* Transition evidence: previous target's units/tens context → current pair.
+     It is intentionally weak and smoothed to avoid zero-frequency traps. */
+  let th=0,tn=0;for(let i=Math.max(1,N-60);i<N;i++){
+    const prev=rows[i-1],r=rows[i];if(!prev||!r||r.breakBefore)continue;
+    const prevTop=String(prev.n3??'').padStart(3,'0').slice(-2),prevBot=String(prev.n2??'').padStart(2,'0');
+    const context=(Number(prevTop[0])===t||Number(prevBot[0])===t||Number(prevTop[1])===u||Number(prevBot[1])===u);
+    if(!context)continue;tn++;const top=String(r.n3??'').padStart(3,'0').slice(-2),bot=String(r.n2??'').padStart(2,'0'),p=`${t}${u}`,rev=`${u}${t}`;if(top===p||top===rev||bot===p||bot===rev)th++;
+  }
+  const transitionRate=tn?(th+1.5)/(tn+3):.245;
+  const transitionAdj=Math.max(-2.2,Math.min(2.2,(transitionRate-.245)*8));
   const dist=Math.min(Math.abs(u-a),10-Math.abs(u-a));
-  /* Anchor is a prior only; it is deliberately small versus OOS evidence. */
   const anchorPrior=dist===0?3.2:dist===1?2.1:dist===2?1.0:dist===3?.35:0;
-  score += anchorPrior + stability*.08;
-  return {score,rate,tests,stability,dist,recentRate:parts.at(-1)?.recentRate??rate,contextRate:parts.at(-1)?.contextRate??rate};
+  score+=anchorPrior+stability*.08+transitionAdj;
+  return{score,rate,tests,stability,dist,recentRate:parts.at(-1)?.recentRate??rate,contextRate:parts.at(-1)?.contextRate??rate,dnaRate:100*recentPair,transitionRate:100*transitionRate,drift};
 }
 function needleJointCoverageScore(rs,tens,unit,anchor,selected){
   const rows=Array.isArray(rs)?rs:[], t=Number(tens), u=Number(unit), a=norm(anchor);
@@ -5426,7 +5518,7 @@ function needleJointCoverageScore(rs,tens,unit,anchor,selected){
   }
   return total?100*gain/total:0;
 }
-/* V1.9.105 DNA/IQ META-OPTIMIZER
+/* V1.9.107 DNA/IQ META-OPTIMIZER
    Bounded walk-forward hyperparameter search. It never looks at the current
    target: each configuration is scored only on earlier prediction points.
    The search is per concrete lottery series, while routingFamily is retained
@@ -5498,7 +5590,7 @@ function needleIQTune(rs,d,other,anchor){
   __NEEDLE_IQ_CACHE__.set(key,out);return out;
 }
 function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false){
-  /* V1.9.105 SHARP JOINT-COVERAGE NEEDLE SELECTOR
+  /* V1.9.107 SHARP JOINT-COVERAGE NEEDLE SELECTOR
      - Tens is ALWAYS the prominent digit; units is ALWAYS the needle digit.
      - Evaluate every legal unit 0..9, not only an anchor neighborhood.
      - First score each pair with stable chronological OOS evidence.
@@ -5527,7 +5619,9 @@ function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false){
     let best=null;
     for(const c of scored){
       const coverage=needleJointCoverageScore(rs,dd,c.partner,aa,selected);
-      const marginal=iq.coverage*coverage+iq.base*c.base+iq.stability*c.stability;
+      const posUnit=__needlePositionUnitScore__(rs,dd,c.partner);
+      const posAdj=Math.max(-4,Math.min(7,(posUnit-50)*.18));
+      const marginal=iq.coverage*coverage+iq.base*c.base+iq.stability*c.stability+posAdj;
       const diversity=selected.length?Math.min(...selected.map(x=>Math.abs(x.partner-c.partner))):9;
       const final=marginal+Math.min(diversity,3)*iq.diversity;
       if(!best||final>best.final||final===best.final&&c.base>best.c.base||final===best.final&&c.base===best.c.base&&c.partner<best.c.partner)
@@ -5548,7 +5642,7 @@ function productionNeedlePairs(d,other,anchor,rs,__skipIQ=false){
   return selected.sort((a,b)=>a.partner-b.partner);
 }
 
-/* V1.9.105 FIX: keep Adaptive history defined.
+/* V1.9.107 FIX: keep Adaptive history defined.
    The current production needle selector is already OOS/stability-adaptive, so
    the adaptive audit reuses the exact same chronological OOS history rather than
    inventing a second, undefined scoring path. This prevents false accuracy data. */
@@ -5710,7 +5804,7 @@ function stabilizeSelectorRanks(c,baselineScores){
   }
   return changed?c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit):c;
 }
-/* V1.9.105 TOP2 DNA — measured calibration layer over the existing Board.
+/* V1.9.107 TOP2 DNA — measured calibration layer over the existing Board.
    It learns only from prior rank-1/rank-2 candidate outcomes produced by the
    existing raw board. No formula body, formula percentage, or candidate source
    is changed. The adjustment is Bayesian-shrunk, type-specific, recent-aware,
@@ -5751,7 +5845,13 @@ function applyTop2DNA(c,rs){
   return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
 }
 function top2DNAStatus(rs){const m=top2DNAMemory(rs);if(!m)return{rate:null,tests:0};return{rate:m.globalRate,tests:m.total};}
-function __cloneRank(c){return (Array.isArray(c)?c:[]).map(q=>({...q,formulas:Array.isArray(q?.formulas)?q.formulas.slice():q?.formulas}));}
+function __cloneRank(c){
+  const src=Array.isArray(c)?c:[];
+  return src.map((q,i)=>{
+    const x=(q&&typeof q==='object')?q:{};
+    return {...x,rank:x.rank??(i+1),digit:Number.isFinite(Number(x.digit))?Number(x.digit):x.digit,formulas:Array.isArray(x.formulas)?x.formulas.slice():x.formulas};
+  });
+}
 function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("select"); try {
   const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);applySelectorCalibration(c,rs);const __prodRankPolicy={minEvidence:.56,minEvidenceGap:.045,gain:.70,maxLift:.040,maxMoves:1,evidenceWeights:{score:.414,independentSupport:.060,support:.276,gemini:.053,radar:.128}};const __prodRankMeta=__boardRankChallengerApply(c,__prodRankPolicy);c.forEach((q,i)=>{q._preTop2Rank=i+1});applyTop2DNA(c,rs);applySelectorGuardrail(c,__baselineRankMap,risk);applyMidRankRecovery(c,rs,__baselineRankMap,risk);
   const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c;let top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
@@ -5795,7 +5895,7 @@ function __buildForensicAnalysisPack(){
   const worst=rows.filter(x=>!x.selectionHit).slice().sort((a,b)=>Number(b.targetRank||99)-Number(a.targetRank||99)||((b.rankDropRawToMeta||0)+(b.rankDropMetaToSignal||0)+(b.rankDropSignalToContext||0)+(b.rankDropContextToCalibration||0)+(b.rankDropCalibrationToGuardrail||0))-((a.rankDropRawToMeta||0)+(a.rankDropMetaToSignal||0)+(a.rankDropSignalToContext||0)+(a.rankDropContextToCalibration||0)+(a.rankDropCalibrationToGuardrail||0))).slice(0,30);
   let champions={};try{const raw=localStorage.getItem(__EVO_STORE_KEY);champions=raw?JSON.parse(raw)||{}:{}}catch(_){champions={}};
   const timing=window.__LAST_RUN_TIMING__||null;
-  const report={type:'SELECTOR_FORENSIC_ANALYSIS_PACK',version:'V1.9.105',generatedAt:new Date().toISOString(),purpose:'รวมข้อมูล Forensic ทั้งหมดไว้จุดเดียวสำหรับวิเคราะห์ Selector; Diagnostic ไม่เปลี่ยนคะแนน',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),preBoardLoss:boardLoss,selectorLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,allRounds:null,allRoundsCount:total};
+  const report={type:'SELECTOR_FORENSIC_ANALYSIS_PACK',version:'V1.9.107',generatedAt:new Date().toISOString(),purpose:'รวมข้อมูล Forensic ทั้งหมดไว้จุดเดียวสำหรับวิเคราะห์ Selector; Diagnostic ไม่เปลี่ยนคะแนน',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),preBoardLoss:boardLoss,selectorLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,allRounds:null,allRoundsCount:total};
   return report;
 }
 function __forensicEscape(v){return esc(v==null?'':String(v))}
@@ -5810,7 +5910,7 @@ function __forensicSection(title,key,body,text){return `<section class="forensic
 */
 function __buildSelectorDecisionAudit(){
   const rows=__SELECTOR_DIAGNOSTIC__.rows||[],n=rows.length;
-  if(!n)return {type:'SELECTOR_DECISION_AUDIT',version:'V1.9.105',total:0};
+  if(!n)return {type:'SELECTOR_DECISION_AUDIT',version:'V1.9.107',total:0};
   const pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
   const c={selection:0,top2:0,inBoard:0,damage:0,rescue:0,loss:0,top2MissThenRescue:0};
   const rankBuckets={top1:{tests:0,hits:0},top2:{tests:0,hits:0},top3_5:{tests:0,hits:0},top6_10:{tests:0,hits:0},out:{tests:0,hits:0}};
@@ -5829,7 +5929,7 @@ function __buildSelectorDecisionAudit(){
   }
   const conv=pct(c.selection,c.top2),rescueRate=pct(c.rescue,n),damageRate=pct(c.damage,n);
   const rankRate=k=>pct(rankBuckets[k].hits,rankBuckets[k].tests),marginRate=k=>pct(marginBuckets[k].hits,marginBuckets[k].tests);
-  return {type:'SELECTOR_DECISION_AUDIT',version:'V1.9.105',total:n,
+  return {type:'SELECTOR_DECISION_AUDIT',version:'V1.9.107',total:n,
     actualProduction:{selectionRate:pct(c.selection,n),selectionHits:c.selection},
     decisionPipeline:{boardTop2Rate:pct(c.top2,n),boardTop2Hits:c.top2,targetInBoardRate:pct(c.inBoard,n),targetInBoardHits:c.inBoard,selectorLoss:c.loss,selectorDamage:c.damage,selectorDamageRate:damageRate,selectorRescue:c.rescue,selectorRescueRate:rescueRate,top2MissThenRescue:c.top2MissThenRescue,top2ToSelectionConversion:conv},
     targetRank:{top1:{...rankBuckets.top1,rate:rankRate('top1')},top2:{...rankBuckets.top2,rate:rankRate('top2')},top3_5:{...rankBuckets.top3_5,rate:rankRate('top3_5')},top6_10:{...rankBuckets.top6_10,rate:rankRate('top6_10')},out:{...rankBuckets.out,rate:rankRate('out')}},
@@ -6192,7 +6292,7 @@ function installLazyPanels(groups){
 // split historical work at safe loop boundaries so the browser can repaint.
 const __COOP_DECISION_MEMORY_CACHE__=new WeakMap();
 const __COOP_YIELD_MS__=24;
-// V1.9.105 FIX: yieldFrame is shared by ResearchHarvest / Board Coach / render.
+// V1.9.107 FIX: yieldFrame is shared by ResearchHarvest / Board Coach / render.
 // Keep it global so async forensic loops can yield without relying on render scope.
 const yieldFrame=()=>new Promise(r=>setTimeout(r,0));
 async function __coopYieldIfNeeded(state,force=false){
@@ -6266,7 +6366,7 @@ async function decisionMemoryCooperative(rs,routeCtx=null){
 
 
 
-/* V1.9.105 GEMINI-INSPIRED D1/D2 SIGNAL
+/* V1.9.107 GEMINI-INSPIRED D1/D2 SIGNAL
    Extracted from the supplied independent selector idea: frequency + recency decay + gap.
    It is an evidence layer only; F1-F9, Board generation, and UI remain unchanged.
    Learning is route-local and leakage-safe: only completed OOS rows update the signal weight. */
@@ -6329,7 +6429,7 @@ function __geminiUpdate(mem,routeCtx,rs,targetSet,boardTop2){
 
 
 
-/* V1.9.105 TRANSITION + D1/D2 PAIR EVIDENCE
+/* V1.9.107 TRANSITION + D1/D2 PAIR EVIDENCE
    Uses only lightweight evidence from the existing recent history. It does not
    replace Formula/Board logic. The signal is learned per route and only updated
    after the current OOS target is evaluated. */
@@ -6405,7 +6505,7 @@ function __tpUpdate(mem,routeCtx,rs,targetSet,boardTop2){
 
 
 
-/* V1.9.105 ROLE-PAIR LEARNING
+/* V1.9.107 ROLE-PAIR LEARNING
    Learns D1→partner and D2→partner from completed OOS selections only.
    This is deliberately separate from positional digits: the learner uses the
    actual D1/D2 chosen by the selector, then records which target digits co-occurred.
@@ -6431,7 +6531,7 @@ function __rolePairApply(c,d1,mem,routeCtx){if(!Array.isArray(c)||!c.length)retu
 
 
 
-/* V1.9.105 SELF-CORRECTION EVIDENCE
+/* V1.9.107 SELF-CORRECTION EVIDENCE
    Extracted from the useful idea in Gemini v5: learn from recent misses.
    Unlike the source code's fixed penalty, this layer is leakage-safe, route-aware,
    smoothed, and only nudges candidates when completed OOS evidence is sufficient.
@@ -6603,14 +6703,14 @@ function __boundaryPolicyFromOptimizer(p,arm){
   const raw=Number(p?.stage?.[0]||0);
   return {score:+(0.035+raw*.045+base*.055).toFixed(5),indep:+(Number(p?.indep||0)*.025).toFixed(5),support:+(Number(p?.support||0)*.025).toFixed(5),gemini:+(Number(p?.gemini||0)*.015).toFixed(5),radar:+(Number(p?.radar||0)*.015).toFixed(5),middleRankLift:.025,leaderKeep:-.008};
 }
-/* V1.9.105 TYPE-DNA ADAPTIVE WEIGHT CHALLENGER
+/* V1.9.107 TYPE-DNA ADAPTIVE WEIGHT CHALLENGER
    Walk-forward only. Learns from completed prior rows in the current replay.
    It never reads the current target before selection. The challenger adjusts
    candidate ranking using three route-local signals:
    1) formula usefulness, 2) digit usefulness, 3) rank-band usefulness.
    Small samples are shrunk toward neutral priors and all lifts are bounded.
    Production Core / F1-F9 / Champion remain unchanged unless explicitly promoted. */
-/* V1.9.105 WEAK-TYPE LOCK / TARGETED DNA
+/* V1.9.107 WEAK-TYPE LOCK / TARGETED DNA
    Type-specific repair is deliberately asymmetric: strong routes are locked,
    only routes with enough completed OOS evidence and sub-60% performance are
    allowed to receive adaptive ranking changes. This prevents good lotteries
@@ -6652,7 +6752,7 @@ function __tdnaApply(c,mem,routeCtx,policy){
   if(typeRate>=.60)return{applied:false,moves:0,source:'strong-type-lock',tests:perf.tests,rate:typeRate,reason:'type-at-or-above-60'};
   const strength=Math.max(0,Math.min(1,Number(p.strength??.55)));
   const weakRate=typeRate;
-  /* V1.9.105 DECISIVE WEAK-TYPE MODE */
+  /* V1.9.107 DECISIVE WEAK-TYPE MODE */
   const severeWeak=weakRate<.45,moderateWeak=weakRate<.50;
   const minRank=severeWeak?2:3,maxRank=5;
   const ranked=c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.digit-a.digit);
@@ -6697,7 +6797,7 @@ function __tdnaUpdate(mem,routeCtx,candidates,targetSet,selectionHit){
 }
 
 
-/* V1.9.105 GEMINI-INSPIRED SEQUENCE / PAIR ENGINE
+/* V1.9.107 GEMINI-INSPIRED SEQUENCE / PAIR ENGINE
    Uses the supplied selector's useful mechanics: recency/momentum,
    positional transition and explicit digit-pair evidence. SHADOW ONLY.
    The current OOS target is never used before prediction; learning occurs
@@ -6975,7 +7075,7 @@ function __trajApply(c,stageArrays,mem,routeCtx){
    The selector already has a Board; this layer estimates whether a current
    rank band has historically converted to a target for this route/family.
    It is deliberately conservative and only arbitrates close candidates. */
-/* V1.9.105 SELECTION BOTTLENECK REPAIR
+/* V1.9.107 SELECTION BOTTLENECK REPAIR
    Walk-forward-only rescue for the documented R3-R5 bottleneck.
    Learns from the RAW Board before downstream rank layers, then gives at most one
    bounded lift to a close R3-R5 candidate when route/family evidence beats its
@@ -7391,10 +7491,10 @@ function __rpApply(c,mem,routeCtx){
    does not mean 1,000,000 full OOS replays. Early rounds use a deterministic
    chronological sample; finalists are evaluated on the full OOS trace.
 */
-const __SELECTOR_ERROR_BUS__=window.__SELECTOR_ERROR_BUS__||{last:null,seq:0,set(x={}){const e={id:++this.seq,time:new Date().toISOString(),version:'V1.9.105',source:String(x.source||'Unknown'),phase:String(x.phase||''),stage:String(x.stage||''),policyIndex:Number.isFinite(Number(x.policyIndex))?Number(x.policyIndex):null,rows:Number.isFinite(Number(x.rows))?Number(x.rows):null,message:String(x.message||'Unknown error'),stack:String(x.stack||'')};this.last=e;window.__LAST_PROCESS_ERROR__=e;return e},clear(){this.last=null;window.__LAST_PROCESS_ERROR__=null},get(){return this.last||window.__LAST_PROCESS_ERROR__||null}};
+const __SELECTOR_ERROR_BUS__=window.__SELECTOR_ERROR_BUS__||{last:null,seq:0,set(x={}){const e={id:++this.seq,time:new Date().toISOString(),version:'V1.9.107',source:String(x.source||'Unknown'),phase:String(x.phase||''),stage:String(x.stage||''),policyIndex:Number.isFinite(Number(x.policyIndex))?Number(x.policyIndex):null,rows:Number.isFinite(Number(x.rows))?Number(x.rows):null,message:String(x.message||'Unknown error'),stack:String(x.stack||'')};this.last=e;window.__LAST_PROCESS_ERROR__=e;return e},clear(){this.last=null;window.__LAST_PROCESS_ERROR__=null},get(){return this.last||window.__LAST_PROCESS_ERROR__||null}};
 function __optValidPolicy(p){return !!p&&Array.isArray(p.stage)&&p.stage.length===8&&p.stage.every(Number.isFinite)&&['indep','support','gemini','radar','rankPrior','d2Indep','d2Score','d2Support'].every(k=>Number.isFinite(Number(p[k])))}
 function __optSafeScore(snap,p){if(!snap||!__optValidPolicy(p))return null;try{return __optScorePolicy(snap,p)}catch(e){return null}}
-const __SELECTOR_AUTO_OPT__={version:'V1.9.105',budget:175000,maxBudget:1000000,seed:1944,running:false,last:null};
+const __SELECTOR_AUTO_OPT__={version:'V1.9.107',budget:175000,maxBudget:1000000,seed:1944,running:false,last:null};
 const __SELECTOR_STANDARDS__=Object.freeze({
   operationalDevelopmentBase:61.88,
   historicalProductionReference:59.27,
@@ -7680,7 +7780,7 @@ function __finalLabCompact(r){
    Searches multiple ranking policies against REAL OOS replay, not proxy score.
    It reports the best policy by actual Board Top2 first, then Selection,
    while enforcing InBoard and Top2-preservation floors. It never mutates F1-F9. */
-const __BOARD_COACH__={version:'V1.9.105',running:false,last:null,budget:24};
+const __BOARD_COACH__={version:'V1.9.107',running:false,last:null,budget:24};
 function __boardCoachPolicy(i){
   const grid=[
     [.34,.24,.18,.14,.10,.70,.040], [.40,.22,.16,.12,.10,.70,.040], [.46,.20,.14,.11,.09,.68,.038],
@@ -7717,7 +7817,7 @@ async function __runActualBoardCoach(){
     const rows=(__SELECTOR_DIAGNOSTIC__.rows||[]).filter(r=>Array.isArray(r.targetDigits));
     const groups=window.__OOS_GROUPS_FOR_CHALLENGER__||{};
     const names=Object.keys(groups).filter(k=>k!=='__THAI_TOP__'&&Array.isArray(groups[k]));
-    if(rows.length<20||names.length<1)return __BOARD_COACH__.last={type:'BOARD_COACH_ERROR',version:'V1.9.105',reason:'INSUFFICIENT_OOS',rows:rows.length,types:names.length};
+    if(rows.length<20||names.length<1)return __BOARD_COACH__.last={type:'BOARD_COACH_ERROR',version:'V1.9.107',reason:'INSUFFICIENT_OOS',rows:rows.length,types:names.length};
     const policies=Array.from({length:__BOARD_COACH__.budget},(_,i)=>__boardCoachPolicy(i));
     const results=[];
     for(let pi=0;pi<policies.length;pi++){
@@ -7735,7 +7835,7 @@ async function __runActualBoardCoach(){
     const base=results[0]||null;
     const accepted=results.filter(r=>r.inBoardRate>=99.5&&r.top2Rate>=59.54);
     const winner=(accepted[0]||base);
-    __BOARD_COACH__.last={type:'ACTUAL_BOARD_RANK_COACH_REPORT',version:'V1.9.105',tested:results.length,baseline:{top2:59.54,inBoard:99.56,selection:59.27},winner,all:results,decision:winner&&winner.top2Rate>59.54?'CHALLENGER_WINS_ACTUAL_TOP2':'NO_ACTUAL_TOP2_GAIN'};
+    __BOARD_COACH__.last={type:'ACTUAL_BOARD_RANK_COACH_REPORT',version:'V1.9.107',tested:results.length,baseline:{top2:59.54,inBoard:99.56,selection:59.27},winner,all:results,decision:winner&&winner.top2Rate>59.54?'CHALLENGER_WINS_ACTUAL_TOP2':'NO_ACTUAL_TOP2_GAIN'};
     return __BOARD_COACH__.last;
   }finally{__BOARD_COACH__.running=false}
 }
@@ -7743,16 +7843,16 @@ async function __runActualBoardCoach(){
 
 
 
-/* V1.9.105 POLICY: strong-type lock >=60%; weak-type repair only after 20 OOS tests and only R3-R5. */
-/* V1.9.105 FINAL TYPE DNA
+/* V1.9.107 POLICY: strong-type lock >=60%; weak-type repair only after 20 OOS tests and only R3-R5. */
+/* V1.9.107 FINAL TYPE DNA
    Only 10 decision-grade boxes remain visible.
    F1-F9 + Champion are locked. DNA is shadow/research only.
    Small Type samples are measured but cannot create Production policy. */
-/* V1.9.105 HARDENING: Type-Aware metadata must never be an undeclared dependency.
+/* V1.9.107 HARDENING: Type-Aware metadata must never be an undeclared dependency.
    It is SHADOW/diagnostic-only and cannot mutate Production Core, F1-F9, or Champion. */
-var __typeAwareMeta=window.__TYPE_AWARE_META__||{version:'V1.9.105',enabled:false,mode:'SHADOW',source:'safe-default',type:null,family:null,support:0,confidence:0,adjustment:0,cap:0,reason:'not-available',oosTests:0,oosHits:0};
+var __typeAwareMeta=window.__TYPE_AWARE_META__||{version:'V1.9.107',enabled:false,mode:'SHADOW',source:'safe-default',type:null,family:null,support:0,confidence:0,adjustment:0,cap:0,reason:'not-available',oosTests:0,oosHits:0};
 window.__TYPE_AWARE_META__=__typeAwareMeta;
-const __TYPE_DNA__={version:'V1.9.105',last:null,running:false,types:new Map()};
+const __TYPE_DNA__={version:'V1.9.107',last:null,running:false,types:new Map()};
 const __DNA_FORMULAS__=FORMULAS.slice();
 const __DNA_EVIDENCE_KEYS__=['score','independent','support','gemini','radar'];
 function __dnaMean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
@@ -7843,7 +7943,7 @@ async function __runTypeDNA(){
     const profiles=[...groups.entries()].map(([name,rs])=>__dnaBuildType(name,rs));__TYPE_DNA__.types.clear();for(const x of profiles)__TYPE_DNA__.types.set(x.name,x);
     const clusters=profiles.map(a=>({name:a.name,similar:profiles.filter(b=>b.name!==a.name).map(b=>({name:b.name,score:+__dnaSimilarity(a,b).toFixed(2)})).sort((x,y)=>y.score-x.score).slice(0,3)}));
     const globalFormula=__dnaGlobalFormula(rows);
-    const all={type:'LOTTERY_TYPE_DNA_INTELLIGENCE',version:'V1.9.105',generatedAt:new Date().toISOString(),typeCount:profiles.length,totalRows:rows.length,boxes:{count:10,names:['Type Performance','Formula Performance','Formula Combination','Evidence Profile','Rank Behavior','Top2 Boundary','Selection Failure','Temporal / Regime','Self vs Foreign','OOS Validation']},rules:{count:5,names:['Type-specific','Minimum sample','Global/Family is prior only','Self vs Foreign','No Production promotion before OOS proof']},baseline:{selection:__dnaPct(rows.filter(r=>r.selectionHit).length,rows.length),top2:__dnaPct(rows.filter(r=>r.boardTop2Hit).length,rows.length),inBoard:__dnaPct(rows.filter(r=>r.targetInBoard).length,rows.length),union:__dnaPct(rows.filter(r=>r.unionHit).length,rows.length)},globalFormula,profiles,clusters,acceptance:{top2Priority:true,inBoardFloor:99.5,preserveTop2Floor:98,smallSampleBlocked:true,noAutoPromotion:true},notes:['Formula percentages are direct OOS formula hit rates from the recorded formula predictions.','Formula Top2/Selection columns are conditional diagnostics after a formula hit; they are not causal attribution.','Types below 60 observations remain measurement-only.']};__TYPE_DNA__.last=all;return all;
+    const all={type:'LOTTERY_TYPE_DNA_INTELLIGENCE',version:'V1.9.107',generatedAt:new Date().toISOString(),typeCount:profiles.length,totalRows:rows.length,boxes:{count:10,names:['Type Performance','Formula Performance','Formula Combination','Evidence Profile','Rank Behavior','Top2 Boundary','Selection Failure','Temporal / Regime','Self vs Foreign','OOS Validation']},rules:{count:5,names:['Type-specific','Minimum sample','Global/Family is prior only','Self vs Foreign','No Production promotion before OOS proof']},baseline:{selection:__dnaPct(rows.filter(r=>r.selectionHit).length,rows.length),top2:__dnaPct(rows.filter(r=>r.boardTop2Hit).length,rows.length),inBoard:__dnaPct(rows.filter(r=>r.targetInBoard).length,rows.length),union:__dnaPct(rows.filter(r=>r.unionHit).length,rows.length)},globalFormula,profiles,clusters,acceptance:{top2Priority:true,inBoardFloor:99.5,preserveTop2Floor:98,smallSampleBlocked:true,noAutoPromotion:true},notes:['Formula percentages are direct OOS formula hit rates from the recorded formula predictions.','Formula Top2/Selection columns are conditional diagnostics after a formula hit; they are not causal attribution.','Types below 60 observations remain measurement-only.']};__TYPE_DNA__.last=all;return all;
   }finally{__TYPE_DNA__.running=false}
 }
 function __dnaEsc(v){return esc(String(v==null?'':v))}
@@ -7857,7 +7957,7 @@ function __dnaRankBox(p){const r=p.rank;return `<div class="dna-kpi-grid"><div c
 function __dnaBoundaryBox(p){const b=p.boundary;return `<div class="dna-kpi-grid"><div class="dna-kpi"><b>R3–5 Boundary</b><span>${b.n} / ${p.n} = ${b.rate}%</span></div><div class="dna-kpi"><b>Median Score Gap</b><span>${b.medianScoreGap}</span></div><div class="dna-kpi"><b>Median Evidence Gap</b><span>${b.medianEvidenceGap}</span></div><div class="dna-kpi"><b>Damage</b><span>${b.damage}</span></div><div class="dna-kpi"><b>Rescue</b><span>${b.rescue}</span></div><div class="dna-kpi"><b>Margin Median</b><span>${p.margin.median}</span></div></div>`}
 function __dnaPanel(){
   const r=__TYPE_DNA__.last||null;
-  if(!r)return `<section class="selector-diag-panel" id="__type_dna_panel"><div class="selector-diag-head"><div><b>LOTTERY TYPE DNA INTELLIGENCE · V1.9.105</b><small>10 กล่องคุณภาพ · 64 ประเภท · เน้นเปอร์เซ็นต์ที่วัดได้จริง</small></div><span>10 BOX + 5 RULES</span></div><button class="forensic-copy-btn" id="__run_type_dna">เริ่ม TYPE DNA LAB</button></section>`;
+  if(!r)return `<section class="selector-diag-panel" id="__type_dna_panel"><div class="selector-diag-head"><div><b>LOTTERY TYPE DNA INTELLIGENCE · V1.9.107</b><small>10 กล่องคุณภาพ · 64 ประเภท · เน้นเปอร์เซ็นต์ที่วัดได้จริง</small></div><span>10 BOX + 5 RULES</span></div><button class="forensic-copy-btn" id="__run_type_dna">เริ่ม TYPE DNA LAB</button></section>`;
   const defs=[
     ['1','Type Performance',p=>`N ${p.n} · InBoard ${p.performance.inBoard}% · Top2 ${p.performance.top2}% · Selection ${p.performance.selection}% · Union ${p.performance.union}%`],
     ['2','Formula Performance',p=>__dnaFormulaBox(p)],
@@ -7871,9 +7971,9 @@ function __dnaPanel(){
     ['10','OOS Validation',p=>`<div class="dna-kpi-grid"><div class="dna-kpi"><b>Status</b><span>${__dnaEsc(p.validation.status)}</span></div><div class="dna-kpi"><b>Policy</b><span>${__dnaEsc(p.policy.mode)}</span></div><div class="dna-kpi"><b>Formula Preferred</b><span>${__dnaEsc(p.policy.formulaPreferred.join(' · ')||'NONE')}</span></div><div class="dna-kpi"><b>Evidence Preferred</b><span>${__dnaEsc(p.policy.evidencePreferred.join(' · ')||'NONE')}</span></div></div>`]
   ];
   const globalTop=(r.globalFormula||[]).filter(x=>x.tests>0).slice(0,9);
-  const globalBox=`<section class="forensic-box dna-global-box"><div class="forensic-box-head"><div><b>GLOBAL FORMULA PERCENTAGE · V1.9.105</b><small>สูตรทั้งระบบจาก OOS ${r.totalRows} แถว · ใช้เป็น Global Prior เท่านั้น</small></div></div><div class="dna-table-wrap"><table class="dna-table"><thead><tr><th>Formula</th><th>Test</th><th>Hit</th><th>Hit %</th><th>Available %</th><th>Top2 | Hit</th><th>Selection | Hit</th></tr></thead><tbody>${globalTop.map(x=>`<tr><td>${__dnaEsc(x.formula)}</td><td>${x.tests}</td><td>${x.hits}</td><td><b>${x.hitRate}%</b></td><td>${x.availableRate}%</td><td>${x.top2OnHit}%</td><td>${x.selectionOnHit}%</td></tr>`).join('')}</tbody></table></div></section>`;
+  const globalBox=`<section class="forensic-box dna-global-box"><div class="forensic-box-head"><div><b>GLOBAL FORMULA PERCENTAGE · V1.9.107</b><small>สูตรทั้งระบบจาก OOS ${r.totalRows} แถว · ใช้เป็น Global Prior เท่านั้น</small></div></div><div class="dna-table-wrap"><table class="dna-table"><thead><tr><th>Formula</th><th>Test</th><th>Hit</th><th>Hit %</th><th>Available %</th><th>Top2 | Hit</th><th>Selection | Hit</th></tr></thead><tbody>${globalTop.map(x=>`<tr><td>${__dnaEsc(x.formula)}</td><td>${x.tests}</td><td>${x.hits}</td><td><b>${x.hitRate}%</b></td><td>${x.availableRate}%</td><td>${x.top2OnHit}%</td><td>${x.selectionOnHit}%</td></tr>`).join('')}</tbody></table></div></section>`;
   const cards=r.profiles.map((p,i)=>`<details class="forensic-box dna-type-box"><summary><b>${String(i+1).padStart(2,'0')} · ${__dnaEsc(formatDisplayTitle(p.name))}</b><span>N=${p.n} · ${p.confidence} · ${p.performance.selection}% Selection · ${p.performance.top2}% Top2</span></summary><div class="dna-type-summary"><div><b>Type Performance</b><span>Selection ${p.performance.selection}% · Top2 ${p.performance.top2}% · InBoard ${p.performance.inBoard}%</span></div><div><b>Policy State</b><span>${p.status} · ${p.policy.mode}</span></div></div><div class="dna-box-stack">${defs.map(([n,t,f])=>`<div class="dna-box-block"><div class="dna-box-title"><b>${n}. ${t}</b></div>${typeof f(p)==='string'&&f(p).startsWith('<')?f(p):`<div class="dna-box-text">${__dnaEsc(f(p))}</div>`}</div>`).join('')}</div><div class="dna-actions"><button class="forensic-copy-btn" data-dna-copy="${encodeURIComponent(p.name)}">คัดลอก DNA ประเภทนี้</button></div></details>`).join('');
-  return `<section class="selector-diag-panel" id="__type_dna_panel"><div class="selector-diag-head"><div><b>LOTTERY TYPE DNA INTELLIGENCE · V1.9.105</b><small>${r.typeCount} ประเภท · ${r.totalRows} OOS rows · แสดงเปอร์เซ็นต์สูตร/หลักฐาน/อันดับแบบละเอียด</small></div><span>10 BOX + 5 RULES</span></div><div class="forensic-overall-copy"><button class="forensic-copy-btn" id="__copy_type_dna_all">คัดลอก DNA ทั้งหมด</button><button class="forensic-copy-btn" id="__run_type_dna_refresh">รัน DNA ใหม่</button></div><div class="forensic-data-note"><b>กฎ:</b> Type-specific · Minimum sample · Global/Family เป็น Prior · Self vs Foreign · ห้าม Auto-Promotion<br><b>ความหมายเปอร์เซ็นต์:</b> Formula Hit % = จำนวนงวดที่สูตรทายเข้าเป้าหมาย ÷ งวดที่สูตรคำนวณได้ · Top2/Selection | Hit = ผลระบบในงวดที่สูตรนั้น Hit</div>${globalBox}${cards}</section>`;
+  return `<section class="selector-diag-panel" id="__type_dna_panel"><div class="selector-diag-head"><div><b>LOTTERY TYPE DNA INTELLIGENCE · V1.9.107</b><small>${r.typeCount} ประเภท · ${r.totalRows} OOS rows · แสดงเปอร์เซ็นต์สูตร/หลักฐาน/อันดับแบบละเอียด</small></div><span>10 BOX + 5 RULES</span></div><div class="forensic-overall-copy"><button class="forensic-copy-btn" id="__copy_type_dna_all">คัดลอก DNA ทั้งหมด</button><button class="forensic-copy-btn" id="__run_type_dna_refresh">รัน DNA ใหม่</button></div><div class="forensic-data-note"><b>กฎ:</b> Type-specific · Minimum sample · Global/Family เป็น Prior · Self vs Foreign · ห้าม Auto-Promotion<br><b>ความหมายเปอร์เซ็นต์:</b> Formula Hit % = จำนวนงวดที่สูตรทายเข้าเป้าหมาย ÷ งวดที่สูตรคำนวณได้ · Top2/Selection | Hit = ผลระบบในงวดที่สูตรนั้น Hit</div>${globalBox}${cards}</section>`;
 }
 function __installTypeDNA(){const root=document.getElementById('__type_dna_panel');if(!root||root.dataset.bound)return;root.dataset.bound='1';const run=root.querySelector('#__run_type_dna'),rerun=root.querySelector('#__run_type_dna_refresh'),go=async()=>{if(run)run.disabled=true;if(rerun)rerun.disabled=true;await __runTypeDNA();root.outerHTML=__dnaPanel();__installTypeDNA()};if(run)run.onclick=go;if(rerun)rerun.onclick=go;const cp=root.querySelector('#__copy_type_dna_all');if(cp)cp.onclick=async()=>{const txt=JSON.stringify(__TYPE_DNA__.last,null,2);try{await navigator.clipboard?.writeText(txt)}catch(_){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}};root.querySelectorAll('[data-dna-copy]').forEach(btn=>btn.onclick=async()=>{const p=__TYPE_DNA__.types.get(decodeURIComponent(btn.dataset.dnaCopy||''));if(!p)return;const txt=JSON.stringify(p,null,2);try{await navigator.clipboard?.writeText(txt)}catch(_){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}})}
 
@@ -7883,7 +7983,7 @@ function __installTypeDNA(){const root=document.getElementById('__type_dna_panel
 async function runSelectorAutoOptimizer(opts={}){
   if(__SELECTOR_AUTO_OPT__.running)return __SELECTOR_AUTO_OPT__.last;
   const rows=(__SELECTOR_DIAGNOSTIC__.rows||[]).filter(r=>Array.isArray(r.optimizerCandidates)&&r.optimizerCandidates.length&&Array.isArray(r.targetDigits));
-  if(rows.length<20){const e=__SELECTOR_ERROR_BUS__.set({source:'Auto-Optimizer',phase:'preflight',stage:'sample-check',rows:rows.length,message:`ต้องมี OOS snapshot อย่างน้อย 20 งวด แต่พบ ${rows.length} งวด`});__SELECTOR_AUTO_OPT__.last={type:'SELECTOR_AUTO_OPTIMIZER_ERROR',version:'V1.9.105',...e,reason:'INSUFFICIENT_SAMPLE'};return __SELECTOR_AUTO_OPT__.last}
+  if(rows.length<20){const e=__SELECTOR_ERROR_BUS__.set({source:'Auto-Optimizer',phase:'preflight',stage:'sample-check',rows:rows.length,message:`ต้องมี OOS snapshot อย่างน้อย 20 งวด แต่พบ ${rows.length} งวด`});__SELECTOR_AUTO_OPT__.last={type:'SELECTOR_AUTO_OPTIMIZER_ERROR',version:'V1.9.107',...e,reason:'INSUFFICIENT_SAMPLE'};return __SELECTOR_AUTO_OPT__.last}
   __SELECTOR_AUTO_OPT__.running=true;
   let phase='preflight',policyIndex=null;
   try{
@@ -7959,7 +8059,7 @@ async function runSelectorAutoOptimizer(opts={}){
     const tr=__optEval(validRows,bestTrain,train),holdout=__optEval(validRows,bestTrain,hold),fu=__optEval(validRows,bestTrain,full);if(tr.invalidPolicy||holdout.invalidPolicy||fu.invalidPolicy)throw new Error('Champion policy ไม่ผ่าน schema validation');
     const baseHits=validRows.filter(x=>x.selectionHit).length,historicalProductionRate=validRows.length?baseHits/validRows.length*100:0,developmentBaseRate=61.88,baseRate=developmentBaseRate;
     const trainTemporalCut=Math.max(10,Math.floor(train.length*.65)),trainEarly=__optEval(validRows,bestTrain,train.slice(0,trainTemporalCut)),trainLate=__optEval(validRows,bestTrain,train.slice(trainTemporalCut)),trainTemporalGap=Math.abs(trainEarly.rate-trainLate.rate),gap=Math.abs(tr.rate-holdout.rate),stability=gap<=7?'STABLE':gap<=12?'WATCH':'UNSTABLE';
-    const report={type:'SELECTOR_AUTO_OPTIMIZER_REPORT',version:'V1.9.105',generatedAt:new Date().toISOString(),search:{requestedBudget:budget,generatedPolicies:budget,retainedAfterScreen:Math.min(800,budget),finalists:Math.min(40,pop.length),screenRows:sample.length,trainRows:train.length,holdoutRows:hold.length,fullRows:full.length,validRows:validRows.length,method:'memory-safe successive-halving + ranking-focused seeded search around the 61.88% development base and prior 61.93% challenger; 72% anchor/exploration pass then 28% elite-guided local refinement with controlled broad escape; multi-scale local refinement; rolling 3-slice stability objective inside Train; explicit Rank-3-5 promotion objective with Top2 preservation; gate-aware; no F1-F9 mutation'},baseline:{selectionRate:+developmentBaseRate.toFixed(2),selectionHits:null,total:validRows.length,source:'OPERATIONAL_DEVELOPMENT_BASE_61.88'},historicalProduction:{selectionRate:+historicalProductionRate.toFixed(2),selectionHits:baseHits,total:validRows.length,source:'HISTORICAL_PRODUCTION_59.27_REFERENCE'},developmentBase:{selectionRate:61.88,source:'previous best Full OOS',policy:__optDescribe(developmentSeed)},secondarySeed:{selectionRate:61.93,source:'previous challenger; search anchor only',policy:__optDescribe(secondarySeed)},best:{selectionRate:+fu.rate.toFixed(2),delta:+(fu.rate-baseRate).toFixed(2),deltaVsDevelopmentBase:+(fu.rate-developmentBaseRate).toFixed(2),deltaVsHistoricalProduction:+(fu.rate-historicalProductionRate).toFixed(2),train:+tr.rate.toFixed(2),holdout:+holdout.rate.toFixed(2),trainHoldoutGap:+gap.toFixed(2),trainTemporalGap:+trainTemporalGap.toFixed(2),stability,d1:+fu.d1Rate.toFixed(2),d2:+fu.d2Rate.toFixed(2),top2:+fu.top2Rate.toFixed(2),inBoard:+fu.inBoardRate.toFixed(2),damage:+fu.damageRate.toFixed(2),rescue:+fu.rescueRate.toFixed(2),avgMargin:+fu.avgMargin.toFixed(4),focusPromotionRate:+fu.focusRate.toFixed(2),focusCases:fu.focusTests,focusHits:fu.focusHits,preserveTop2Rate:+fu.preserveRate.toFixed(2),preserveTop2Cases:fu.preserveTests,preserveTop2Hits:fu.preserveHits,policy:__optDescribe(bestTrain)},decision:fu.rate>=65&&stability!=='UNSTABLE'?'PASS_TARGET_65_PLUS':fu.rate>developmentBaseRate&&stability!=='UNSTABLE'?'BEATS_DEVELOPMENT_BASE':fu.rate===developmentBaseRate&&stability!=='UNSTABLE'?'MATCHES_DEVELOPMENT_BASE':'NO_IMPROVEMENT_OVER_DEVELOPMENT_BASE',objective:{type:'BOUNDARY_FORENSIC_SUITE',target:'direct actual replay at Meta→Signal, Context→Calibration, and Combined boundaries; downstream selector remains unchanged',preserve:'existing Board Top2',productionSelector:'locked',f1f9:'locked'},note:'Development Base = previous best 61.88% selector policy. The prior 61.93% Challenger is used only as a secondary search anchor; the 61.88% base remains the official development anchor. V1.9.69 adds a actual rank-correction production path plus two-boundary forensic suite at Meta→Signal and Context→Calibration while keeping Production Selector, F1-F9, and Champion locked; the hook is inactive in normal production flow. The optimizer remains a policy search layer; 61.88% is the operational development standard and 59.27% is historical reference only: it explicitly targets promotion of target ranks 3-5 into policy Top2 while preserving existing Top2 cases. Production Selector, F1-F9, and Champion state are untouched; no automatic Champion promotion.',selectorDecisionAudit:__buildSelectorDecisionAudit(),standards:{...__SELECTOR_STANDARDS__},productionReady:true,forensicPurpose:'single-run defect discovery without changing Production Selector/F1-F9',nextUpgradeInput:['boundary gains/losses','rank transition damage','target rank 3-5 cases','Top2 preservation/damage/rescue','per-lottery weak spots','train/holdout stability']};
+    const report={type:'SELECTOR_AUTO_OPTIMIZER_REPORT',version:'V1.9.107',generatedAt:new Date().toISOString(),search:{requestedBudget:budget,generatedPolicies:budget,retainedAfterScreen:Math.min(800,budget),finalists:Math.min(40,pop.length),screenRows:sample.length,trainRows:train.length,holdoutRows:hold.length,fullRows:full.length,validRows:validRows.length,method:'memory-safe successive-halving + ranking-focused seeded search around the 61.88% development base and prior 61.93% challenger; 72% anchor/exploration pass then 28% elite-guided local refinement with controlled broad escape; multi-scale local refinement; rolling 3-slice stability objective inside Train; explicit Rank-3-5 promotion objective with Top2 preservation; gate-aware; no F1-F9 mutation'},baseline:{selectionRate:+developmentBaseRate.toFixed(2),selectionHits:null,total:validRows.length,source:'OPERATIONAL_DEVELOPMENT_BASE_61.88'},historicalProduction:{selectionRate:+historicalProductionRate.toFixed(2),selectionHits:baseHits,total:validRows.length,source:'HISTORICAL_PRODUCTION_59.27_REFERENCE'},developmentBase:{selectionRate:61.88,source:'previous best Full OOS',policy:__optDescribe(developmentSeed)},secondarySeed:{selectionRate:61.93,source:'previous challenger; search anchor only',policy:__optDescribe(secondarySeed)},best:{selectionRate:+fu.rate.toFixed(2),delta:+(fu.rate-baseRate).toFixed(2),deltaVsDevelopmentBase:+(fu.rate-developmentBaseRate).toFixed(2),deltaVsHistoricalProduction:+(fu.rate-historicalProductionRate).toFixed(2),train:+tr.rate.toFixed(2),holdout:+holdout.rate.toFixed(2),trainHoldoutGap:+gap.toFixed(2),trainTemporalGap:+trainTemporalGap.toFixed(2),stability,d1:+fu.d1Rate.toFixed(2),d2:+fu.d2Rate.toFixed(2),top2:+fu.top2Rate.toFixed(2),inBoard:+fu.inBoardRate.toFixed(2),damage:+fu.damageRate.toFixed(2),rescue:+fu.rescueRate.toFixed(2),avgMargin:+fu.avgMargin.toFixed(4),focusPromotionRate:+fu.focusRate.toFixed(2),focusCases:fu.focusTests,focusHits:fu.focusHits,preserveTop2Rate:+fu.preserveRate.toFixed(2),preserveTop2Cases:fu.preserveTests,preserveTop2Hits:fu.preserveHits,policy:__optDescribe(bestTrain)},decision:fu.rate>=65&&stability!=='UNSTABLE'?'PASS_TARGET_65_PLUS':fu.rate>developmentBaseRate&&stability!=='UNSTABLE'?'BEATS_DEVELOPMENT_BASE':fu.rate===developmentBaseRate&&stability!=='UNSTABLE'?'MATCHES_DEVELOPMENT_BASE':'NO_IMPROVEMENT_OVER_DEVELOPMENT_BASE',objective:{type:'BOUNDARY_FORENSIC_SUITE',target:'direct actual replay at Meta→Signal, Context→Calibration, and Combined boundaries; downstream selector remains unchanged',preserve:'existing Board Top2',productionSelector:'locked',f1f9:'locked'},note:'Development Base = previous best 61.88% selector policy. The prior 61.93% Challenger is used only as a secondary search anchor; the 61.88% base remains the official development anchor. V1.9.69 adds a actual rank-correction production path plus two-boundary forensic suite at Meta→Signal and Context→Calibration while keeping Production Selector, F1-F9, and Champion locked; the hook is inactive in normal production flow. The optimizer remains a policy search layer; 61.88% is the operational development standard and 59.27% is historical reference only: it explicitly targets promotion of target ranks 3-5 into policy Top2 while preserving existing Top2 cases. Production Selector, F1-F9, and Champion state are untouched; no automatic Champion promotion.',selectorDecisionAudit:__buildSelectorDecisionAudit(),standards:{...__SELECTOR_STANDARDS__},productionReady:true,forensicPurpose:'single-run defect discovery without changing Production Selector/F1-F9',nextUpgradeInput:['boundary gains/losses','rank transition damage','target rank 3-5 cases','Top2 preservation/damage/rescue','per-lottery weak spots','train/holdout stability']};
     report.deepForensicSummary=__buildDeepForensicSummary();const __integrated=await __runFinalIntegratedRankSuite((p,stage,status)=>reportProgress(78+p*.12,stage,status));report.finalIntegratedRankSuite=__integrated;
     const __actualPolicy=__brcPolicyFromOptimizer(bestTrain);reportProgress(90,'Boundary Forensic Suite','ทดสอบ Meta→Signal, Context→Calibration และ Combined ที่จุดจริงในรอบเดียว');const __suite=await __runBoundaryChallengerSuite(bestTrain,(p,stage,status)=>reportProgress(90+p*.10,stage,status));report.boundaryForensicSuite={seedPolicy:__actualPolicy,...__suite};report.actualBoardRankingReplay={status:'REPLACED_BY_V1.9.69_BOUNDARY_SUITE',legacyPostSignalPolicy:__actualPolicy};reportProgress(100,'Auto-Optimizer · เสร็จสิ้น',`Proxy ${fu.rate.toFixed(2)}% · Meta→Signal ${__suite.arms.metaSignal.top2Rate.toFixed(2)}% · Context→Calibration ${__suite.arms.contextCalibration.top2Rate.toFixed(2)}% · Combined ${__suite.arms.combined.top2Rate.toFixed(2)}%`);__SELECTOR_AUTO_OPT__.last=report;return report;
   }catch(e){const er=__SELECTOR_ERROR_BUS__.set({source:'Auto-Optimizer',phase,stage:'policy-evaluation',policyIndex,rows:rows.length,message:e?.message||e,stack:e?.stack||''});__SELECTOR_AUTO_OPT__.last={type:'SELECTOR_AUTO_OPTIMIZER_ERROR',...er};console.error('V1.9.69 AUTO OPT ERROR',e);showToast?.('Auto-Optimizer หยุดอย่างปลอดภัย: '+String(e?.message||e));return __SELECTOR_AUTO_OPT__.last}
@@ -8039,7 +8139,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __afterSwapShield=__cloneRank(c);
     const __selfLearning=__evoApply(c,__forensicStages,__stageMemory,routeCtx,risk);
     const __afterSelfLearning=__cloneRank(c);
-    // V1.9.105 HEALTH FIX: cooperative OOS path must actually execute the Role-Pair and
+    // V1.9.107 HEALTH FIX: cooperative OOS path must actually execute the Role-Pair and
     // Self-Correction digit layers that its forensic result already referenced.
     // This is backend-only; F1-F9, raw board and card/UI presentation remain untouched.
     const __preRolePair=__cloneRank(c);
@@ -8070,9 +8170,9 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
 }
 async function __coopOosBundle(rs,routeCtx=null){
-  /* V1.9.105: lexical safety guard for Type-Aware research metadata.
+  /* V1.9.107: lexical safety guard for Type-Aware research metadata.
      A missing research meta object must never abort OOS/Selection processing. */
-  const __typeAwareMeta=routeCtx?.__typeAwareMeta||window.__TYPE_AWARE_META__||{version:'V1.9.105',enabled:false,mode:'SHADOW',type:null,family:null,support:0,confidence:0,adjustment:0,cap:0,reason:'not-available',oosTests:0,oosHits:0};
+  const __typeAwareMeta=routeCtx?.__typeAwareMeta||window.__TYPE_AWARE_META__||{version:'V1.9.107',enabled:false,mode:'SHADOW',type:null,family:null,support:0,confidence:0,adjustment:0,cap:0,reason:'not-available',oosTests:0,oosHits:0};
   if(routeCtx&&!routeCtx.__typeAwareMeta)routeCtx.__typeAwareMeta=__typeAwareMeta;
   const key=__coopRsKey(rs,routeCtx),cached=(routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)?null:window.__COOP_OOS_BUNDLE_CACHE__?.get?.(key);
   if(cached){if(routeCtx&&cached.stageMemory)routeCtx.__stageAwareMemory=cached.stageMemory;return cached}
@@ -8194,22 +8294,22 @@ function globalSummaryPanel(globalStats){
     const q=g.pen||{},r=q.rate==null?null:Number(q.rate);
     return `<tr><td><span class="global-rank">#${i+1}</span></td><td><b>${esc(formatDisplayTitle(g.name))}</b></td><td><span class="global-score">${r==null?'—':r+'%'}</span></td><td>${q.hits??0}</td><td>${Math.max(0,(q.total??0)-(q.hits??0))}</td><td>${q.hits??0}/${q.total??0}</td><td><span class="global-badge ${r!=null&&r>=55?'good':''}">${r==null?'NO DATA':r>=65?'HIGH':r>=55?'GOOD':'LOW'}</span></td></tr>`;
   }).join('')||'<tr><td colspan="7">ยังไม่มีข้อมูลเลขเจาะเพียงพอ</td></tr>';
-  return `<details class="global-summary-wrap"><summary><div class="global-summary-title"><span class="global-summary-orb">Σ</span><div><b>GLOBAL INTELLIGENCE · สรุปรวมทุกหวย</b><small>${n} หวย · มองภาพรวมสูตร · Selection · เลขเด่น · เลขเจาะ · ความสม่ำเสมอ ในหน้าต่างเดียว</small></div></div><span class="global-badge">กดเพื่อเปิด</span></summary><div class="global-summary-body"><div class="global-summary-grid"><div class="global-kpi"><small>BEST FORMULA</small><b>${esc((formulas[0]?.f||'-').replace(/^สูตร /,'F'))}</b><span>OOS รวม ${formulas[0]?.rate??0}%</span><strong>${formulas[0]?.h??0}/${formulas[0]?.n??0} ครั้ง</strong></div><div class="global-kpi"><small>MOST CONSISTENT</small><b>${esc((consistent?.f||'-').replace(/^สูตร /,'F'))}</b><span>Floor ${consistent?.min??0}% · Spread ${consistent?.spread??0} pp</span><strong>เฉลี่ย ${consistent?.mean??0}%</strong></div><div class="global-kpi"><small>GLOBAL SELECTION</small><b>${selection.rate}%</b><span>Walk-Forward OOS</span><strong>${selection.hits}/${selection.total} เข้า</strong></div><div class="global-kpi"><small>GLOBAL PENETRATION</small><b>${pen.arate==null?'รอคำนวณ':pen.arate+'%'}</b><span>Adaptive · เดิม ${pen.rate==null?'รอคำนวณ':pen.rate+'%'}</span><strong>${pen.ahits==null?'—':pen.ahits}/${pen.atotal==null?'—':pen.atotal} เข้า</strong></div><div class="global-kpi" style="border-color:rgba(212,175,55,.30);background:rgba(212,175,55,.055)"><small>เลขเจาะรวม · 10 คู่</small><b>${pen.rate==null?'รอคำนวณ':pen.rate+'%'}</b><span>Production 5 คู่/เลขเด่น</span><strong>${pen.hits}/${pen.total} เข้า</strong></div></div><div class="global-two-col"><div class="global-summary-section"><h4>🏆 Formula Leaderboard · ภาพรวมทุกหวย</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>สูตร</th><th>OOS รวม</th><th>เข้า/ทดสอบ</th><th>เฉลี่ยหวย</th><th>Floor</th><th>Spread</th><th>สถานะ</th></tr></thead><tbody>${formulaRows}</tbody></table></div><div class="global-note">Best Overall ใช้อัตรา OOS รวมจากข้อมูลที่ระบบมีอยู่แล้ว ส่วน Most Consistent เน้น Floor สูง + ค่าเฉลี่ยสูง + Spread แคบ เพื่อให้เห็นความสม่ำเสมอโดยไม่สร้างสูตรคำนวณใหม่</div></div><div class="global-summary-section"><h4>📈 Formula Signal Map</h4><div class="global-mini-bars" style="padding:9px 10px">${barRows}</div><div class="global-note">แถบนี้เป็นภาพรวมเร็ว ๆ ว่าสูตรใดเด่นเมื่อรวมทุกหวย</div></div></div><div class="global-summary-section needle-accuracy-section"><h4>🎯 ตารางวัดความแม่นยำเลขเจาะรวม · 10 คู่ / 1 จุดทดสอบ</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>อันดับ</th><th>หวย</th><th>ความแม่นยำ</th><th>เข้า</th><th>หลุด</th><th>เข้า/ทดสอบ</th><th>ระดับ</th></tr></thead><tbody><tr style="background:rgba(212,175,55,.07)"><td>Σ</td><td><b>เลขเจาะรวมทุกหวย</b></td><td><span class="global-score">${needleRate==null?'รอคำนวณ':needleRate+'%'}</span></td><td>${needleHits}</td><td>${needleMisses}</td><td>${needleHits}/${needleTotal}</td><td><span class="global-badge good">OVERALL</span></td></tr>${needleRows}</tbody></table></div><div class="global-note">วัดจากเลขเจาะแบบ Production 5 คู่/เลขเด่น ที่สร้าง <b>10 คู่ต่อจุดทดสอบ</b> (5 คู่ต่อเลขเด่นแต่ละตัว) · “เข้า” เมื่ออย่างน้อย 1 ใน 10 คู่ตรงกับเลข 2 ตัวบนหรือ 2 ตัวล่าง โดยยอมรับทั้งลำดับตรงและกลับ</div></div><div class="global-two-col"><div class="global-summary-section"><h4>🎯 Selection Intelligence · ระบบเลือกเลขโดยรวม</h4><div class="global-table-wrap"><table class="global-summary-table"><tbody><tr><td>Walk-Forward OOS</td><td><span class="global-score">${selection.rate}%</span></td><td>${selection.hits}/${selection.total}</td><td><span class="global-badge good">SELECTION</span></td></tr><tr><td>System Memory</td><td><span class="global-score">${memory.rate}%</span></td><td>${memory.hits}/${memory.total}</td><td><span class="global-badge">MEMORY</span></td></tr><tr><td>Digit Hit</td><td><span class="global-score">${digit.rate}%</span></td><td>${digit.hits}/${digit.total}</td><td><span class="global-badge">DIGIT</span></td></tr><tr><td>Pair Hit</td><td><span class="global-score">${pair.rate}%</span></td><td>${pair.hits}/${pair.total}</td><td><span class="global-badge">PAIR</span></td></tr><tr><td>Penetration · Adaptive</td><td><span class="global-score">${pen.arate==null?'รอคำนวณ':pen.arate+'%'}</span></td><td>${pen.ahits==null?'—':pen.ahits}/${pen.atotal==null?'—':pen.atotal}</td><td><span class="global-badge good">ADAPTIVE</span></td></tr></tbody></table></div><div class="global-note">ตัวเลขทั้งหมดดึงจากสถิติ Selection / Decision / Penetration ที่ระบบคำนวณอยู่แล้ว · เลขเจาะใช้กฎ ±2/±3 แบบ Deterministic</div></div><div class="global-summary-section"><h4>🔢 Global Digit Radar · เลขเด่นรวม</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>เลข</th><th>Hit Rate</th><th>เข้า/ทดสอบ</th></tr></thead><tbody>${digitRows}</tbody></table></div><div class="global-note">เรียงจาก Hit Rate ของข้อมูลเลขเด่นรวมทุกหวย</div></div></div><div class="global-summary-section"><h4>🧭 Executive Readout · อ่านผลรวมเร็ว</h4><div class="global-note" style="border-top:0">${bestLottery?`หวยที่มี Walk-Forward Selection สูงสุดในรอบนี้: <b style="color:#e3edf8">${esc(formatDisplayTitle(bestLottery.name))} · ${bestLottery.sx.rate}%</b> · `:''}สูตรนำภาพรวมคือ <b style="color:#e3edf8">${esc((formulas[0]?.f||'-').replace(/^สูตร /,'F'))}</b> ที่ ${formulas[0]?.rate??0}% และสูตรที่เน้นความสม่ำเสมอคือ <b style="color:#e3edf8">${esc((consistent?.f||'-').replace(/^สูตร /,'F'))}</b> · ${consistent?.min??0}% Floor / ${consistent?.spread??0} pp Spread · Selection รวม ${selection.rate}% · Adaptive Penetration ${pen.arate==null?'รอคำนวณ':pen.arate+'%'}</div></div></div></details>`;
+  return `<details class="global-summary-wrap"><summary><div class="global-summary-title"><span class="global-summary-orb">Σ</span><div><b>GLOBAL INTELLIGENCE · สรุปรวมทุกหวย</b><small>${n} หวย · มองภาพรวมสูตร · Selection · เลขเด่น · เลขเจาะ · ความสม่ำเสมอ ในหน้าต่างเดียว</small></div></div><span class="global-badge">กดเพื่อเปิด</span></summary><div class="global-summary-body"><div class="global-summary-grid"><div class="global-kpi"><small>BEST FORMULA</small><b>${esc((formulas[0]?.f||'-').replace(/^สูตร /,'F'))}</b><span>OOS รวม ${formulas[0]?.rate??0}%</span><strong>${formulas[0]?.h??0}/${formulas[0]?.n??0} ครั้ง</strong></div><div class="global-kpi"><small>MOST CONSISTENT</small><b>${esc((consistent?.f||'-').replace(/^สูตร /,'F'))}</b><span>Floor ${consistent?.min??0}% · Spread ${consistent?.spread??0} pp</span><strong>เฉลี่ย ${consistent?.mean??0}%</strong></div><div class="global-kpi"><small>GLOBAL SELECTION</small><b>${selection.rate}%</b><span>Walk-Forward OOS</span><strong>${selection.hits}/${selection.total} เข้า</strong></div><div class="global-kpi"><small>GLOBAL PENETRATION</small><b>${pen.arate==null?'รอคำนวณ':pen.arate+'%'}</b><span>Adaptive · เดิม ${pen.rate==null?'รอคำนวณ':pen.rate+'%'}</span><strong>${pen.ahits==null?'—':pen.ahits}/${pen.atotal==null?'—':pen.atotal} เข้า</strong></div><div class="global-kpi" style="border-color:rgba(212,175,55,.30);background:rgba(212,175,55,.055)"><small>เลขเจาะรวม · 10 คู่</small><b>${pen.rate==null?'รอคำนวณ':pen.rate+'%'}</b><span>Production 5 คู่/เลขเด่น</span><strong>${pen.hits}/${pen.total} เข้า</strong></div></div><div class="global-two-col"><div class="global-summary-section"><h4>🏆 Formula Leaderboard · ภาพรวมทุกหวย</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>สูตร</th><th>OOS รวม</th><th>เข้า/ทดสอบ</th><th>เฉลี่ยหวย</th><th>Floor</th><th>Spread</th><th>สถานะ</th></tr></thead><tbody>${formulaRows}</tbody></table></div><div class="global-note">Best Overall ใช้อัตรา OOS รวมจากข้อมูลที่ระบบมีอยู่แล้ว ส่วน Most Consistent เน้น Floor สูง + ค่าเฉลี่ยสูง + Spread แคบ เพื่อให้เห็นความสม่ำเสมอโดยไม่สร้างสูตรคำนวณใหม่</div></div><div class="global-summary-section"><h4>📈 Formula Signal Map</h4><div class="global-mini-bars" style="padding:9px 10px">${barRows}</div><div class="global-note">แถบนี้เป็นภาพรวมเร็ว ๆ ว่าสูตรใดเด่นเมื่อรวมทุกหวย</div></div></div><div class="global-summary-section needle-accuracy-section"><h4>🎯 ตารางวัดความแม่นยำเลขเจาะรวม · 10 คู่ / 1 จุดทดสอบ</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>อันดับ</th><th>หวย</th><th>ความแม่นยำ</th><th>เข้า</th><th>หลุด</th><th>เข้า/ทดสอบ</th><th>ระดับ</th></tr></thead><tbody><tr style="background:rgba(212,175,55,.07)"><td>Σ</td><td><b>เลขเจาะรวมทุกหวย</b></td><td><span class="global-score">${needleRate==null?'รอคำนวณ':needleRate+'%'}</span></td><td>${needleHits}</td><td>${needleMisses}</td><td>${needleHits}/${needleTotal}</td><td><span class="global-badge good">OVERALL</span></td></tr>${needleRows}</tbody></table></div><div class="global-note">วัดจากเลขเจาะแบบ Production 5 คู่/เลขเด่น ที่สร้าง <b>10 คู่ต่อจุดทดสอบ</b> (5 คู่ต่อเลขเด่นแต่ละตัว) · “เข้า” เมื่ออย่างน้อย 1 ใน 10 คู่ตรงกับเลข 2 ตัวบนหรือ 2 ตัวล่าง โดยยอมรับทั้งลำดับตรงและกลับ</div></div><div class="global-two-col"><div class="global-summary-section"><h4>🎯 Selection Intelligence · ระบบเลือกเลขโดยรวม</h4><div class="global-table-wrap"><table class="global-summary-table"><tbody><tr><td>Walk-Forward OOS</td><td><span class="global-score">${selection.rate}%</span></td><td>${selection.hits}/${selection.total}</td><td><span class="global-badge good">SELECTION</span></td></tr><tr><td>System Memory</td><td><span class="global-score">${memory.rate}%</span></td><td>${memory.hits}/${memory.total}</td><td><span class="global-badge">MEMORY</span></td></tr><tr><td>Digit Hit</td><td><span class="global-score">${digit.rate}%</span></td><td>${digit.hits}/${digit.total}</td><td><span class="global-badge">DIGIT</span></td></tr><tr><td>Pair Hit</td><td><span class="global-score">${pair.rate}%</span></td><td>${pair.hits}/${pair.total}</td><td><span class="global-badge">PAIR</span></td></tr><tr><td>Penetration · Adaptive</td><td><span class="global-score">${pen.arate==null?'รอคำนวณ':pen.arate+'%'}</span></td><td>${pen.ahits==null?'—':pen.ahits}/${pen.atotal==null?'—':pen.atotal}</td><td><span class="global-badge good">ADAPTIVE</span></td></tr></tbody></table></div><div class="global-note">ตัวเลขทั้งหมดดึงจากสถิติ Selection / Decision / Penetration ที่ระบบคำนวณอยู่แล้ว · เลขเจาะใช้ Production Selector แบบประเมินหลักหน่วย 0–9 และเลือก 5 คู่จากหลักฐานย้อนหลัง</div></div><div class="global-summary-section"><h4>🔢 Global Digit Radar · เลขเด่นรวม</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>เลข</th><th>Hit Rate</th><th>เข้า/ทดสอบ</th></tr></thead><tbody>${digitRows}</tbody></table></div><div class="global-note">เรียงจาก Hit Rate ของข้อมูลเลขเด่นรวมทุกหวย</div></div></div><div class="global-summary-section"><h4>🧭 Executive Readout · อ่านผลรวมเร็ว</h4><div class="global-note" style="border-top:0">${bestLottery?`หวยที่มี Walk-Forward Selection สูงสุดในรอบนี้: <b style="color:#e3edf8">${esc(formatDisplayTitle(bestLottery.name))} · ${bestLottery.sx.rate}%</b> · `:''}สูตรนำภาพรวมคือ <b style="color:#e3edf8">${esc((formulas[0]?.f||'-').replace(/^สูตร /,'F'))}</b> ที่ ${formulas[0]?.rate??0}% และสูตรที่เน้นความสม่ำเสมอคือ <b style="color:#e3edf8">${esc((consistent?.f||'-').replace(/^สูตร /,'F'))}</b> · ${consistent?.min??0}% Floor / ${consistent?.spread??0} pp Spread · Selection รวม ${selection.rate}% · Adaptive Penetration ${pen.arate==null?'รอคำนวณ':pen.arate+'%'}</div></div></div></details>`;
 }
 async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},startedAt=null){const __pt0=window.__PERFTRACE__.begin("render"); try {
   const root=$("result");if(!root)return;
   const names=Object.keys(groups).filter(name=>name!=="__THAI_TOP__");
   window.__OOS_GROUPS_FOR_CHALLENGER__=groups;
   const globalStats=[];
-  // V1.9.105 CRASH-SAFE RENDER:
+  // V1.9.107 CRASH-SAFE RENDER:
   // Do not accumulate 65 lottery detail templates into one giant innerHTML string.
   // Build the shell first, then append each lottery block incrementally so Android
   // WebView can reclaim intermediate strings/DOM work and repaint between blocks.
-  root.innerHTML=`<div class="vip-dashboard v193-dashboard"><div id="__v193_snapshot_mount"></div><div id="__v193_details_heading_mount"></div><div id="__v193_details_mount"></div><div id="__v193_global_mount"></div><div id="__v193_diag_mount"></div></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.105</span><span class="brand-star">✦</span></div>`;
+  root.innerHTML=`<div class="vip-dashboard v193-dashboard"><div id="__v193_snapshot_mount"></div><div id="__v193_details_heading_mount"></div><div id="__v193_details_mount"></div><div id="__v193_global_mount"></div><div id="__v193_diag_mount"></div></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V1.9.107</span><span class="brand-star">✦</span></div>`;
   const dash=root.querySelector('.vip-dashboard'),snapMount=$("__v193_snapshot_mount"),headMount=$("__v193_details_heading_mount"),detailsMount=$("__v193_details_mount"),globalMount=$("__v193_global_mount"),diagMount=$("__v193_diag_mount");
   snapMount.innerHTML=`<section class="ai-snapshot"><div class="ai-snapshot-head"><div><span class="ai-eyebrow">AI หลายมุม</span><b>${names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย'}</b><small>${names.length>1?`รวมการ์ด ${names.length} หวย · เรียงตามลำดับการประมวลผล`:'การ์ดผลลัพธ์ของหวยที่ประมวลผล'}</small></div><div class="ai-snapshot-actions"><span class="ai-live-dot">● LIVE</span><button class="ai-snapshot-capture" onclick="captureSnapshotImage()">📸 แคปภาพรวม</button></div></div><div id="__v193_snapshot_grid" class="ai-snapshot-grid ${names.length===1?'single':''}"></div></section>`;
   const snapshotGrid=$("__v193_snapshot_grid");
-  if(!dash||!snapMount||!snapshotGrid||!headMount||!detailsMount||!globalMount||!diagMount)throw new Error('V1.9.105 render mount initialization failed');
+  if(!dash||!snapMount||!snapshotGrid||!headMount||!detailsMount||!globalMount||!diagMount)throw new Error('V1.9.107 render mount initialization failed');
   const appendLotteryDetail=async (name,rs,hist,rawHist,meta,ad,routeCtx,sx,s,pen,p,sorted,bestFormula,bestRate,bestConfidence,dx,topDigits,board,delta)=>{
     const rateClass=r=>r>=65?'strong':r>=55?'good':r>=45?'warn':'weak';
     const metric=(label,value,sub,rate)=>`<div class="ai-metric"><div class="ai-metric-label">${label}</div><div class="ai-metric-value">${value}</div><div class="ai-metric-sub">${sub}</div>${rate!=null?`<div class="ai-mini-bar"><i class="${rateClass(rate)}" style="width:${Math.max(0,Math.min(100,rate))}%"></i></div>`:''}</div>`;
@@ -8224,7 +8324,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V1.9.105 TYPE-DNA INTELLIGENCE LAB</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V1.9.107 TYPE-DNA INTELLIGENCE LAB</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
@@ -8264,13 +8364,13 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   diagMount.innerHTML=__productionCorePanel()+__dnaPanel();
   installForensicLazy();
   __installTypeDNA();
-  if(startedAt)setProcessingProgress(99.7,'ปิดงาน Production + DNA','DNA Production ใช้ Walk-Forward เท่านั้น · ไม่มี Simulator/Optimizer แยกในหน้าหลัก V1.9.105',startedAt,100,99.7,true);
+  if(startedAt)setProcessingProgress(99.7,'ปิดงาน Production + DNA','DNA Production ใช้ Walk-Forward เท่านั้น · ไม่มี Simulator/Optimizer แยกในหน้าหลัก V1.9.107',startedAt,100,99.7,true);
   if(startedAt)setProcessingProgress(99.99,'กำลังปิดงาน','บันทึกผล OOS + DNA เรียบร้อย · กำลังแสดงผล',startedAt,100,99.99,true);
   await yieldFrame();
   installLotteryDetailLazy();
 } finally { window.__PERFTRACE__.end("render",__pt0); }}
 
-/* V1.9.105 — 100K REAL-OOS RESAMPLING BENCHMARK + 100K RANDOM-COVERAGE SIMULATOR
+/* V1.9.107 — 100K REAL-OOS RESAMPLING BENCHMARK + 100K RANDOM-COVERAGE SIMULATOR
    Shadow-only: does not change Production Selector, formulas, or prediction outputs.
    Backtest = 100,000 bootstrap replays of already-measured chronological OOS outcomes.
    Simulator = 100,000 random 2-tens × 5-units pair-set trials against the same OOS targets.
@@ -8345,7 +8445,7 @@ async function __run100kBenchmark(){
     const lift=actualRate-simRate;
     const verdict=lift>=5?'เหนือ baseline ชัดเจน':lift>=2?'เหนือ baseline เล็กน้อย':lift>-2?'ใกล้ baseline':'ต่ำกว่า baseline';
     const stamp=new Date().toLocaleString('th-TH');
-    const result={version:'V1.9.105',timestamp:stamp,oosRows:rows.length,backtest:{trials:__100K_BACKTEST_N__,mean:+mean.toFixed(4),ci95:[+ciLow.toFixed(4),+ciHigh.toFixed(4)],actualOOS:+actualRate.toFixed(4),min:+min.toFixed(4),max:+max.toFixed(4)},simulator:{trials:__100K_SIM_N__,rate:+simRate.toFixed(4),ci95:[+Math.max(0,simRate-1.96*simSe).toFixed(4),+Math.min(100,simRate+1.96*simSe).toFixed(4)],min:+simMin.toFixed(4),max:+simMax.toFixed(4)},lift:+lift.toFixed(4),verdict};
+    const result={version:'V1.9.107',timestamp:stamp,oosRows:rows.length,backtest:{trials:__100K_BACKTEST_N__,mean:+mean.toFixed(4),ci95:[+ciLow.toFixed(4),+ciHigh.toFixed(4)],actualOOS:+actualRate.toFixed(4),min:+min.toFixed(4),max:+max.toFixed(4)},simulator:{trials:__100K_SIM_N__,rate:+simRate.toFixed(4),ci95:[+Math.max(0,simRate-1.96*simSe).toFixed(4),+Math.min(100,simRate+1.96*simSe).toFixed(4)],min:+simMin.toFixed(4),max:+simMax.toFixed(4)},lift:+lift.toFixed(4),verdict};
     window.__100K_BENCHMARK_RESULT__=result;
     box.innerHTML=`<div class="summary-table-container"><h4 style="margin:0 0 8px">🧪 100K BENCHMARK · ผลวัดแบบไม่หลอกตัวเอง</h4><div class="selector-diag-grid"><div><small>OOS จริง</small><b>${actualRate.toFixed(2)}%</b><span>${actualHits}/${rows.length}</span></div><div><small>Backtest Resample</small><b>${mean.toFixed(2)}%</b><span>100,000 ครั้ง · 95% CI ${ciLow.toFixed(2)}–${ciHigh.toFixed(2)}%</span></div><div><small>Random Simulator</small><b>${simRate.toFixed(2)}%</b><span>100,000 ครั้ง</span></div><div><small>Lift vs Random</small><b>${lift>=0?'+':''}${lift.toFixed(2)} pp</b><span>${verdict}</span></div></div><div class="global-note"><b>Backtest:</b> สุ่มซ้ำจากจุด OOS ที่ระบบวัดจริงเพื่อดูความผันผวนของค่าเฉลี่ย · <b>Simulator:</b> สุ่มชุด 2 เลขหลักสิบ × 5 เลขเจาะต่อหลักสิบ จำนวน 10 คู่ แล้ววัดกับเป้าหมาย OOS เดิม · ไม่มีการใช้ข้อมูลอนาคตเพื่อเลือกเลข · ${stamp}</div></div>`;
     return result;
@@ -8377,9 +8477,64 @@ function __dnaProminentAccuracyRows(){
   }
   return out.map(x=>({...x,rate:x.tests?pct(x.hits,x.tests):null,share:x.tests?100*x.tests/out.reduce((a,b)=>a+b.tests,0):0}));
 }
+function __dnaProminentByGroupRows(mode){
+  const map=new Map();
+  for(const [name,v] of Object.entries(currentPredictionDataMap||{})){
+    if(name==='__THAI_ALLDAY__'||!Array.isArray(v?.records)||v.records.length<3)continue;
+    const rs=v.records, routeCtx=v.routeCtx||{name,groups:currentPredictionDataMap}, group=mode==='family'?(routingFamily(name)||'อื่นๆ'):name;
+    const h=selectionHistory(rs,routeCtx);if(!h.length)continue;
+    if(!map.has(group))map.set(group,{group,by:Array.from({length:10},(_,digit)=>({digit,tests:0,hits:0}))});
+    const g=map.get(group);
+    for(const x of h){
+      const target=new Set((Array.isArray(x.targetDigits)?x.targetDigits:[...String(x.target||'')]).map(Number).filter(Number.isFinite));
+      for(const d of new Set([Number(x.d1),Number(x.d2)].filter(Number.isFinite))){g.by[d].tests++;if(target.has(d))g.by[d].hits++;}
+    }
+  }
+  return [...map.values()].map(g=>({group:g.group,total:g.by.reduce((z,x)=>z+x.tests,0),rate:g.by.reduce((z,x)=>z+x.hits,0),digits:g.by.map(x=>({...x,rate:x.tests?pct(x.hits,x.tests):null}))})).map(g=>({...g,rate:g.total?pct(g.rate,g.total):null})).sort((a,b)=>(Number(b.rate)||0)-(Number(a.rate)||0));
+}
+function __dnaNeedlePartnerRows(){
+  const map=new Map();
+  for(const [name,v] of Object.entries(currentPredictionDataMap||{})){
+    if(name==='__THAI_ALLDAY__'||!Array.isArray(v?.records)||v.records.length<8)continue;
+    const rs=v.records,h=penetrationHistory(rs),family=routingFamily(name)||'อื่นๆ';
+    if(!map.has(family))map.set(family,{family,by:Array.from({length:10},(_,u)=>({unit:u,tests:0,hits:0}))});
+    const g=map.get(family);
+    for(const x of h){const pairs=Array.isArray(x.pairs)?x.pairs:[],top=String(x.targetTop||'').padStart(2,'0'),bot=String(x.targetPair||'').padStart(2,'0');for(const p of pairs){const u=Number(String(p).slice(-1));if(!Number.isFinite(u))continue;g.by[u].tests++;const rev=String(p).split('').reverse().join('');if(top===p||top===rev||bot===p||bot===rev)g.by[u].hits++;}}
+  }
+  return [...map.values()].map(g=>({...g,by:g.by.map(x=>({...x,rate:x.tests?pct(x.hits,x.tests):null})),total:g.by.reduce((z,x)=>z+x.tests,0)}));
+}
+
+function __positionDNASummary(groups){
+  const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)&&v.length>=8);
+  const rows=[];
+  for(const [name,rs] of entries){
+    const fam=routingFamily(name), digits=Array.from({length:10},(_,d)=>{const z=__positionDigitScore__(rs,d);return {d,score:z.score,position:z.position,transition:z.transition}});
+    for(const x of digits)rows.push({name,fam,n:rs.length,...x});
+  }
+  const overall=Array.from({length:10},(_,d)=>{const a=rows.filter(x=>x.d===d);const n=a.reduce((s,x)=>s+x.n,0);const sc=a.length?avg(a.map(x=>x.score)):50;return{d,n,score:Math.round(sc*100)/100,lotteries:a.length};});
+  const famMap=new Map();for(const x of rows){if(!famMap.has(x.fam))famMap.set(x.fam,[]);famMap.get(x.fam).push(x)}
+  const family=[...famMap].map(([fam,a])=>({fam,n:a.length,score:Math.round(avg(a.map(x=>x.score))*100)/100,top:[...a].sort((u,v)=>v.score-u.score).slice(0,2).map(x=>x.d)})).sort((a,b)=>b.score-a.score);
+  return{overall,family,rows};
+}
+function __positionDNAMatrix(groups){
+  const entries=Object.entries(groups||{}).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)&&v.length>=8);
+  const agg={top0:Array.from({length:10},()=>({n:0,h:0})),top1:Array.from({length:10},()=>({n:0,h:0})),top2:Array.from({length:10},()=>({n:0,h:0})),bottom0:Array.from({length:10},()=>({n:0,h:0})),bottom1:Array.from({length:10},()=>({n:0,h:0}))};
+  for(const [,rs] of entries){const z=__positionDNA__(rs);for(const [role,poss] of Object.entries(z.roles)){for(const [pos,ds] of Object.entries(poss)){for(let d=0;d<10;d++){agg[role+pos][d].n+=ds[d].n;agg[role+pos][d].h+=ds[d].h;}}}}
+  const cols=[['top0','บนร้อย'],['top1','บนสิบ'],['top2','บนหน่วย'],['bottom0','ล่างสิบ'],['bottom1','ล่างหน่วย']];
+  const body=Array.from({length:10},(_,d)=>`<tr><td><b>${d}</b></td>${cols.map(([k])=>{const q=agg[k][d],r=q.n?100*q.h/q.n:null;return `<td>${r==null?'—':r.toFixed(1)+'%'}</td>`}).join('')}<td></tr>`).join('');
+  return `<div class="summary-table-container"><h3 class="formula-global-title">📐 POSITION MATRIX · ความถี่เลข 0–9 ในแต่ละหลัก</h3><div class="global-note">ตารางนี้แยกตำแหน่งจริงออกจากกัน เพื่อให้เห็นว่าเลขเดียวกันแข็งแรง/อ่อนตรง <b>บนร้อย, บนสิบ, บนหน่วย, ล่างสิบ, ล่างหน่วย</b> หรือไม่</div><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>เลข</th><th>บนร้อย</th><th>บนสิบ</th><th>บนหน่วย</th><th>ล่างสิบ</th><th>ล่างหน่วย</th></tr></thead><tbody>${body}</tbody></table></div><div class="global-note">นี่คือสถิติการเกิดของเลขในตำแหน่งย้อนหลัง ไม่ใช่คำทำนายโดยตรง ระบบจะนำไปเป็นหลักฐานเสริมร่วมกับ Formula / Selection / Needle OOS</div></div>`;
+}
+function __positionDNATable(groups){
+  const s=__positionDNASummary(groups),esc2=x=>esc(String(x));
+  const status=v=>v>=58?'แข็งแรง':v>=53?'ดี':v>=47?'กลาง':'อ่อน';
+  const overall=s.overall.map((x,i)=>`<tr><td>${i+1}</td><td><b>${x.d}</b></td><td>${x.score}%</td><td>${x.lotteries}</td><td>${x.n}</td><td>${status(x.score)}</td></tr>`).join('');
+  const fam=s.family.map((x,i)=>`<tr><td>${i+1}</td><td>${esc2(formatDisplayTitle(x.fam))}</td><td>${x.score}%</td><td>${x.n}</td><td>${x.top.join(', ')||'—'}</td><td>${status(x.score)}</td></tr>`).join('');
+  const sample=s.rows.length;
+  return `<div class="summary-table-container"><h3 class="formula-global-title">🧠 POSITION DNA · เรียนรู้เลขแยกตามหลัก บน/ล่าง</h3><div class="global-note">ระบบเรียนรู้แยก <b>บนร้อย / บนสิบ / บนหน่วย / ล่างสิบ / ล่างหน่วย</b> แล้วนำหลักฐานไปช่วยคัดเลขเด่นและเลขเจาะแบบมีน้ำหนักจำกัด ไม่ใช้ผลของงวดเป้าหมายในการตัดสินใจ · ${sample.toLocaleString()} ตัวอย่างเลข-ประเภท</div><div class="global-two-col"><div><h4 style="margin:8px 0">🔢 เลข 0–9 · คะแนน DNA ตำแหน่งรวม</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>เลข</th><th>คะแนน DNA</th><th>ประเภทที่พบ</th><th>ตัวอย่าง</th><th>สถานะ</th></tr></thead><tbody>${overall}</tbody></table></div></div><div><h4 style="margin:8px 0">🧬 DNA รายประเภท</h4><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>ประเภท</th><th>คะแนน</th><th>รายการ</th><th>เลขเด่นเชิงตำแหน่ง</th><th>สถานะ</th></tr></thead><tbody>${fam}</tbody></table></div></div></div><div class="global-note"><b>วิธีอ่าน:</b> คะแนนสูงไม่ได้แปลว่าเลขนั้นจะออกแน่นอน แต่หมายถึงหลักฐานย้อนหลังของตำแหน่งต่าง ๆ สนับสนุนเลขนั้นมากกว่าเลขอื่น · ตัวอย่างน้อยจะถูกหดคะแนนเข้าหาค่ากลางเพื่อกันการหลอกตัวเอง</div></div>`;
+}
 function __dnaExecutivePanel(){
   const r=__TYPE_DNA__.last||null;
-  if(!r)return `<section class="selector-diag-panel dna-executive"><div class="selector-diag-head"><div><b>🧬 TYPE DNA EXECUTIVE · V1.9.105</b><small>เรียนรู้รายหวยแบบ Walk-Forward และสรุปเปอร์เซ็นต์รวมโดยไม่ใช้ผลอนาคต</small></div><span>DNA READY</span></div><div class="insight-box">DNA จะเรียนรู้เฉพาะจากงวดที่เกิดขึ้นแล้ว แยกตามหวย + Family และใช้ Shrinkage ป้องกันตัวอย่างน้อยเกินไป</div></section>`;
+  if(!r)return `<section class="selector-diag-panel dna-executive"><div class="selector-diag-head"><div><b>🧬 TYPE DNA EXECUTIVE · V1.9.107</b><small>เรียนรู้รายหวยแบบ Walk-Forward และสรุปเปอร์เซ็นต์รวมโดยไม่ใช้ผลอนาคต</small></div><span>DNA READY</span></div><div class="insight-box">DNA จะเรียนรู้เฉพาะจากงวดที่เกิดขึ้นแล้ว แยกตามหวย + Family และใช้ Shrinkage ป้องกันตัวอย่างน้อยเกินไป</div></section>`;
   const base=r.baseline||{}, fp=(r.globalFormula||[]).slice(0,9), prof=(r.profiles||[]).slice().sort((a,b)=>(b.performance?.selection||0)-(a.performance?.selection||0));
   const total=Number(r.totalRows||0), types=Number(r.typeCount||0), hits=Math.round(total*(Number(base.selection||0)/100)), miss=Math.max(0,total-hits);
   const formulaRows=fp.map((x,i)=>`<tr><td>#${i+1}</td><td><b>${__dnaEsc(x.formula)}</b></td><td>${x.tests}</td><td>${x.hits}</td><td><b>${x.hitRate}%</b></td></tr>`).join('');
@@ -8411,12 +8566,20 @@ function __dnaExecutivePanel(){
     return `<tr><td>#${i+1}</td><td class="formula-cell"><b>${__dnaEsc(formatDisplayTitle(x.name))}</b></td><td>${q.total||0}</td><td>${q.hits||0}</td><td>${q.misses||0}</td><td><b>${q.rate==null?'—':q.rate+'%'}</b></td><td><span class="global-badge ${r>=65?'good':''}">${r>=65?'HIGH':r>=55?'GOOD':'LOW'}</span></td></tr>`;
   }).join('') || '<tr><td colspan="7">ยังไม่มีข้อมูลเลขเจาะเพียงพอ</td></tr>';
   const best=prof[0], worst=prof[prof.length-1];
-  return `<section class="selector-diag-panel dna-executive"><div class="selector-diag-head"><div><b>🧬 TYPE DNA EXECUTIVE · V1.9.105</b><small>ภาพรวมทุกหวยที่มีข้อมูล · Formula / Selection / Top2 / InBoard / เลขเจาะ / จุดผิดพลาด</small></div><span>${types} TYPES</span></div><div class="dna-executive-status"><strong>สรุปสถานะ:</strong> ตัวเลขชุดนี้คือ OOS/ประวัติของ TYPE DNA ที่แสดงในห้องวิเคราะห์ · ยังไม่ใช่ผลยืนยันว่า V1.9.105 ทำได้ 61–62% จนกว่าจะรัน OOS ชุดเดียวกันผ่าน Production Selector อีกครั้ง</div><div class="selector-diag-grid"><div><small>หวยทั้งหมด</small><b>${types}</b><span>แยกพฤติกรรมรายประเภท</span></div><div><small>Historical Rows</small><b>${total}</b><span>ข้อมูลที่ผ่านการตรวจ</span></div><div><small>รวม Selection</small><b>${base.selection??0}%</b><span>${hits} เข้า · ${miss} หลุด</span></div><div><small>รวม Top2</small><b>${base.top2??0}%</b><span>คุณภาพกระดานตัวเลือก</span></div><div><small>รวม InBoard</small><b>${base.inBoard??0}%</b><span>เป้าหมายอยู่ในกระดาน</span></div><div><small>Formula Union</small><b>${base.union??0}%</b><span>หลักฐานจากสูตรรวม</span></div><div><small>สูตรเด่น</small><b>${__dnaEsc(fp[0]?.formula||'—')}</b><span>${fp[0]?.hitRate??'—'}%</span></div><div><small>สูตรด้อย</small><b>${__dnaEsc(fp.at(-1)?.formula||'—')}</b><span>${fp.at(-1)?.hitRate??'—'}%</span></div></div>
+  const __dnaProminentTypeRows=__dnaProminentByGroupRows('lottery').slice(0,60).map(g=>{
+    const bestDigits=g.digits.filter(x=>x.tests).sort((a,b)=>(b.rate||0)-(a.rate||0)||b.tests-a.tests).slice(0,3).map(x=>String(x.digit)+' '+x.rate+'% ('+x.hits+'/'+x.tests+')').join(' · ');
+    return '<tr><td class="formula-cell"><b>'+__dnaEsc(formatDisplayTitle(g.group))+'</b></td><td>'+g.total+'</td><td>'+g.rate+'%</td><td><b>'+(__dnaEsc(bestDigits)||'ยังไม่มีข้อมูล')+'</b></td></tr>';
+  }).join('')||'<tr><td colspan="4">ยังไม่มีข้อมูล</td></tr>';
+  const __dnaNeedleFamilyRows=(()=>{const rows=__dnaNeedlePartnerRows(),out=[];for(const g of rows){const top=g.by.filter(x=>x.tests).sort((a,b)=>(b.rate||0)-(a.rate||0)||b.tests-a.tests).slice(0,5);for(const x of top)out.push('<tr><td class="formula-cell"><b>'+__dnaEsc(g.family)+'</b></td><td><b>'+x.unit+'</b></td><td>'+x.tests+'</td><td>'+x.hits+'</td><td><b>'+x.rate+'%</b></td></tr>')}return out.join('')||'<tr><td colspan="5">ยังไม่มีข้อมูล</td></tr>'})();
+  return `<section class="selector-diag-panel dna-executive"><div class="selector-diag-head"><div><b>🧬 TYPE DNA EXECUTIVE · V1.9.107</b><small>ภาพรวมทุกหวยที่มีข้อมูล · Formula / Selection / Top2 / InBoard / เลขเจาะ / จุดผิดพลาด</small></div><span>${types} TYPES</span></div><div class="dna-executive-status"><strong>สรุปสถานะ:</strong> ตัวเลขชุดนี้คือ OOS/ประวัติของ TYPE DNA ที่แสดงในห้องวิเคราะห์ · ยังไม่ใช่ผลยืนยันว่า V1.9.107 ทำได้ 61–62% จนกว่าจะรัน OOS ชุดเดียวกันผ่าน Production Selector อีกครั้ง</div><div class="selector-diag-grid"><div><small>หวยทั้งหมด</small><b>${types}</b><span>แยกพฤติกรรมรายประเภท</span></div><div><small>Historical Rows</small><b>${total}</b><span>ข้อมูลที่ผ่านการตรวจ</span></div><div><small>รวม Selection</small><b>${base.selection??0}%</b><span>${hits} เข้า · ${miss} หลุด</span></div><div><small>รวม Top2</small><b>${base.top2??0}%</b><span>คุณภาพกระดานตัวเลือก</span></div><div><small>รวม InBoard</small><b>${base.inBoard??0}%</b><span>เป้าหมายอยู่ในกระดาน</span></div><div><small>Formula Union</small><b>${base.union??0}%</b><span>หลักฐานจากสูตรรวม</span></div><div><small>สูตรเด่น</small><b>${__dnaEsc(fp[0]?.formula||'—')}</b><span>${fp[0]?.hitRate??'—'}%</span></div><div><small>สูตรด้อย</small><b>${__dnaEsc(fp.at(-1)?.formula||'—')}</b><span>${fp.at(-1)?.hitRate??'—'}%</span></div></div>
   <div class="summary-table-container"><h3 class="formula-global-title">🔢 ตารางความแม่นยำ “เลขเด่น” 0–9 · ดูย้อนหลังแบบเข้าใจง่าย</h3><div class="global-note">วัดเฉพาะจุดที่ระบบเลือกเลขเด่น 2 ตัวในแต่ละงวด แล้วตรวจว่าเลขเด่นที่เลือกปรากฏในเป้าหมาย 2 ตัวบน/2 ตัวล่างหรือไม่ · เป็น <b>ความแม่นยำเมื่อเลือกเลขนั้น</b> ไม่ใช่โอกาสออกของเลข</div><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>เลขเด่น</th><th>เลือกกี่ครั้ง</th><th>เข้า</th><th>หลุด</th><th>ความแม่นยำ</th><th>สัดส่วนตัวอย่าง</th><th>อ่านผล</th></tr></thead><tbody>${prominentTable}</tbody><tfoot><tr><td><b>รวม</b></td><td>${prominentTotal}</td><td>${prominentHits}</td><td>${prominentTotal-prominentHits}</td><td><b>${prominentTotal?pct(prominentHits,prominentTotal)+'%':'—'}</b></td><td>100%</td><td><span class="global-badge">ภาพรวม</span></td></tr></tfoot></table></div></div>
   <div class="summary-table-container"><h3 class="formula-global-title">🎯 เลขเจาะรวมทุกหวย · ความแม่นยำจริงของ 10 คู่</h3><div class="selector-diag-grid" style="margin-bottom:10px"><div><small>เลขเจาะรวม</small><b>${needleRate==null?'—':needleRate+'%'}</b><span>${needleHits} เข้า · ${needleMisses} หลุด</span></div><div><small>จุดทดสอบ</small><b>${needleTests}</b><span>1 จุด = 10 คู่</span></div><div><small>เข้า</small><b>${needleHits}</b><span>อย่างน้อย 1 คู่ตรง</span></div><div><small>หลุด</small><b>${needleMisses}</b><span>ไม่ตรงทั้ง 10 คู่</span></div></div><table class="audit-table"><thead><tr><th>อันดับ</th><th>หวย</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด</th><th>ความแม่นยำ</th><th>ระดับ</th></tr></thead><tbody><tr style="background:rgba(212,175,55,.07)"><td>Σ</td><td class="formula-cell"><b>เลขเจาะรวมทุกหวย</b></td><td>${needleTests}</td><td>${needleHits}</td><td>${needleMisses}</td><td><b>${needleRate==null?'—':needleRate+'%'}</b></td><td><span class="global-badge good">OVERALL</span></td></tr>${needleRows}</tbody></table><div class="insight-box"><b>วิธีวัด:</b> ใช้เลขเจาะแบบ Production 5 คู่/เลขเด่น ตามกติกา Production · สร้าง <b>10 คู่ต่อจุดทดสอบ</b> (5 คู่ต่อเลขเด่น 2 ตัว) · นับเข้าเมื่ออย่างน้อย 1 คู่ตรงกับเลข 2 ตัวบนหรือ 2 ตัวล่าง โดยยอมรับเลขกลับ · <b>ตัวเลขนี้เป็นสถิติที่คำนวณจากข้อมูลจริงในระบบ ไม่ใช่ค่าประมาณจาก % อื่น</b></div></div>
-  <div class="summary-table-container"><h3 class="formula-global-title">🧪 100K BACKTEST + 100K SIMULATOR</h3><div class="global-note">ทดสอบเฉพาะเมื่อมี OOS จริง · Backtest = resample จุด OOS จริง 100,000 ครั้ง · Simulator = สุ่มชุด 10 คู่ 100,000 ครั้งเพื่อสร้าง baseline เท่านั้น</div><button id="__run100k_benchmark" class="ai-snapshot-capture" type="button" onclick="run100kBenchmark()">▶ รัน 100,000 + 100,000 ครั้ง</button><div id="__100k_benchmark_result" style="margin-top:10px"><div class="insight-box">กดปุ่มเพื่อเริ่มทดสอบ · ไม่เปลี่ยน Production Selector</div></div></div><div class="summary-table-container"><h3 class="formula-global-title">🧠 EXECUTIVE COMBINED · เลขเด่น + เลขเจาะ แบบรวม</h3><div class="selector-diag-grid"><div><small>เลขเด่น Selection รวม</small><b>${combinedSelRate==null?'—':combinedSelRate+'%'}</b><span>${combinedSelH}/${combinedSelN}</span></div><div><small>เลขเจาะรวม 10 คู่</small><b>${combinedNeedRate==null?'—':combinedNeedRate+'%'}</b><span>${combinedNeedH}/${combinedNeedN}</span></div><div><small>หวยที่วัดได้</small><b>${combinedRows.length}</b><span>รายหวย</span></div><div><small>การจัดอันดับ</small><b>55 / 45</b><span>Selection / Needle</span></div></div><div class="global-note">Composite ใช้จัดลำดับเท่านั้น · Selection และ Needle เป็น OOS ที่วัดจริง · เลขเด่นคือหลักสิบของตัวเลือกหลัก</div><table class="audit-table"><thead><tr><th>#</th><th>หวย</th><th>N</th><th>เลขเด่น</th><th>เลขเจาะ</th><th>Adaptive</th><th>เด่นที่เลือก</th><th>Composite</th></tr></thead><tbody>${combinedTable}</tbody></table></div><div class="summary-table-container"><h3 class="formula-global-title">🧬 FAMILY INTELLIGENCE · สรุปตามประเภทหวย</h3><table class="audit-table"><thead><tr><th>#</th><th>ประเภท</th><th>หวย</th><th>Selection</th><th>Needle</th><th>Composite</th></tr></thead><tbody>${familyTable}</tbody></table></div><div class="summary-table-container"><h3 class="formula-global-title">สูตรรวมทุกหวย · เรียงจากแข็งแรง → อ่อน</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>สูตร</th><th>รอบ</th><th>เข้า</th><th>Hit %</th></tr></thead><tbody>${formulaRows}</tbody></table></div><div class="summary-table-container"><h3 style="color:#78590f;font-size:.72rem;margin:12px 0 8px">DNA รายหวย · แยกพฤติกรรมจริง</h3><table class="audit-table"><thead><tr><th>#</th><th>หวย</th><th>N</th><th>Selection</th><th>Top2</th><th>InBoard</th><th>สถานะ</th></tr></thead><tbody>${typeRows}</tbody></table></div><div class="insight-box"><b>จุดแข็ง:</b> ${best?__dnaEsc(formatDisplayTitle(best.name)):'—'} · ${best?.performance?.selection??'—'}% Selection &nbsp; <b>จุดที่ต้องเฝ้า:</b> ${worst?__dnaEsc(formatDisplayTitle(worst.name)):'—'} · ${worst?.performance?.selection??'—'}%<br><small>ค่าเปอร์เซ็นต์เป็นสถิติ OOS/ประวัติที่วัดได้ ไม่ใช่การรับประกันผลรอบถัดไป</small></div></section>`;
+  <div class="summary-table-container"><h3 class="formula-global-title">🧬 DNA เลขเด่นแยกประเภท · ดูว่าแต่ละหวยเก่งเลขไหน</h3><div class="global-note">แยกผลตามหวยจาก Walk-Forward OOS จริง เพื่อดูว่าความแม่นยำเกิดจากประเภทใด ไม่เอาค่าเฉลี่ยรวมมาบังจุดอ่อน</div><div class="global-table-wrap"><table class="audit-table"><thead><tr><th>หวย</th><th>จำนวนการเลือก</th><th>ความแม่นยำรวม</th><th>เลขเด่นที่ทำผลงานดีที่สุด</th></tr></thead><tbody>${__dnaProminentTypeRows}</tbody></table></div></div>
+  <div class="summary-table-container"><h3 class="formula-global-title">🎯 DNA เลขเจาะแยก Family · หน่วย 0–9</h3><div class="global-note">นับเฉพาะคู่เลขเจาะที่ Production สร้างจริง แล้วดูว่าหลักหน่วยใดมีหลักฐานย้อนหลังดีที่สุดในแต่ละ Family</div><div class="global-table-wrap"><table class="audit-table"><thead><tr><th>Family</th><th>หน่วย</th><th>ทดสอบ</th><th>เข้า</th><th>ความแม่นยำ</th></tr></thead><tbody>${__dnaNeedleFamilyRows}</tbody></table></div></div>
+  <div class="summary-table-container"><h3 class="formula-global-title">🧭 อ่านผลแบบผู้บริหาร</h3><div class="insight-box">ระบบแยก <b>เลขเด่น</b> = หลักสิบของตัวเลือกหลัก และ <b>เลขเจาะ</b> = หลักหน่วยของคู่ที่สร้าง พร้อมแยกผลตามหวยและ Family · ตัวอย่างน้อยให้ถือเป็นสัญญาณเบื้องต้น ไม่ใช่หลักฐานแข็งแรง · ทุกค่าหลักใช้ข้อมูลย้อนหลังแบบ Walk-Forward และไม่ใช้ผลอนาคตของจุดทดสอบ</div></div>
+  ${__positionDNATable((currentPredictionDataMap&&Object.fromEntries(Object.entries(currentPredictionDataMap).map(([k,v])=>[k,v.records||[]])))||{})}${__positionDNAMatrix((currentPredictionDataMap&&Object.fromEntries(Object.entries(currentPredictionDataMap).map(([k,v])=>[k,v.records||[]])))||{})}<div class="summary-table-container"><h3 class="formula-global-title">🧪 100K BACKTEST + 100K SIMULATOR</h3><div class="global-note">ทดสอบเฉพาะเมื่อมี OOS จริง · Backtest = resample จุด OOS จริง 100,000 ครั้ง · Simulator = สุ่มชุด 10 คู่ 100,000 ครั้งเพื่อสร้าง baseline เท่านั้น</div><button id="__run100k_benchmark" class="ai-snapshot-capture" type="button" onclick="run100kBenchmark()">▶ รัน 100,000 + 100,000 ครั้ง</button><div id="__100k_benchmark_result" style="margin-top:10px"><div class="insight-box">กดปุ่มเพื่อเริ่มทดสอบ · ไม่เปลี่ยน Production Selector</div></div></div><div class="summary-table-container"><h3 class="formula-global-title">🧠 EXECUTIVE COMBINED · เลขเด่น + เลขเจาะ แบบรวม</h3><div class="selector-diag-grid"><div><small>เลขเด่น Selection รวม</small><b>${combinedSelRate==null?'—':combinedSelRate+'%'}</b><span>${combinedSelH}/${combinedSelN}</span></div><div><small>เลขเจาะรวม 10 คู่</small><b>${combinedNeedRate==null?'—':combinedNeedRate+'%'}</b><span>${combinedNeedH}/${combinedNeedN}</span></div><div><small>หวยที่วัดได้</small><b>${combinedRows.length}</b><span>รายหวย</span></div><div><small>การจัดอันดับ</small><b>55 / 45</b><span>Selection / Needle</span></div></div><div class="global-note">Composite ใช้จัดลำดับเท่านั้น · Selection และ Needle เป็น OOS ที่วัดจริง · เลขเด่นคือหลักสิบของตัวเลือกหลัก</div><table class="audit-table"><thead><tr><th>#</th><th>หวย</th><th>N</th><th>เลขเด่น</th><th>เลขเจาะ</th><th>Adaptive</th><th>เด่นที่เลือก</th><th>Composite</th></tr></thead><tbody>${combinedTable}</tbody></table></div><div class="summary-table-container"><h3 class="formula-global-title">🧬 FAMILY INTELLIGENCE · สรุปตามประเภทหวย</h3><table class="audit-table"><thead><tr><th>#</th><th>ประเภท</th><th>หวย</th><th>Selection</th><th>Needle</th><th>Composite</th></tr></thead><tbody>${familyTable}</tbody></table></div><div class="summary-table-container"><h3 class="formula-global-title">สูตรรวมทุกหวย · เรียงจากแข็งแรง → อ่อน</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>สูตร</th><th>รอบ</th><th>เข้า</th><th>Hit %</th></tr></thead><tbody>${formulaRows}</tbody></table></div><div class="summary-table-container"><h3 style="color:#78590f;font-size:.72rem;margin:12px 0 8px">DNA รายหวย · แยกพฤติกรรมจริง</h3><table class="audit-table"><thead><tr><th>#</th><th>หวย</th><th>N</th><th>Selection</th><th>Top2</th><th>InBoard</th><th>สถานะ</th></tr></thead><tbody>${typeRows}</tbody></table></div><div class="insight-box"><b>จุดแข็ง:</b> ${best?__dnaEsc(formatDisplayTitle(best.name)):'—'} · ${best?.performance?.selection??'—'}% Selection &nbsp; <b>จุดที่ต้องเฝ้า:</b> ${worst?__dnaEsc(formatDisplayTitle(worst.name)):'—'} · ${worst?.performance?.selection??'—'}%<br><small>ค่าเปอร์เซ็นต์เป็นสถิติ OOS/ประวัติที่วัดได้ ไม่ใช่การรับประกันผลรอบถัดไป</small></div></section>`;
 }
-function __productionCorePanel(){const rows=__SELECTOR_DIAGNOSTIC__?.rows||[];const n=rows.length;const hit=k=>rows.filter(r=>r?.[k]).length;const pct=x=>n?((x/n)*100).toFixed(2):'-';return `<section class="selector-diag-panel production-core"><div class="selector-diag-head"><div><b>PRODUCTION CORE · F1–F9 + CHAMPION</b><small>ส่วนใช้งานจริง · ไม่มี Optimizer/Challenger รันอัตโนมัติ</small></div><span>LOCKED</span></div><div class="dna-core-grid"><div class="dna-core-card"><strong>OOS</strong><span>${n}</span></div><div class="dna-core-card"><strong>Board Top2</strong><span>${pct(hit('boardTop2Hit'))}%</span></div><div class="dna-core-card"><strong>InBoard</strong><span>${pct(hit('targetInBoard'))}%</span></div><div class="dna-core-card"><strong>Selection</strong><span>${pct(hit('selectionHit'))}%</span></div></div><div class="forensic-data-note">Champion และ F1–F9 ยังคงสูตร/โครงสร้างเดิม · DNA V1.9.105 ทำงานเป็น Production Weight แบบ Walk-Forward ที่จำกัดการปรับและใช้ข้อมูลอดีตเท่านั้น</div></section>`}
+function __productionCorePanel(){const rows=__SELECTOR_DIAGNOSTIC__?.rows||[];const n=rows.length;const hit=k=>rows.filter(r=>r?.[k]).length;const pct=x=>n?((x/n)*100).toFixed(2):'-';return `<section class="selector-diag-panel production-core"><div class="selector-diag-head"><div><b>PRODUCTION CORE · F1–F9 + CHAMPION</b><small>ส่วนใช้งานจริง · ไม่มี Optimizer/Challenger รันอัตโนมัติ</small></div><span>LOCKED</span></div><div class="dna-core-grid"><div class="dna-core-card"><strong>OOS</strong><span>${n}</span></div><div class="dna-core-card"><strong>Board Top2</strong><span>${pct(hit('boardTop2Hit'))}%</span></div><div class="dna-core-card"><strong>InBoard</strong><span>${pct(hit('targetInBoard'))}%</span></div><div class="dna-core-card"><strong>Selection</strong><span>${pct(hit('selectionHit'))}%</span></div></div><div class="forensic-data-note">Champion และ F1–F9 ยังคงสูตร/โครงสร้างเดิม · DNA V1.9.107 ทำงานเป็น Production Weight แบบ Walk-Forward ที่จำกัดการปรับและใช้ข้อมูลอดีตเท่านั้น</div></section>`}
 function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
 window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
@@ -8451,16 +8614,16 @@ function runSystemHealth(){
   if(!/breakBefore/.test(s))warnings.push('breakBefore handling not detected');
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
   if(!/version:'V1\.9\.79'/.test(s))issues.push('config version mismatch');
-  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.105'))issues.push('visible version mismatch');
+  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes('V1.9.107'))issues.push('visible version mismatch');
   if(!/function\s+__rolePairApply\(/.test(s)||!/__rolePairMeta=/.test(s))issues.push('role-pair layer not wired into cooperative selector');
   if(!/function\s+__scApply\(/.test(s)||!/__selfCorrectionMeta=__scApply\(/.test(s))issues.push('self-correction digit layer not wired into cooperative selector');
   if(!/afterSelfCorrection/.test(s))issues.push('self-correction forensic stage missing');
-  const health={version:'V1.9.105',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),recordIdentityNoSequence:!(/recordKey\(r\).*seq=/.test(s))}};
+  const health={version:'V1.9.107',status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),recordIdentityNoSequence:!(/recordKey\(r\).*seq=/.test(s))}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
-/* V1.9.105 RESEARCH HARVEST — shadow-only forensic archive.
+/* V1.9.107 RESEARCH HARVEST — shadow-only forensic archive.
    Production selector, F1-F9, Champion and normal run path are not modified.
-   V1.9.105 FIX: research controls no longer depend on IndexedDB/download APIs
+   V1.9.107 FIX: research controls no longer depend on IndexedDB/download APIs
    for the primary path. Snapshot is always validated, backed up to localStorage,
    and export has a safe JSON + clipboard fallback. */
 const __RESEARCH_DB__='lottery_research_v1981';
@@ -8484,7 +8647,7 @@ function __researchDownload(filename,payload){
     return false;
   }
 }
-function __researchValidSnapshot(x){return !!(x&&typeof x==='object'&&!Array.isArray(x)&&x.schema==='LOTTERY_FORENSIC_RESEARCH_ARCHIVE'&&x.version==='V1.9.105'&&x.oos&&Array.isArray(x.diagnosticRows)&&x.integrity&&Array.isArray(x.deepTypeAnalysis))}
+function __researchValidSnapshot(x){return !!(x&&typeof x==='object'&&!Array.isArray(x)&&x.schema==='LOTTERY_FORENSIC_RESEARCH_ARCHIVE'&&x.version==='V1.9.107'&&x.oos&&Array.isArray(x.diagnosticRows)&&x.integrity&&Array.isArray(x.deepTypeAnalysis))}
 function __researchBackupPut(snapshot){try{localStorage.setItem(__RESEARCH_BACKUP_KEY__,JSON.stringify(snapshot));return true}catch(e){return false}}
 function __researchBackupGet(){try{const x=JSON.parse(localStorage.getItem(__RESEARCH_BACKUP_KEY__)||'null');return __researchValidSnapshot(x)?x:null}catch(e){return null}}
 function __researchIndexedPut(snapshot){return new Promise((resolve,reject)=>{try{if(!__researchValidSnapshot(snapshot))return reject(new Error('invalid research snapshot'));if(!('indexedDB' in window))return resolve(false);const req=indexedDB.open(__RESEARCH_DB__,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(__RESEARCH_STORE__))db.createObjectStore(__RESEARCH_STORE__,{keyPath:'id'});};req.onsuccess=()=>{const db=req.result;try{const tx=db.transaction(__RESEARCH_STORE__,'readwrite');tx.objectStore(__RESEARCH_STORE__).put({id:'LATEST',...snapshot});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();resolve(false)}}catch(e){db.close();resolve(false)}};req.onerror=()=>resolve(false)}catch(e){resolve(false)}})}
@@ -8518,32 +8681,32 @@ function __researchDeepTypeAnalysis(rows){
   }
   return [...by.values()].map(x=>{const sorted=x.margins.slice().sort((a,b)=>a-b),avg=a=>a.length?Math.round((a.reduce((z,v)=>z+v,0)/a.length)*10000)/10000:null;return {...x,selectionRate:rate(x.hits,x.tests),top2Rate:rate(x.top2,x.tests),inBoardRate:rate(x.inBoard,x.tests),unionRate:rate(x.union,x.tests),damageRate:rate(x.damage,x.tests),rescueRate:rate(x.rescue,x.tests),dominantFailure:Object.entries(x.failures).sort((a,b)=>b[1]-a[1])[0]?.[0]||'NONE',formulaPreference:Object.entries(x.formulas).map(([f,q])=>({...q,formula:f,hitRate:rate(q.hits,q.tests)})).filter(q=>q.tests).sort((a,b)=>b.hitRate-a.hitRate||b.hits-a.hits),digitProfile:x.digits.filter(q=>q.seen||q.selected).map(q=>({...q,targetBoardRate:rate(q.hit,q.seen),selectedHitRate:rate(q.selectedHit,q.selected)})),stageProfile:Object.fromEntries(Object.entries(x.stages).map(([k,q])=>[k,{...q,avgRank:q.seen?Math.round(q.rankSum/q.seen*100)/100:null,rank1Rate:rate(q.rank1,q.seen),rank2Rate:rate(q.rank2,q.seen),rank3_5Rate:rate(q.rank3_5,q.seen)}])),margin:{n:sorted.length,avg:avg(sorted),median:sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2):null,min:sorted.length?sorted[0]:null,max:sorted.length?sorted.at(-1):null}}}).sort((a,b)=>b.tests-a.tests||b.selectionRate-a.selectionRate);
 }
-function __researchExportManifest(s){return {schema:'LOTTERY_RESEARCH_EXPORT_MANIFEST',version:'V1.9.105',generatedAt:new Date().toISOString(),ready:true,required:['records','oos','diagnosticRows','typeDNA','deepTypeAnalysis','selectionLog','decisionLog','formulaPerformance','integrity','systemHealth'],counts:{records:s.records?.length||0,oosRows:s.diagnosticRows?.length||0,types:s.integrity?.typeCount||0,selectionLog:s.selectionLog?.length||0,decisionLog:s.decisionLog?.length||0},integrity:s.integrity||{},systemHealth:s.systemHealth||null};}
+function __researchExportManifest(s){return {schema:'LOTTERY_RESEARCH_EXPORT_MANIFEST',version:'V1.9.107',generatedAt:new Date().toISOString(),ready:true,required:['records','oos','diagnosticRows','typeDNA','deepTypeAnalysis','selectionLog','decisionLog','formulaPerformance','integrity','systemHealth'],counts:{records:s.records?.length||0,oosRows:s.diagnosticRows?.length||0,types:s.integrity?.typeCount||0,selectionLog:s.selectionLog?.length||0,decisionLog:s.decisionLog?.length||0},integrity:s.integrity||{},systemHealth:s.systemHealth||null};}
 function __researchExportReady(s){if(!__researchValidSnapshot(s))return{ok:false,reason:'INVALID_SNAPSHOT'};const i=s.integrity||{},ok=Number(i.recordCount)>0&&Number(i.oosRows)>0&&Number(i.typeCount)>=1&&Array.isArray(s.diagnosticRows)&&Array.isArray(s.records)&&Array.isArray(s.selectionLog)&&Array.isArray(s.decisionLog)&&s.typeDNA&&Array.isArray(s.deepTypeAnalysis);return{ok:!!ok,reason:ok?'READY':'INCOMPLETE',manifest:__researchExportManifest(s)};}
 function __researchBuildSnapshot(records,groups,bundles,startedAt){
   const rows=bundles.flatMap(b=>Array.isArray(b?.diagnostic)?b.diagnostic:[]),types=__researchTypeSummary(rows);
   const formula={};for(const f of FORMULAS){let h=0,n=0;for(const r of rows){const x=r?.formulaAudit?.[f]??r?.formulaHits?.[f];if(x&&typeof x==='object'){h+=Number(x.hit??x.hits??0)||0;n+=Number(x.total??x.tests??0)||0}}formula[f]={hits:h,total:n,rate:n?Math.round(h/n*10000)/100:0}}
   const sel=rows.filter(r=>r.selectionHit).length,top2=rows.filter(r=>r.boardTop2Hit).length,inb=rows.filter(r=>r.targetInBoard).length,uni=rows.filter(r=>r.unionHit).length;
   const rate=(h,n)=>n?Math.round(h/n*10000)/100:0,rank={R1:0,R2:0,R3_5:0,R6_10:0,OUT:0};for(const r of rows){const rk=Number(r.targetRank);if(rk===1)rank.R1++;else if(rk===2)rank.R2++;else if(rk>=3&&rk<=5)rank.R3_5++;else if(rk>=6&&rk<=10)rank.R6_10++;else rank.OUT++}
-  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V1.9.105',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:1802,selection:59.27,boardTop2:59.54,inBoard:99.56,union:99.83},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
+  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V1.9.107',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:1802,selection:59.27,boardTop2:59.54,inBoard:99.56,union:99.83},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
 }
 function __researchPanel(snapshot,status='READY'){
   const root=$('researchPanel');if(!root)return;const s=__researchValidSnapshot(snapshot)?snapshot:null;
-  if(!s){root.innerHTML=`<section class="research-panel"><h3>🧬 V1.9.105 · RESEARCH HARVEST</h3><p>ยังไม่มี Research Pack ที่ถูกต้อง · ให้กด “เก็บข้อมูล Forensic ทั้งระบบ” หลังประมวลผลข้อมูล</p></section>`;return}
-  const o=s.oos||{};root.innerHTML=`<section class="research-panel"><h3>🧬 V1.9.105 · FULL FORENSIC RESEARCH HARVEST</h3><p>สถานะ ${esc(status)} · เก็บ Full-history OOS แยกจาก Production และตรวจสอบความสมบูรณ์ก่อน Export</p><div class="research-grid"><div class="research-kpi"><small>สถานะ</small><b>${esc(status)}</b></div><div class="research-kpi"><small>หวย</small><b>${s.integrity?.typeCount??0}</b></div><div class="research-kpi"><small>Raw Records</small><b>${s.integrity?.recordCount??0}</b></div><div class="research-kpi"><small>OOS Rows</small><b>${o.tests??0}</b></div><div class="research-kpi"><small>Board Top2</small><b>${o.top2Rate??'—'}%</b></div><div class="research-kpi"><small>Selection</small><b>${o.selectionRate??'—'}%</b></div><div class="research-kpi"><small>InBoard</small><b>${o.inBoardRate??'—'}%</b></div><div class="research-kpi"><small>Damage / Rescue</small><b>${o.damage??0} / ${o.rescue??0}</b></div></div><div class="research-actions"><button id="researchExportNow" type="button">📦 ดาวน์โหลดแพ็กเต็ม</button><button id="researchExportSummary" type="button">📊 Summary</button><button id="researchExportRows" type="button">🧾 OOS Rows</button><button id="researchExportTypes" type="button">🧬 Type DNA</button><button id="researchExportDeep" type="button">🔬 Deep DNA</button><button id="researchExportManifest" type="button">✅ Manifest</button><button id="researchExportParts" type="button">🗂️ 6 ไฟล์แยก</button><button id="researchCopyAll" type="button">📋 คัดลอกทั้งหมด</button><button id="researchCopyOOS" type="button">📋 คัดลอก OOS</button><button id="researchCopyDNA" type="button">📋 คัดลอก DNA</button><button id="researchCopySystem" type="button">📋 คัดลอก SYSTEM</button></div><div class="research-note">ข้อมูลนี้เป็นหลักฐาน Actual OOS สำหรับรอบถัดไป · V1.9.105 Selection Bottleneck Repair · ไม่มี Auto-Promotion · F1–F9 / Champion / Production Core LOCKED · ถ้าข้อมูลไม่ครบระบบต้องขึ้น ERROR ไม่สร้างไฟล์ปลอม</div></section>`;
+  if(!s){root.innerHTML=`<section class="research-panel"><h3>🧬 V1.9.107 · RESEARCH HARVEST</h3><p>ยังไม่มี Research Pack ที่ถูกต้อง · ให้กด “เก็บข้อมูล Forensic ทั้งระบบ” หลังประมวลผลข้อมูล</p></section>`;return}
+  const o=s.oos||{};root.innerHTML=`<section class="research-panel"><h3>🧬 V1.9.107 · FULL FORENSIC RESEARCH HARVEST</h3><p>สถานะ ${esc(status)} · เก็บ Full-history OOS แยกจาก Production และตรวจสอบความสมบูรณ์ก่อน Export</p><div class="research-grid"><div class="research-kpi"><small>สถานะ</small><b>${esc(status)}</b></div><div class="research-kpi"><small>หวย</small><b>${s.integrity?.typeCount??0}</b></div><div class="research-kpi"><small>Raw Records</small><b>${s.integrity?.recordCount??0}</b></div><div class="research-kpi"><small>OOS Rows</small><b>${o.tests??0}</b></div><div class="research-kpi"><small>Board Top2</small><b>${o.top2Rate??'—'}%</b></div><div class="research-kpi"><small>Selection</small><b>${o.selectionRate??'—'}%</b></div><div class="research-kpi"><small>InBoard</small><b>${o.inBoardRate??'—'}%</b></div><div class="research-kpi"><small>Damage / Rescue</small><b>${o.damage??0} / ${o.rescue??0}</b></div></div><div class="research-actions"><button id="researchExportNow" type="button">📦 ดาวน์โหลดแพ็กเต็ม</button><button id="researchExportSummary" type="button">📊 Summary</button><button id="researchExportRows" type="button">🧾 OOS Rows</button><button id="researchExportTypes" type="button">🧬 Type DNA</button><button id="researchExportDeep" type="button">🔬 Deep DNA</button><button id="researchExportManifest" type="button">✅ Manifest</button><button id="researchExportParts" type="button">🗂️ 6 ไฟล์แยก</button><button id="researchCopyAll" type="button">📋 คัดลอกทั้งหมด</button><button id="researchCopyOOS" type="button">📋 คัดลอก OOS</button><button id="researchCopyDNA" type="button">📋 คัดลอก DNA</button><button id="researchCopySystem" type="button">📋 คัดลอก SYSTEM</button></div><div class="research-note">ข้อมูลนี้เป็นหลักฐาน Actual OOS สำหรับรอบถัดไป · V1.9.107 Selection Bottleneck Repair · ไม่มี Auto-Promotion · F1–F9 / Champion / Production Core LOCKED · ถ้าข้อมูลไม่ครบระบบต้องขึ้น ERROR ไม่สร้างไฟล์ปลอม</div></section>`;
   const dl=(name,data)=>()=>__researchDownload(name,data);
-  root.querySelector('#researchExportNow').onclick=()=>__researchDownload(`LOTTERY-FORENSIC-V1.9.105-${Date.now()}.json`,s);
-  root.querySelector('#researchExportSummary').onclick=dl(`LOTTERY-FORENSIC-SUMMARY-V1.9.105-${Date.now()}.json`,{schema:'SUMMARY',version:'V1.9.105',baseline:s.baseline,oos:s.oos,formulaPerformance:s.formulaPerformance,typeSummary:s.typeSummary,integrity:s.integrity,systemHealth:s.systemHealth,rules:s.rules});
-  root.querySelector('#researchExportRows').onclick=dl(`LOTTERY-FORENSIC-OOS-ROWS-V1.9.105-${Date.now()}.json`,{schema:'OOS_ROWS',version:'V1.9.105',rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]});
-  root.querySelector('#researchExportTypes').onclick=dl(`LOTTERY-TYPE-DNA-V1.9.105-${Date.now()}.json`,{schema:'TYPE_DNA_RESEARCH',version:'V1.9.105',typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[],deepTypeAnalysis:s.deepTypeAnalysis||[],baseline:s.baseline});
-  root.querySelector('#researchExportDeep').onclick=dl(`LOTTERY-DEEP-DNA-V1.9.105-${Date.now()}.json`,{schema:'DEEP_TYPE_DNA_RESEARCH',version:'V1.9.105',baseline:s.baseline,deepTypeAnalysis:s.deepTypeAnalysis||[],typeDNA:s.typeDNA||null});
-  root.querySelector('#researchExportManifest').onclick=dl(`LOTTERY-RESEARCH-MANIFEST-V1.9.105-${Date.now()}.json`,__researchExportManifest(s));
+  root.querySelector('#researchExportNow').onclick=()=>__researchDownload(`LOTTERY-FORENSIC-V1.9.107-${Date.now()}.json`,s);
+  root.querySelector('#researchExportSummary').onclick=dl(`LOTTERY-FORENSIC-SUMMARY-V1.9.107-${Date.now()}.json`,{schema:'SUMMARY',version:'V1.9.107',baseline:s.baseline,oos:s.oos,formulaPerformance:s.formulaPerformance,typeSummary:s.typeSummary,integrity:s.integrity,systemHealth:s.systemHealth,rules:s.rules});
+  root.querySelector('#researchExportRows').onclick=dl(`LOTTERY-FORENSIC-OOS-ROWS-V1.9.107-${Date.now()}.json`,{schema:'OOS_ROWS',version:'V1.9.107',rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]});
+  root.querySelector('#researchExportTypes').onclick=dl(`LOTTERY-TYPE-DNA-V1.9.107-${Date.now()}.json`,{schema:'TYPE_DNA_RESEARCH',version:'V1.9.107',typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[],deepTypeAnalysis:s.deepTypeAnalysis||[],baseline:s.baseline});
+  root.querySelector('#researchExportDeep').onclick=dl(`LOTTERY-DEEP-DNA-V1.9.107-${Date.now()}.json`,{schema:'DEEP_TYPE_DNA_RESEARCH',version:'V1.9.107',baseline:s.baseline,deepTypeAnalysis:s.deepTypeAnalysis||[],typeDNA:s.typeDNA||null});
+  root.querySelector('#researchExportManifest').onclick=dl(`LOTTERY-RESEARCH-MANIFEST-V1.9.107-${Date.now()}.json`,__researchExportManifest(s));
   const __copyResearch=async data=>{const text=JSON.stringify(data,null,2);try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text)}else{throw new Error('clipboard-unavailable')}showToast('✓ คัดลอกข้อมูลเรียบร้อย')}catch(e){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('✓ คัดลอกข้อมูลเรียบร้อย')}catch(_){showToast('⚠️ คัดลอกไม่สำเร็จ')}ta.remove()}};
   root.querySelector('#researchCopyAll').onclick=()=>__copyResearch(s);
-  root.querySelector('#researchCopyOOS').onclick=()=>__copyResearch({schema:'OOS_RESEARCH',version:'V1.9.105',oos:s.oos||{},rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]});
-  root.querySelector('#researchCopyDNA').onclick=()=>__copyResearch(s.typeDNA||{schema:'TYPE_DNA_RESEARCH',version:'V1.9.105',typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[],baseline:s.baseline});
-  root.querySelector('#researchCopySystem').onclick=()=>__copyResearch({schema:'SYSTEM_RESEARCH',version:'V1.9.105',baseline:s.baseline,integrity:s.integrity,systemHealth:s.systemHealth,timing:s.timing,rules:s.rules});
-  root.querySelector('#researchExportParts').onclick=async()=>{const stamp=Date.now();const parts=[['01-RAW',{schema:'RAW',version:'V1.9.105',records:s.records||[],groupsMeta:s.groupsMeta||{},integrity:s.integrity||{}}],['02-OOS',{schema:'OOS',version:'V1.9.105',oos:s.oos||{},rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]}],['03-DIAGNOSTIC',{schema:'DIAGNOSTIC',version:'V1.9.105',rows:s.diagnosticRows||[]}],['04-TYPES',{schema:'TYPES',version:'V1.9.105',typeDNA:s.typeDNA||null,typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[]}],['05-DEEP',{schema:'DEEP_TYPE_DNA',version:'V1.9.105',deepTypeAnalysis:s.deepTypeAnalysis||[]}],['06-SYSTEM',{schema:'SYSTEM',version:'V1.9.105',baseline:s.baseline,integrity:s.integrity,systemHealth:s.systemHealth,timing:s.timing,rules:s.rules}]];for(const [label,data] of parts){if(!data||typeof data!=='object')continue;await __researchDownload(`${label}-V1.9.105-${stamp}.json`,data);await new Promise(r=>setTimeout(r,180))}};
+  root.querySelector('#researchCopyOOS').onclick=()=>__copyResearch({schema:'OOS_RESEARCH',version:'V1.9.107',oos:s.oos||{},rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]});
+  root.querySelector('#researchCopyDNA').onclick=()=>__copyResearch(s.typeDNA||{schema:'TYPE_DNA_RESEARCH',version:'V1.9.107',typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[],baseline:s.baseline});
+  root.querySelector('#researchCopySystem').onclick=()=>__copyResearch({schema:'SYSTEM_RESEARCH',version:'V1.9.107',baseline:s.baseline,integrity:s.integrity,systemHealth:s.systemHealth,timing:s.timing,rules:s.rules});
+  root.querySelector('#researchExportParts').onclick=async()=>{const stamp=Date.now();const parts=[['01-RAW',{schema:'RAW',version:'V1.9.107',records:s.records||[],groupsMeta:s.groupsMeta||{},integrity:s.integrity||{}}],['02-OOS',{schema:'OOS',version:'V1.9.107',oos:s.oos||{},rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]}],['03-DIAGNOSTIC',{schema:'DIAGNOSTIC',version:'V1.9.107',rows:s.diagnosticRows||[]}],['04-TYPES',{schema:'TYPES',version:'V1.9.107',typeDNA:s.typeDNA||null,typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[]}],['05-DEEP',{schema:'DEEP_TYPE_DNA',version:'V1.9.107',deepTypeAnalysis:s.deepTypeAnalysis||[]}],['06-SYSTEM',{schema:'SYSTEM',version:'V1.9.107',baseline:s.baseline,integrity:s.integrity,systemHealth:s.systemHealth,timing:s.timing,rules:s.rules}]];for(const [label,data] of parts){if(!data||typeof data!=='object')continue;await __researchDownload(`${label}-V1.9.107-${stamp}.json`,data);await new Promise(r=>setTimeout(r,180))}};
 }
 async function __runFullResearchHarvest(){
   if(__RESEARCH_BUSY__)return window.__RESEARCH_ARCHIVE__||__researchBackupGet();
@@ -8556,7 +8719,7 @@ async function __runFullResearchHarvest(){
     const names=[...new Set(records.map(r=>String(r.name||'').trim()).filter(Boolean))],groups={};for(const name of names){const rs=results(sortRecords(records.filter(r=>String(r.name||'').trim()===name)));if(rs.length>=2)groups[name]=rs}
     const bundles=[];let i=0;for(const [name,rs] of Object.entries(groups)){const route={name,groups,__stageAwareMemory:__stageMemoryNew()};const b=await __coopOosBundle(rs,route);bundles.push(b);i++;const pct=5+(i/Math.max(1,Object.keys(groups).length))*90;setProcessingProgress(pct,'🧬 Full-history Forensic Harvest',`กำลังเก็บ ${formatDisplayTitle(name)} · ${i}/${Object.keys(groups).length} หวย`,started,100,i);await yieldFrame()}
     let __dnaHarvest=null;
-    try{__dnaHarvest=await __runTypeDNA()}catch(e){__dnaHarvest={type:'LOTTERY_TYPE_DNA_INTELLIGENCE_ERROR',version:'V1.9.105',error:String(e?.message||e)}}
+    try{__dnaHarvest=await __runTypeDNA()}catch(e){__dnaHarvest={type:'LOTTERY_TYPE_DNA_INTELLIGENCE_ERROR',version:'V1.9.107',error:String(e?.message||e)}}
     const snap=__researchBuildSnapshot(records,groups,bundles,started);
     if(__dnaHarvest)snap.typeDNA=__dnaHarvest;
     snap.integrity=snap.integrity||{};
@@ -8566,7 +8729,7 @@ async function __runFullResearchHarvest(){
   }catch(e){__SELECTOR_ERROR_BUS__.set({source:'ResearchHarvest',phase:'full-history',stage:'harvest-catch',rows:0,message:String(e?.message||e),stack:String(e?.stack||'')});__researchPanel(null,'ERROR');showToast(`⚠️ Harvest ไม่สำเร็จ: ${String(e?.message||e).slice(0,100)}`);return null}
   finally{__RESEARCH_BUSY__=false;if(btn){btn.disabled=false;btn.textContent='🧬 เก็บข้อมูล Forensic ทั้งระบบ'}}
 }
-async function __exportResearchLatest(){const x=__researchValidSnapshot(window.__RESEARCH_ARCHIVE__)?window.__RESEARCH_ARCHIVE__:(__researchBackupGet()||await __researchIndexedGet());if(!x){showToast('ยังไม่มี Research Pack ที่สมบูรณ์ · กดเก็บข้อมูล Forensic ก่อน');return false}const check=__researchExportReady(x);if(!check.ok){showToast(`⚠️ Research Pack ไม่ครบ: ${check.reason}`);return false}window.__RESEARCH_ARCHIVE__=x;__researchPanel(x,'READY');return __researchDownload(`LOTTERY-FORENSIC-V1.9.105-${Date.now()}.json`,x)}
+async function __exportResearchLatest(){const x=__researchValidSnapshot(window.__RESEARCH_ARCHIVE__)?window.__RESEARCH_ARCHIVE__:(__researchBackupGet()||await __researchIndexedGet());if(!x){showToast('ยังไม่มี Research Pack ที่สมบูรณ์ · กดเก็บข้อมูล Forensic ก่อน');return false}const check=__researchExportReady(x);if(!check.ok){showToast(`⚠️ Research Pack ไม่ครบ: ${check.reason}`);return false}window.__RESEARCH_ARCHIVE__=x;__researchPanel(x,'READY');return __researchDownload(`LOTTERY-FORENSIC-V1.9.107-${Date.now()}.json`,x)}
 window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;
 async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); try {
   const startedAt=performance.now();window.__RUN_STARTED_AT__=startedAt;__SELECTOR_DIAGNOSTIC__.reset();startProcessing();
@@ -8611,16 +8774,16 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    showToast(`✓ V1.9.105 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
+    showToast(`✓ V1.9.107 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
   }catch(e){
     __SELECTOR_ERROR_BUS__.set({source:'Engine',phase:'runEngine',stage:'engine-catch',message:String(e?.message||e),stack:String(e?.stack||'')});
-    console.error('V1.9.105 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
+    console.error('V1.9.107 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
   }finally{
     const panel=$('processingPanel');if(panel&&$('run').disabled){$('run').disabled=false;$('run').removeAttribute('aria-busy')}
   }
 } finally { window.__LAST_RUN_TIMING__={ms:performance.now()-(window.__RUN_STARTED_AT__||performance.now()),finishedAt:new Date().toISOString()}; window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V1.9.105',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9.105+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair'});
+window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V1.9.107',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V1.9.107+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
 })();
 </script>
