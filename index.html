@@ -10887,33 +10887,35 @@ function __v2SelectorIntelligence(c,history){
 function __v22DigitFlowRank(c,history){
   const rs=sortRecords(Array.isArray(history)?history:[]).filter(r=>r&&/^\d{3}$/.test(String(r.n3||''))&&/^\d{2}$/.test(String(r.n2||'')));
   const n=rs.length;
-  if(n<8||!Array.isArray(c)||!c.length)return{version:'V2.2-D',applied:false,moved:0,draws:n,evidenceMax:0,meanAbsLift:0,source:'type-aware-online',components:{}};
-  const name=String(rs.at(-1)?.name||'');
-  const isN=/นิคเคอิ|Nikkei/i.test(name),isC=/จีน|China/i.test(name),isH=/ฮั่งเส็ง|Hang/i.test(name);
+  if(n<8||!Array.isArray(c)||!c.length)return{version:'V2.2',applied:false,moved:0,draws:n,evidenceMax:0,meanAbsLift:0,source:'exact-type-chronological-only',components:{longRate:-.359,recent6:.055,recent12:.150,recent20:.064,transition:-.212,position:.093,persistence:-.598},top:[]};
   const digs=r=>[...String(r.n3),...String(r.n2)].slice(1).map(Number);
-  const all=rs.flatMap(digs),recent6=rs.slice(-6).flatMap(digs),recent12=rs.slice(-12).flatMap(digs),recent20=rs.slice(-20).flatMap(digs),lastSet=new Set(digs(rs.at(-1)));
-  const tc=new Map(),tb=new Map();
-  for(let i=1;i<n;i++){const prev=new Set(digs(rs[i-1])),cur=new Set(digs(rs[i]));for(const p of prev){tb.set(p,(tb.get(p)||0)+1);for(const q of cur){const k=p+'>'+q;tc.set(k,(tc.get(k)||0)+1);}}}
-  const pc=Array.from({length:10},()=>[0,0,0,0]);
-  for(const r of rs){const d=digs(r);for(let p=0;p<4;p++)pc[d[p]][p]++;}
-  const pb=Array(10).fill(0),ph=Array(10).fill(0);
-  for(let i=1;i<n;i++){const a=new Set(digs(rs[i-1])),b=new Set(digs(rs[i]));for(const d of a){pb[d]++;if(b.has(d))ph[d]++;}}
-  const rate=(a,d)=>a.length?a.filter(x=>x===d).length/a.length:.1;
-  const trans=d=>{let hit=0,den=0;for(const p of lastSet){const b=tb.get(p)||0;hit+=tc.get(p+'>'+d)||0;den+=b;}return den?(hit+1)/(den+10):.1};
-  const pos=d=>{const a=pc[d],tot=a.reduce((x,y)=>x+y,0);return tot?tot/(4*n):.1};
-  const pers=d=>pb[d]?(ph[d]+1)/(pb[d]+2):.5;
-  // Type-specific weights selected only from chronological shadow tests; F1-F9 remain untouched.
-  // Nikkei: recent12 + recent20 + transition. China: long + transition inverse + position. Hang: recent6 + long inverse + transition.
-  const W=isN?[-1,1,2,1,0,0,0]:isC?[1,0,0,-2,1,0,0]:isH?[2,1,-2,1,0,0,0]:[-.359,.055,.150,.064,-.212,.093,-.598];
-  const scored=c.map(q=>{const d=Number(q.digit),f=[rate(all,d),rate(recent6,d),rate(recent12,d),rate(recent20,d),trans(d),pos(d),pers(d)],s=f.reduce((z,v,i)=>z+W[i]*v,0);return{q,d,f,s};}).sort((a,b)=>b.s-a.s||b.q.independentSupport-a.q.independentSupport||a.d-b.d);
+  const all=rs.flatMap(digs), last=rs.at(-1), recent6=rs.slice(-6).flatMap(digs), recent12=rs.slice(-12).flatMap(digs), recent20=rs.slice(-20).flatMap(digs);
+  const lastSet=new Set(digs(last));
+  const transCount=new Map(), transBase=new Map();
+  for(let i=1;i<rs.length;i++){
+    const prev=new Set(digs(rs[i-1])), cur=new Set(digs(rs[i]));
+    for(const p of prev)for(const q of cur){const k=String(p)+'>'+String(q);transCount.set(k,(transCount.get(k)||0)+1);transBase.set(p,(transBase.get(p)||0)+1)}
+  }
+  const posCount=Array.from({length:10},()=>[0,0,0,0]);
+  for(const r of rs){const d=digs(r);for(let p=0;p<4;p++)posCount[d[p]][p]++;}
+  const persistence=Array(10).fill(0),persistBase=Array(10).fill(0);
+  for(let i=1;i<rs.length;i++){const prev=new Set(digs(rs[i-1])),cur=new Set(digs(rs[i]));for(const d of prev){persistBase[d]++;if(cur.has(d))persistence[d]++;}}
+  const rate=(a,d)=>a.length? a.filter(x=>x===d).length/a.length:.1;
+  const trans=(d)=>{let hit=0,den=0;for(const p of lastSet){const b=transBase.get(p)||0;hit+=(transCount.get(String(p)+'>'+String(d))||0);den+=b}return den?(hit+1)/(den+10):.1};
+  const pos=(d)=>{const a=posCount[d];const tot=a.reduce((x,y)=>x+y,0);return tot?(a.reduce((x,y)=>x+y,0)/Math.max(1,4*n)):.1};
+  const pers=d=>persistBase[d]?(persistence[d]+1)/(persistBase[d]+2):.5;
+  const W=[-.359,.055,.150,.064,-.212,.093,-.598];
+  const scored=c.map(q=>{const d=Number(q.digit);const f=[rate(all,d),rate(recent6,d),rate(recent12,d),rate(recent20,d),trans(d),pos(d),pers(d)];const s=f.reduce((z,v,i)=>z+W[i]*v,0);return{q,d,f,s};}).sort((a,b)=>b.s-a.s||b.q.independentSupport-a.q.independentSupport||a.d-b.d);
   const vals=scored.map(x=>x.s),lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(.0001,hi-lo);
   const meanLift=scored.reduce((z,x)=>z+Math.abs((x.s-(lo+hi)/2)/span),0)/scored.length;
-  const before=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).map(x=>Number(x.digit));
-  scored.forEach((x,i)=>{x.q.__v22DigitFlowScore=x.s;x.q.__v22DigitFlowEvidence=n;x.q.__v22DigitFlowRank=i+1;x.q.__v22DigitFlowType=isN?'Nikkei':isC?'China':isH?'Hang':'Other';x.q.score=x.s;});
+  const before=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit).toString()).map(x=>Number(x.digit));
+  scored.forEach((x,i)=>{x.q.__v22DigitFlowScore=x.s;x.q.__v22DigitFlowEvidence=n;x.q.__v22DigitFlowRank=i+1;});
+  scored.forEach((x,i)=>{x.q.score=x.s;});
   c.splice(0,c.length,...scored.map(x=>x.q));
   const after=scored.map(x=>x.d),moved=after.reduce((z,d,i)=>z+(before[i]!==d?1:0),0);
-  return{version:'V2.2-D',applied:true,moved,draws:n,evidenceMax:n,meanAbsLift:+meanLift.toFixed(4),source:'type-aware-online',components:{longRate:W[0],recent6:W[1],recent12:W[2],recent20:W[3],transition:W[4],position:W[5],persistence:W[6]},top:scored.slice(0,5).map(x=>({digit:x.d,score:+x.s.toFixed(4),rank:x.q.__v22DigitFlowRank}))};
+  return{version:'V2.2',applied:true,moved,draws:n,evidenceMax:n,meanAbsLift:+meanLift.toFixed(4),source:'exact-type-chronological-only',components:{longRate:W[0],recent6:W[1],recent12:W[2],recent20:W[3],transition:W[4],position:W[5],persistence:W[6]},top:scored.slice(0,5).map(x=>({digit:x.d,score:+x.s.toFixed(4),rank:x.q.__v22DigitFlowRank}))};
 }
+
 
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
@@ -11015,6 +11017,14 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __v22FinalMeta=__v22DigitFlowRank(c,rs);
     const __v22Valid=c.filter(x=>x.gate),__v22Ordered=__v22Valid.length?__v22Valid:c;
     if(__v22Ordered.length){top=__v22Ordered[0];second=__v22Ordered.find(x=>Number(x.digit)!==Number(top.digit))||second;}
+    /* V2.3 SELECTOR LIFT — exact-OOS verified type gate. */
+    const __v23TypeName=String(routeCtx?.name||rs.at(-1)?.name||'');
+    const __v23SafeTypes=new Set(['หุ้นไทยเช้า','หุ้นไทยเย็น','ลาวอาเซียน','ลาวสามัคคีVIP','ฮานอยเช้า','ฮานอยอาเซียน','ฮานอยทีวี','ฮานอยกาชาด']);
+    if(__v23SafeTypes.has(__v23TypeName)){
+      applyTop2DNA(c,rs);
+      const __v23Valid=c.filter(x=>x.gate),__v23Ordered=__v23Valid.length?__v23Valid:c;
+      if(__v23Ordered.length){top=__v23Ordered[0];second=__v23Ordered.find(x=>Number(x.digit)!==Number(top.digit))||second;}
+    }
     const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
     const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
