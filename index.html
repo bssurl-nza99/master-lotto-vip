@@ -2,7 +2,7 @@
 <!-- V1.7.3 Navigation Radar + Runtime Fix: frozen holdout + neighbor robustness + family stability; formulas 1-9 preserved -->
 <!-- V1 CLEAN BUILD: fresh nine-formula engine; legacy precision layers removed. -->
 <html lang="th">
-<!-- RESEARCH CANDIDATE: PENETRATION GUARDED HYBRID; UI/DATA/DATES/F1-F9 FROZEN; D1/D2 SELECTION PATH UNCHANGED. -->
+<!-- RESEARCH CANDIDATE: V3.8 POSITIONAL-FLOW GUARDED; UI/DATA/DATES/F1-F9 FROZEN; D1/D2 SELECTION PATH UNCHANGED. -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -6927,7 +6927,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V3.1 RESEARCH GATED</div>
+  <div class="pill">V3.8 POSITIONAL FLOW GUARDED</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -8254,7 +8254,7 @@ function audit(rs){const __pt0=window.__PERFTRACE__.begin("audit"); try {
 } finally { window.__PERFTRACE__.end("audit",__pt0); }}
 function formulaClusters(rs){const hs=Object.fromEntries(FORMULAS.map(f=>[f,formulaHistory(rs,f).map(x=>x.pred.join(''))]));const groups=[];for(const f of FORMULAS){let g=groups.find(z=>hs[z[0]].join('|')===hs[f].join('|'));if(g)g.push(f);else groups.push([f])}return groups}
 function reliabilityWeight(x){const r=Number(x?.rel??50);return Math.max(.25,Math.min(1.25,.35+.90/(1+Math.exp(-(r-55)/8))))}
-function digitHistory(rs){const d=Array.from({length:10},()=>({tests:0,hits:0,last:null,miss:0,maxMiss:0}));for(let i=0;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;for(const f of FORMULAS){const p=execFormula(f,rs[i],i?rs[i-1]:null);if(!p)continue;const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);for(const dg of new Set(p)){const q=d[dg],ok=target.includes(dg);q.tests++;if(ok){q.hits++;q.miss=0}else{q.miss++;q.maxMiss=Math.max(q.maxMiss,q.miss)}q.last=rs[i+1].date}}}return d.map((x,dg)=>({...x,digit:dg,rate:x.tests?pct(x.hits,x.tests):null,score:x.tests?Math.max(0,Math.min(100,(x.hits+.5)/(x.tests+1)*100)):50}))}
+function digitHistory(rs){const d=Array.from({length:10},()=>({tests:0,hits:0,last:null,miss:0,maxMiss:0}));for(let i=0;i<rs.length-1;i++){if(rs[i+1]?.breakBefore||!/^\d{3}$/.test(String(rs[i+1]?.n3||''))||!/^\d{2}$/.test(String(rs[i+1]?.n2||'')))continue;for(const f of FORMULAS){const p=execFormula(f,rs[i],i?rs[i-1]:null);if(!p)continue;const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);for(const dg of new Set(p)){const q=d[dg],ok=target.includes(dg);q.tests++;if(ok){q.hits++;q.miss=0}else{q.miss++;q.maxMiss=Math.max(q.maxMiss,q.miss)}q.last=rs[i+1].date}}}return d.map((x,dg)=>({...x,digit:dg,rate:x.tests?pct(x.hits,x.tests):null,score:x.tests?Math.max(0,Math.min(100,(x.hits+.5)/(x.tests+1)*100)):50}))}
 function recentShift(x){return x.horizon?.length>=6?(x.horizon[0].rate+x.horizon[1].rate)/2-(x.horizon[4].rate+x.horizon[5].rate)/2:0}
 function decisionKey(q){return `${q.digit}|c${Math.min(3,q.count)}|r${Math.min(4,Math.floor(q.risk))}|h${q.historyRate==null?'u':Math.min(4,Math.floor(q.historyRate/10))}|cf${q.confidence||'ต่ำ'}`}
 const decisionMemoryCache=new WeakMap();
@@ -13714,7 +13714,7 @@ function __buildForensicAnalysisPack(){
   const worst=rows.filter(x=>!x.selectionHit).slice().sort((a,b)=>Number(b.targetRank||99)-Number(a.targetRank||99)||((b.rankDropRawToMeta||0)+(b.rankDropMetaToSignal||0)+(b.rankDropSignalToContext||0)+(b.rankDropContextToCalibration||0)+(b.rankDropCalibrationToGuardrail||0))-((a.rankDropRawToMeta||0)+(a.rankDropMetaToSignal||0)+(a.rankDropSignalToContext||0)+(a.rankDropContextToCalibration||0)+(a.rankDropCalibrationToGuardrail||0))).slice(0,30);
   let champions={};try{const raw=localStorage.getItem(__EVO_STORE_KEY);champions=raw?JSON.parse(raw)||{}:{}}catch(_){champions={}};
   const timing=window.__LAST_RUN_TIMING__||null;
-  const report={type:'SELECTOR_FORENSIC_ANALYSIS_PACK',version:'V3.0',generatedAt:new Date().toISOString(),purpose:'รวมข้อมูล Forensic ทั้งหมดไว้จุดเดียวสำหรับวิเคราะห์ Selector; Diagnostic ไม่เปลี่ยนคะแนน',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),preBoardLoss:boardLoss,selectorLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,allRounds:null,allRoundsCount:total};
+  const report={type:'SELECTOR_FORENSIC_ANALYSIS_PACK',version:'V3.2',generatedAt:new Date().toISOString(),purpose:'รวมข้อมูล Forensic ทั้งหมดไว้จุดเดียวสำหรับวิเคราะห์ Selector; Diagnostic ไม่เปลี่ยนคะแนน',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),preBoardLoss:boardLoss,selectorLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,allRounds:null,allRoundsCount:total};
   return report;
 }
 function __forensicEscape(v){return esc(v==null?'':String(v))}
@@ -13729,7 +13729,7 @@ function __forensicSection(title,key,body,text){return `<section class="forensic
 */
 function __buildSelectorDecisionAudit(){
   const rows=__SELECTOR_DIAGNOSTIC__.rows||[],n=rows.length;
-  if(!n)return {type:'SELECTOR_DECISION_AUDIT',version:'V3.0',total:0};
+  if(!n)return {type:'SELECTOR_DECISION_AUDIT',version:'V3.2',total:0};
   const pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
   const c={selection:0,top2:0,inBoard:0,damage:0,rescue:0,loss:0,top2MissThenRescue:0};
   const rankBuckets={top1:{tests:0,hits:0},top2:{tests:0,hits:0},top3_5:{tests:0,hits:0},top6_10:{tests:0,hits:0},out:{tests:0,hits:0}};
@@ -15494,6 +15494,52 @@ function __condD2Adjustment(mem,routeCtx,d1,d2){
   if(Math.abs(adj)<.008)return{adj:0,rate:z.rate,tests:z.tests,source:z.source};
   return{adj,rate:z.rate,tests:z.tests,source:z.source};
 }
+/* V3.2 INBOARD RECOVERY · STRICT EXACT-TYPE OOS RESEARCH GATE
+   Purpose: repair genuine pre-board losses without peeking at the future target.
+   Only prior completed OOS rounds of the exact lottery type are used.
+   A non-gated candidate may be promoted to the real board/selector only when
+   its historical recovery band has enough evidence and beats the route baseline.
+   No family/global fallback; bounded lift; one candidate max per round. */
+function __brEnsure(mem){
+  if(!mem)return null;
+  if(!mem.boardRecovery)mem.boardRecovery={route:new Map()};
+  return mem.boardRecovery;
+}
+function __brBand(rank){const r=Number(rank||99);if(r<=2)return 'R1_2';if(r<=5)return 'R3_5';if(r<=8)return 'R6_8';return 'R9_10';}
+function __brStore(st,key,hit){const z=st.get(key)||{tests:0,hits:0};z.tests++;if(hit)z.hits++;st.set(key,z);}
+function __brUpdate(mem,routeCtx,rawBoard,targetSet){
+  const br=__brEnsure(mem);if(!br||!Array.isArray(rawBoard)||!targetSet)return;
+  const route=String(routeCtx?.name||'__none__'),store=br.route.get(route)||new Map();
+  const sorted=rawBoard.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  for(let i=0;i<Math.min(8,sorted.length);i++){
+    const q=sorted[i],hit=targetSet.has(Number(q.digit));
+    if(q?.gate)continue;
+    const key=__brBand(i+1);__brStore(store,key,hit);
+  }
+  br.route.set(route,store);
+}
+function __brApply(c,mem,routeCtx){
+  if(!Array.isArray(c)||!c.length||!mem)return{applied:false,moved:0,source:'disabled',tests:0};
+  const br=__brEnsure(mem),route=String(routeCtx?.name||'__none__'),store=br?.route?.get(route);if(!store)return{applied:false,moved:0,source:'exact-type-oos',tests:0};
+  const ranked=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  const candidates=[];
+  for(let i=0;i<Math.min(8,ranked.length);i++){
+    const q=ranked[i];if(q?.gate||!q?.rawCount)continue;
+    const z=store.get(__brBand(i+1));if(!z||z.tests<18)continue;
+    const rate=(z.hits+8*.5)/(z.tests+8),base=.3563,edge=rate-base;
+    if(rate<.38||edge<.045)continue;
+    const trust=Math.min(1,z.tests/60),gap=Number(ranked[0]?.score||0)-Number(q.score||0);
+    if(gap>.12||Number(q.risk||0)>=2.75)continue;
+    const lift=Math.min(.045,Math.max(.012,edge*.22*trust));
+    candidates.push({q,rank:i+1,rate,tests:z.tests,edge,lift,gap});
+  }
+  if(!candidates.length)return{applied:false,moved:0,source:'exact-type-oos',tests:0};
+  candidates.sort((a,b)=>b.edge-a.edge||a.gap-b.gap||a.rank-b.rank);
+  const best=candidates[0];best.q.score=Math.max(0,Number(best.q.score||0)+best.lift);best.q.gate=true;best.q.boardRecoveryApplied=true;best.q.boardRecoveryAdj=+best.lift.toFixed(3);best.q.boardRecoveryRate=+(best.rate*100).toFixed(1);best.q.boardRecoveryTests=best.tests;best.q.boardRecoveryRawRank=best.rank;best.q.boardRecoverySource='exact-type-oos';
+  c.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  return{applied:true,moved:1,digit:Number(best.q.digit),rawRank:best.rank,rate:best.rate,tests:best.tests,lift:best.lift,source:'exact-type-oos'};
+}
+
 function __stageMemoryNew(){return{route:new Map(),family:new Map(),total:0,hits:0};}
 function __stageMemKey(stage,from,to){return `${stage}|${__stageRankBand(from)}>${__stageRankBand(to)}`;}
 function __stageBaseKey(stage){return `__BASE__|${stage}`;}
@@ -17155,13 +17201,13 @@ function __v22DigitFlowRank(c,history){
   for(let i=1;i<rs.length;i++){const prev=new Set(digs(rs[i-1])),cur=new Set(digs(rs[i]));for(const d of prev){persistBase[d]++;if(cur.has(d))persistence[d]++;}}
   const rate=(a,d)=>a.length? a.filter(x=>x===d).length/a.length:.1;
   const trans=(d)=>{let hit=0,den=0;for(const p of lastSet){const b=transBase.get(p)||0;hit+=(transCount.get(String(p)+'>'+String(d))||0);den+=b}return den?(hit+1)/(den+10):.1};
-  const pos=(d)=>{const a=posCount[d];const tot=a.reduce((x,y)=>x+y,0);return tot?(a.reduce((x,y)=>x+y,0)/Math.max(1,4*n)):.1};
+  const pos=(d)=>{const a=posCount[d];const per=a.map(v=>v/Math.max(1,n));return per.reduce((x,y)=>x+y,0)/4};
   const pers=d=>persistBase[d]?(persistence[d]+1)/(persistBase[d]+2):.5;
   const W=[-.359,.055,.150,.064,-.212,.093,-.598];
   const scored=c.map(q=>{const d=Number(q.digit);const f=[rate(all,d),rate(recent6,d),rate(recent12,d),rate(recent20,d),trans(d),pos(d),pers(d)];const s=f.reduce((z,v,i)=>z+W[i]*v,0);return{q,d,f,s};}).sort((a,b)=>b.s-a.s||b.q.independentSupport-a.q.independentSupport||a.d-b.d);
   const vals=scored.map(x=>x.s),lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(.0001,hi-lo);
   const meanLift=scored.reduce((z,x)=>z+Math.abs((x.s-(lo+hi)/2)/span),0)/scored.length;
-  const before=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit).toString()).map(x=>Number(x.digit));
+  const before=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).map(x=>Number(x.digit));
   scored.forEach((x,i)=>{x.q.__v22DigitFlowScore=x.s;x.q.__v22DigitFlowEvidence=n;x.q.__v22DigitFlowRank=i+1;});
   const __v30Type=String(rs.at(-1)?.name||'').normalize('NFC').replace(/\s+/g,'').replaceAll('เชา้','เช้า').replaceAll('เทีย่ง','เที่ยง').replaceAll('อาเซยี น','อาเซียน').replaceAll('หุ้นน','หุ้น');
   const __v30Safe=new Set(['หุ้นไทยบ่าย','ฮานอยทีวี','ลาวสามัคคีVIP','ลาวพัฒนา','ฮานอยพิเศษ','ฮานอยHD','ลาวกาชาด']);
@@ -17172,8 +17218,21 @@ function __v22DigitFlowRank(c,history){
       c.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
     }
   }else{
-    scored.forEach((x)=>{x.q.score=x.s;});
-    c.splice(0,c.length,...scored.map(x=>x.q));
+    /* V3.8 SCORE-INTEGRITY GUARD: non-validated flow is evidence only.
+       Never replace the accumulated ensemble score/rank with the raw flow score.
+       Apply at most one bounded lift, exact-type chronological evidence only. */
+    const __v37Already=c.some(q=>q.__v37FlowApplied);
+    if(!__v37Already){
+      scored.forEach((x)=>{
+        const norm=span>0?(x.s-lo)/span:.5;
+        const rawLift=(norm-.5)*.055*Math.min(1,n/24);
+        const lift=Math.max(-.018,Math.min(.018,rawLift));
+        x.q.__v22DigitFlowLift=+lift.toFixed(5);
+        x.q.__v37FlowApplied=true;
+        x.q.score=Math.max(0,Number(x.q.score||0)+lift);
+      });
+      c.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+    }
   }
   const after=scored.map(x=>x.d),moved=after.reduce((z,d,i)=>z+(before[i]!==d?1:0),0);
   return{version:'V2.2',applied:true,moved,draws:n,evidenceMax:n,meanAbsLift:+meanLift.toFixed(4),source:'exact-type-chronological-only',components:{longRate:W[0],recent6:W[1],recent12:W[2],recent20:W[3],transition:W[4],position:W[5],persistence:W[6]},top:scored.slice(0,5).map(x=>({digit:x.d,score:+x.s.toFixed(4),rank:x.q.__v22DigitFlowRank}))};
@@ -17264,6 +17323,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __rankPairMeta=__rpApply(c,routeCtx?.__stageAwareMemory||null,routeCtx);
     const __conditionalMeta=__condApply(c,routeCtx?.__stageAwareMemory||null,routeCtx);
     const __r35RepairMeta=__r35Apply(c,routeCtx?.__stageAwareMemory||null,routeCtx,__baselineRankMap);
+    const __boardRecoveryMeta=__brApply(c,routeCtx?.__stageAwareMemory||null,routeCtx);
     const __v2IntelligenceMeta=__v2SelectorIntelligence(c,rs);
      const __v21RankCalibrationMeta=__v21RankCalibration(c,rs);
     const __v22DigitFlowMeta=__v22EarlyMeta;
@@ -17292,10 +17352,17 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
       if(__v23Ordered.length){top=__v23Ordered[0];second=__v23Ordered.find(x=>Number(x.digit)!==Number(top.digit))||second;}
     }
     const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,boardRecoveryMeta:__boardRecoveryMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
+}
+function __v36FormulaUnionShadow(rec, priorRows){
+  if(!rec||!/^[0-9]{3}$/.test(String(rec.n3||''))||!/^[0-9]{2}$/.test(String(rec.n2||'')))return {active:false,pred:[],source:'invalid'};
+  const A=+rec.n3[0],B=+rec.n3[1],C=+rec.n3[2],D=+rec.n2[0],E=+rec.n2[1];
+  const defs=[['U1',A+E+2],['U2',C+E-2],['U3',10-E+2]];
+  const pred=[]; for(const [id,v] of defs){const d=((v%10)+10)%10; pred.push({id,pred:[d,(d+1)%10]});}
+  return {active:true,pred,source:'exact-type-chronological-shadow'};
 }
 async function __coopOosBundle(rs,routeCtx=null){
   /* V2.0: lexical safety guard for Type-Aware research metadata.
@@ -17340,7 +17407,7 @@ async function __coopOosBundle(rs,routeCtx=null){
     const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),targetDigits:target,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,formulaAudit:__formulaAudit,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length,stageRanks:__targetRanks,targetRanksAll:__targetRanksAll,stagePrevRanks:__stagePrevRanks,stageTop:__stageTop5,optimizerCandidates:(()=>{const src=__diagBoardForRow.slice(0,10),st=__st,arr=k=>(Array.isArray(st[k])?st[k]:[]),mp=k=>new Map(arr(k).map(x=>[Number(x.digit),Number(x.score||0)])),maps={raw:mp('raw'),signal:mp('afterSignal'),context:mp('afterContext'),calibration:mp('afterCalibration'),guardrail:mp('afterGuardrail'),midRank:mp('afterMidRankRecovery'),rolePair:mp('afterRolePair'),selfCorrection:mp('afterSelfCorrection')};return src.map(q=>{const d=Number(q.digit),overlap={};for(const z of src){if(Number(z.digit)!==d){const a=new Set(q.formulas||[]),b=new Set(z.formulas||[]),u=new Set([...a,...b]);overlap[String(z.digit)]=u.size?([...a].filter(f=>b.has(f)).length/u.size):0}}return{digit:d,gate:!!q.gate,formulas:Array.isArray(q.formulas)?q.formulas.slice():[],independentSupport:Number(q.independentSupport||0),support:Number(q.support||0),geminiScore:Number(q.geminiScore??.5),radarSupport:Number(q.radarSupport||0),baselineRank:__baselineRankMap.get(d)||10,overlap,stages:Object.fromEntries(Object.entries(maps).map(([k,m])=>[k,m.get(d)??Number(q.score||0)]))}})})(),rankDropsByTarget:__rankDropsByTarget,rankDropRawToMeta:__rankDrop(__rawRank,__metaRank),rankDropMetaToGemini:__rankDrop(__metaRank,__stageRankMap((__st.afterGemini||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit))),rankDropGeminiToSignal:__rankDrop(__stageRankMap((__st.afterGemini||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit)),__signalRank),rankDropMetaToSignal:__rankDrop(__metaRank,__signalRank),rankDropSignalToContext:__rankDrop(__signalRank,__contextRank),rankDropContextToCalibration:__rankDrop(__contextRank,__calRank),rankDropCalibrationToGuardrail:__rankDrop(__calRank,__guardRank),rankDropGuardrailToMidRank:__rankDrop(__guardRank,__targetRanks.afterMidRankRecovery||null),rankDropMidRankToTrajectory:__rankDrop(__targetRanks.afterMidRankRecovery||null,__targetRanks.afterTrajectory||null),rankDropTrajectoryToRankOutcome:__rankDrop(__targetRanks.afterTrajectory||null,__targetRanks.afterRankOutcome||null),rankDropRankOutcomeToCandidateOutcome:__rankDrop(__targetRanks.afterRankOutcome||null,__targetRanks.afterCandidateOutcome||null),rankDropSelfLearningToRolePair:__rankDrop(__targetRanks.afterSelfLearning||null,__targetRanks.afterRolePair||null),rankDropRolePairToSelfCorrection:__rankDrop(__targetRanks.afterRolePair||null,__targetRanks.afterSelfCorrection||null),selectorDamage:__boardTop2Hit&&!pairHit,selectorRescued:!__boardTop2Hit&&pairHit,gateTop:Array.isArray(__st.afterCandidateOutcome)?!!__st.afterCandidateOutcome[0]?.gate:false,selectedTopScore:sel.selection?.d1?.score??null,selectedSecondScore:sel.selection?.d2?.score??null,selectedMargin:sel.selection?.margin??null,selectedConfidence:sel.selection?.confidence??null,v2IntelligenceMeta:__diag.v2IntelligenceMeta||null,v22DigitFlowMeta:__diag.v22DigitFlowMeta||null,v21RankCalibrationMeta:__diag.v21RankCalibrationMeta||null,guardrailApplied:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.guardrailApplied),midRankRecoveryApplied:Array.isArray(__st.afterMidRankRecovery)&&__st.afterMidRankRecovery.some(x=>x.midRankRecoveryApplied),trajectoryApplied:Array.isArray(__st.afterTrajectory)&&__st.afterTrajectory.some(x=>x.trajectoryArbitrationApplied),rankOutcomeApplied:Array.isArray(__st.afterRankOutcome)&&__st.afterRankOutcome.some(x=>x.rankOutcomeApplied),candidateOutcomeApplied:Array.isArray(__st.afterCandidateOutcome)&&__st.afterCandidateOutcome.some(x=>x.candidateOutcomeApplied),geminiApplied:!!__diag.geminiMeta?.applied,geminiWeight:__diag.geminiMeta?.weight??null,geminiLift:__diag.geminiMeta?.lift??null,geminiTests:__diag.geminiMeta?.tests??0,geminiSource:__diag.geminiMeta?.source||null,geminiTop:__diag.geminiMeta?.top||[],transitionPairApplied:!!__diag.transitionPairMeta?.applied,transitionPairWeight:__diag.transitionPairMeta?.weight??null,transitionPairLift:__diag.transitionPairMeta?.lift??null,transitionPairTests:__diag.transitionPairMeta?.tests??0,transitionPairSource:__diag.transitionPairMeta?.source||null,transitionPairTop:__diag.transitionPairMeta?.top||[],rolePairMeta:__diag.rolePairMeta||null,conditionalMeta:__diag.conditionalMeta||null,swapShieldApplied:!!__diag.swapShieldMeta?.applied,swapShieldMeta:__diag.swapShieldMeta||null,selfLearningApplied:!!__diag.selfLearningMeta?.selected&&__diag.selfLearningMeta.selected.id!=='P00',selfLearningPolicy:__diag.selfLearningMeta?.selected?.id||'P00',selfLearningRate:__diag.selfLearningMeta?.selected?.rate??null,selfLearningTests:__diag.selfLearningMeta?.selected?.tests??0,selfLearningBaseRate:__diag.selfLearningMeta?.baseRate??null,selfLearningPolicies:__diag.selfLearningMeta?.policies?.map(x=>({id:x.id,tests:x.tests,rate:x.rate,d1:x.d1,d2:x.d2}))||[],rescueApplied:!!__st.afterRescue?.rescueApplied,rescueDigit:__st.afterRescue?.rescueDigit??null,rescueGuardApproved:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.rescueGuardApproved)};
     diagnostic.push(__diagRow);
     
-    if(routeCtx){ if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
+    if(routeCtx){ if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __brUpdate(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
