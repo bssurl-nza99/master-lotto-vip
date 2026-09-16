@@ -6913,22 +6913,6 @@ html{scroll-behavior:auto!important}
 .penetration-hero-note{margin:-2px 0 12px;padding:8px 10px;border-radius:9px;background:rgba(212,175,55,.08);font-size:.68rem;color:#6f5b35;line-height:1.45}
 .penetration-hero .global-kpi:first-child{border:2px solid rgba(46,125,50,.28);background:rgba(46,125,50,.055)}
 </style>
-<script>
-/* V4.2 INTERNAL CHALLENGER
-   UI / CARDS / CALENDAR / DATES / LOTTERY NAMES / LOTTERY TYPES: FROZEN.
-   Exact-type evidence only. Additive bounded lift. No future-data access.
-*/
-(function(){
-  "use strict";
-  window.__V42_INTERNAL = {
-    version: "V4.2",
-    mode: "exact-type-oos-guarded",
-    uiFrozen: true,
-    dataFrozen: true
-  };
-})();
-</script>
-
 </head>
 <body>
 <canvas id="snow"></canvas>
@@ -6943,7 +6927,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V3.1 RESEARCH GATED</div>
+  <div class="pill">V4.3 2D / YIGI RESEARCH GATED</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -17982,6 +17966,64 @@ window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=run
   });
   obs.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['hidden','style','class']});
 window.__TEST_EXPORTS__={parseInput,sortRecords,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle};
+})();
+</script>
+<script id="V43_2D_YIGI_ADAPTER">
+/* V4.3 RESEARCH CANDIDATE
+   - Existing i67/general lottery UI, dates, names, types and cards are frozen.
+   - Adds only explicitly authorized YIGI / Myanmar 2D presentation adapters.
+   - Myanmar 2D is a dedicated 2-digit engine namespace; it must not enter F1-F9.
+   - YIGI keeps the ordinary 2-digit card: 2 headline digits + 10 pairs.
+   - Myanmar 2D card: 3 headline digits + 5 pairs per headline digit = 15 pairs.
+   - No production promotion is performed here; OOS proof remains mandatory.
+*/
+(function(){
+  'use strict';
+  const V43={version:'V4.3',scope:'exact-type-only',production:false};
+  const norm10=v=>((Number(v)%10)+10)%10;
+  const isYigi=n=>/^(?:yigi|ยี่กี)$/i.test(String(n||'').trim());
+  const isMyanmar2D=n=>/^(?:เมียนมา\s*2D|เมียนมา|Myanmar\s*2D|မြန်မာ\s*2D)$/i.test(String(n||'').trim());
+  /* Dedicated 2D representation. It deliberately never calls F1-F9. */
+  function parse2DStream(rows){
+    return (rows||[]).map((r,i)=>{
+      const s=String(r?.value??r?.n2??r?.result??'').replace(/\D/g,'').padStart(2,'0').slice(-2);
+      return {i,digits:[Number(s[0]),Number(s[1])],date:r?.date??'',session:r?.session??'unspecified',raw:s};
+    }).filter(r=>/^\d{2}$/.test(r.raw));
+  }
+  function twoDigitTargetHit(pred,target){
+    const t=target?.digits||[];return (pred||[]).some(d=>t.includes(Number(d)));
+  }
+  /* Simple shadow baselines for research only: recency-weighted digit frequency,
+     transition-conditioned digit frequency, and a conservative blend. */
+  function rank2D(rows,windowSize=24){
+    const rs=parse2DStream(rows); const h=rs.slice(-Math.max(4,windowSize));
+    const freq=Array.from({length:10},()=>0),trans=Array.from({length:10},()=>0);
+    h.forEach((r,i)=>{const w=0.55+0.45*(i+1)/h.length;r.digits.forEach(d=>freq[d]+=w)});
+    for(let i=1;i<h.length;i++){const prev=h[i-1].digits,cur=h[i].digits;cur.forEach(d=>prev.forEach(p=>trans[(p+d)%10] += 1));}
+    const score=Array.from({length:10},(_,d)=>({d,score:freq[d]/Math.max(1,h.length)+0.35*trans[d]/Math.max(1,h.length-1)}));
+    return score.sort((a,b)=>b.score-a.score||a.d-a.d).slice(0,3).map(x=>x.d);
+  }
+  function pairSetForDigit(rows,anchor,windowSize=24){
+    const rs=parse2DStream(rows),h=rs.slice(-Math.max(6,windowSize)),cnt=new Map();
+    h.forEach(r=>{const has=r.digits.includes(anchor);if(!has)return; for(let d=0;d<10;d++){const k=`${anchor}${d}`;cnt.set(k,(cnt.get(k)||0)+((r.digits.includes(d))?1:0));}});
+    const base=Array.from({length:10},(_,d)=>({pair:`${anchor}${d}`,score:(cnt.get(`${anchor}${d}`)||0)}));
+    return base.sort((a,b)=>b.score-a.score||a.pair.localeCompare(b.pair)).slice(0,5).map(x=>x.pair);
+  }
+  function buildMyanmar2DCard(c){
+    const d=(c?.digits||[c?.d1,c?.d2,c?.d3]).filter(x=>x!==undefined).slice(0,3).map(Number);
+    while(d.length<3)d.push(null);
+    return {...c,lotteryName:c?.lotteryName||'เมียนมา 2D',d1:d[0],d2:d[1],d3:d[2],d1Pairs:(c?.d1Pairs||[]).slice(0,5),d2Pairs:(c?.d2Pairs||[]).slice(0,5),d3Pairs:(c?.d3Pairs||[]).slice(0,5),twoDCard:true};
+  }
+  function buildYigiCard(c){return {...c,d1Pairs:(c?.d1Pairs||[]).slice(0,5),d2Pairs:(c?.d2Pairs||[]).slice(0,5),twoDCard:true};}
+  function metricBundle(rows,windowSize=24){
+    const rs=parse2DStream(rows),tests=[]; for(let i=1;i<rs.length;i++){
+      const train=rs.slice(0,i),pred=rank2D(train,windowSize),target=rs[i];
+      tests.push({i,pred,target,hit:twoDigitTargetHit(pred,target),exact:pred.slice(0,2).every(d=>target.digits.includes(d))});
+    }
+    const n=tests.length,h=tests.filter(x=>x.hit).length,e=tests.filter(x=>x.exact).length;
+    return {tests:n,hitRate:n?+(100*h/n).toFixed(2):null,exact2Rate:n?+(100*e/n).toFixed(2):null,window:windowSize};
+  }
+  window.__V43_2D__={...V43,isYigi,isMyanmar2D,parse2DStream,rank2D,pairSetForDigit,buildMyanmar2DCard,buildYigiCard,metricBundle};
 })();
 </script>
 </body>
