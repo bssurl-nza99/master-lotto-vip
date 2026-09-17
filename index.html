@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D Predictor - Pro High Accuracy</title>
+    <title>Myanmar 2D Predictor - Structured 15 Pairs</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 650px;
+            max-width: 680px;
             margin: 0 auto;
             background: #fff;
             padding: 25px;
@@ -83,8 +83,8 @@
         .top-container {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-bottom: 25px;
+            gap: 25px;
+            margin-bottom: 20px;
         }
         .top-item {
             display: flex;
@@ -92,13 +92,13 @@
             align-items: center;
         }
         .top-circle {
-            width: 50px;
-            height: 50px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #fff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -106,9 +106,25 @@
         .top-1 { background: linear-gradient(135deg, #f39c12, #d35400); }
         .top-2 { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
         .top-3 { background: linear-gradient(135deg, #3498db, #2980b9); }
-        .top-label { font-size: 11px; margin-top: 5px; font-weight: 600; color: #666; }
+        .top-label { font-size: 11px; margin-top: 4px; font-weight: 600; color: #666; }
 
-        /* เลขเจาะ 5 คู่ต่อแถว */
+        /* ส่วนแสดงแถวเลขเจาะแยกตามเด่น (แถวละ 5 คู่) */
+        .section-group {
+            margin-top: 15px;
+            background: #fafbfc;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .grid-pairs {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -117,23 +133,22 @@
         .pair-box {
             background: #fff;
             border: 1px solid #ddd;
-            border-radius: 10px;
+            border-radius: 8px;
             text-align: center;
-            padding: 10px 0;
-            font-size: 16px;
+            padding: 8px 0;
+            font-size: 15px;
             font-weight: 600;
         }
-        /* สีเน้นตามอันดับ */
-        .highlight-1 { background-color: #fffdf0; border-color: #f39c12; color: #d35400; }
-        .highlight-2 { background-color: #f4f6f7; border-color: #95a5a6; color: #2c3e50; }
-        .highlight-3 { background-color: #fcf3cf; border-color: #f1c40f; color: #b7950b; }
-        .normal { background-color: #fff; color: #333; }
+        /* สีเน้นตามความสำคัญของแถวเด่น */
+        .row-1 .pair-box { background-color: #fffdf0; border-color: #f39c12; color: #d35400; }
+        .row-2 .pair-box { background-color: #f4f6f7; border-color: #95a5a6; color: #2c3e50; }
+        .row-3 .pair-box { background-color: #fcf3cf; border-color: #f1c40f; color: #b7950b; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (High Accuracy)</h2>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (แยก 15 คู่ระเบียบเป๊ะ)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ซ้าย = รอบเที่ยง | ขวา = รอบเย็น):</label>
@@ -163,86 +178,67 @@
         document.getElementById('resultContainer').style.display = 'none';
     }
 
-    // อัลกอริทึมเพิ่มความแม่นยำ (ถ่วงน้ำหนักข้อมูลล่าสุด + กรองเลขซ้ำ)
-    function analyzeHighAccuracy(numberList) {
+    // ฟังก์ชันคำนวณแยก 5 คู่ต่อเลขเด่นแต่ละตัว (รวม 15 คู่) ไม่ปะปนกัน
+    function analyzeStructuredPairs(numberList) {
         let freq = {};
-        let pairFreq = {};
-
-        // ให้น้ำหนักข้อมูลท้ายตาราง (ข้อมูลล่าสุด) มากกว่า เพื่อจับเทรนด์ปัจจุบัน
         numberList.forEach((num, index) => {
             if (num && num.length === 2) {
-                let weight = 1 + (index / numberList.length); // ยิ่งบรรทัดล่างสุด (ล่าสุด) น้ำหนักยิ่งมาก
-                let d1 = num[0];
-                let d2 = num[1];
-
-                freq[d1] = (freq[d1] || 0) + weight;
-                freq[d2] = (freq[d2] || 0) + weight;
-
-                // เก็บสถิติการจับคู่จริงจากประวัติ
-                pairFreq[num] = (pairFreq[num] || 0) + (weight * 2);
+                let weight = 1 + (index / numberList.length);
+                freq[num[0]] = (freq[num[0]] || 0) + weight;
+                freq[num[1]] = (freq[num[1]] || 0) + weight;
             }
         });
 
-        // หาเลขเด่น Top 3
         let sortedDigits = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
         let t1 = sortedDigits[0] || '0';
         let t2 = sortedDigits[1] || '3';
         let t3 = sortedDigits[2] || '2';
 
-        // สร้างรายการคู่ที่เป็นไปได้จาก Top และประวัติจริง
-        let candidatePairs = [];
+        // สร้างฟังก์ชันหา 5 คู่เฉพาะเจาะจงสำหรับเลขเด่นแต่ละตัว
+        function get5PairsForDigit(targetDigit, list) {
+            let partnerCount = {};
+            list.forEach(num => {
+                if (num.includes(targetDigit)) {
+                    let partner = (num[0] === targetDigit) ? num[1] : num[0];
+                    partnerCount[partner] = (partnerCount[partner] || 0) + 1;
+                }
+            });
 
-        // 1. ดึงคู่ที่เคยออกจริงและตรงกับเลขเด่น
-        let sortedPairs = Object.keys(pairFreq).sort((a, b) => pairFreq[b] - pairFreq[a]);
-        sortedPairs.forEach(p => {
-            if ((p[0] === t1 || p[0] === t2 || p[0] === t3 || p[1] === t1 || p[1] === t2 || p[1] === t3)) {
-                candidatePairs.push(p);
+            let sortedPartners = Object.keys(partnerCount).sort((a, b) => partnerCount[b] - partnerCount[a]);
+            let defaults = ['0','1','2','3','4','5','6','7','8','9'].filter(d => d !== targetDigit);
+            let combined = [...sortedPartners, ...defaults];
+
+            let pairs = [];
+            let seen = new Set();
+            for (let p of combined) {
+                let pairStr = targetDigit + p; // ขึ้นต้นด้วยเลขเด่นตัวนั้นๆ ชัดเจน
+                if (!seen.has(pairStr) && !seen.has(p + targetDigit) && pairs.length < 5) {
+                    pairs.push(pairStr);
+                    seen.add(pairStr);
+                    seen.add(p + targetDigit);
+                }
+                if (pairs.length === 5) break;
             }
-        });
-
-        // 2. เติมคู่ผสมจาก Top 1, 2, 3 เผื่อไว้กรณีคู่ประวัติศาสตร์ไม่พอ
-        let matrix = [
-            t1+t2, t2+t1, t1+t3, t3+t1, t2+t3, t3+t2,
-            t1+t1, t2+t2, t3+t3, t1+'0', t2+'5', t3+'7', t1+'8', t2+'4', t3+'9'
-        ];
-        matrix.forEach(p => candidatePairs.push(p));
-
-        // กรองเลขซ้ำ (เช่น ถ้ามี 03 แล้ว จะไม่เอา 30 หรือตัวที่ซ้ำกันกลับหน้าหลัง)
-        let uniquePairs = [];
-        let seenNormalized = new Set();
-
-        candidatePairs.forEach(p => {
-            // จัดเรียงตัวเลขน้อย-มาก หรือใช้ตัวแทน เพื่อตัดเลขกลับกัน (เช่น 03 กับ 30 ถือเป็นคู่เดียวกัน)
-            let normalized = p.split('').sort().join('');
-            // หรือถ้าต้องการเลขตรงๆ ไม่ให้ซ้ำกันเลยในลูป
-            if (!uniquePairs.includes(p) && !uniquePairs.includes(p[1]+p[0]) && uniquePairs.length < 5) {
-                uniquePairs.push(p);
-            }
-        });
-
-        // ถ้ายังไม่ครบ 5 คู่ เติมให้ครบ
-        let fallback = [t1+t2, t2+t3, t1+t3, t1+'0', t2+'5'];
-        for(let f of fallback) {
-            if(uniquePairs.length < 5 && !uniquePairs.includes(f) && !uniquePairs.includes(f[1]+f[0])) {
-                uniquePairs.push(f);
-            }
+            return pairs;
         }
 
-        return { t1, t2, t3, pairs: uniquePairs.slice(0, 5) };
+        let pairsT1 = get5PairsForDigit(t1, numberList);
+        let pairsT2 = get5PairsForDigit(t2, numberList);
+        let pairsT3 = get5PairsForDigit(t3, numberList);
+
+        return { t1, t2, t3, pairsT1, pairsT2, pairsT3 };
     }
 
     function generateCardHTML(title, roundText, data) {
-        let gridHTML = '';
-        data.pairs.forEach((p, index) => {
-            let styleClass = 'normal';
-            if (index === 0) styleClass = 'highlight-1';
-            else if (index === 1) styleClass = 'highlight-2';
-            else if (index === 2) styleClass = 'highlight-3';
-
-            gridHTML += `<div class="pair-box ${styleClass}">${p}</div>`;
-        });
-
         let today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+
+        let renderRow = (pairs) => {
+            let html = '';
+            pairs.forEach(p => {
+                html += `<div class="pair-box">${p}</div>`;
+            });
+            return html;
+        };
 
         return `
             <div class="card-header">
@@ -255,6 +251,7 @@
                 </div>
                 <div class="date-badge">${today}</div>
             </div>
+            
             <div class="top-container">
                 <div class="top-item">
                     <div class="top-circle top-1">${data.t1}</div>
@@ -269,8 +266,23 @@
                     <span class="top-label">Top 3</span>
                 </div>
             </div>
-            <div class="grid-pairs">
-                ${gridHTML}
+
+            <!-- แถวที่ 1: เลขเจาะของ Top 1 (5 คู่) -->
+            <div class="section-group row-1">
+                <div class="section-title">⭐ เลขเจาะชุดเด่น Top 1 (${data.t1})</div>
+                <div class="grid-pairs">${renderRow(data.pairsT1)}</div>
+            </div>
+
+            <!-- แถวที่ 2: เลขเจาะของ Top 2 (5 คู่) -->
+            <div class="section-group row-2">
+                <div class="section-title">⚪ เลขเจาะชุดเด่น Top 2 (${data.t2})</div>
+                <div class="grid-pairs">${renderRow(data.pairsT2)}</div>
+            </div>
+
+            <!-- แถวที่ 3: เลขเจาะของ Top 3 (5 คู่) -->
+            <div class="section-group row-3">
+                <div class="section-title">🔵 เลขเจาะชุดเด่น Top 3 (${data.t3})</div>
+                <div class="grid-pairs">${renderRow(data.pairsT3)}</div>
             </div>
         `;
     }
@@ -312,9 +324,9 @@
             return;
         }
 
-        let lunchData = analyzeHighAccuracy(lunchNumbers);
-        let eveningData = analyzeHighAccuracy(eveningNumbers);
-        let allDayData = analyzeHighAccuracy(allDayNumbers);
+        let lunchData = analyzeStructuredPairs(lunchNumbers);
+        let eveningData = analyzeStructuredPairs(eveningNumbers);
+        let allDayData = analyzeStructuredPairs(allDayNumbers);
 
         document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "รอบเที่ยง (12:01 PM)", lunchData);
         document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "รอบเย็น (04:30 PM)", eveningData);
