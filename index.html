@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D Luxury VIP Classic</title>
+    <title>Myanmar 2D Backtest & Performance Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -14,7 +14,7 @@
             padding: 15px;
         }
         .container {
-            max-width: 760px; /* ขยายความกว้างให้โปร่ง ไม่เบียด */
+            max-width: 820px;
             margin: 0 auto;
             background: #ffffff;
             padding: 25px;
@@ -31,9 +31,9 @@
             border-radius: 10px;
             font-family: 'Prompt', sans-serif;
             box-sizing: border-box;
-            height: 130px;
+            height: 160px;
             resize: vertical;
-            font-size: 14px;
+            font-size: 13px;
         }
         .btn-group {
             display: flex;
@@ -53,9 +53,34 @@
         .btn-process { background-color: #1b5e20; color: white; }
         .btn-process:hover { background-color: #0d3811; }
         .btn-clear { background-color: #ffc107; color: #333; }
-        .btn-reset { background-color: #c62828; color: white; }
 
-        /* การ์ดสไตล์เดิม แต่เปลี่ยนพื้นหลังเป็นสีครีมอ่อนๆ ละมุนตา ขยายกว้างขึ้น */
+        /* สรุปภาพรวมสถิติ Backtest */
+        .summary-box {
+            background: linear-gradient(145deg, #e8f5e9, #c8e6c9);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 1px solid #a5d6a7;
+        }
+        .summary-box h3 { margin-top: 0; color: #1b5e20; font-size: 18px; border-bottom: 2px dashed #a5d6a7; padding-bottom: 10px; }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border: 1px solid #c8e6c9;
+        }
+        .stat-card .val { font-size: 20px; font-weight: 700; color: #2e7d32; margin-top: 4px; }
+        .stat-card .sub { font-size: 12px; color: #555; }
+
+        /* การ์ดแสดงผลลัพธ์รายรอบ/วัน */
         .card {
             background: linear-gradient(145deg, #fdfbf7, #f7f3ea);
             border-radius: 24px;
@@ -76,7 +101,6 @@
         .flag { font-size: 28px; }
         .title-text h3 { margin: 0; font-size: 18px; color: #222; }
         
-        /* ป้ายเวลากว้างขึ้น ป้องกันการตกบรรทัด */
         .time-badge {
             font-size: 12px;
             color: #854d0e;
@@ -101,7 +125,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
 
-        /* เลขเด่นวงกลมด้านบน */
         .top-container {
             display: flex;
             justify-content: center;
@@ -131,7 +154,6 @@
         .top-3-circle { background: linear-gradient(135deg, #0d47a1, #1976d2); }
         .top-label { font-size: 11px; font-weight: 600; color: #555; }
 
-        /* ส่วนกลุ่มเลขเจาะ (สไตล์ตามรูปตัวอย่างของคุณ) */
         .section-group {
             margin-top: 14px;
             background: #ffffff;
@@ -145,6 +167,8 @@
             font-weight: 600;
             margin-bottom: 8px;
             color: #444;
+            display: flex;
+            justify-content: space-between;
         }
         .grid-pairs {
             display: grid;
@@ -160,59 +184,172 @@
             border: 1px solid;
         }
         
-        /* สีสันกลุ่มเลขตามภาพต้นฉบับของคุณ */
         .row-1 .pair-box { background-color: #fffbf0; border-color: #fde047; color: #a16207; }
         .row-2 .pair-box { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
         .row-3 .pair-box { background-color: #fffbf0; border-color: #fde047; color: #a16207; }
+
+        .hit-badge {
+            background: #d4edda;
+            color: #155724;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .miss-badge {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .log-table th, .log-table td {
+            padding: 10px 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .log-table th { background: #f1f5f9; color: #333; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Classic Luxury VIP)</h2>
+    <h2>🇲🇲 ระบบทดสอบย้อนหลัง (Backtest Performance Engine)</h2>
     
     <div class="form-group">
-        <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
-        <textarea id="dataInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
+        <label for="dataInput">ข้อมูลสถิติ (ตั้งแต่ มิ.ย. ถึง ก.ย. 69):</label>
+        <textarea id="dataInput">🗓 02  มิ.ย 69 :   42 -- 60
+🗓 04  มิ.ย 69 :   02 -- 90
+🗓 05  มิ.ย 69 :   65 -- 06
+🗓 08  มิ.ย 69 :   96 -- 83
+🗓 09  มิ.ย 69 :   45 -- 56
+🗓 10  มิ.ย 69 :   96 -- 99
+🗓 11  มิ.ย 69 :   28 -- 23
+🗓 12  มิ.ย 69 :   98 -- 11
+🗓 15  มิ.ย 69 :   82 -- 28
+🗓 16  มิ.ย 69 :   35 -- 51
+🗓 17  มิ.ย 69 :   26 -- 79
+🗓 18  มิ.ย 69 :   36 -- 66
+🗓 19  มิ.ย 69 :   24 -- 01
+🗓 22  มิ.ย 69 :   60 -- 39
+🗓 23  มิ.ย 69 :   98 -- 06
+🗓 24  มิ.ย 69 :   68 -- 29
+🗓 25  มิ.ย 69 :   66 -- 52
+🗓 26  มิ.ย 69 :   62 -- 48
+🗓 29  มิ.ย 69 :   59 -- 16
+🗓 30  มิ.ย 69 :   73 -- 48
+🗓 01  ก.ค 69 :   30 -- 33
+🗓 02  ก.ค 69 :   29 -- 60
+🗓 03  ก.ค 69 :   38 -- 82
+🗓 06  ก.ค 69 :   01 -- 81
+🗓 07  ก.ค 69 :   79 -- 34
+🗓 08  ก.ค 69 :   83 -- 52
+🗓 09  ก.ค 69 :   66 -- 05
+🗓 10  ก.ค 69 :   75 -- 55
+🗓 13  ก.ค 69 :   48 -- 02
+🗓 14  ก.ค 69 :   17 -- 33
+🗓 15  ก.ค 69 :   80 -- 16
+🗓 16  ก.ค 69 :   76 -- 97
+🗓 17  ก.ค 69 :   53 -- 43
+🗓 20  ก.ค 69 :   66 -- 00
+🗓 21  ก.ค 69 :   57 -- 70
+🗓 22  ก.ค 69 :   58 -- 41
+🗓 22  ก.ค 69 :   03 -- 39
+🗓 23  ก.ค 69 :   15 -- 94
+🗓 26  ก.ค 69 :   85 -- 73
+🗓 30  ก.ค 69 :   30 -- 17
+🗓 31  ก.ค 69 :   16 -- 42
+🗓 03  ส.ค 69 :   20 -- 05
+🗓 04  ส.ค 69 :   71 -- 37
+🗓 05  ส.ค 69 :   87 -- 83
+🗓 06  ส.ค 69 :   31 -- 45
+🗓 07  ส.ค 69 :   75 -- 01
+🗓 10  ส.ค 69 :   27 -- 61
+🗓 11  ส.ค 69 :   56 -- 20
+🗓 13  ส.ค 69 :   54 -- 63
+🗓 14  ส.ค 69 :   13 -- 68
+🗓 17  ส.ค 69 :   23 -- 40
+🗓 18  ส.ค 69 :   19 -- 28
+🗓 19  ส.ค 69 :   53 -- 60
+🗓 20  ส.ค 69 :   69 -- 92
+🗓 21  ส.ค 69 :   60 -- 80
+🗓 24  ส.ค 69 :   22 -- 53
+🗓 25  ส.ค 69 :   11 -- 13
+🗓 26  ส.ค 69 :   78 -- 29
+🗓 27  ส.ค 69 :   35 -- 04
+🗓 28  ส.ค 69 :   85 -- 20
+🗓 31  ส.ค 69 :   79 -- 64
+🗓 01  ก.ย 69 :   87 -- 83
+🗓 02  ก.ย 69 :   17 -- 77
+🗓 03  ก.ย 69 :   71 -- 23
+🗓 04  ก.ย 69 :   26 -- 81
+🗓 07  ก.ย 69 :   59 -- 22
+🗓 08  ก.ย 69 :   38 -- 98
+🗓 09  ก.ย 69 :   96 -- 90
+🗓 10  ก.ย 69 :   75 -- 78
+🗓 11  ก.ย 69 :   69 -- 23
+🗓 14  ก.ย 69 :   82 -- 79
+🗓 15  ก.ย 69 :   13 -- 68
+🗓 16  ก.ย 69 :   57 -- 31
+🗓 17  ก.ย 69 :   04 -- 41</textarea>
     </div>
 
     <div class="btn-group">
-        <button class="btn-process" onclick="processAllCards()">ประมวลผลความแม่นยำสูง</button>
-        <button class="btn-clear" onclick="clearInput()">ล้างข้อมูล</button>
-        <button class="btn-reset" onclick="resetAll()">รีเซ็ตทั้งหมด</button>
+        <button class="btn-process" onclick="runBacktest()">เริ่มรัน Backtest ตรวจสอบผลงาน</button>
+        <button class="btn-clear" onclick="document.getElementById('dataInput').value=''">ล้างข้อมูล</button>
     </div>
 
     <div id="resultContainer" style="display: none;">
-        <div class="card" id="cardLunch"></div>
-        <div class="card" id="cardEvening"></div>
-        <div class="card" id="cardAllDay"></div>
+        <div class="summary-box" id="summarySection"></div>
+        <div class="card" id="latestCard"></div>
+        
+        <div class="card" style="padding: 20px;">
+            <h3 style="margin-top:0; color:#1b5e20;">📋 ตารางบันทึกผลการทดสอบย้อนหลังรายวัน (Walk-Forward Log)</h3>
+            <div style="overflow-x: auto;">
+                <table class="log-table" id="logTable">
+                    <thead>
+                        <tr>
+                            <th>วันที่</th>
+                            <th>ออกจริง (เที่ยง/เย็น)</th>
+                            <th>รอบเที่ยง (12:01 PM)</th>
+                            <th>รอบเย็น (4:30 PM)</th>
+                            <th>ชุดทั้งวัน (All Day)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    function clearInput() { document.getElementById('dataInput').value = ''; }
-    function resetAll() {
-        document.getElementById('dataInput').value = '';
-        document.getElementById('resultContainer').style.display = 'none';
-    }
-
-    // อัลกอริทึมความแม่นยำสูงและเสถียร
-    function analyzeClassicPrecision(numberList, isEvening = false, lunchNum = '') {
+    function analyzePrecision(historyList, isEvening = false, lunchNum = '') {
         let freq = {};
-        let total = numberList.length;
-        
-        numberList.forEach((num, index) => {
+        let total = historyList.length;
+        if (total === 0) return { t1:'7', t2:'1', t3:'5', c1:0, c2:0, c3:0, pairsT1:[], pairsT2:[], pairsT3:[] };
+
+        historyList.forEach((num, index) => {
             if (num && num.length === 2) {
-                let weight = Math.exp((index / total) * 3.0); 
-                let d1 = num[0], d2 = num[1];
-                freq[d1] = (freq[d1] || 0) + weight;
-                freq[d2] = (freq[d2] || 0) + weight;
+                let weight = Math.exp((index / total) * 2.8);
+                freq[num[0]] = (freq[num[0]] || 0) + weight;
+                freq[num[1]] = (freq[num[1]] || 0) + weight;
             }
         });
 
         if (isEvening && lunchNum && lunchNum.length === 2) {
-            freq[lunchNum[0]] = (freq[lunchNum[0]] || 0) + 20.0;
-            freq[lunchNum[1]] = (freq[lunchNum[1]] || 0) + 20.0;
+            freq[lunchNum[0]] = (freq[lunchNum[0]] || 0) + 15.0;
+            freq[lunchNum[1]] = (freq[lunchNum[1]] || 0) + 15.0;
         }
 
         let sortedDigits = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
@@ -224,7 +361,7 @@
             let partnerCount = {};
             list.forEach((num, idx) => {
                 if (num && num.length === 2) {
-                    let w = Math.exp((idx / list.length) * 2.2);
+                    let w = Math.exp((idx / list.length) * 2.0);
                     if (num.includes(targetDigit)) {
                         let partner = (num[0] === targetDigit) ? num[1] : num[0];
                         partnerCount[partner] = (partnerCount[partner] || 0) + (w * 2.5);
@@ -234,7 +371,7 @@
 
             let mirrorMap = { '0':'5', '1':'6', '2':'7', '3':'8', '4':'9', '5':'0', '6':'1', '7':'2', '8':'3', '9':'4' };
             let mDigit = mirrorMap[targetDigit];
-            partnerCount[mDigit] = (partnerCount[mDigit] || 0) + 6.0;
+            partnerCount[mDigit] = (partnerCount[mDigit] || 0) + 5.0;
 
             let sortedPartners = Object.keys(partnerCount).sort((a, b) => partnerCount[b] - partnerCount[a]);
             let defaults = ['0','1','2','3','4','5','6','7','8','9'].filter(d => d !== targetDigit);
@@ -244,126 +381,221 @@
             let seen = new Set();
             for (let p of combined) {
                 let pairStr = targetDigit + p;
-                if (!seen.has(pairStr) && !seen.has(p + targetDigit) && pairs.length < 5) {
+                let revStr = p + targetDigit;
+                if (!seen.has(pairStr) && !seen.has(revStr) && pairs.length < 5) {
                     pairs.push(pairStr);
                     seen.add(pairStr);
-                    seen.add(p + targetDigit);
+                    seen.add(revStr);
                 }
                 if (pairs.length === 5) break;
             }
             return pairs.sort((a, b) => parseInt(a) - parseInt(b));
         }
 
-        // นับจำนวนสมาชิกที่เจอในสถิติเพื่อแสดงในวงเล็บ เช่น Top 1 (3)
-        let countOccurrences = (target) => {
-            let count = 0;
-            numberList.forEach(num => { if (num.includes(target)) count++; });
-            return count;
+        let countOcc = (target) => {
+            let c = 0;
+            historyList.forEach(n => { if (n.includes(target)) c++; });
+            return c;
         };
 
-        return { 
-            t1, t2, t3, 
-            c1: countOccurrences(t1),
-            c2: countOccurrences(t2),
-            c3: countOccurrences(t3),
-            pairsT1: getOptimizedPairs(t1, numberList), 
-            pairsT2: getOptimizedPairs(t2, numberList), 
-            pairsT3: getOptimizedPairs(t3, numberList) 
+        return {
+            t1, t2, t3,
+            c1: countOcc(t1),
+            c2: countOcc(t2),
+            c3: countOcc(t3),
+            pairsT1: getOptimizedPairs(t1, historyList),
+            pairsT2: getOptimizedPairs(t2, historyList),
+            pairsT3: getOptimizedPairs(t3, historyList)
         };
     }
 
-    function generateCardHTML(title, roundTextBurmese, dateString, data) {
+    function checkHit(predictionData, targetNum) {
+        if (!targetNum || targetNum.length !== 2) return false;
+        let allPairs = [...predictionData.pairsT1, ...predictionData.pairsT2, ...predictionData.pairsT3];
+        let revTarget = targetNum[1] + targetNum[0];
+        return allPairs.includes(targetNum) || allPairs.includes(revTarget);
+    }
+
+    function runBacktest() {
+        const rawText = document.getElementById('dataInput').value.trim();
+        if (!rawText) { alert('กรุณากรอกข้อมูลสถิติ'); return; }
+
+        const lines = rawText.split('\n');
+        let records = [];
+
+        lines.forEach(line => {
+            if (line.includes('--')) {
+                let parts = line.split(':');
+                if (parts.length >= 2) {
+                    let datePart = parts[0].replace('🗓', '').trim();
+                    let results = parts[1].split('--');
+                    let lunch = results[0] ? results[0].trim() : '';
+                    let evening = results[1] ? results[1].trim() : '';
+                    if (lunch.length === 2 && evening.length === 2) {
+                        records.lt = records.lt || [];
+                        records.push({ date: datePart, lunch: lunch, evening: evening });
+                    }
+                }
+            }
+        });
+
+        if (records.length === 0) { alert('ไม่พบรูปแบบข้อมูลที่ถูกต้อง'); return; }
+
+        let lunchHistory = [];
+        let eveningHistory = [];
+        let allDayHistory = [];
+
+        let stats = {
+            lunch: { hits: 0, misses: 0, currentStreak: 0, maxDrawdown: 0 },
+            evening: { hits: 0, misses: 0, currentStreak: 0, maxDrawdown: 0 },
+            allday: { hits: 0, misses: 0, currentStreak: 0, maxDrawdown: 0 }
+        };
+
+        let logRowsHTML = '';
+        let lastPredictionLatest = null;
+
+        records.forEach((rec, idx) => {
+            // คำนวณก่อนแข่งของวันนั้น (ใช้สถิติตั้งแต่อดีตจนถึงวันก่อนหน้า)
+            let predLunch = analyzePrecision(lunchHistory, false, '');
+            let predEvening = analyzePrecision(eveningHistory, true, rec.lunch);
+            let predAllDay = analyzePrecision(allDayHistory, false, '');
+
+            let hitLunch = checkHit(predLunch, rec.lunch);
+            let hitEvening = checkHit(predEvening, rec.evening);
+            let hitAllDay = checkHit(predAllDay, rec.lunch) || checkHit(predAllDay, rec.evening);
+
+            // บันทึกสถิติรอบเที่ยง
+            if (idx >= 5) { // เริ่มเก็บสถิติตั้งแต่วันที่ 6 เป็นต้นไปเพื่อให้มีฐานข้อมูลพอสมควร
+                if (hitLunch) {
+                    stats.lunch.hits++;
+                    stats.lunch.currentStreak = 0;
+                } else {
+                    stats.lunch.misses++;
+                    stats.lunch.currentStreak++;
+                    if (stats.lunch.currentStreak > stats.lunch.maxDrawdown) stats.lunch.maxDrawdown = stats.lunch.currentStreak;
+                }
+
+                if (hitEvening) {
+                    stats.evening.hits++;
+                    stats.evening.currentStreak = 0;
+                } else {
+                    stats.evening.misses++;
+                    stats.evening.currentStreak++;
+                    if (stats.evening.currentStreak > stats.evening.maxDrawdown) stats.evening.maxDrawdown = stats.evening.currentStreak;
+                }
+
+                if (hitAllDay) {
+                    stats.allday.hits++;
+                    stats.allday.currentStreak = 0;
+                } else {
+                    stats.allday.misses++;
+                    stats.allday.currentStreak++;
+                    if (stats.allday.currentStreak > stats.allday.maxDrawdown) stats.allday.maxDrawdown = stats.allday.currentStreak;
+                }
+            }
+
+            logRowsHTML += `<tr>
+                <td><b>${rec.date}</b></td>
+                <td>เที่ยง: <b style="color:#d97706">${rec.lunch}</b> / เย็น: <b style="color:#2563eb">${rec.evening}</b></td>
+                <td>${idx >= 5 ? (hitLunch ? '<span class="hit-badge">เข้า</span>' : '<span class="miss-badge">หลุด</span>') : '-'}</td>
+                <td>${idx >= 5 ? (hitEvening ? '<span class="hit-badge">เข้า</span>' : '<span class="miss-badge">หลุด</span>') : '-'}</td>
+                <td>${idx >= 5 ? (hitAllDay ? '<span class="hit-badge">เข้า</span>' : '<span class="miss-badge">หลุด</span>') : '-'}</td>
+            </tr>`;
+
+            // สะสมประวัติ
+            lunchHistory.push(rec.lunch);
+            eveningHistory.push(rec.evening);
+            allDayHistory.push(rec.lunch);
+            allDayHistory.push(rec.evening);
+
+            if (idx === records.length - 1) {
+                lastPredictionLatest = { predAllDay, recDate: rec.date };
+            }
+        });
+
+        let totalTestRounds = records.length - 5;
+
+        // แสดงผลสรุป
+        document.getElementById('summarySection').innerHTML = `
+            <h3>📊 สรุปผลการทดสอบย้อนหลัง (Backtest Performance Summary)</h3>
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="sub">รอบเที่ยง (12:01 PM)</div>
+                    <div class="val">${stats.lunch.hits} / ${totalTestRounds} รอบ</div>
+                    <div class="sub" style="color:c62828; margin-top:4px;">หลุดติดต่อกันสูงสุด: <b>${stats.lunch.maxDrawdown} รอบ</b></div>
+                </div>
+                <div class="stat-card">
+                    <div class="sub">รอบเย็น (4:30 PM)</div>
+                    <div class="val">${stats.evening.hits} / ${totalTestRounds} รอบ</div>
+                    <div class="sub" style="color:c62828; margin-top:4px;">หลุดติดต่อกันสูงสุด: <b>${stats.evening.maxDrawdown} รอบ</b></div>
+                </div>
+                <div class="stat-card">
+                    <div class="sub">ชุดทั้งวัน (All Day)</div>
+                    <div class="val">${stats.allday.hits} / ${totalTestRounds} วัน</div>
+                    <div class="sub" style="color:c62828; margin-top:4px;">หลุดติดต่อกันสูงสุด: <b>${stats.allday.maxDrawdown} วัน</b></div>
+                </div>
+            </div>
+        `;
+
+        // แสดงการ์ดทำนายตัวล่าสุด
+        let latestData = lastPredictionLatest.predAllDay;
         let renderRow = (pairs) => {
             let html = '';
             pairs.forEach(p => { html += `<div class="pair-box">${p}</div>`; });
             return html;
         };
 
-        return `
+        document.getElementById('latestCard').innerHTML = `
             <div class="card-header">
                 <div class="card-title-area">
                     <span class="flag">🇲🇲</span>
                     <div class="title-text">
-                        <h3>${title}</h3>
-                        <div class="time-badge">${roundTextBurmese}</div>
+                        <h3>Myanmar 2D (ชุดล่าสุดหลัง Backtest)</h3>
+                        <div class="time-badge">ชุดทั้งวัน (All Day Pro Engine)</div>
                     </div>
                 </div>
-                <div class="date-badge">${dateString}</div>
+                <div class="date-badge">อ้างอิงข้อมูลล่าสุด (${lastPredictionLatest.recDate})</div>
             </div>
             
             <div class="top-container">
                 <div class="top-item">
-                    <div class="top-circle top-1-circle">${data.t1}</div>
+                    <div class="top-circle top-1-circle">${latestData.t1}</div>
                     <span class="top-label">Top 1</span>
                 </div>
                 <div class="top-item">
-                    <div class="top-circle top-2-circle">${data.t2}</div>
+                    <div class="top-circle top-2-circle">${latestData.t2}</div>
                     <span class="top-label">Top 2</span>
                 </div>
                 <div class="top-item">
-                    <div class="top-circle top-3-circle">${data.t3}</div>
+                    <div class="top-circle top-3-circle">${latestData.t3}</div>
                     <span class="top-label">Top 3</span>
                 </div>
             </div>
 
             <div class="section-group row-1">
-                <div class="section-title">Top 1 (${data.c1})</div>
-                <div class="grid-pairs">${renderRow(data.pairsT1)}</div>
+                <div class="section-title"><span>Top 1 (${latestData.c1})</span></div>
+                <div class="grid-pairs">${renderRow(latestData.pairsT1)}</div>
             </div>
 
             <div class="section-group row-2">
-                <div class="section-title">Top 2 (${data.c2})</div>
-                <div class="grid-pairs">${renderRow(data.pairsT2)}</div>
+                <div class="section-title"><span>Top 2 (${latestData.c2})</span></div>
+                <div class="grid-pairs">${renderRow(latestData.pairsT2)}</div>
             </div>
 
             <div class="section-group row-3">
-                <div class="section-title">Top 3 (${data.c3})</div>
-                <div class="grid-pairs">${renderRow(data.pairsT3)}</div>
+                <div class="section-title"><span>Top 3 (${latestData.c3})</span></div>
+                <div class="grid-pairs">${renderRow(latestData.pairsT3)}</div>
             </div>
         `;
-    }
 
-    function processAllCards() {
-        const rawText = document.getElementById('dataInput').value.trim();
-        if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
-
-        const lines = rawText.split('\n');
-        let lunchNumbers = [], eveningNumbers = [], allDayNumbers = [];
-        let lastLunchNum = '';
-
-        lines.forEach(line => {
-            if (line.includes('--')) {
-                let parts = line.split(':');
-                if (parts.length >= 2) {
-                    let results = parts[1].split('--');
-                    let lunchNum = results[0] ? results[0].trim() : '';
-                    let eveningNum = results[1] ? results[1].trim() : '';
-
-                    if (lunchNum.length === 2) { 
-                        lunchNumbers.push(lunchNum); 
-                        allDayNumbers.push(lunchNum); 
-                        lastLunchNum = lunchNum;
-                    }
-                    if (eveningNum.length === 2) { 
-                        eveningNumbers.push(eveningNum); 
-                        allDayNumbers.push(eveningNum); 
-                    }
-                }
-            }
-        });
-
-        let dateStr = "18/09/2026";
-
-        let lunchData = analyzeClassicPrecision(lunchNumbers, false, '');
-        let eveningData = analyzeClassicPrecision(eveningNumbers, true, lastLunchNum);
-        let allDayData = analyzeClassicPrecision(allDayNumbers, false, '');
-
-        document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "နေ့လည် (12:01 PM)", dateStr, lunchData);
-        document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "ညနေ (4:30 PM)", dateStr, eveningData);
-        document.getElementById('cardAllDay').innerHTML = generateCardHTML("Myanmar 2D", "ชุดทั้งวัน (All Day)", dateStr, allDayData);
-
+        document.getElementById('logTableBody').innerHTML = logRowsHTML;
         document.getElementById('resultContainer').style.display = 'block';
     }
+
+    // รันอัตโนมัติเมื่อโหลดหน้า
+    window.onload = function() {
+        runBacktest();
+    };
 </script>
 
 </body>
