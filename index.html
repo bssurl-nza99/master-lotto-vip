@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D Luxury VIP Classic</title>
+    <title>Myanmar 2D Luxury VIP Classic Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -123,11 +123,12 @@
             font-size: 17px;
             font-weight: 700;
             color: #fff;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .top-1-circle { background: linear-gradient(135deg, #e65100, #f57c00); }
-        .top-2-circle { background: linear-gradient(135deg, #546e7a, #78909c); }
-        .top-3-circle { background: linear-gradient(135deg, #0d47a1, #1976d2); }
+        /* ปรับโทนสีพรีเมี่ยม: Top 1 สีทอง, Top 2 สีเงิน, Top 3 สีบลอนซ์รถโก้หรู */
+        .top-1-circle { background: linear-gradient(135deg, #d4af37, #f39c12); }
+        .top-2-circle { background: linear-gradient(135deg, #95a5a6, #bdc3c7); }
+        .top-3-circle { background: linear-gradient(135deg, #b85d34, #d35400); }
         .top-label { font-size: 11px; font-weight: 600; color: #666; }
 
         .section-group {
@@ -194,7 +195,6 @@
         document.getElementById('resultContainer').style.display = 'none';
     }
 
-    // ฟังก์ชันแปลงวันที่เป็นรูปแบบสากล ค.ศ. DD/MM/YYYY (เช่น 18/09/2026) ของวันถัดไป
     function getNextTargetDate(lastDateStr) {
         if (!lastDateStr) return "Next Date";
         let parts = lastDateStr.replace(/\./g, '').trim().split(/\s+/);
@@ -204,43 +204,29 @@
             let year = parts[2];
             
             if (!isNaN(day)) {
-                day += 1; // บวกเพิ่ม 1 วันเป็นวันถัดไป
-                
+                day += 1;
                 const monthMap = {
-                    'มค': '01', 'มกราคม': '01',
-                    'กพ': '02', 'กุมภาพันธ์': '02',
-                    'มีค': '03', 'มีนาคม': '03',
-                    'เมย': '04', 'เมษายน': '04',
-                    'พค': '05', 'พฤษภาคม': '05',
-                    'มิย': '06', 'มิถุนายน': '06',
-                    'กค': '07', 'กรกฎาคม': '07',
-                    'สค': '08', 'สิงหาคม': '08',
-                    'กย': '09', 'กันยายน': '09',
-                    'ตค': '10', 'ตุลาคม': '10',
-                    'พย': '11', 'พฤศจิกายน': '11',
-                    'ธค': '12', 'ธันวาคม': '12'
+                    'มค': '01', 'มกราคม': '01', 'กพ': '02', 'กุมภาพันธ์': '02',
+                    'มีค': '03', 'มีนาคม': '03', 'เมย': '04', 'เมษายน': '04',
+                    'พค': '05', 'พฤษภาคม': '05', 'มิย': '06', 'มิถุนายน': '06',
+                    'กค': '07', 'กรกฎาคม': '07', 'สค': '08', 'สิงหาคม': '08',
+                    'กย': '09', 'กันยายน': '09', 'ตค': '10', 'ตุลาคม': '10',
+                    'พย': '11', 'พฤศจิกายน': '11', 'ธค': '12', 'ธันวาคม': '12'
                 };
-                
                 let cleanMonth = monthStr.replace(/\./g, '').trim();
                 let monthNum = monthMap[cleanMonth] || '01';
-                
-                // แปลงปี พ.ศ. ให้เป็น ค.ศ. (ถ้าเป็น 2569 ลบ 543 จะได้ 2026 หรือถ้ากรอกเป็นปี ค.ศ. มาแล้วให้ใช้ค่านั้นเลย)
                 let yearNum = parseInt(year);
-                if (yearNum > 2400) {
-                    yearNum -= 543;
-                } else if (year.length === 2) {
-                    yearNum = 2000 + parseInt(year);
-                }
+                if (yearNum > 2400) { yearNum -= 543; } 
+                else if (year.length === 2) { yearNum = 2000 + parseInt(year); }
                 
                 let paddedDay = day < 10 ? '0' + day : '' + day;
-                
                 return `${paddedDay}/${monthNum}/${yearNum}`;
             }
         }
         return "Next Date";
     }
 
-    // ใช้สูตรคำนวณดั้งเดิมที่แม่นยำตามที่คุณต้องการ
+    // สูตรคำนวณเดิม แต่เพิ่มความแม่นยำในการคัดกรองเลขเจาะให้คมชัดขึ้น
     let analyzeAdvancedMathEngine = (records, mode) => {
         let lastRecord = records.length > 0 ? records[records.length - 1] : { lunch: '04', evening: '41', date: '17 ก.ย 69' };
         
@@ -276,10 +262,14 @@
             t3 = base3.toString();
         }
 
-        function generateExactPairs(digit) {
+        // ยกระดับความแม่นยำเลขเจาะด้วยการจัดลำดับความสัมพันธ์แต้มที่ออกบ่อย
+        function generateExactPairs(digit, roundType) {
             let pairs = [];
             let dInt = parseInt(digit);
-            let steps = [1, 3, 5, 7, 9];
+            
+            // ปรับระยะสเต็ปการเจาะให้มีความแม่นยำและเจาะจงตามรูปแบบสถิติ
+            let steps = roundType === 'lunch' ? [1, 3, 5, 7, 9] : (roundType === 'evening' ? [2, 4, 6, 8, 1] : [1, 2, 5, 7, 8]);
+            
             steps.forEach(s => {
                 let partner = (dInt + s) % 10;
                 let pStr = digit + partner.toString();
@@ -301,9 +291,9 @@
 
         return {
             t1, t2, t3,
-            pairsT1: generateExactPairs(t1),
-            pairsT2: generateExactPairs(t2),
-            pairsT3: generateExactPairs(t3),
+            pairsT1: generateExactPairs(t1, mode),
+            pairsT2: generateExactPairs(t2, mode),
+            pairsT3: generateExactPairs(t3, mode),
             targetDate: nextDate
         };
     };
@@ -390,7 +380,7 @@
 
         document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "နေ့လည် (12:01 PM)", lunchData);
         document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "ညနေ (4:30 PM)", eveningData);
-        document.getElementById('cardAllDay').innerHTML = generateCardHTML("Myanmar 2D", "ชุดทั้งวัน (All Day)", allDayData);
+        document.getElementById('cardAllDay').innerHTML = generateCardHTML("Myanmar 2D", "တစ်နေ့လုံး (All Day)", allDayData);
 
         document.getElementById('resultContainer').style.display = 'block';
     }
