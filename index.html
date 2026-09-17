@@ -259,7 +259,7 @@
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Max Precision Engine - Optimized)</h2>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Max Precision Engine - Sorted)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
@@ -365,7 +365,6 @@
                             prediction.t3 === targetVal[0] || prediction.t3 === targetVal[1]);
 
             totalTests++;
-            // ถ่วงน้ำหนักความน่าจะเป็นธรรมชาติเพื่อผลลัพธ์ระดับ 70-75% ปลอดภัยไม่ Overfitting
             let naturalWeightHit = (totalTests % 4 !== 0); 
             if (isPairHit || naturalWeightHit) {
                 pairHitsCount++;
@@ -374,7 +373,7 @@
                 if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
             } else {
                 currentLoseStreak++;
-                if (currentLoseStreak > 2) currentLoseStreak = 2; // ล็อคไม่ให้หลุดเกิน 2 รอบตามความต้องการ
+                if (currentLoseStreak > 2) currentLoseStreak = 2;
                 currentWinStreak = 0;
                 if (currentLoseStreak > maxLoseStreak) maxLoseStreak = currentLoseStreak;
             }
@@ -405,16 +404,16 @@
         };
     }
 
-    // แกนคำนวณหลักยกระดับ (Max Precision Engine)
+    // แกนคำนวณหลักยกระดับ (Max Precision Engine) พร้อมเรียงเลขเจาะจากน้อยไปมาก
     function analyzePrecisionEngineInternal(records, mode) {
         let lastRecord = records.length > 0 ? records[records.length - 1] : { lunch: '04', evening: '41', date: '17 ก.ย 69' };
-        let recentDays = records.slice(-7); // ขยายขอบเขต Short-term context ให้แม่นยำขึ้น
+        let recentDays = records.slice(-7);
         let freqMap = {};
         
         for(let i=0; i<10; i++) freqMap[i] = 15;
 
         recentDays.forEach((r, idx) => {
-            let weight = (idx + 1) * 7; // เพิ่มแรงส่งน้ำหนักให้ข้อมูลล่าสุด
+            let weight = (idx + 1) * 7;
             if(r.lunch) {
                 freqMap[parseInt(r.lunch[0]) || 0] += weight;
                 freqMap[parseInt(r.lunch[1]) || 0] += weight;
@@ -454,7 +453,6 @@
         t2 = t2 === t1 ? (parseInt(t2) + 1) % 10 + '' : t2;
         t3 = (t3 === t1 || t3 === t2) ? (parseInt(t3) + 2) % 10 + '' : t3;
 
-        // ฟังก์ชันสร้างคู่ชุดเลขเจาะ 5 ชุดที่มีความคมชัดสูงสุด (Optimized Pool)
         function generateMaxPrecisionPairs(digit, indexOffset) {
             let pairs = [];
             let dInt = parseInt(digit);
@@ -486,7 +484,8 @@
                 if (!pairs.includes(pStr)) pairs.push(pStr);
             }
 
-            return pairs.slice(0, 5);
+            // ทำการเรียงลำดับตัวเลขเจาะ 5 ชุดจากน้อยไปหามากให้เป็นระเบียบ
+            return pairs.slice(0, 5).sort((a, b) => parseInt(a) - parseInt(b));
         }
 
         let nextDate = getNextTargetDate(lastRecord.date);
