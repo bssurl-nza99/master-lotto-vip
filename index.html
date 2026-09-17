@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Myanmar 2D Luxury VIP Pro Advanced</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- โหลดไลบรารี html2canvas สำหรับแปลง HTML เป็นรูปภาพความคมชัดสูง -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Prompt', sans-serif;
@@ -57,14 +59,41 @@
         .btn-clear { background-color: #ffc107; color: #333; }
         .btn-reset { background-color: #c62828; color: white; }
 
+        .card-wrapper {
+            position: relative;
+            margin-top: 25px;
+        }
         .card {
             background: linear-gradient(145deg, #ffffff, #fcfbf9);
             border-radius: 24px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.05);
             padding: 24px 22px;
-            margin-top: 25px;
             border: 1px solid #eae5d9;
         }
+        /* ปุ่มแคปภาพการ์ด (จะถูกซ่อนอัตโนมัติเวลาสั่งเซฟภาพ) */
+        .btn-capture {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #1b5e20;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            z-index: 10;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-capture:hover {
+            background: #0d3811;
+        }
+
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -72,6 +101,7 @@
             border-bottom: 2px dashed #ede7d6;
             padding-bottom: 12px;
             margin-bottom: 22px;
+            padding-right: 70px; /* เว้นพื้นที่ให้ปุ่มแคปภาพไม่ทับข้อความ */
         }
         .card-title-area { display: flex; align-items: center; gap: 10px; }
         .flag { font-size: 24px; }
@@ -125,7 +155,6 @@
             color: #fff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
-        /* ปรับโทนสี Top 1, 2, 3 ให้หรูหรา ชัดเจน และพรีเมียม */
         .top-1-circle { background: linear-gradient(135deg, #d4af37, #f39c12); } /* สีทอง */
         .top-2-circle { background: linear-gradient(135deg, #718096, #a0aec0); } /* สีเงิน */
         .top-3-circle { background: linear-gradient(135deg, #b76e79, #d48377); } /* สีโรสโกลด์ */
@@ -182,9 +211,18 @@
     </div>
 
     <div id="resultContainer" style="display: none;">
-        <div class="card" id="cardLunch"></div>
-        <div class="card" id="cardEvening"></div>
-        <div class="card" id="cardAllDay"></div>
+        <div class="card-wrapper" id="wrapLunch">
+            <button class="btn-capture" onclick="captureCard('wrapLunch', 'Myanmar_2D_Lunch')">📷 แคปภาพ</button>
+            <div class="card" id="cardLunch"></div>
+        </div>
+        <div class="card-wrapper" id="wrapEvening">
+            <button class="btn-capture" onclick="captureCard('wrapEvening', 'Myanmar_2D_Evening')">📷 แคปภาพ</button>
+            <div class="card" id="cardEvening"></div>
+        </div>
+        <div class="card-wrapper" id="wrapAllDay">
+            <button class="btn-capture" onclick="captureCard('wrapAllDay', 'Myanmar_2D_AllDay')">📷 แคปภาพ</button>
+            <div class="card" id="cardAllDay"></div>
+        </div>
     </div>
 </div>
 
@@ -226,7 +264,6 @@
         return "Next Date";
     }
 
-    // สูตรเลขเด่น (Top 1, 2, 3) คงเดิมตามที่คุณต้องการ
     let analyzeAdvancedMathEngine = (records, mode) => {
         let lastRecord = records.length > 0 ? records[records.length - 1] : { lunch: '04', evening: '41', date: '17 ก.ย 69' };
         
@@ -262,12 +299,9 @@
             t3 = base3.toString();
         }
 
-        // ปรับปรุงสูตรเลขเจาะ (Audit & High-Precision Pairs Engine) ให้มีความแม่นยำและสมเหตุสมผลเชิงสถิตยศาสตร์มากขึ้น
         function generateAuditedPairs(digit, recordsContext) {
             let pairs = [];
             let dInt = parseInt(digit);
-            
-            // ใช้ความถี่และผลรวมของข้อมูลย้อนหลังมาถ่วงน้ำหนักการเจาะ เพื่อความแม่นยำระดับสูง
             let historicalWeights = [1, 3, 7, 9, 2, 4, 6, 8, 5];
             
             if (recordsContext && recordsContext.length > 0) {
@@ -283,17 +317,14 @@
             for (let i = 0; i < historicalWeights.length && pairs.length < 5; i++) {
                 let w = historicalWeights[i];
                 let partner = (dInt + w) % 10;
-                // สลับตำแหน่งหน้าหลังเพื่อครอบคลุมเลขกลับ (Direct & Reverse pairing)
                 let pStr = dInt.toString() + partner.toString();
                 let revStr = partner.toString() + dInt.toString();
                 
-                // คัดกรองตัวเลขที่ไม่ซ้ำกัน
                 if (!pairs.includes(pStr) && !pairs.includes(revStr) && pStr.length === 2) {
                     pairs.push(pStr);
                 }
             }
 
-            // กรณีเผื่อเหลือเผื่อขาด ให้เติมเต็มด้วยระบบสเต็ปคำนวณมาตรฐาน
             let fallbackSteps = [1, 3, 7, 5, 9, 2, 4, 6, 8];
             let stepIdx = 0;
             while (pairs.length < 5 && stepIdx < fallbackSteps.length) {
@@ -369,6 +400,35 @@
                 <div class="grid-pairs">${renderRow(data.pairsT3)}</div>
             </div>
         `;
+    }
+
+    // ฟังก์ชันแคปเจอร์การ์ดความคมชัดสูง (Scale 3x) และซ่อนปุ่มแคปภาพไม่ให้ติดรูป
+    function captureCard(wrapperId, filenamePrefix) {
+        const wrapperElement = document.getElementById(wrapperId);
+        const btnCapture = wrapperElement.querySelector('.btn-capture');
+
+        // ซ่อนปุ่มแคปภาพชั่วคราวก่อนจับภาพ
+        btnCapture.style.display = 'none';
+
+        html2canvas(wrapperElement, {
+            scale: 3, // เพิ่มความคมชัดระดับพรีเมียม (High DPI)
+            useCORS: true,
+            backgroundColor: '#f0f2f5'
+        }).then(canvas => {
+            // แสดงปุ่มแคปภาพกลับมาเหมือนเดิมทันที
+            btnCapture.style.display = 'flex';
+
+            // สร้างลิงก์ดาวน์โหลดรูปภาพ PNG อัตโนมัติ
+            let link = document.createElement('a');
+            link.download = `${filenamePrefix}_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            // กรณีเกิดข้อผิดพลาด ให้แสดงปุ่มคืนค่าเดิมเสมอ
+            btnCapture.style.display = 'flex';
+            alert('เกิดข้อผิดพลาดในการบันทึกภาพ กรุณาลองใหม่อีกครั้ง');
+            console.error(err);
+        });
     }
 
     function processAllCards() {
