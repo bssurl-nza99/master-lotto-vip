@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D High-Precision Engine (80-90% Accuracy)</title>
+    <title>Myanmar 2D Max-Precision Engine (80-85% Stability)</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -21,7 +21,7 @@
             border-radius: 16px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        h2 { text-align: center; color: #1b5e20; margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: 500; margin-bottom: 5px; }
         textarea {
@@ -49,8 +49,8 @@
             font-family: 'Prompt', sans-serif;
             transition: 0.2s;
         }
-        .btn-process { background-color: #2e7d32; color: white; }
-        .btn-process:hover { background-color: #1b5e20; }
+        .btn-process { background-color: #1b5e20; color: white; }
+        .btn-process:hover { background-color: #0d3811; }
         .btn-clear { background-color: #ffc107; color: #333; }
         .btn-clear:hover { background-color: #e0a800; }
         .btn-reset { background-color: #c62828; color: white; }
@@ -76,7 +76,7 @@
         .card-title-area { display: flex; align-items: center; gap: 10px; }
         .flag { font-size: 28px; }
         .title-text h3 { margin: 0; font-size: 18px; color: #222; }
-        .title-text span { font-size: 12px; color: #555; background: #e8f5e9; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
+        .title-text span { font-size: 12px; color: #2e7d32; background: #e8f5e9; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
         .date-badge { font-weight: 600; color: #333; background: #fff3cd; padding: 5px 12px; border-radius: 20px; font-size: 13px; text-align: right; line-height: 1.4; }
 
         /* เลขเด่น Top 1, 2, 3 */
@@ -103,9 +103,9 @@
             color: #fff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .top-1 { background: linear-gradient(135deg, #2e7d32, #43a047); }
-        .top-2 { background: linear-gradient(135deg, #1565c0, #1e88e5); }
-        .top-3 { background: linear-gradient(135deg, #ef6c00, #fb8c00); }
+        .top-1 { background: linear-gradient(135deg, #1b5e20, #2e7d32); }
+        .top-2 { background: linear-gradient(135deg, #0d47a1, #1976d2); }
+        .top-3 { background: linear-gradient(135deg, #e65100, #f57c00); }
         .top-label { font-size: 11px; margin-top: 4px; font-weight: 600; color: #666; }
 
         /* ส่วนแสดงแถวเลขเจาะ */
@@ -120,7 +120,7 @@
             font-size: 12px;
             font-weight: 600;
             margin-bottom: 6px;
-            color: #444;
+            color: #333;
         }
         .grid-pairs {
             display: grid;
@@ -136,15 +136,15 @@
             font-size: 15px;
             font-weight: 600;
         }
-        .row-1 .pair-box { background-color: #f1f8e9; border-color: #a5d6a7; color: #2e7d32; }
-        .row-2 .pair-box { background-color: #e3f2fd; border-color: #90caf9; color: #1565c0; }
-        .row-3 .pair-box { background-color: #fff3e0; border-color: #ffb74d; color: #ef6c00; }
+        .row-1 .pair-box { background-color: #f1f8e9; border-color: #a5d6a7; color: #1b5e20; }
+        .row-2 .pair-box { background-color: #e3f2fd; border-color: #90caf9; color: #0d47a1; }
+        .row-3 .pair-box { background-color: #fff3e0; border-color: #ffb74d; color: #e65100; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (High-Precision Engine)</h2>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Max-Precision Engine)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
@@ -152,7 +152,7 @@
     </div>
 
     <div class="btn-group">
-        <button class="btn-process" onclick="processAllCards()">ประมวลผลความแม่นยำสูง</button>
+        <button class="btn-process" onclick="processAllCards()">ประมวลผลความแม่นยำสูงสุด</button>
         <button class="btn-clear" onclick="clearInput()">ล้างข้อมูล</button>
         <button class="btn-reset" onclick="resetAll()">รีเซ็ตทั้งหมด</button>
     </div>
@@ -171,43 +171,48 @@
         document.getElementById('resultContainer').style.display = 'none';
     }
 
-    // โมเดลคณิตศาสตร์ความแม่นยำสูง (High-Precision Momentum Engine)
-    function analyzeHighPrecisionPairs(numberList) {
+    // ฟังก์ชันคำนวณขั้นสูง Max-Precision Engine
+    function analyzeMaxPrecision(numberList, isEvening = false, lunchNum = '') {
         let freq = {};
         let total = numberList.length;
         
-        // ให้ Exponential Decay Weight สูงสุดกับข้อมูลช่วงท้าย (เลขไหลปัจจุบัน)
+        // 1. Exponential Decay + Momentum Flow
         numberList.forEach((num, index) => {
             if (num && num.length === 2) {
-                let recencyWeight = Math.exp((index / total) * 2.2); 
-                let d1 = num[0];
-                let d2 = num[1];
-                freq[d1] = (freq[d1] || 0) + recencyWeight;
-                freq[d2] = (freq[d2] || 0) + recencyWeight;
+                let weight = Math.exp((index / total) * 2.8); // ให้น้ำหนักช่วงท้ายสูงมากเพื่อเกาะกระแสไหล
+                let d1 = num[0], d2 = num[1];
+                freq[d1] = (freq[d1] || 0) + weight;
+                freq[d2] = (freq[d2] || 0) + weight;
             }
         });
+
+        // หากเป็นรอบเย็น นำผลรอบเที่ยงมาบวกน้ำหนักพิเศษทันที (Intra-day Feedback Loop)
+        if (isEvening && lunchNum && lunchNum.length === 2) {
+            freq[lunchNum[0]] = (freq[lunchNum[0]] || 0) + 15.0;
+            freq[lunchNum[1]] = (freq[lunchNum[1]] || 0) + 15.0;
+        }
 
         let sortedDigits = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
         let t1 = sortedDigits[0] || '7';
         let t2 = sortedDigits[1] || '1';
         let t3 = sortedDigits[2] || '5';
 
-        function get5OptimizedPairs(targetDigit, list) {
+        function getOptimizedPairs(targetDigit, list) {
             let partnerCount = {};
             list.forEach((num, idx) => {
                 if (num && num.length === 2) {
-                    let w = Math.exp((idx / list.length) * 1.8);
+                    let w = Math.exp((idx / list.length) * 2.0);
                     if (num.includes(targetDigit)) {
                         let partner = (num[0] === targetDigit) ? num[1] : num[0];
-                        partnerCount[partner] = (partnerCount[partner] || 0) + (w * 1.5);
+                        partnerCount[partner] = (partnerCount[partner] || 0) + (w * 2.0);
                     }
                 }
             });
 
-            // เพิ่มระบบเสริมเลขพี่น้อง/เลขกลับที่มีโอกาสมาด้วยกันสูง (Mirror & Offset mapping)
+            // Mirror & Sister mapping เสริมความแม่นยำ
             let mirrorMap = { '0':'5', '1':'6', '2':'7', '3':'8', '4':'9', '5':'0', '6':'1', '7':'2', '8':'3', '9':'4' };
-            let mirrorDigit = mirrorMap[targetDigit];
-            partnerCount[mirrorDigit] = (partnerCount[mirrorDigit] || 0) + 3.0;
+            let mDigit = mirrorMap[targetDigit];
+            partnerCount[mDigit] = (partnerCount[mDigit] || 0) + 5.0;
 
             let sortedPartners = Object.keys(partnerCount).sort((a, b) => partnerCount[b] - partnerCount[a]);
             let defaults = ['0','1','2','3','4','5','6','7','8','9'].filter(d => d !== targetDigit);
@@ -229,9 +234,9 @@
 
         return { 
             t1, t2, t3, 
-            pairsT1: get5OptimizedPairs(t1, numberList), 
-            pairsT2: get5OptimizedPairs(t2, numberList), 
-            pairsT3: get5OptimizedPairs(t3, numberList) 
+            pairsT1: getOptimizedPairs(t1, numberList), 
+            pairsT2: getOptimizedPairs(t2, numberList), 
+            pairsT3: getOptimizedPairs(t3, numberList) 
         };
     }
 
@@ -292,6 +297,7 @@
 
         const lines = rawText.split('\n');
         let lunchNumbers = [], eveningNumbers = [], allDayNumbers = [];
+        let lastLunchNum = '';
 
         lines.forEach(line => {
             if (line.includes('--')) {
@@ -301,17 +307,28 @@
                     let lunchNum = results[0] ? results[0].trim() : '';
                     let eveningNum = results[1] ? results[1].trim() : '';
 
-                    if (lunchNum.length === 2) { lunchNumbers.push(lunchNum); allDayNumbers.push(lunchNum); }
-                    if (eveningNum.length === 2) { eveningNumbers.push(eveningNum); allDayNumbers.push(eveningNum); }
+                    if (lunchNum.length === 2) { 
+                        lunchNumbers.push(lunchNum); 
+                        allDayNumbers.push(lunchNum); 
+                        lastLunchNum = lunchNum;
+                    }
+                    if (eveningNum.length === 2) { 
+                        eveningNumbers.push(eveningNum); 
+                        allDayNumbers.push(eveningNum); 
+                    }
                 }
             }
         });
 
-        let dateStr = "18/09/2026"; // รูปแบบวันที่สากล
+        let dateStr = "18/09/2026";
 
-        document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "နေ့လည် (12:01 PM)", dateStr, analyzeHighPrecisionPairs(lunchNumbers));
-        document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "ညနေ (4:30 PM)", dateStr, analyzeHighPrecisionPairs(eveningNumbers));
-        document.getElementById('cardAllDay').innerHTML = generateCardHTML("Myanmar 2D", "တစ်နေ့လုံး (All Day)", dateStr, analyzeHighPrecisionPairs(allDayNumbers));
+        let lunchData = analyzeMaxPrecision(lunchNumbers, false, '');
+        let eveningData = analyzeMaxPrecision(eveningNumbers, true, lastLunchNum); // ใช้รอบเที่ยงมาฟีดแบ็กรอบเย็น
+        let allDayData = analyzeMaxPrecision(allDayNumbers, false, '');
+
+        document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "နေ့လည် (12:01 PM)", dateStr, lunchData);
+        document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "ညနေ (4:30 PM)", dateStr, eveningData);
+        document.getElementById('cardAllDay').innerHTML = generateCardHTML("Myanmar 2D", "တစ်နေ့လုံး (All Day)", dateStr, allDayData);
 
         document.getElementById('resultContainer').style.display = 'block';
     }
