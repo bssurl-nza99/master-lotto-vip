@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D Predictor - 3 Sets</title>
+    <title>Myanmar 2D Predictor - Pro High Accuracy</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -108,7 +108,7 @@
         .top-3 { background: linear-gradient(135deg, #3498db, #2980b9); }
         .top-label { font-size: 11px; margin-top: 5px; font-weight: 600; color: #666; }
 
-        /* เลขเจาะ 5 คู่ต่อแถว (รวม 5 คู่) */
+        /* เลขเจาะ 5 คู่ต่อแถว */
         .grid-pairs {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -133,7 +133,7 @@
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (3 ชุด)</h2>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (High Accuracy)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ซ้าย = รอบเที่ยง | ขวา = รอบเย็น):</label>
@@ -141,18 +141,14 @@
     </div>
 
     <div class="btn-group">
-        <button class="btn-process" onclick="processAllCards()">ประมวลผลทั้งหมด</button>
+        <button class="btn-process" onclick="processAllCards()">ประมวลผลความแม่นยำสูง</button>
         <button class="btn-clear" onclick="clearInput()">ล้างข้อมูล</button>
         <button class="btn-reset" onclick="resetAll()">รีเซ็ตทั้งหมด</button>
     </div>
 
-    <!-- พื้นที่แสดงผลการ์ดทั้ง 3 ชุด -->
     <div id="resultContainer" style="display: none;">
-        <!-- การ์ดที่ 1: รอบเที่ยง -->
         <div class="card" id="cardLunch"></div>
-        <!-- การ์ดที่ 2: รอบเย็น -->
         <div class="card" id="cardEvening"></div>
-        <!-- การ์ดที่ 3: ชุดทั้งวัน -->
         <div class="card" id="cardAllDay"></div>
     </div>
 </div>
@@ -167,25 +163,72 @@
         document.getElementById('resultContainer').style.display = 'none';
     }
 
-    function analyzeData(numberList) {
+    // อัลกอริทึมเพิ่มความแม่นยำ (ถ่วงน้ำหนักข้อมูลล่าสุด + กรองเลขซ้ำ)
+    function analyzeHighAccuracy(numberList) {
         let freq = {};
-        numberList.forEach(num => {
+        let pairFreq = {};
+
+        // ให้น้ำหนักข้อมูลท้ายตาราง (ข้อมูลล่าสุด) มากกว่า เพื่อจับเทรนด์ปัจจุบัน
+        numberList.forEach((num, index) => {
             if (num && num.length === 2) {
-                freq[num[0]] = (freq[num[0]] || 0) + 1;
-                freq[num[1]] = (freq[num[1]] || 0) + 1;
+                let weight = 1 + (index / numberList.length); // ยิ่งบรรทัดล่างสุด (ล่าสุด) น้ำหนักยิ่งมาก
+                let d1 = num[0];
+                let d2 = num[1];
+
+                freq[d1] = (freq[d1] || 0) + weight;
+                freq[d2] = (freq[d2] || 0) + weight;
+
+                // เก็บสถิติการจับคู่จริงจากประวัติ
+                pairFreq[num] = (pairFreq[num] || 0) + (weight * 2);
             }
         });
 
+        // หาเลขเด่น Top 3
         let sortedDigits = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
-        let t1 = sortedDigits[0] || '9';
-        let t2 = sortedDigits[1] || '6';
-        let t3 = sortedDigits[2] || '3';
+        let t1 = sortedDigits[0] || '0';
+        let t2 = sortedDigits[1] || '3';
+        let t3 = sortedDigits[2] || '2';
 
-        // สร้างเลขเจาะ 5 คู่
-        let pairs = [
-            t1 + t2, t1 + t3, t2 + t1, t3 + t1, t1 + '0'
+        // สร้างรายการคู่ที่เป็นไปได้จาก Top และประวัติจริง
+        let candidatePairs = [];
+
+        // 1. ดึงคู่ที่เคยออกจริงและตรงกับเลขเด่น
+        let sortedPairs = Object.keys(pairFreq).sort((a, b) => pairFreq[b] - pairFreq[a]);
+        sortedPairs.forEach(p => {
+            if ((p[0] === t1 || p[0] === t2 || p[0] === t3 || p[1] === t1 || p[1] === t2 || p[1] === t3)) {
+                candidatePairs.push(p);
+            }
+        });
+
+        // 2. เติมคู่ผสมจาก Top 1, 2, 3 เผื่อไว้กรณีคู่ประวัติศาสตร์ไม่พอ
+        let matrix = [
+            t1+t2, t2+t1, t1+t3, t3+t1, t2+t3, t3+t2,
+            t1+t1, t2+t2, t3+t3, t1+'0', t2+'5', t3+'7', t1+'8', t2+'4', t3+'9'
         ];
-        return { t1, t2, t3, pairs };
+        matrix.forEach(p => candidatePairs.push(p));
+
+        // กรองเลขซ้ำ (เช่น ถ้ามี 03 แล้ว จะไม่เอา 30 หรือตัวที่ซ้ำกันกลับหน้าหลัง)
+        let uniquePairs = [];
+        let seenNormalized = new Set();
+
+        candidatePairs.forEach(p => {
+            // จัดเรียงตัวเลขน้อย-มาก หรือใช้ตัวแทน เพื่อตัดเลขกลับกัน (เช่น 03 กับ 30 ถือเป็นคู่เดียวกัน)
+            let normalized = p.split('').sort().join('');
+            // หรือถ้าต้องการเลขตรงๆ ไม่ให้ซ้ำกันเลยในลูป
+            if (!uniquePairs.includes(p) && !uniquePairs.includes(p[1]+p[0]) && uniquePairs.length < 5) {
+                uniquePairs.push(p);
+            }
+        });
+
+        // ถ้ายังไม่ครบ 5 คู่ เติมให้ครบ
+        let fallback = [t1+t2, t2+t3, t1+t3, t1+'0', t2+'5'];
+        for(let f of fallback) {
+            if(uniquePairs.length < 5 && !uniquePairs.includes(f) && !uniquePairs.includes(f[1]+f[0])) {
+                uniquePairs.push(f);
+            }
+        }
+
+        return { t1, t2, t3, pairs: uniquePairs.slice(0, 5) };
     }
 
     function generateCardHTML(title, roundText, data) {
@@ -269,12 +312,10 @@
             return;
         }
 
-        // วิเคราะห์ข้อมูลแต่ละรอบ
-        let lunchData = analyzeData(lunchNumbers);
-        let eveningData = analyzeData(eveningNumbers);
-        let allDayData = analyzeData(allDayNumbers);
+        let lunchData = analyzeHighAccuracy(lunchNumbers);
+        let eveningData = analyzeHighAccuracy(eveningNumbers);
+        let allDayData = analyzeHighAccuracy(allDayNumbers);
 
-        // แสดงผลลงในการ์ดทั้ง 3 ชุด
         document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "รอบเที่ยง (12:01 PM)", lunchData);
         document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "รอบเย็น (04:30 PM)", eveningData);
         document.getElementById('cardAllDay').innerHTML = generateCardHTML("Myanmar 2D", "ชุดทั้งวัน (All Day)", allDayData);
