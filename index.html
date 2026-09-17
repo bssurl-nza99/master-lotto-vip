@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D Luxury VIP Classic</title>
+    <title>Myanmar 2D Luxury VIP Advanced Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -167,7 +167,7 @@
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Classic Luxury VIP)</h2>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Advanced Pro Precision)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
@@ -175,7 +175,7 @@
     </div>
 
     <div class="btn-group">
-        <button class="btn-process" onclick="processAllCards()">ประมวลผลความแม่นยำสูง</button>
+        <button class="btn-process" onclick="processAllCards()">ประมวลผลความละเอียดสูง</button>
         <button class="btn-clear" onclick="clearInput()">ล้างข้อมูล</button>
         <button class="btn-reset" onclick="resetAll()">รีเซ็ตทั้งหมด</button>
     </div>
@@ -195,7 +195,7 @@
     }
 
     function getNextTargetDate(lastDateStr) {
-        if (!lastDateStr) return "วันถัดไป";
+        if (!lastDateStr) return "Next Date";
         let parts = lastDateStr.replace(/\./g, '').trim().split(/\s+/);
         if (parts.length >= 3) {
             let day = parseInt(parts[0]);
@@ -204,58 +204,71 @@
             
             if (!isNaN(day)) {
                 day += 1;
-                let fullYear = year.length === 2 ? "25" + year : year;
-                return `${day} ${monthStr} ${fullYear}`;
+                const monthMap = {
+                    'มค': '01', 'มกราคม': '01', 'กพ': '02', 'กุมภาพันธ์': '02',
+                    'มีค': '03', 'มีนาคม': '03', 'เมย': '04', 'เมษายน': '04',
+                    'พค': '05', 'พฤษภาคม': '05', 'มิย': '06', 'มิถุนายน': '06',
+                    'กค': '07', 'กรกฎาคม': '07', 'สค': '08', 'สิงหาคม': '08',
+                    'กย': '09', 'กันยายน': '09', 'ตค': '10', 'ตุลาคม': '10',
+                    'พย': '11', 'พฤศจิกายน': '11', 'ธค': '12', 'ธันวาคม': '12'
+                };
+                let cleanMonth = monthStr.replace(/\./g, '').trim();
+                let monthNum = monthMap[cleanMonth] || '01';
+                let yearNum = parseInt(year);
+                if (yearNum > 2400) { yearNum -= 543; } 
+                else if (year.length === 2) { yearNum = 2000 + parseInt(year); }
+                
+                let paddedDay = day < 10 ? '0' + day : '' + day;
+                return `${paddedDay}/${monthNum}/${yearNum}`;
             }
         }
-        return "งวดถัดไป";
+        return "Next Date";
     }
 
-    // ฟังก์ชันคำนวณเชิงลึกที่ปรับแต่งให้สอดคล้องกับพฤติกรรมสถิติจริง
+    // ตรรกะขั้นสูงที่เพิ่มความละเอียดในการคำนวณเลขเด่นและเลขเจาะ
     let analyzeAdvancedMathEngine = (records, mode) => {
         let lastRecord = records.length > 0 ? records[records.length - 1] : { lunch: '04', evening: '41', date: '17 ก.ย 69' };
+        
+        let lSum = parseInt(lastRecord.lunch[0]) + parseInt(lastRecord.lunch[1]);
+        let eSum = parseInt(lastRecord.evening[0]) + parseInt(lastRecord.evening[1]);
         
         let t1 = '0', t2 = '1', t3 = '2';
 
         if (mode === 'lunch') {
-            // รอบเที่ยง: ใช้แรงส่งจากผลรวมหลักของรอบเที่ยงล่าสุด + การเหลื่อมค่าสถิติ
-            let l = lastRecord.lunch;
-            let sumVal = parseInt(l[0]) + parseInt(l[1]);
-            let base1 = (sumVal * 3 + 1) % 10;
+            // รอบเที่ยง: เจาะลึกด้วยผลรวมรอบเที่ยง + แรงเหวี่ยงรอบเย็นก่อนหน้า
+            let base1 = (lSum * 2 + parseInt(lastRecord.lunch[1])) % 10;
+            let base2 = (base1 + 3 + (lSum % 2)) % 10;
+            let base3 = (base1 + 7 - (eSum % 2)) % 10;
+            t1 = base1.toString();
+            t2 = base2.toString();
+            t3 = base3.toString();
+        } else if (mode === 'evening') {
+            // รอบเย็น: เจาะลึกด้วยแรงส่งข้ามรอบเที่ยงสู่เย็น + ค่าสะท้อน
+            let evUnit = parseInt(lastRecord.evening[1]);
+            let base1 = (10 - evUnit + lSum) % 10;
+            let base2 = (base1 + 4) % 10;
+            let base3 = (base1 + 8) % 10;
+            t1 = base1.toString();
+            t2 = base2.toString();
+            t3 = base3.toString();
+        } else {
+            // ชุดทั้งวัน: ผสานเวกเตอร์รอบเที่ยงและเย็นแบบถ่วงน้ำหนัก
+            let totalSum = lSum + eSum;
+            let base1 = totalSum % 10;
             let base2 = (base1 + 3) % 10;
             let base3 = (base1 + 6) % 10;
             t1 = base1.toString();
             t2 = base2.toString();
             t3 = base3.toString();
-        } else if (mode === 'evening') {
-            // รอบเย็น: ใช้ค่าสะท้อนจากรอบเย็นล่าสุด + การดึงค่ากระจก (Mirror)
-            let ev = lastRecord.evening;
-            let evUnit = parseInt(ev[1]);
-            let base1 = (10 - evUnit + 2) % 10;
-            let base2 = (base1 + 3) % 10;
-            let base3 = (base1 + 7) % 10;
-            t1 = base1.toString();
-            t2 = base2.toString();
-            t3 = base3.toString();
-        } else {
-            // ชุดทั้งวัน: ผสานค่าจากทั้งรอบเที่ยงและรอบเย็นเพื่อความครอบคลุมสูงสุด
-            let d1 = parseInt(lastRecord.lunch[0]) + parseInt(lastRecord.lunch[1]);
-            let d2 = parseInt(lastRecord.evening[0]) + parseInt(lastRecord.evening[1]);
-            let sumVal = d1 + d2;
-            let base1 = sumVal % 10;
-            let base2 = (base1 + 3) % 10;
-            let base3 = (base1 + 5) % 10;
-            t1 = base1.toString();
-            t2 = base2.toString();
-            t3 = base3.toString();
         }
 
-        function generateExactPairs(digit) {
+        function generateExactPairs(digit, indexModifier) {
             let pairs = [];
             let dInt = parseInt(digit);
-            // จับคู่ตัวเลขแบบเว้นระยะสถิติ 2 และ 3 แต้ม เพื่อให้ครอบคลุมความเป็นไปได้สูง
-            let steps = [1, 3, 5, 7, 9];
-            steps.forEach(s => {
+            // ใช้ค่าคงที่และตัวแปรเสริมเพื่อความหลากหลายและแม่นยำในแต่ละแถว
+            let dynamicSteps = [(1 + indexModifier) % 10, (3 + indexModifier) % 10, (5 + indexModifier) % 10, (7 + indexModifier) % 10, (9 + indexModifier) % 10];
+            
+            dynamicSteps.forEach(s => {
                 let partner = (dInt + s) % 10;
                 let pStr = digit + partner.toString();
                 let revStr = partner.toString() + digit;
@@ -276,9 +289,9 @@
 
         return {
             t1, t2, t3,
-            pairsT1: generateExactPairs(t1),
-            pairsT2: generateExactPairs(t2),
-            pairsT3: generateExactPairs(t3),
+            pairsT1: generateExactPairs(t1, 1),
+            pairsT2: generateExactPairs(t2, 3),
+            pairsT3: generateExactPairs(t3, 5),
             targetDate: nextDate
         };
     };
