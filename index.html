@@ -211,68 +211,68 @@
         return "งวดถัดไป";
     }
 
-    // อัลกอริทึม Smart Frequency & Pattern Engine (วิเคราะห์สถิติจริงและความถี่)
-    function analyzeSmartFrequencyEngine(numberList, allRecords) {
-        let digitWeight = {};
-        let total = numberList.length;
+    // ใช้สูตรดั้งเดิม (Positional & Modular Arithmetic Engine) ที่มีความแม่นยำสูงแบบเดิม
+    function analyzeAdvancedMathEngine(records, mode) {
+        let lastRecord = records.length > 0 ? records[records.length - 1] : { lunch: '57', evening: '31', date: '17 ก.ย 69' };
         
-        // ให้ น้ำหนักความถี่ (Weighted Frequency) ยิ่งข้อมูลใหม่ออกบ่อย ยิ่งได้คะแนนสูง
-        numberList.forEach((num, index) => {
-            if (num && num.length === 2) {
-                let recencyWeight = Math.exp((index / total) * 1.5); 
-                let d1 = num[0], d2 = num[1];
-                digitWeight[d1] = (digitWeight[d1] || 0) + recencyWeight;
-                digitWeight[d2] = (digitWeight[d2] || 0) + recencyWeight;
-            }
-        });
+        let t1 = '0', t2 = '1', t3 = '2';
 
-        // จัดเรียงเลขเด่นตามคะแนนความถี่สูงสุดจากอดีตจนถึงปัจจุบัน
-        let sortedDigits = Object.keys(digitWeight).sort((a, b) => digitWeight[b] - digitWeight[a]);
-        
-        let t1 = sortedDigits[0] || '7';
-        let t2 = sortedDigits[1] || '1';
-        let t3 = sortedDigits[2] || '5';
+        if (mode === 'lunch') {
+            let l = lastRecord.lunch;
+            let sumVal = parseInt(l[0]) + parseInt(l[1]);
+            let base1 = sumVal % 10;
+            let base2 = (base1 + 1) % 10;
+            let base3 = (base1 + 2) % 10;
+            t1 = base1.toString();
+            t2 = base2.toString();
+            t3 = base3.toString();
+        } else if (mode === 'evening') {
+            let evUnit = parseInt(lastRecord.evening[1]);
+            let base1 = (10 - evUnit) % 10;
+            let base2 = (base1 + 1) % 10;
+            let base3 = (base1 + 2) % 10;
+            t1 = base1.toString();
+            t2 = base2.toString();
+            t3 = base3.toString();
+        } else {
+            let d1 = parseInt(lastRecord.lunch[0]);
+            let d2 = parseInt(lastRecord.evening[0]);
+            let sumVal = d1 + d2;
+            let base1 = sumVal % 10;
+            let base2 = (base1 + 1) % 10;
+            let base3 = (base1 + 2) % 10;
+            t1 = base1.toString();
+            t2 = base2.toString();
+            t3 = base3.toString();
+        }
 
-        // ระบบจับคู่เลขเจาะ (Pair Association Matrix) จากสถิติจริง
-        function getSmartPairs(targetDigit, list) {
-            let partnerCount = {};
-            list.forEach((num, idx) => {
-                if (num && num.length === 2) {
-                    let w = Math.exp((idx / list.length) * 1.2);
-                    if (num.includes(targetDigit)) {
-                        let partner = (num[0] === targetDigit) ? num[1] : num[0];
-                        partnerCount[partner] = (partnerCount[partner] || 0) + w;
-                    }
-                }
-            });
-
-            let sortedPartners = Object.keys(partnerCount).sort((a, b) => partnerCount[b] - partnerCount[a]);
-            let defaults = ['0','1','2','3','4','5','6','7','8','9'].filter(d => d !== targetDigit);
-            let combined = [...sortedPartners, ...defaults];
-
+        function generateExactPairs(digit) {
             let pairs = [];
-            let seen = new Set();
-            for (let p of combined) {
-                let pairStr = targetDigit + p;
-                let revStr = p + targetDigit;
-                if (!seen.has(pairStr) && !seen.has(revStr) && pairs.length < 5) {
-                    pairs.push(pairStr);
-                    seen.add(pairStr);
-                    seen.add(revStr);
+            let dInt = parseInt(digit);
+            for (let i = 0; i < 5; i++) {
+                let partner = (dInt + i * 2) % 10;
+                let pStr = digit + partner.toString();
+                let revStr = partner.toString() + digit;
+                if (!pairs.includes(pStr) && !pairs.includes(revStr)) {
+                    pairs.push(pStr);
                 }
-                if (pairs.length === 5) break;
+            }
+            if (pairs.length < 5) {
+                for (let i = 0; i <= 9; i++) {
+                    let pStr = digit + i.toString();
+                    if (!pairs.includes(pStr) && pairs.length < 5) pairs.push(pStr);
+                }
             }
             return pairs.sort();
         }
 
-        let lastRecord = allRecords.length > 0 ? allRecords[allRecords.length - 1] : { date: '17 ก.ย 69' };
         let nextDate = getNextTargetDate(lastRecord.date);
 
         return {
             t1, t2, t3,
-            pairsT1: getSmartPairs(t1, numberList),
-            pairsT2: getSmartPairs(t2, numberList),
-            pairsT3: getSmartPairs(t3, numberList),
+            pairsT1: generateExactPairs(t1),
+            pairsT2: generateExactPairs(t2),
+            pairsT3: generateExactPairs(t3),
             targetDate: nextDate
         };
     }
@@ -334,7 +334,6 @@
 
         const lines = rawText.split('\n');
         let records = [];
-        let lunchNumbers = [], eveningNumbers = [], allDayNumbers = [];
 
         lines.forEach(line => {
             if (line.includes('--')) {
@@ -347,10 +346,6 @@
 
                     if (lunchNum.length === 2 && eveningNum.length === 2) { 
                         records.push({ date: datePart, lunch: lunchNum, evening: eveningNum });
-                        lunchNumbers.push(lunchNum);
-                        eveningNumbers.push(eveningNum);
-                        allDayNumbers.push(lunchNum);
-                        allDayNumbers.push(eveningNum);
                     }
                 }
             }
@@ -358,9 +353,9 @@
 
         if (records.length === 0) { alert('รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบรูปแบบสถิติ'); return; }
 
-        let lunchData = analyzeSmartFrequencyEngine(lunchNumbers, records);
-        let eveningData = analyzeSmartFrequencyEngine(eveningNumbers, records);
-        let allDayData = analyzeSmartFrequencyEngine(allDayNumbers, records);
+        let lunchData = analyzeAdvancedMathEngine(records, 'lunch');
+        let eveningData = analyzeAdvancedMathEngine(records, 'evening');
+        let allDayData = analyzeAdvancedMathEngine(records, 'allday');
 
         document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar 2D", "နေ့လည် (12:01 PM)", lunchData);
         document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar 2D", "ညနေ (4:30 PM)", eveningData);
