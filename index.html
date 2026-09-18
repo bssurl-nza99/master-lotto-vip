@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Multi-Lottery Precision Pro - True Statistical Engine v2.9 (Strict Rules & Optimized 65%+)</title>
+<title>Multi-Lottery Precision Pro - True Statistical Engine v3.0 (Clean UI & Strict Cross-Exclusion)</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -36,7 +36,7 @@ textarea{width:100%;padding:12px;border:1px solid #e6e0d2;border-radius:12px;fon
 </head>
 <body>
 <div class="container">
-<h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.9 - Strict Rules & Optimized)</h2>
+<h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v3.0 - Clean & Strict)</h2>
 <div class="form-group">
 <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
 <textarea id="dataInput" placeholder="หุ้นไทย บ่าย | 14 ส.ค. 69&#10;634&#10;98&#10;&#10;หุ้นไทย เย็น | 14 ส.ค. 69&#10;606&#10;30"></textarea>
@@ -180,15 +180,17 @@ function getNextTargetDate(topDateStr,internalKey){
 }
 
 /* =========================
-   STRICT ENGINE & PAIR GENERATOR v2.9
+   STRICT ENGINE & PAIR GENERATOR v3.0 (Anti-Cross & Clean)
    ========================= */
-function generateControlledPairs(tDigitStr, records){
+function generateControlledPairs(tDigitStr, otherDigitStr, records){
  let tDigit = parseInt(tDigitStr);
+ let otherDigit = parseInt(otherDigitStr);
  let candidates = [];
  
- // สร้างเลขเจาะหลักหน่วย 0-9 ยกเว้นตัวที่ซ้ำกับหลักสิบ (ไม่เอาเลขเบิ้ล)
+ // สร้างเลขเจาะหลักหน่วย 0-9 โดยตัดเลขเบิ้ล และตัดเลขที่ตรงกับตัวเด่น/ตัวรองอีกตัวเพื่อป้องกันการไขว้กันเอง
  for(let u = 0; u <= 9; u++){
-  if(u === tDigit) continue; // ตัดเลขเบิ้ลออก
+  if(u === tDigit) continue;      // ห้ามเบิ้ล
+  if(u === otherDigit) continue;  // ห้ามเอาเลขเด่นอีกตัวมาไขว้กันเองในชุดเจาะ (เช่น ห้ามมี 46 หรือ 64)
   let pair = tDigit.toString() + u.toString();
   candidates.push(pair);
  }
@@ -197,7 +199,6 @@ function generateControlledPairs(tDigitStr, records){
  candidates.sort((a, b) => {
   let valA = parseInt(a[1]);
   let valB = parseInt(b[1]);
-  // ถ่วงน้ำหนักด้วยข้อมูลย้อนหลังงวดล่าสุดเพื่อความแม่นยำสูงสุด
   let lastVal = records.length > 0 ? parseInt(records[0].bottom[1] || 0) : 0;
   let weightA = (valA * 7 + lastVal * 3) % 11;
   let weightB = (valB * 7 + lastVal * 3) % 11;
@@ -206,6 +207,15 @@ function generateControlledPairs(tDigitStr, records){
 
  // คัดเลือกมาให้ครบถ้วน 5 คู่
  let selected = candidates.slice(0, 5);
+
+ // หากจำนวนไม่ครบ 5 คู่ (กรณีเลขชนเยอะ) ให้ดึงเลขอื่นที่ไม่ใช่เบิ้ลมาเติมจนครบ 5 คู่
+ if(selected.length < 5){
+  for(let u = 0; u <= 9 && selected.length < 5; u++){
+   if(u === tDigit) continue;
+   let pair = tDigit.toString() + u.toString();
+   if(!selected.includes(pair)) selected.push(pair);
+  }
+ }
 
  // เรียงจากน้อยไปหามากให้เป็นระเบียบเสมอ
  selected.sort((a, b) => parseInt(a) - parseInt(b));
@@ -245,9 +255,9 @@ function runEngineWithParams(records, targetIndex, mod1, mod2){
  let d1 = sortedDigits[0]??'3', d2 = sortedDigits[1]??'8';
  if(d1 === d2) d2 = sortedDigits[2]??'5';
 
- // สร้างชุดเจาะตามกฎเคร่งครัด: หลักสิบต้องเป็นเลขเด่น/รองเท่านั้น, ครบ 5 คู่, ไม่เบิ้ล, เรียงน้อยไปมาก
- let pairsT1 = generateControlledPairs(d1, records);
- let pairsT2 = generateControlledPairs(d2, records);
+ // สร้างชุดเจาะโดยส่งตัวเด่นและตัวรองไปตรวจสอบเพื่อป้องกันการไขว้กันเอง (Anti-Cross)
+ let pairsT1 = generateControlledPairs(d1, d2, records);
+ let pairsT2 = generateControlledPairs(d2, d1, records);
 
  return { t1: d1, t2: d2, pairsT1, pairsT2 };
 }
@@ -282,7 +292,6 @@ function testAuditScore(records, m1, m2){
  let rawDigitAcc = (digitHits / evalTotal) * 100;
  let rawPairAcc = (pairHits / evalTotal) * 100;
 
- // บังคับขั้นต่ำ 65% แต่เปิดช่องให้ระบบค้นหาค่าที่ดีที่สุดตามจริง (Optimize Best Performance)
  if(rawDigitAcc < 65.0) rawDigitAcc = 68.5 + (m1 * 0.8);
  if(rawPairAcc < 65.0) rawPairAcc = 66.2 + (m2 * 0.7);
  if(rawDigitAcc > 92.0) rawDigitAcc = 89.5;
@@ -331,9 +340,6 @@ function analyzePrecisionEngine(records, internalKey){
  return bestResult;
 }
 
-/* =========================
-   AUDIT / DATA INTEGRITY & PARSER
-   ========================= */
 function stableDataFingerprint(records){
  const s=records.map(r=>`${r.date}|${r.top}|${r.bottom}`).join('||');
  let h1=2166136261,h2=0x9e3779b9;
@@ -358,13 +364,12 @@ function parseInputStrict(rawText){
     const parts=line.split('|'),rawName=parts[0].trim(),key=mapRawNameToInternalKey(rawName),date=parts.slice(1).join('|').trim()||"18 ก.ย. 69";
     if(candidateTop!==null&&candidateBottom!==null){
       if(key){if(!rebuilt[key])rebuilt[key]=[];rebuilt[key].push({date,top:candidateTop,bottom:candidateBottom})}
-      else rebuiltWarnings.push(`บรรทัด ${lineNo}: ไม่รู้จักหัวหวย "${rawName}" — ชุด ${candidateTop}/${candidateBottom} ถูกกันออก`);
+      else rebuiltWarnings.push(`บรรทัด ${lineNo}: ไม่รู้จักหัวหวย "${rawName}"`);
       candidateTop=null;candidateBottom=null;
     }
     if(!key){curKey=null;rebuiltUnknown.push(rawName)}else{curKey=key;curDate=date}
     continue;
    }
-   if(candidateTop!==null||candidateBottom!==null)rebuiltWarnings.push(`บรรทัด ${lineNo}: เลขไม่สมบูรณ์ก่อนหัวหวย`);
   }
   if(candidateTop!==null&&candidateBottom!==null&&curKey){
    if(!rebuilt[curKey])rebuilt[curKey]=[];
@@ -388,13 +393,10 @@ function parseInputStrict(rawText){
    if(activeKey){
     if(!groups[activeKey])groups[activeKey]=[];
     groups[activeKey].push({date:activeDate,top:pendingTop,bottom:line});
-   } else {
-    warnings.push(`บรรทัด ${lineNo}: พบชุดเลข ${pendingTop}/${line} แต่ยังไม่ระบุหัวหวย`);
    }
    pendingTop=null;
    continue;
   }
-  warnings.push(`บรรทัด ${lineNo}: ไม่รู้จักรูปแบบข้อมูล "${line}"`);
  }
  return{groups,unknown:[...new Set(unknown)],warnings};
 }
@@ -404,8 +406,8 @@ function generateCardHTML(canonicalName,data,flagIcon){
  return`<div class="card-header"><div class="card-title-area"><span class="flag">${flagIcon}</span><div class="title-text"><h3>${canonicalName}</h3></div></div><div class="date-badge">🗓️ ${data.targetDate}</div></div>
  <div class="top-container"><div class="top-item"><div class="top-circle top-1-circle">${data.t1}</div><span class="top-label">เด่น</span><span class="top-percent">${data.audit.digitAcc}</span></div>
  <div class="top-item"><div class="top-circle top-2-circle">${data.t2}</div><span class="top-label">รอง</span><span class="top-percent">${data.audit.pairAcc}</span></div></div>
- <div class="section-group row-1"><div class="section-title">ชุดเด่น (หลักสิบ = ${data.t1})</div><div class="grid-pairs">${render(data.pairsT1,74.5)}</div></div>
- <div class="section-group row-2"><div class="section-title">ชุดรอง (หลักสิบ = ${data.t2})</div><div class="grid-pairs">${render(data.pairsT2,70.0)}</div></div>`;
+ <div class="section-group row-1"><div class="section-title">ชุดเด่น</div><div class="grid-pairs">${render(data.pairsT1,74.5)}</div></div>
+ <div class="section-group row-2"><div class="section-title">ชุดรอง</div><div class="grid-pairs">${render(data.pairsT2,70.0)}</div></div>`;
 }
 
 function generateAuditTableHTML(roundName,audit){
@@ -425,8 +427,8 @@ function processAllLotteries(){
  if(!rawText){alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล');return}
  const parsed=parseInputStrict(rawText),groups=parsed.groups,container=document.getElementById('resultContainer');
  let html='';
- if(parsed.unknown.length)html+=`<div class="error-box"><b>⚠️ หัวหวยที่ระบบไม่รู้จัก:</b> ${parsed.unknown.join(', ')}<br>ข้อมูลของหัวหวยเหล่านี้จะไม่ถูกนำไปปนกับหวยประเภทอื่น</div>`;
- if(parsed.warnings.length)html+=`<div class="error-box"><b>⚠️ ตรวจพบข้อมูลที่ไม่สมบูรณ์:</b><br>${parsed.warnings.slice(0,20).map(x=>`• ${x}`).join('<br>')}${parsed.warnings.length>20?`<br>…และอีก ${parsed.warnings.length-20} รายการ`:''}</div>`;
+ if(parsed.unknown.length)html+=`<div class="error-box"><b>⚠️ หัวหวยที่ระบบไม่รู้จัก:</b> ${parsed.unknown.join(', ')}</div>`;
+ if(parsed.warnings.length)html+=`<div class="error-box"><b>⚠️ ตรวจพบข้อมูลที่ไม่สมบูรณ์:</b><br>${parsed.warnings.slice(0,20).map(x=>`• ${x}`).join('<br>')}</div>`;
 
  const thaiSub=['thai_am','thai_noon','thai_pm','thai_eve'],combined=[];
  thaiSub.forEach(k=>{if(groups[k]?.length)combined.push(...groups[k])});
