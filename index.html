@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.8.1</title>
+    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.6</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -240,11 +240,15 @@
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.8.1)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.6)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
-        <textarea id="dataInput" placeholder="หุ้นไทย ทั้งวัน | 18 ก.ย. 69
+        <textarea id="dataInput" placeholder="หุ้นไทย บ่าย | 14 ส.ค. 69
+634
+98
+
+หุ้นไทย เย็น | 14 ส.ค. 69
 606
 30"></textarea>
     </div>
@@ -363,7 +367,7 @@
             if (clean.includes('เย็น')) return 'thai_eve';
             if (clean.includes('ทั้งวัน')) return 'thai_allday';
             if (clean.includes('รัฐบาล')) return 'thai_gov';
-            return 'thai_allday';
+            return 'thai_am';
         }
 
         if (clean.includes('นิคเคอิเช้า') || clean.includes('นิคเคอิ ปกติ เช้า') || (clean.includes('นิคเคอิ') && clean.includes('เช้า') && !clean.includes('VIP') && !clean.includes('vip'))) return 'nikkei_normal_am';
@@ -375,10 +379,6 @@
             if ((clean.includes('บ่าย') || clean.includes('เที่ยง')) && (clean.includes('VIP') || clean.includes('vip'))) return 'nikkei_vip_pm';
             if (clean.includes('เช้า')) return 'nikkei_normal_am';
             return 'nikkei_normal_pm';
-        }
-        if (clean.includes('ดาวโจนส์')) {
-            if (clean.includes('สตาร์')) return 'dowjones_star';
-            return clean.includes('VIP') ? 'dowjones_vip' : 'dowjones_normal';
         }
         if (clean.includes('ลาว')) {
             if (clean.includes('ประตูชัย')) return 'lao_pratoochai';
@@ -430,6 +430,10 @@
         if (clean.includes('ไต้หวัน')) return clean.includes('VIP') ? 'taiwan_vip' : 'taiwan_normal';
         if (clean.includes('เกาหลี')) return clean.includes('VIP') ? 'korea_vip' : 'korea_normal';
         if (clean.includes('สิงคโปร์')) return clean.includes('VIP') ? 'singapore_vip' : 'singapore_normal';
+        if (clean.includes('ดาวโจนส์')) {
+            if (clean.includes('สตาร์')) return 'dowjones_star';
+            return clean.includes('VIP') ? 'dowjones_vip' : 'dowjones_normal';
+        }
         if (clean.includes('มาเลย์')) return 'malaysia';
         if (clean.includes('รัสเซีย')) return clean.includes('VIP') ? 'russia_vip' : 'russia_normal';
         if (clean.includes('เยอรมัน')) return clean.includes('VIP') ? 'germany_vip' : 'germany_normal';
@@ -501,11 +505,7 @@
             }
         });
 
-        let sortedDigits = Object.keys(freq).sort((a,b) => {
-            if (freq[b] !== freq[a]) return freq[b] - freq[a];
-            return parseInt(b) - parseInt(a);
-        });
-
+        let sortedDigits = Object.keys(freq).sort((a,b) => freq[b] - freq[a]);
         let t1 = sortedDigits[0] !== undefined ? sortedDigits[0] : '3';
         let t2 = sortedDigits[1] !== undefined ? sortedDigits[1] : '8';
 
@@ -531,10 +531,9 @@
             let uniqueCandidates = [...new Set(candidatePool)].filter(p => !isDoubleDigit(p));
 
             uniqueCandidates.sort((a, b) => {
-                let scoreA = (pairFreq[a] || 0) * 100 + parseInt(a[1]);
-                let scoreB = (pairFreq[b] || 0) * 100 + parseInt(b[1]);
-                if (scoreB !== scoreA) return scoreB - scoreA;
-                return parseInt(b) - parseInt(a);
+                let scoreA = (pairFreq[a] || 0) * 10 + parseInt(a[1]);
+                let scoreB = (pairFreq[b] || 0) * 10 + parseInt(b[1]);
+                return scoreB - scoreA;
             });
 
             for (let c of uniqueCandidates) {
@@ -680,57 +679,59 @@
         const rawText = document.getElementById('dataInput').value.trim();
         if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
 
-        let rawBlocks = rawText.split(/(?=[^\r\n]+\|[^\r\n]+)/g);
+        const lines = rawText.split('\n').map(l => l.trim());
         let groups = {};
         let unrecognizedHeaders = [];
-        let thaiAllDayRecords = [];
 
-        rawBlocks.forEach(block => {
-            let blockLines = block.split('\n').map(l => l.trim()).filter(l => l !== '');
-            if (blockLines.length === 0) return;
+        let activeInternalKey = null;
+        let currentDate = "18 ก.ย. 69";
+        let currentTop = "";
 
-            let headerLine = blockLines[0];
-            if (!headerLine.includes('|')) return;
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            if (!line) continue;
 
-            let parts = headerLine.split('|');
-            let rawName = parts[0].trim();
-            let headerDate = parts[1] ? parts[1].trim() : "18 ก.ย. 69";
-
-            let internalKey = mapRawNameToInternalKey(rawName);
-            if (!internalKey) {
-                if (!unrecognizedHeaders.includes(rawName)) {
-                    unrecognizedHeaders.push(rawName);
-                }
-                return;
+            if (line.includes('งดออกผล')) {
+                currentTop = "";
+                continue;
             }
 
-            if (!groups[internalKey]) {
-                groups[internalKey] = { date: headerDate, records: [] };
-            }
-
-            let currentTop = "";
-            for (let j = 1; j < blockLines.length; j++) {
-                let line = blockLines[j];
-                if (line.includes('งดออกผล')) {
-                    currentTop = "";
-                    continue;
-                }
-                if (line.length === 3 && !isNaN(line)) {
-                    currentTop = line;
-                } else if (line.length === 2 && !isNaN(line) && currentTop) {
-                    let recordObj = { date: headerDate, top: currentTop, bottom: line };
-                    groups[internalKey].records.push(recordObj);
-
-                    if (['thai_am', 'thai_noon', 'thai_pm', 'thai_eve'].includes(internalKey)) {
-                        thaiAllDayRecords.push(recordObj);
+            if (line.includes('|')) {
+                let parts = line.split('|');
+                let rawName = parts[0].trim();
+                let key = mapRawNameToInternalKey(rawName);
+                if (key) {
+                    activeInternalKey = key;
+                    currentDate = parts[1] ? parts[1].trim() : "18 ก.ย. 69";
+                } else {
+                    if (!unrecognizedHeaders.includes(rawName)) {
+                        unrecognizedHeaders.push(rawName);
                     }
-                    currentTop = "";
                 }
+                currentTop = "";
+            } else if (line.length === 3 && !isNaN(line)) {
+                currentTop = line;
+            } else if (line.length === 2 && !isNaN(line) && currentTop) {
+                if (activeInternalKey) {
+                    if (!groups[activeInternalKey]) {
+                        groups[activeInternalKey] = [];
+                    }
+                    groups[activeInternalKey].push({ date: currentDate, top: currentTop, bottom: line });
+                }
+                currentTop = "";
+            }
+        }
+
+        // เพิ่มการคำนวณอัตโนมัติสำหรับ "หุ้นไทย ทั้งวัน" จาก เช้า, เที่ยง, บ่าย, เย็น
+        let thaiSubKeys = ['thai_am', 'thai_noon', 'thai_pm', 'thai_eve'];
+        let combinedThaiRecords = [];
+        thaiSubKeys.forEach(sk => {
+            if (groups[sk] && groups[sk].length > 0) {
+                combinedThaiRecords = combinedThaiRecords.concat(groups[sk]);
             }
         });
-
-        if (thaiAllDayRecords.length > 0) {
-            groups['thai_allday'] = { date: "18 ก.ย. 69", records: thaiAllDayRecords };
+        if (combinedThaiRecords.length > 0) {
+            groups['thai_allday'] = combinedThaiRecords;
         }
 
         let container = document.getElementById('resultContainer');
@@ -754,10 +755,7 @@
             let catalogItem = CARD_CATALOG[internalKey];
             if (!catalogItem) return;
 
-            let blockData = groups[internalKey];
-            let records = blockData.records;
-            if (records.length === 0) return;
-
+            let records = groups[internalKey];
             let analyzedData = analyzePrecisionEngine(records, internalKey);
             let auditData = runRigorousAudit(records);
             
