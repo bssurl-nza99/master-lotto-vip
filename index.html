@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - Smart Holiday Engine</title>
+    <title>Multi-Lottery Precision Pro - Smart Holiday Engine v1.0.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -219,11 +219,11 @@
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (Smart Holiday Engine)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (Smart Holiday Engine - v1.0.4)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลใหม่สุดอยู่ด้านบนสุด):</label>
-        <textarea id="dataInput" placeholder="หุ้นไทย เช้า | 18 ก.ย. 69
+        <textarea id="dataInput" placeholder="ลาว ประตูชัย | 18 ก.ย. 69
 96
 148"></textarea>
     </div>
@@ -245,7 +245,7 @@
         document.getElementById('resultContainer').innerHTML = '';
     }
 
-    // รายชื่อหวยและกฎธงชาติที่ตรงตามที่คุณกำหนด 100%
+    // ฐานข้อมูลหวยและธงชาติที่ตรงตามมาตรฐานเป๊ะ 100% (v1.0.4)
     const lotteryRules = {
         // ลาว
         "ลาว ประตูชัย": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇱🇦", cardName: "ลาว ประตูชัย" },
@@ -350,29 +350,73 @@
     function matchStandardLotteryName(rawTitle) {
         let clean = rawTitle.replace(/หวย/g, '').replace(/\s+/g, ' ').trim();
         
-        // ค้นหาแบบตรงตัวจาก Key ใน lotteryRules ก่อน
+        // 1. ตรวจสอบชื่อแบบตรงตัวใน Dictionary 100%
         if (lotteryRules[clean]) {
             return clean;
         }
 
-        // ค้นหาแบบ Partial Match ที่แม่นยำ
-        for (let key in lotteryRules) {
-            if (clean === key || clean.includes(key) || key.includes(clean)) {
-                return key;
+        // 2. ค้นหาแบบระบุคำสำคัญให้ตรงหมวดประเทศจริงๆ (ห้ามมั่วไปไทย)
+        if (clean.includes('ลาว') || clean.includes('ประชาชน ลาว')) {
+            for (let key in lotteryRules) {
+                if (key.startsWith('ลาว') || key === 'ประชาชน ลาว') {
+                    if (clean.includes(key.replace('ลาว', '').trim()) || clean === key) return key;
+                }
             }
+            return 'ลาว พัฒนา';
         }
-        
-        // Fallback กรณีระบุไทย
-        if (clean.includes('ไทย')) {
-            if (clean.includes('เช้า')) return 'หุ้นไทย เช้า';
-            if (clean.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
-            if (clean.includes('บ่าย')) return 'หุ้นไทย บ่าย';
-            if (clean.includes('เย็น')) return 'หุ้นไทย เย็น';
-            if (clean.includes('ทั้งวัน')) return 'หุ้นไทย ทั้งวัน';
-            if (clean.includes('รัฐบาล')) return 'รัฐบาลไทย';
-            return 'หุ้นไทย เช้า';
+        if (clean.includes('ฮานอย')) {
+            for (let key in lotteryRules) {
+                if (key.startsWith('ฮานอย')) {
+                    if (clean.includes(key.replace('ฮานอย', '').trim()) || clean === key) return key;
+                }
+            }
+            return 'ฮานอย ปกติ';
         }
+        if (clean.includes('นิเคอิ')) {
+            if (clean.includes('เช้า') && clean.includes('VIP')) return 'นิเคอิ VIP เช้า';
+            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'นิเคอิ VIP บ่าย';
+            if (clean.includes('เช้า')) return 'นิเคอิ ปกติ เช้า';
+            return 'นิเคอิ ปกติ บ่าย';
+        }
+        if (clean.includes('จีน')) {
+            if (clean.includes('เช้า') && clean.includes('VIP')) return 'จีน VIP เช้า';
+            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'จีน VIP บ่าย';
+            if (clean.includes('เช้า')) return 'จีน ปกติ เช้า';
+            return 'จีน ปกติ บ่าย';
+        }
+        if (clean.includes('ฮั่งเส็ง')) {
+            if (clean.includes('เช้า') && clean.includes('VIP')) return 'ฮั่งเส็ง VIP เช้า';
+            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'ฮั่งเส็ง VIP บ่าย';
+            if (clean.includes('เช้า')) return 'ฮั่งเส็ง ปกติ เช้า';
+            return 'ฮั่งเส็ง ปกติ บ่าย';
+        }
+        if (clean.includes('ไต้หวัน')) {
+            return clean.includes('VIP') ? 'ไต้หวัน VIP' : 'ไต้หวัน ปกติ';
+        }
+        if (clean.includes('เกาหลี')) {
+            return clean.includes('VIP') ? 'เกาหลี VIP' : 'เกาหลี ปกติ';
+        }
+        if (clean.includes('สิงคโปร์')) {
+            return clean.includes('VIP') ? 'สิงคโปร์ VIP' : 'สิงคโปร์ ปกติ';
+        }
+        if (clean.includes('ดาวโจนส์')) {
+            if (clean.includes('สตาร์')) return 'ดาวโจนส์ สตาร์';
+            return clean.includes('VIP') ? 'ดาวโจนส์ VIP' : 'ดาวโจนส์ ปกติ';
+        }
+        if (clean.includes('มาเลย์')) return 'มาเลย์';
+        if (clean.includes('รัสเซีย')) return 'รัสเซีย VIP';
+        if (clean.includes('เยอรมัน')) return 'เยอรมัน VIP';
+        if (clean.includes('อังกฤษ')) return 'อังกฤษ VIP';
+        if (clean.includes('อินเดีย')) return 'อินเดีย';
+        if (clean.includes('อียิปต์')) return 'อียิปต์';
 
+        // 3. หุ้นไทย หรือ รัฐบาลไทย เท่านั้น
+        if (clean.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
+        if (clean.includes('บ่าย')) return 'หุ้นไทย บ่าย';
+        if (clean.includes('เย็น')) return 'หุ้นไทย เย็น';
+        if (clean.includes('ทั้งวัน')) return 'หุ้นไทย ทั้งวัน';
+        if (clean.includes('รัฐบาล')) return 'รัฐบาลไทย';
+        
         return clean;
     }
 
@@ -423,7 +467,6 @@
         return cleanStr;
     }
 
-    // ฟังก์ชันคำนวณและสร้างชุดตัวเลข (ไม่เอาเลขเด่นมาไขว้กันเอง + ตัดเลขเบิ้ล 100% + ดึงโควต้าอื่นมาใส่แทน)
     function analyzePrecisionEngine(records, lotteryName) {
         let topRecord = records.length > 0 ? records[0] : { top: '211', bottom: '86', date: '18 ก.ย. 69' };
         let recentDays = records.slice(0, 15);
@@ -452,7 +495,6 @@
             let pairs = [];
             let dInt = parseInt(mainDigit);
             
-            // สร้าง Pool ตัวเลขที่ไม่นำเลขเด่นตัวหลักมาไขว้เป็นเลขเบิ้ล และตัดเลขเบิ้ลออกทันที
             let pool = [
                 (dInt + 2) % 10, (dInt + 5) % 10, (dInt + 7) % 10, 
                 (dInt + 1) % 10, (dInt + 8) % 10, (dInt + offset) % 10,
@@ -461,13 +503,11 @@
 
             for (let i = 0; i < pool.length && pairs.length < 5; i++) {
                 let pStr = dInt.toString() + pool[i].toString();
-                // เงื่อนไข: 1. ต้องไม่ใช่เลขเบิ้ล (เลขหน้าไม่เท่ากับเลขหลัง) 2. ต้องยังไม่มีในอาเรย์
                 if (pStr[0] !== pStr[1] && !pairs.includes(pStr)) {
                     pairs.push(pStr);
                 }
             }
 
-            // หากยังไม่ครบ 5 ตัว ให้ดึงโควต้าตัวเลขสำรองอื่นๆ มาใส่แทนโดยเด็ดขาด (ห้ามมีเลขเบิ้ลและห้ามซ้ำ)
             let fallbackDigit = 0;
             while (pairs.length < 5 && fallbackDigit < 10) {
                 let pStr = dInt.toString() + fallbackDigit.toString();
@@ -629,7 +669,7 @@
             let analyzedData = analyzePrecisionEngine(records, key);
             let auditData = runRigorousAudit(records);
             
-            let rule = lotteryRules[key] || { flag: "🇹🇭", cardName: key };
+            let rule = lotteryRules[key] || { flag: "🌐", cardName: key };
             let flagIcon = rule.flag;
             let exactCardName = rule.cardName;
 
