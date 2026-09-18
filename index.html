@@ -245,6 +245,7 @@
         document.getElementById('resultContainer').innerHTML = '';
     }
 
+    // กฎรายชื่อและธงชาติที่ถูกต้องตามประเทศ (ล็อกสูตรการคำนวณเดิมไว้ 100%)
     const lotteryRules = {
         "หุ้นไทย เช้า": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เช้า" },
         "หุ้นไทย เที่ยง": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เที่ยง" },
@@ -265,7 +266,19 @@
         "มาเลย์": { drawDays: [3, 6, 0], flag: "🇲🇾", cardName: "มาเลย์" },
         "ลาว พัฒนา": { drawDays: [1, 2, 3, 4, 5], flag: "🇱🇦", cardName: "ลาว พัฒนา" },
         "ฮานอย ปกติ": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇻🇳", cardName: "ฮานอย ปกติ" },
-        "ดาวโจนส์": { drawDays: [1, 2, 3, 4, 5], flag: "🇺🇸", cardName: "ดาวโจนส์" }
+        "ฮานอย พิเศษ": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇻🇳", cardName: "ฮานอย พิเศษ" },
+        "ฮานอย VIP": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇻🇳", cardName: "ฮานอย VIP" },
+        "ดาวโจนส์": { drawDays: [1, 2, 3, 4, 5], flag: "🇺🇸", cardName: "ดาวโจนส์" },
+        
+        // เพิ่มเติมรอบประเทศอื่นๆ ตามต้องการ
+        "ไต้หวัน": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇼", cardName: "ไต้หวัน" },
+        "เกาหลี": { drawDays: [1, 2, 3, 4, 5], flag: "🇰🇷", cardName: "เกาหลี" },
+        "สิงคโปร์": { drawDays: [1, 2, 3, 4, 5], flag: "🇸🇬", cardName: "สิงคโปร์" },
+        "อินเดีย": { drawDays: [1, 2, 3, 4, 5], flag: "🇮🇳", cardName: "อินเดีย" },
+        "อังกฤษ": { drawDays: [1, 2, 3, 4, 5], flag: "🇬🇧", cardName: "อังกฤษ" },
+        "เยอรมัน": { drawDays: [1, 2, 3, 4, 5], flag: "🇩🇪", cardName: "เยอรมัน" },
+        "รัสเซีย": { drawDays: [1, 2, 3, 4, 5], flag: "🇷🇺", cardName: "รัสเซีย" },
+        "อียิปต์": { drawDays: [0, 1, 2, 3, 4], flag: "🇪🇬", cardName: "อียิปต์" }
     };
 
     function matchStandardLotteryName(rawTitle) {
@@ -283,13 +296,15 @@
         clean = clean.replace(/หุ้น/g, '').trim();
 
         if (clean.includes('นิเคอิ')) {
-            if (clean.includes('เช้า')) {
-                return clean.includes('VIP') ? 'นิเคอิ VIP เช้า' : 'นิเคอิ เช้า';
-            }
-            if (clean.includes('บ่าย')) {
-                return clean.includes('VIP') ? 'นิเคอิ VIP บ่าย' : 'นิเคอิ บ่าย';
-            }
+            if (clean.includes('เช้า')) return clean.includes('VIP') ? 'นิเคอิ VIP เช้า' : 'นิเคอิ เช้า';
+            if (clean.includes('บ่าย')) return clean.includes('VIP') ? 'นิเคอิ VIP บ่าย' : 'นิเคอิ บ่าย';
             return 'นิเคอิ เช้า';
+        }
+
+        if (clean.includes('ฮานอย')) {
+            if (clean.includes('พิเศษ')) return 'ฮานอย พิเศษ';
+            if (clean.includes('VIP') || clean.includes('วีไอพี')) return 'ฮานอย VIP';
+            return 'ฮานอย ปกติ';
         }
 
         for (let key in lotteryRules) {
@@ -318,13 +333,8 @@
             let yearInput = parts[2];
             let year = parseInt(yearInput);
 
-            // แปลงปีให้เป็น ค.ศ. ที่ถูกต้องเสมอไม่ว่าจะรับมาเป็น พ.ศ. 2 digits, 4 digits หรือ ค.ศ.
-            if (year < 100) {
-                year += 2500; // เช่น 69 กลายเป็น 2569
-            }
-            if (year < 2500) {
-                year += 543;
-            }
+            if (year < 100) year += 2500;
+            if (year < 2500) year += 543;
             
             const monthMap = {
                 'มค': 0, 'กพ': 1, 'มีค': 2, 'เมย': 3, 'พค': 4, 'มิย': 5,
@@ -345,13 +355,14 @@
             let thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
             let mText = thaiMonths[targetDateObj.getMonth()];
             let fullYearThai = targetDateObj.getFullYear() + 543;
-            let yText = fullYearThai.toString().slice(-2); // ดึงเลขท้าย 2 ตัวของ พ.ศ. (เช่น 69) อย่างถูกต้อง
+            let yText = fullYearThai.toString().slice(-2);
 
             return `${thaiDays} ${mText} ${yText}`;
         }
         return cleanStr;
     }
 
+    // ล็อกสูตรคำนวณความแม่นยำเดิมไว้ 100% สมบูรณ์
     function analyzePrecisionEngine(records, lotteryName) {
         let topRecord = records.length > 0 ? records[0] : { top: '211', bottom: '86', date: '18 ก.ย. 69' };
         let recentDays = records.slice(0, 15);
@@ -543,7 +554,7 @@
             let analyzedData = analyzePrecisionEngine(records, key);
             let auditData = runRigorousAudit(records);
             
-            let rule = lotteryRules[key] || { flag: "🇯🇵", cardName: key };
+            let rule = lotteryRules[key] || { flag: "🌐", cardName: key };
             let flagIcon = rule.flag;
             let exactCardName = rule.cardName;
 
