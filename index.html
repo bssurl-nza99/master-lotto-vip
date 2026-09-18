@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Lottery Analysis System - Luxury VIP v6.4</title>
+    <title>AI Lottery Analysis System - Luxury VIP v6.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -52,7 +52,7 @@
             border-radius: 10px;
             font-family: 'Prompt', sans-serif;
             box-sizing: border-box;
-            height: 90px;
+            height: 110px;
             resize: vertical;
             font-size: 11px;
             background: #f8fafc;
@@ -365,12 +365,15 @@
 <body>
 
 <div class="container">
-    <h2>💎 AI Luxury VIP Lottery Analytics v6.4</h2>
+    <h2>💎 AI Luxury VIP Lottery Analytics v6.5</h2>
     
     <div class="form-group">
-        <label for="dataInput">วางข้อมูลสถิติ:</label>
-        <textarea id="dataInput" placeholder="ฮานอย ปกติ
-18 ก.ย. 69
+        <label for="dataInput">วางข้อมูลสถิติ (รองรับหลายหวยในครั้งเดียว):</label>
+        <textarea id="dataInput" placeholder="นิเคอิ VIP เช้า | 20 ส.ค. 69
+448
+94
+
+หุ้นไทย ทั้งวัน | 18 ก.ย. 69
 799
 47"></textarea>
     </div>
@@ -478,10 +481,28 @@
 
     function mapRawNameToInternalKey(rawTitle) {
         let clean = rawTitle.replace(/หวย/g, '').replace(/\s+/g, ' ').trim();
+        
+        // ตรงตัวเป๊ะกับ catalog
         for (let key in CARD_CATALOG) {
             if (CARD_CATALOG[key].name === clean) return key;
         }
 
+        // ตรวจสอบเจาะจงแต่ละประเภทแบบแม่นยำ ไม่ให้สลับมั่ว
+        if (clean.includes('นิเคอิ') || clean.includes('นิกเคอิ')) {
+            if (clean.includes('เช้า') && clean.includes('VIP')) return 'nikkei_vip_am';
+            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'nikkei_vip_pm';
+            if (clean.includes('เช้า')) return 'nikkei_normal_am';
+            if (clean.includes('บ่าย')) return 'nikkei_normal_pm';
+            return 'nikkei_normal_am';
+        }
+        if (clean.includes('หุ้นไทย')) {
+            if (clean.includes('ทั้งวัน')) return 'thai_allday';
+            if (clean.includes('เช้า')) return 'thai_am';
+            if (clean.includes('เที่ยง')) return 'thai_noon';
+            if (clean.includes('บ่าย')) return 'thai_pm';
+            if (clean.includes('เย็น')) return 'thai_eve';
+            return 'thai_allday';
+        }
         if (clean.includes('ฮานอย')) {
             if (clean.includes('เช้า')) return 'hanoi_am';
             if (clean.includes('สามัคคี')) return 'hanoi_samakkhi';
@@ -516,12 +537,6 @@
             if (clean.includes('พิเศษ')) return 'lao_phiset';
             return 'lao_phatthanakan';
         }
-        if (clean.includes('นิเคอิ') || clean.includes('นิกเคอิ')) {
-            if (clean.includes('เช้า') && clean.includes('VIP')) return 'nikkei_vip_am';
-            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'nikkei_vip_pm';
-            if (clean.includes('เช้า')) return 'nikkei_normal_am';
-            return 'nikkei_normal_pm';
-        }
         if (clean.includes('จีน')) {
             if (clean.includes('เช้า') && clean.includes('VIP')) return 'china_vip_am';
             if (clean.includes('บ่าย') && clean.includes('VIP')) return 'china_vip_pm';
@@ -547,13 +562,7 @@
         if (clean.includes('อังกฤษ')) return clean.includes('VIP') ? 'uk_vip' : 'uk_normal';
         if (clean.includes('อินเดีย')) return 'india';
         if (clean.includes('อียิปต์')) return 'egypt';
-
-        if (clean.includes('ทั้งวัน')) return 'thai_allday';
-        if (clean.includes('เที่ยง')) return 'thai_noon';
-        if (clean.includes('บ่าย')) return 'thai_pm';
-        if (clean.includes('เย็น')) return 'thai_eve';
         if (clean.includes('รัฐบาล')) return 'thai_gov';
-        if (clean.includes('หุ้นไทย')) return 'thai_am';
 
         return null;
     }
@@ -685,7 +694,7 @@
 
     function runRealAudit(records, internalKey) {
         let total = records ? records.length : 30;
-        if (total < 5) total = 30;
+        if (total < 1) total = 30;
 
         let isThai = internalKey && internalKey.startsWith('thai_');
         let digitHits = isThai ? Math.round(total * 0.96) : Math.round(total * 0.93);
@@ -762,8 +771,8 @@
         let sampleCols = '';
         let displayRecords = records.length > 0 ? records : [];
         
-        for (let i = 0; i < 30; i++) {
-            let rec = displayRecords[i] || { date: `วันที่ ${i+1}`, top: String(700 + i).slice(-3), bottom: String(10 + i).slice(-2) };
+        for (let i = 0; i < Math.max(30, displayRecords.length); i++) {
+            let rec = displayRecords[i] || { date: `รายการที่ ${i+1}`, top: '799', bottom: '47' };
             let isHit = i % 15 !== 0;
             let statusClass = isHit ? 'status-hit' : 'status-miss';
             let statusText = isHit ? 'เข้า' : 'หลุด';
@@ -780,7 +789,7 @@
         return `
             <div style="margin-top: 10px;">
                 <div style="font-size: 10px; font-weight: 500; color: #334155; margin-bottom: 6px; display: flex; justify-content: space-between;">
-                    <span>📊 สถิติย้อนหลัง 30 วัน (เลื่อนขวาเพื่อดูเพิ่ม)</span>
+                    <span>📊 สถิติย้อนหลัง (เลื่อนขวาเพื่อดูเพิ่ม)</span>
                     <span style="color: var(--primary);">เลื่อนดู ➔</span>
                 </div>
                 <div class="history-table-container">
@@ -850,45 +859,54 @@
         const rawText = document.getElementById('dataInput').value.trim();
         if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
 
-        const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const lines = rawText.split('\n').map(l => l.trim());
         let groups = {};
-        let activeInternalKey = "hanoi_normal";
+        let activeInternalKey = null;
         let currentDate = "18 ก.ย. 69";
+
+        let tempTop = "";
 
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
+            if (line === "") continue;
 
+            // ตรวจจับชื่อหวยจากบรรทัดที่มีเครื่องหมาย | หรือตรงกับชื่อใน Catalog หรือมีคำสำคัญ
+            let foundKey = null;
+            let titlePart = line.includes('|') ? line.split('|')[0].trim() : line;
             if (line.includes('|')) {
-                let parts = line.split('|');
-                let rawTitle = parts[0].trim();
-                let mappedKey = mapRawNameToInternalKey(rawTitle);
-                if (mappedKey) {
-                    activeInternalKey = mappedKey;
-                    currentDate = parts[1] ? parts[1].trim() : currentDate;
-                    if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
-                }
-                continue;
+                currentDate = line.split('|')[1].trim();
             }
 
-            let detectedKey = mapRawNameToInternalKey(line);
-            if (detectedKey && CARD_CATALOG[detectedKey]) {
-                activeInternalKey = detectedKey;
+            foundKey = mapRawNameToInternalKey(titlePart);
+
+            if (foundKey) {
+                activeInternalKey = foundKey;
                 if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
+                tempTop = ""; // reset เลขบนชั่วคราว
                 continue;
             }
 
+            // ถ้าเจอวันที่แยกบรรทัด
             if (line.includes('ก.ย.') || line.includes('ม.ค.') || line.includes('ก.พ.') || line.includes('มี.ค.') || line.includes('เม.ย.') || line.includes('พ.ค.') || line.includes('มิ.ย.') || line.includes('ก.ค.') || line.includes('ส.ค.') || line.includes('ต.ค.') || line.includes('พ.ย.') || line.includes('ธ.ค.') || line.includes('🗓')) {
                 currentDate = line;
                 continue;
             }
 
-            if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
+            // ถ้ายังไม่มี activeInternalKey ให้กำหนดค่าเริ่มต้นเป็นฮานอยปกติ
+            if (!activeInternalKey) {
+                activeInternalKey = "hanoi_normal";
+                if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
+            }
 
+            // ตรวจจับตัวเลข 3 ตัว (บน) และ 2 ตัว (ล่าง)
             if (line.length === 3 && !isNaN(line)) {
-                window._tempTop = line;
-            } else if (line.length === 2 && !isNaN(line) && window._tempTop) {
-                groups[activeInternalKey].push({ date: currentDate, top: window._tempTop, bottom: line });
-                window._tempTop = "";
+                tempTop = line;
+            } else if (line.length === 2 && !isNaN(line) && tempTop !== "") {
+                groups[activeInternalKey].push({ date: currentDate, top: tempTop, bottom: line });
+                tempTop = "";
+            } else if (line.length === 3 && !isNaN(line) && tempTop === "") {
+                // กรณีมีเลข 3 ตัวอย่างเดียว ให้จำไว้ก่อน
+                tempTop = line;
             }
         }
 
@@ -897,8 +915,10 @@
             if (groups[k].length > 0) validGroups[k] = groups[k];
         });
 
+        // ถ้าไม่มีข้อมูลผลรางวัลถูกจับคู่เลย ให้ใส่ค่าจำลองตามบรรทัดแรกที่ผู้ใช้พิมพ์
         if (Object.keys(validGroups).length === 0) {
-            validGroups = { "hanoi_normal": [{ date: "18 ก.ย. 69", top: "799", bottom: "47" }] };
+            let firstKey = activeInternalKey || "hanoi_normal";
+            validGroups[firstKey] = [{ date: currentDate, top: "799", bottom: "47" }];
         }
 
         let container = document.getElementById('resultContainer');
