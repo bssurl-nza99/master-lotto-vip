@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - Ultimate Walk-Forward Engine v3.7</title>
+    <title>Multi-Lottery Precision Pro - Ultimate Walk-Forward Engine v3.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -61,7 +61,7 @@
 </head>
 <body>
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (Audit-First Walk-Forward Engine v3.7)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (Audit-First Walk-Forward Engine v3.8)</h2>
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
         <textarea id="dataInput" placeholder="หุ้นไทย บ่าย | 14 ส.ค. 69\n634\n98\n\nหุ้นไทย เย็น | 14 ส.ค. 69\n606\n30"></textarea>
@@ -298,13 +298,13 @@
     }
 
     // ============================================================
-    // AUDIT-FIRST WALK-FORWARD ENGINE v3.7
+    // AUDIT-FIRST WALK-FORWARD ENGINE v3.8
     // ============================================================
     // Input order: newest -> oldest. OOS target is never visible to
     // prediction, pair scoring, or strategy selection.
     // All displayed percentages come from the real OOS audit ledger.
     // ============================================================
-    const ENGINE_CONFIG=Object.freeze({MIN_HISTORY:10,INNER_MIN_HISTORY:10,INNER_MIN_TESTS:4,PAIR_COUNT_PER_DIGIT:5,TOP_DIGITS:2,PAIR_MATCH_MODE:'exact',COMPOSITE_DIGIT_WEIGHT:.60,COMPOSITE_PAIR_WEIGHT:.40});
+    const ENGINE_CONFIG=Object.freeze({MIN_VALID_RECORDS:25,MAX_VALID_RECORDS:30,MIN_HISTORY:10,INNER_MIN_HISTORY:10,INNER_MIN_TESTS:4,PAIR_COUNT_PER_DIGIT:5,TOP_DIGITS:2,PAIR_MATCH_MODE:'exact',COMPOSITE_DIGIT_WEIGHT:.60,COMPOSITE_PAIR_WEIGHT:.40});
     const STRATEGY_POOL=Object.freeze([
       {id:'S1',m1:2,m2:3,shift:1},{id:'S2',m1:3,m2:5,shift:0},{id:'S3',m1:4,m2:2,shift:2},
       {id:'S4',m1:1,m2:7,shift:1},{id:'S5',m1:5,m2:4,shift:3},{id:'S6',m1:3,m2:3,shift:2},{id:'S7',m1:6,m2:1,shift:0}
@@ -489,12 +489,24 @@
             blockDiagnostics.push(block);
         }
 
-        // Critical integrity checks: each lottery is expected to have 30 records.
+        // Valid source history is 25–30 rounds.
+        // 25/26/27/28/29/30 are all valid; only outside this range is flagged.
         const integrity = [];
         for (const key of Object.keys(groups)) {
             const count = groups[key].length;
             const catalog = CARD_CATALOG[key];
-            integrity.push({ key, name:catalog ? catalog.name : key, count, expected:30, status:count===30?'ok':(count<30?'missing':'excess') });
+            let status = 'ok';
+            if (count < ENGINE_CONFIG.MIN_VALID_RECORDS) status = 'insufficient';
+            else if (count > ENGINE_CONFIG.MAX_VALID_RECORDS) status = 'excess';
+            integrity.push({
+                key,
+                name:catalog ? catalog.name : key,
+                count,
+                minValid:ENGINE_CONFIG.MIN_VALID_RECORDS,
+                maxValid:ENGINE_CONFIG.MAX_VALID_RECORDS,
+                status,
+                derived:false
+            });
         }
 
         // Stable fingerprint: same records => same fingerprint, regardless of
@@ -517,21 +529,26 @@
     }
 
     function buildIntegrityHTML(parsed) {
-        const rows = parsed.integrity.map(x => {
-            const icon = x.status === 'ok' ? '✓' : '⚠️';
-            const text = x.status === 'ok' ? `${x.count}/${x.expected}` : `${x.count}/${x.expected}`;
-            return `<li>${icon} <b>${x.name}</b> — ${text} งวด <span class="small-note">DATA-ID ${x.fingerprint}</span></li>`;
-        }).join('');
-        const unknown = parsed.unrecognizedHeaders.length
-            ? `<div class="error-box"><b>⚠️ หัวข้อที่ระบบไม่รู้จัก:</b> ${parsed.unrecognizedHeaders.map(escapeHTML).join(', ')}<div class="small-note">ข้อมูลใต้หัวข้อที่ไม่รู้จักจะไม่ถูกนำไปปนกับหวยประเภทก่อนหน้า</div></div>`
-            : '';
-        const bad = parsed.integrity.filter(x => x.status !== 'ok');
-        const main = bad.length
-            ? `<div class="warning-box"><b>⚠️ ตรวจสอบความสมบูรณ์ของข้อมูลก่อนประมวลผล</b><ul class="integrity-list">${rows}</ul><div class="small-note">ระบบยังคงคำนวณได้ แต่จะแจ้งจำนวนงวดที่ไม่ใช่ 30 เพื่อไม่ให้ความผิดพลาดของ Parser ถูกซ่อน</div></div>`
-            : `<div class="ok-box"><b>✓ Data Integrity ผ่าน</b><ul class="integrity-list">${rows}</ul><div class="small-note">แต่ละประเภทถูกแยกเป็นบล็อกอิสระ และใช้ข้อมูลของตัวเองเท่านั้น</div></div>`;
-        return unknown + main;
+      const rows=parsed.integrity.map(x=>{
+        if(x.derived){
+          return `<li>✓ <b>${escapeHTML(x.name)}</b> — ${x.count} งวด <span class="small-note">ชุดสังเคราะห์ · DATA-ID ${x.fingerprint}</span></li>`;
+        }
+        const ok=x.status==='ok';
+        const icon=ok?'✓':'⚠️';
+        let detail=`รองรับ ${x.minValid}–${x.maxValid} งวด`;
+        if(x.status==='insufficient') detail=`น้อยกว่าเกณฑ์ขั้นต่ำ ${x.minValid} งวด`;
+        if(x.status==='excess') detail=`มากกว่าเกณฑ์สูงสุด ${x.maxValid} งวด`;
+        return `<li>${icon} <b>${escapeHTML(x.name)}</b> — ${x.count} งวด <span class="small-note">(${detail}) · DATA-ID ${x.fingerprint}</span></li>`;
+      }).join('');
+      const unknown=parsed.unrecognizedHeaders.length
+        ? `<div class="error-box"><b>⚠️ หัวข้อที่ระบบไม่รู้จัก:</b> ${parsed.unrecognizedHeaders.map(escapeHTML).join(', ')}<div class="small-note">ข้อมูลใต้หัวข้อที่ไม่รู้จักจะไม่ถูกนำไปปนกับหวยประเภทก่อนหน้า</div></div>`
+        : '';
+      const bad=parsed.integrity.filter(x=>!x.derived&&x.status!=='ok');
+      const main=bad.length
+        ? `<div class="warning-box"><b>⚠️ ตรวจสอบความสมบูรณ์ของข้อมูล</b><ul class="integrity-list">${rows}</ul><div class="small-note">ระบบรองรับข้อมูลย้อนหลัง ${ENGINE_CONFIG.MIN_VALID_RECORDS}–${ENGINE_CONFIG.MAX_VALID_RECORDS} งวดต่อประเภท และจะใช้จำนวนงวดที่มีจริงในการทำ Walk-Forward Audit</div></div>`
+        : `<div class="ok-box"><b>✓ Data Integrity ผ่าน</b><ul class="integrity-list">${rows}</ul><div class="small-note">ข้อมูลย้อนหลัง ${ENGINE_CONFIG.MIN_VALID_RECORDS}–${ENGINE_CONFIG.MAX_VALID_RECORDS} งวดถือว่าถูกต้องทั้งหมด ระบบใช้จำนวนงวดที่มีจริงในการทำ Walk-Forward Audit</div></div>`;
+      return unknown+main;
     }
-
     function escapeHTML(s) { return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
     function renderPairCells(stats){return(stats||[]).map(x=>`<div class="pair-box"><span>${escapeHTML(x.pair)}</span><span class="pair-percent">${x.rate==null?'—':x.rate.toFixed(1)+'%'}</span></div>`).join('');}
@@ -558,11 +575,17 @@
       const rawText=document.getElementById('dataInput').value.trim();if(!rawText){alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล');return;}
       const parsed=parseLotteryBlocks(rawText),groups=parsed.groups,container=document.getElementById('resultContainer');container.innerHTML=buildIntegrityHTML(parsed);container.style.display='block';
       const thaiSubKeys=['thai_am','thai_noon','thai_pm','thai_eve'],combined=[];thaiSubKeys.forEach(k=>{if(groups[k]?.length)combined.push(...groups[k]);});
-      if(combined.length){groups.thai_allday=combined;const item={key:'thai_allday',name:CARD_CATALOG.thai_allday.name,count:combined.length,expected:30,status:combined.length===30?'ok':combined.length<30?'missing':'excess',fingerprint:makeFingerprint(combined),derived:true};const old=parsed.integrity.find(x=>x.key==='thai_allday');if(old)Object.assign(old,item);else parsed.integrity.push(item);}
+      if(combined.length){
+        groups.thai_allday=combined;
+        const sourceCounts=thaiSubKeys.map(k=>groups[k]?.length||0).filter(Boolean);
+        const item={key:'thai_allday',name:CARD_CATALOG.thai_allday.name,count:combined.length,sourceCounts,status:'ok',fingerprint:makeFingerprint(combined),derived:true};
+        const old=parsed.integrity.find(x=>x.key==='thai_allday');
+        if(old)Object.assign(old,item);else parsed.integrity.push(item);
+      }
       container.innerHTML=buildIntegrityHTML(parsed);const keys=Object.keys(groups);if(!keys.length){if(!parsed.unrecognizedHeaders.length)alert('ไม่พบรูปแบบข้อมูลสถิติที่ถูกต้อง กรุณาตรวจสอบหัวข้อและรูปแบบเลข 3 หลัก/2 หลัก');return;}
       const results=[];let i=0;
       keys.forEach(key=>{const cat=CARD_CATALOG[key];if(!cat)return;const records=groups[key].filter(r=>validTop(r)&&validBottom(r));if(!records.length)return;const data=analyzePrecisionEngine(records,key);data.audit.ledger.forEach(row=>row.type=key);const wrap=`wrapCard_${i}`,safe=cat.name.replace(/[^\u0E00-\u0E7F\w-]+/g,'_');results.push({key,name:cat.name,records,...data});container.innerHTML+=`<div class="card-wrapper" id="${wrap}"><button class="btn-capture" onclick="captureCard('${wrap}','${escapeHTML(safe)}')">📷 แคปภาพ</button><div class="card">${generateCardHTML(cat.name,data,cat.flag)}</div></div><div class="audit-section">${generateAuditTableHTML(cat.flag+cat.name,data.audit)}</div>`;i++;});
-      const global=buildGlobalAudit(results),rawCount=results.reduce((s,x)=>s+x.records.length,0);container.innerHTML+=generateGlobalAuditHTML(global,results,rawCount);const src=results.map(x=>`${x.key}:${makeFingerprint(x.records)}`).sort().join('|');const gf=makeFingerprint([{date:src,top:'000',bottom:'00'}]);container.innerHTML+=`<div class="small-note" style="margin-top:10px;text-align:center">GLOBAL DATA-ID ${gf} · Engine v3.7 · OOS audit-first · ไม่รับประกันผล</div>`;
+      const global=buildGlobalAudit(results),rawCount=results.reduce((s,x)=>s+x.records.length,0);container.innerHTML+=generateGlobalAuditHTML(global,results,rawCount);const src=results.map(x=>`${x.key}:${makeFingerprint(x.records)}`).sort().join('|');const gf=makeFingerprint([{date:src,top:'000',bottom:'00'}]);container.innerHTML+=`<div class="small-note" style="margin-top:10px;text-align:center">GLOBAL DATA-ID ${gf} · Engine v3.8 · OOS audit-first · ไม่รับประกันผล</div>`;
     }
 
 </script>
