@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - Smart Holiday Engine v1.0.5 (Strict Contract)</title>
+    <title>Multi-Lottery Precision Pro - Smart Holiday Engine v1.0.6 (Strict Contract)</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -228,13 +228,13 @@
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (Smart Holiday Engine - v1.0.5 Contract Strict)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (Smart Holiday Engine - v1.0.6 Strict Contract)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลใหม่สุดอยู่ด้านบนสุด):</label>
-        <textarea id="dataInput" placeholder="ลาว ประตูชัย | 18 ก.ย. 69
-96
-148"></textarea>
+        <textarea id="dataInput" placeholder="นิเคอิ VIP เช้า | 18 ก.ย. 69
+799
+47"></textarea>
     </div>
 
     <div class="btn-group">
@@ -370,7 +370,13 @@
             }
         }
 
-        // กรณีระบุแบบยืดหยุ่นแต่ไม่อนุญาตให้สร้างชื่อใหม่เอง (Lookup ตามหมวดหมู่)
+        // กรณีระบุแบบยืดหยุ่นรองรับการสะกดพ้องเสียง (เช่น นิคเคอิ / นิกเคอิ)
+        if (clean.includes('นิคเคอิ') || clean.includes('นิกเคอิ')) {
+            if (clean.includes('เช้า') && clean.includes('VIP')) return 'nikkei_vip_am';
+            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'nikkei_vip_pm';
+            if (clean.includes('เช้า')) return 'nikkei_normal_am';
+            return 'nikkei_normal_pm';
+        }
         if (clean.includes('ลาว')) {
             if (clean.includes('ประตูชัย')) return 'lao_pratoochai';
             if (clean.includes('เช้า')) return 'lao_am';
@@ -404,12 +410,6 @@
             if (clean.includes('กาชาด')) return 'hanoi_kachad';
             if (clean.includes('4D')) return 'hanoi_4d';
             return 'hanoi_normal';
-        }
-        if (clean.includes('นิเคอิ')) {
-            if (clean.includes('เช้า') && clean.includes('VIP')) return 'nikkei_vip_am';
-            if (clean.includes('บ่าย') && clean.includes('VIP')) return 'nikkei_vip_pm';
-            if (clean.includes('เช้า')) return 'nikkei_normal_am';
-            return 'nikkei_normal_pm';
         }
         if (clean.includes('จีน')) {
             if (clean.includes('เช้า') && clean.includes('VIP')) return 'china_vip_am';
@@ -461,7 +461,7 @@
         
         if (parts.length >= 3) {
             let day = parseInt(parts[0]);
-            let monthStr = parts[1];
+            let monthStr = parts[1] ? parts[1].replace(/\./g, '').trim() : 'กย';
             let year = parseInt(parts[2]);
 
             if (year < 100) year += 2500;
@@ -469,13 +469,10 @@
             
             const monthMap = {
                 'มค': 0, 'กพ': 1, 'มีค': 2, 'เมย': 3, 'พค': 4, 'มิย': 5,
-                'กค': 6, 'สค': 7, 'กย': 8, 'ตค': 9, 'พย': 10, 'ธค': 11,
-                'มค': 0, 'กพ': 1, 'มีค': 2, 'เมย': 3, 'พค': 4, 'มิย': 5,
                 'กค': 6, 'สค': 7, 'กย': 8, 'ตค': 9, 'พย': 10, 'ธค': 11
             };
             
-            let cleanMonthKey = monthStr.replace(/\./g, '').trim();
-            let mIndex = monthMap[cleanMonthKey] !== undefined ? monthMap[cleanMonthKey] : 8;
+            let mIndex = monthMap[monthStr] !== undefined ? monthMap[monthStr] : 8;
 
             let targetDateObj = new Date(year - 543, mIndex, day);
             do {
@@ -535,7 +532,6 @@
 
             for (let i = 0; i < pool.length && pairs.length < 5; i++) {
                 let pStr = dInt.toString() + pool[i].toString();
-                // Rule 7 (Deduplicate) & Rule 8 (Remove Double Digits)
                 if (!isDoubleDigit(pStr) && !pairs.includes(pStr)) {
                     pairs.push(pStr);
                 }
@@ -587,24 +583,6 @@
             pairs.forEach(p => { html += `<div class="pair-box">${p}</div>`; });
             return html;
         };
-
-        if (isSpecialThai) {
-            return `
-                <div class="card-header">
-                    <div class="card-title-area">
-                        <span class="flag">${flagIcon}</span>
-                        <div class="title-text"><h3>${canonicalName} เน้นบน</h3></div>
-                    </div>
-                    <div class="date-badge">🗓️ ${data.targetDate}</div>
-                </div>
-                <div class="top-container">
-                    <div class="top-item"><div class="top-circle top-3-circle">${data.t3}</div><span class="top-label">เด่น</span></div>
-                    <div class="top-item"><div class="top-circle top-4-circle">${data.t4}</div><span class="top-label">รอง</span></div>
-                </div>
-                <div class="section-group row-3"><div class="section-title">หุ้นไทยบน</div><div class="grid-pairs">${renderRow(data.pairsTop)}</div></div>
-                <div class="section-group row-4"><div class="section-title">หุ้นไทยเน้นบน</div><div class="grid-pairs">${renderRow(data.pairsFocusTop)}</div></div>
-            `;
-        }
 
         return `
             <div class="card-header">
@@ -659,7 +637,6 @@
         let activeInternalKey = "";
         let currentDate = "";
         let currentTop = "";
-        let thaiAllDayRecords = [];
 
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
@@ -679,16 +656,9 @@
                 if (activeInternalKey && currentDate && groups[activeInternalKey]) {
                     let recordObj = { date: currentDate, top: currentTop, bottom: line };
                     groups[activeInternalKey].push(recordObj);
-                    if (activeInternalKey.startsWith('thai_') && activeInternalKey !== 'thai_allday') {
-                        thaiAllDayRecords.push(recordObj);
-                    }
                 }
                 currentTop = "";
             }
-        }
-
-        if (thaiAllDayRecords.length > 0) {
-            groups['thai_allday'] = thaiAllDayRecords;
         }
 
         let groupKeys = Object.keys(groups);
@@ -702,7 +672,6 @@
         groupKeys.forEach((internalKey) => {
             let catalogItem = CARD_CATALOG[internalKey];
             
-            // PRE-RENDER VALIDATION (Rule 11 Contract)
             if (!catalogItem) {
                 container.innerHTML += `<div class="error-box"><b>Validation Error:</b> Unknown internal key '${internalKey}'</div>`;
                 return;
@@ -714,14 +683,6 @@
             
             let canonicalName = catalogItem.name;
             let flagIcon = catalogItem.flag;
-
-            // ตรวจสอบว่ามีเลขเบิ้ลหรือเลขซ้ำหลุดมาในผลลัพธ์หรือไม่
-            let allPairs = [...analyzedData.pairsT1, ...analyzedData.pairsT2, ...analyzedData.pairsTop, ...analyzedData.pairsFocusTop];
-            for(let p of allPairs) {
-                if(isDoubleDigit(p)) {
-                    console.error(`Double digit violation detected: ${p}`);
-                }
-            }
 
             let wrapId1 = `wrapCard_${cardIndex}`;
             let cardId1 = `cardResult_${cardIndex}`;
@@ -736,22 +697,6 @@
                 <div class="audit-section" id="${auditId1}">${generateAuditTableHTML(`${flagIcon}${canonicalName}`, auditData)}</div>
             `;
             cardIndex++;
-
-            if (internalKey === 'thai_allday') {
-                let wrapId2 = `wrapCard_${cardIndex}`;
-                let cardId2 = `cardResult_${cardIndex}`;
-                let auditId2 = `auditCard_${cardIndex}`;
-                let safeFileName2 = `${safeFileName1}_เน้นบน`;
-
-                container.innerHTML += `
-                    <div class="card-wrapper" id="${wrapId2}">
-                        <button class="btn-capture" onclick="captureCard('${wrapId2}', '${safeFileName2}')">📷 แคปภาพ</button>
-                        <div class="card" id="${cardId2}">${generateCardHTML(canonicalName, analyzedData, flagIcon, true)}</div>
-                    </div>
-                    <div class="audit-section" id="${auditId2}">${generateAuditTableHTML(`${flagIcon}${canonicalName} เน้นบน`, auditData)}</div>
-                `;
-                cardIndex++;
-            }
         });
     }
 </script>
