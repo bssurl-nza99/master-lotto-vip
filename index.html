@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.1</title>
+    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -240,17 +240,17 @@
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.1)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.4)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
-        <textarea id="dataInput" placeholder="ลาวพัฒนา | 18 ก.ย. 69
-502
-35
+        <textarea id="dataInput" placeholder="หุ้นไทย บ่าย | 14 ส.ค. 69
+634
+98
 
-หุ้นนิคเคอิเช้า | 18 ก.ย. 69
-211
-86"></textarea>
+หุ้นไทย เย็น | 14 ส.ค. 69
+606
+30"></textarea>
     </div>
 
     <div class="btn-group">
@@ -304,7 +304,7 @@
         "hanoi_kachad": { name: "ฮานอย กาชาด", flag: "🇻🇳", drawDays: [0, 1, 2, 3, 4, 5, 6] },
         "hanoi_4d": { name: "ฮานอย 4D", flag: "🇻🇳", drawDays: [0, 1, 2, 3, 4, 5, 6] },
 
-        "nikkei_normal_am": { name: "หุ้นนิคเคอิเช้า", flag: "🇯🇵", drawDays: [1, 2, 3, 4, 5] },
+        "nikkei_normal_am": { name: "นิเคอิ ปกติ เช้า", flag: "🇯🇵", drawDays: [1, 2, 3, 4, 5] },
         "nikkei_normal_pm": { name: "นิเคอิ ปกติ บ่าย", flag: "🇯🇵", drawDays: [1, 2, 3, 4, 5] },
         "nikkei_vip_am": { name: "นิเคอิ VIP เช้า", flag: "🇯🇵", drawDays: [0, 1, 2, 3, 4, 5, 6] },
         "nikkei_vip_pm": { name: "นิเคอิ VIP บ่าย", flag: "🇯🇵", drawDays: [0, 1, 2, 3, 4, 5, 6] },
@@ -360,9 +360,19 @@
             if (CARD_CATALOG[key].name === clean) return key;
         }
 
-        if (clean.includes('หุ้นนิคเคอิเช้า') || (clean.includes('นิคเคอิ') && clean.includes('เช้า') && !clean.includes('VIP') && !clean.includes('vip'))) return 'nikkei_normal_am';
-        if (clean.includes('นิคเคอิ VIP เช้า') || clean.includes('นิคเคอิ vip เช้า')) return 'nikkei_vip_am';
+        // ตรวจสอบหุ้นไทยแยกตามรอบอย่างแม่นยำ
+        if (clean.includes('หุ้นไทย') || clean.includes('ไทย')) {
+            if (clean.includes('เช้า')) return 'thai_am';
+            if (clean.includes('เที่ยง')) return 'thai_noon';
+            if (clean.includes('บ่าย')) return 'thai_pm';
+            if (clean.includes('เย็น')) return 'thai_eve';
+            if (clean.includes('ทั้งวัน')) return 'thai_allday';
+            if (clean.includes('รัฐบาล')) return 'thai_gov';
+            return 'thai_am'; // ค่าเริ่มต้นถ้าเจอแค่คำว่าหุ้นไทยธรรมดา
+        }
 
+        if (clean.includes('หุ้นนิคเคอิเช้า') || clean.includes('นิคเคอิ ปกติ เช้า') || (clean.includes('นิคเคอิ') && clean.includes('เช้า') && !clean.includes('VIP') && !clean.includes('vip'))) return 'nikkei_normal_am';
+        if (clean.includes('นิคเคอิ VIP เช้า') || clean.includes('นิคเคอิ vip เช้า')) return 'nikkei_vip_am';
         if (clean.includes('ประชาชนลาว') || (clean.includes('ประชาชน') && clean.includes('ลาว'))) return 'prachachon_lao';
 
         if (clean.includes('นิคเคอิ') || clean.includes('นิกเคอิ')) {
@@ -430,13 +440,6 @@
         if (clean.includes('อังกฤษ')) return clean.includes('VIP') ? 'uk_vip' : 'uk_normal';
         if (clean.includes('อินเดีย')) return 'india';
         if (clean.includes('อียิปต์')) return 'egypt';
-
-        if (clean.includes('เที่ยง')) return 'thai_noon';
-        if (clean.includes('บ่าย')) return 'thai_pm';
-        if (clean.includes('เย็น')) return 'thai_eve';
-        if (clean.includes('ทั้งวัน')) return 'thai_allday';
-        if (clean.includes('รัฐบาล')) return 'thai_gov';
-        if (clean.includes('ไทย')) return 'thai_am';
 
         return null;
     }
@@ -521,9 +524,8 @@
 
             let candidatePool = [];
             for (let i = 0; i <= 9; i++) {
-                if (i === excludeInt) continue;
+                if (i === excludeInt || i === dInt) continue;
                 candidatePool.push(dInt.toString() + i.toString());
-                candidatePool.push(i.toString() + dInt.toString());
             }
 
             let uniqueCandidates = [...new Set(candidatePool)].filter(p => !isDoubleDigit(p));
@@ -543,7 +545,7 @@
             let fallbackDigit = 0;
             while (pairs.length < 5 && fallbackDigit < 10) {
                 let pStr = dInt.toString() + fallbackDigit.toString();
-                if (!isDoubleDigit(pStr) && !pairs.includes(pStr) && fallbackDigit !== excludeInt) {
+                if (!isDoubleDigit(pStr) && !pairs.includes(pStr) && fallbackDigit !== excludeInt && fallbackDigit !== dInt) {
                     pairs.push(pStr);
                 }
                 fallbackDigit++;
@@ -677,7 +679,6 @@
         const rawText = document.getElementById('dataInput').value.trim();
         if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
 
-        // แยกข้อมูลด้วยบรรทัดว่าง (Blank lines) เพื่อตัดแบ่งแต่ละหวยออกจากกันเด็ดขาด
         const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
         let groups = {};
         let unrecognizedHeaders = [];
