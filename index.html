@@ -180,14 +180,24 @@ function getNextTargetDate(topDateStr,internalKey){
 }
 
 /* =========================
-   ULTIMATE WALK-FORWARD TOURNAMENT ENGINE v3.6
+   ULTIMATE WALK-FORWARD TOURNAMENT ENGINE v3.6 (ปรับปรุงตามเงื่อนไขชุดเจาะ)
    ========================= */
 function generateControlledPairs(tDigitStr, otherDigitStr, records){
  let tDigit = parseInt(tDigitStr);
  let candidates = [];
+ 
  for(let u = 0; u <= 9; u++){
+  // เงื่อนไข: ห้ามเลขเบิ้ล (เลขเด่นหลักสิบต้องไม่ซ้ำกับตัวท้าย) และห้ามนำเลขเด่นอีกตัวมาวินซ้ำ
+  if(u === tDigit || u.toString() === otherDigitStr) continue;
+  
   let pair = tDigit.toString() + u.toString();
-  candidates.push(pair);
+  let revPair = u.toString() + tDigit.toString();
+  
+  // เงื่อนไข: ห้ามเอาเลขกลับ (เลือกรูปแบบที่ตัวเด่นอยู่ข้างหน้าเสมอ คือ tDigit อยู่หลักสิบ)
+  // และตัดเลขกลับออกเพื่อไม่ให้ซ้ำซ้อน
+  if(!candidates.includes(pair)) {
+   candidates.push(pair);
+  }
  }
 
  // คัดเลือกคู่ชุดด้วยการประเมินความถี่จริงในอดีต (Momentum Scoring)
@@ -203,8 +213,25 @@ function generateControlledPairs(tDigitStr, otherDigitStr, records){
  });
 
  let selected = candidates.slice(0, 5);
+ 
+ // เงื่อนไข: เรียงเลขเจาะจากน้อยไปหามากเสมอเพื่อให้ดูเป็นระเบียบ
  selected.sort((a, b) => parseInt(a) - parseInt(b));
- return selected;
+ 
+ // เผื่อกรณีแคนดิเดตไม่พอ ให้เติมตัวเลขที่ถูกต้องตามเงื่อนไข
+ while(selected.length < 5){
+  for(let u = 0; u <= 9; u++){
+   if(u === tDigit || u.toString() === otherDigitStr) continue;
+   let p = tDigit.toString() + u.toString();
+   if(!selected.includes(p)){
+    selected.push(p);
+    break;
+   }
+  }
+  selected.sort((a, b) => parseInt(a) - parseInt(b));
+  if(selected.length >= 5) break;
+ }
+
+ return selected.slice(0, 5);
 }
 
 function runEngineWithStrategy(records, targetIndex, strategy){
@@ -228,7 +255,6 @@ function runEngineWithStrategy(records, targetIndex, strategy){
   if(!isNaN(digit) && digit >= 0 && digit <= 9){ formulaVotes[digit] += weight; }
  }
 
- // Strategy Matrix (ทัวร์นาเมนต์สูตรหลากหลายมิติ)
  let s1 = (b2_0 * strategy.m1 + t3_1 + strategy.shift) % 10;
  castVote(s1, 10.0); castVote((s1 + 4) % 10, 6.0);
 
@@ -297,7 +323,6 @@ function testAuditScoreWithStrategy(records, strategy){
 }
 
 function analyzePrecisionEngine(records, internalKey){
- // ชุดกลยุทธ์ทัวร์นาเมนต์จำลองเพื่อค้นหาสูตรที่ให้ผลลัพธ์แม่นยำสูงสุดจากข้อมูลจริง
  const strategyPool = [
   {m1: 2, m2: 3, shift: 1},
   {m1: 3, m2: 5, shift: 0},
