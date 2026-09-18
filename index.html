@@ -245,16 +245,8 @@
         document.getElementById('resultContainer').innerHTML = '';
     }
 
-    // รายชื่อหวยและการจัดวางธงชาติที่ตรงตามที่คุณกำหนด 100%
+    // รายชื่อหวยและกฎธงชาติที่ตรงตามที่คุณกำหนด 100%
     const lotteryRules = {
-        // หุ้นไทย
-        "หุ้นไทย เช้า": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เช้า" },
-        "หุ้นไทย เที่ยง": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เที่ยง" },
-        "หุ้นไทย บ่าย": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย บ่าย" },
-        "หุ้นไทย เย็น": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เย็น" },
-        "หุ้นไทย ทั้งวัน": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย ทั้งวัน" },
-        "รัฐบาลไทย": { drawDays: [1, 6], flag: "🇹🇭", cardName: "รัฐบาลไทย" },
-
         // ลาว
         "ลาว ประตูชัย": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇱🇦", cardName: "ลาว ประตูชัย" },
         "ลาว เช้า": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇱🇦", cardName: "ลาว เช้า" },
@@ -344,12 +336,33 @@
         "อินเดีย": { drawDays: [1, 2, 3, 4, 5], flag: "🇮🇳", cardName: "อินเดีย" },
 
         // อียิปต์
-        "อียิปต์": { drawDays: [0, 1, 2, 3, 4], flag: "🇪🇬", cardName: "อียิปต์" }
+        "อียิปต์": { drawDays: [0, 1, 2, 3, 4], flag: "🇪🇬", cardName: "อียิปต์" },
+
+        // หุ้นไทย & รัฐบาลไทย
+        "หุ้นไทย เช้า": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เช้า" },
+        "หุ้นไทย เที่ยง": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เที่ยง" },
+        "หุ้นไทย บ่าย": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย บ่าย" },
+        "หุ้นไทย เย็น": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย เย็น" },
+        "หุ้นไทย ทั้งวัน": { drawDays: [1, 2, 3, 4, 5], flag: "🇹🇭", cardName: "หุ้นไทย ทั้งวัน" },
+        "รัฐบาลไทย": { drawDays: [1, 6], flag: "🇹🇭", cardName: "รัฐบาลไทย" }
     };
 
     function matchStandardLotteryName(rawTitle) {
         let clean = rawTitle.replace(/หวย/g, '').replace(/\s+/g, ' ').trim();
         
+        // ค้นหาแบบตรงตัวจาก Key ใน lotteryRules ก่อน
+        if (lotteryRules[clean]) {
+            return clean;
+        }
+
+        // ค้นหาแบบ Partial Match ที่แม่นยำ
+        for (let key in lotteryRules) {
+            if (clean === key || clean.includes(key) || key.includes(clean)) {
+                return key;
+            }
+        }
+        
+        // Fallback กรณีระบุไทย
         if (clean.includes('ไทย')) {
             if (clean.includes('เช้า')) return 'หุ้นไทย เช้า';
             if (clean.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
@@ -359,14 +372,7 @@
             if (clean.includes('รัฐบาล')) return 'รัฐบาลไทย';
             return 'หุ้นไทย เช้า';
         }
-        
-        clean = clean.replace(/หุ้น/g, '').trim();
 
-        for (let key in lotteryRules) {
-            if (clean === key || clean.includes(key) || key.includes(clean)) {
-                return key;
-            }
-        }
         return clean;
     }
 
@@ -417,7 +423,7 @@
         return cleanStr;
     }
 
-    // ล็อกสูตรการคำนวณเดิมไว้ 100%
+    // ฟังก์ชันคำนวณและสร้างชุดตัวเลข (ไม่เอาเลขเด่นมาไขว้กันเอง + ตัดเลขเบิ้ล 100% + ดึงโควต้าอื่นมาใส่แทน)
     function analyzePrecisionEngine(records, lotteryName) {
         let topRecord = records.length > 0 ? records[0] : { top: '211', bottom: '86', date: '18 ก.ย. 69' };
         let recentDays = records.slice(0, 15);
@@ -442,21 +448,35 @@
         let t3 = sortedDigits[2] || '3';
         let t4 = sortedDigits[3] || '9';
 
-        function generateUltimatePairs(digit, offset) {
+        function generateUltimatePairs(mainDigit, offset) {
             let pairs = [];
-            let dInt = parseInt(digit);
+            let dInt = parseInt(mainDigit);
+            
+            // สร้าง Pool ตัวเลขที่ไม่นำเลขเด่นตัวหลักมาไขว้เป็นเลขเบิ้ล และตัดเลขเบิ้ลออกทันที
             let pool = [
                 (dInt + 2) % 10, (dInt + 5) % 10, (dInt + 7) % 10, 
-                (dInt + 1) % 10, (dInt + 8) % 10, (dInt + offset) % 10
+                (dInt + 1) % 10, (dInt + 8) % 10, (dInt + offset) % 10,
+                (dInt + 3) % 10, (dInt + 4) % 10, (dInt + 6) % 10, (dInt + 9) % 10
             ];
+
             for (let i = 0; i < pool.length && pairs.length < 5; i++) {
                 let pStr = dInt.toString() + pool[i].toString();
-                if (!pairs.includes(pStr)) pairs.push(pStr);
+                // เงื่อนไข: 1. ต้องไม่ใช่เลขเบิ้ล (เลขหน้าไม่เท่ากับเลขหลัง) 2. ต้องยังไม่มีในอาเรย์
+                if (pStr[0] !== pStr[1] && !pairs.includes(pStr)) {
+                    pairs.push(pStr);
+                }
             }
-            while (pairs.length < 5) {
-                let pStr = dInt.toString() + ((dInt + pairs.length + 3) % 10).toString();
-                if (!pairs.includes(pStr)) pairs.push(pStr);
+
+            // หากยังไม่ครบ 5 ตัว ให้ดึงโควต้าตัวเลขสำรองอื่นๆ มาใส่แทนโดยเด็ดขาด (ห้ามมีเลขเบิ้ลและห้ามซ้ำ)
+            let fallbackDigit = 0;
+            while (pairs.length < 5 && fallbackDigit < 10) {
+                let pStr = dInt.toString() + fallbackDigit.toString();
+                if (pStr[0] !== pStr[1] && !pairs.includes(pStr)) {
+                    pairs.push(pStr);
+                }
+                fallbackDigit++;
             }
+
             return pairs.slice(0, 5).sort((a, b) => parseInt(a) - parseInt(b));
         }
 
@@ -609,7 +629,7 @@
             let analyzedData = analyzePrecisionEngine(records, key);
             let auditData = runRigorousAudit(records);
             
-            let rule = lotteryRules[key] || { flag: "🌐", cardName: key };
+            let rule = lotteryRules[key] || { flag: "🇹🇭", cardName: key };
             let flagIcon = rule.flag;
             let exactCardName = rule.cardName;
 
