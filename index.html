@@ -3,113 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS - ซูเปอร์แอปเหนือระดับ</title>
+    <title>NEXUS - The Next Evolution</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* เอฟเฟกต์กระจกฝ้าพรีเมียม */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            background: rgba(20, 20, 30, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
         }
-        /* ข้อความไล่เฉดสี */
         .text-gradient {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%, #b34dfb);
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #b34dfb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
         ::-webkit-scrollbar { display: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
     </style>
 </head>
-<body class="bg-[#0b0c10] text-gray-200 font-sans h-screen flex justify-center overflow-hidden">
+<body class="bg-[#05050a] text-gray-100 font-sans h-screen flex justify-center overflow-hidden">
 
-    <!-- กรอบจำลองหน้าจอมือถือ -->
-    <div class="w-full max-w-md h-full relative flex flex-col bg-[#0b0c10]">
+    <div class="w-full max-w-md h-full relative flex flex-col bg-[#05050a]">
         
         <!-- ส่วนหัว (Header) -->
-        <header class="glass-panel sticky top-0 z-50 px-5 py-4 flex justify-between items-center rounded-b-3xl">
-            <h1 class="text-2xl font-extrabold tracking-widest text-gradient">NEXUS</h1>
-            <div class="flex space-x-4">
-                <!-- ปุ่มวิดีโอคอลด่วน -->
-                <button onclick="alert('กำลังเชื่อมต่อระบบวิดีโอคอล...') " class="relative bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-full shadow-[0_0_15px_rgba(79,172,254,0.5)] transition hover:scale-110">
+        <header class="glass-panel sticky top-0 z-50 px-5 py-4 flex justify-between items-center rounded-b-3xl shrink-0 border-b border-white/5">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 bg-cyan-400 rounded-full animate-ping"></span>
+                <h1 class="text-2xl font-black tracking-wider text-gradient">NEXUS</h1>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="openCallModal()" class="relative bg-gradient-to-r from-cyan-500 to-blue-600 p-2.5 rounded-full shadow-[0_0_20px_rgba(0,242,254,0.4)] transition hover:scale-110 active:scale-95">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                 </button>
-                <div class="w-9 h-9 rounded-full bg-gray-700 overflow-hidden border-2 border-blue-500">
+                <div class="w-10 h-10 rounded-full bg-gray-800 overflow-hidden border-2 border-cyan-400">
                     <img src="https://i.pravatar.cc/100?img=33" alt="โปรไฟล์" class="w-full h-full object-cover">
                 </div>
             </div>
         </header>
 
-        <!-- พื้นที่เนื้อหาหลัก (เลื่อนขึ้นลงได้) -->
-        <main class="flex-1 overflow-y-auto px-4 py-6 space-y-6 pb-24">
+        <!-- พื้นที่เนื้อหาหลัก (เปลี่ยนหน้าได้ตาม Tab) -->
+        <main id="main-content" class="flex-1 overflow-y-auto px-4 py-5 space-y-5 pb-32">
             
-            <!-- ช่องแชร์ความรู้สึก / แปะลิงก์ -->
-            <div class="glass-panel rounded-2xl p-4 flex items-center space-x-3">
-                <img src="https://i.pravatar.cc/100?img=33" class="w-10 h-10 rounded-full">
-                <input type="text" placeholder="คุณกำลังคิดอะไรอยู่ หรืออยากแปะลิงก์ YouTube..." class="bg-transparent w-full outline-none text-sm text-gray-200 placeholder-gray-500">
-                <button class="text-blue-400 font-bold text-sm">โพสต์</button>
-            </div>
+            <!-- หน้าฟีดหลัก (Home Feed) -->
+            <div id="tab-feed" class="space-y-5">
+                <!-- ช่องพิมพ์โพสต์ -->
+                <div class="glass-panel rounded-2xl p-4 flex items-center space-x-3 border border-cyan-500/20">
+                    <img src="https://i.pravatar.cc/100?img=33" class="w-10 h-10 rounded-full shrink-0 object-cover">
+                    <input id="post-input" type="text" placeholder="คุณกำลังคิดอะไรอยู่ หรือแชร์ไอเดียพลิกโลก..." class="bg-transparent w-full outline-none text-sm text-gray-200 placeholder-gray-500">
+                    <button onclick="addNewPost()" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white px-4 py-2 rounded-xl font-bold text-sm shrink-0 transition shadow-lg shadow-cyan-500/20">โพสต์</button>
+                </div>
 
-            <!-- ฟีดที่ 1: โพสต์วิดีโอ YouTube ในตัว -->
-            <div class="glass-panel rounded-3xl p-4 flex flex-col space-y-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <img src="https://i.pravatar.cc/100?img=12" class="w-10 h-10 rounded-full">
-                        <div>
-                            <h3 class="font-bold text-sm">พี่แดน (ครอบครัว)</h3>
-                            <p class="text-[11px] text-gray-500">2 นาทีที่แล้ว • ดูด้วยกันตอนนี้</p>
+                <!-- พื้นที่สำหรับโพสต์ใหม่ๆ จะเด้งมาตรงนี้ -->
+                <div id="dynamic-feed" class="space-y-5">
+                    <!-- โพสต์ตัวอย่างที่ 1 -->
+                    <div class="glass-panel rounded-3xl p-4 flex flex-col space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <img src="https://i.pravatar.cc/100?img=12" class="w-10 h-10 rounded-full object-cover">
+                                <div>
+                                    <h3 class="font-bold text-sm text-gray-200">พี่แดน (ครอบครัว)</h3>
+                                    <p class="text-[11px] text-cyan-400">2 นาทีที่แล้ว • ดูด้วยกันตอนนี้</p>
+                                </div>
+                            </div>
+                            <span class="text-xs bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30">VIP Hub</span>
+                        </div>
+                        <p class="text-sm text-gray-300">คลิปนี้โคตรเจ๋ง เปิดดูพร้อมกันในแอปได้เลย ไม่ต้องสลับไปไหนให้เสียเวลา!</p>
+                        
+                        <!-- Video Box จำลอง -->
+                        <div class="relative rounded-2xl overflow-hidden bg-black/40 border border-white/10 aspect-video flex items-center justify-center group">
+                            <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60" class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                            <button onclick="alert('กำลังเริ่มสตรีมวิดีโอพร้อมเพื่อนในกลุ่ม...')" class="absolute bg-cyan-500/80 hover:bg-cyan-400 text-black p-4 rounded-full shadow-[0_0_25px_rgba(0,242,254,0.8)] transition transform hover:scale-110">
+                                <svg class="w-8 h-8 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- ปุ่มกดโต้ตอบ -->
+                        <div class="flex justify-around text-gray-400 text-xs pt-2 border-t border-white/5">
+                            <button onclick="likePost(this)" class="flex items-center space-x-1 hover:text-cyan-400 transition py-1 px-3 rounded-lg hover:bg-white/5">
+                                <span>🔥</span> <span class="like-count">142</span> โคตรเจ๋ง
+                            </button>
+                            <button onclick="alert('เปิดห้องแชทร่วมกับคลิปนี้')" class="flex items-center space-x-1 hover:text-white transition py-1 px-3 rounded-lg hover:bg-white/5">
+                                <span>💬</span> แชทคุยคลิปนี้
+                            </button>
+                            <button onclick="alert('คัดลอกลิงก์แชร์สำเร็จ!')" class="flex items-center space-x-1 hover:text-white transition py-1 px-3 rounded-lg hover:bg-white/5">
+                                <span>↗️</span> แชร์
+                            </button>
                         </div>
                     </div>
                 </div>
-                <p class="text-sm text-gray-300">คลิปนี้ตลกมาก ลองเปิดดูกันเลย ไม่ต้องสลับแอปให้ยุ่งยาก!</p>
-                <!-- กล่องวิดีโอ -->
-                <div class="relative w-full pb-[56.25%] rounded-2xl overflow-hidden bg-black shadow-lg">
-                    <iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <!-- หน้าแชท & คอมมูนิตี้ (ซ่อนไว้ก่อน กดสลับได้) -->
+            <div id="tab-chat" class="space-y-4 hidden animate-fade-in">
+                <h2 class="text-lg font-bold text-gradient px-1">แชทกลุ่มอัจฉริยะ (AI-Powered Chat)</h2>
+                <div class="glass-panel rounded-2xl p-4 flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center font-bold text-lg">AI</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center"><h4 class="font-bold text-sm">Nexus Copilot</h4><span class="text-[10px] text-green-400">ออนไลน์</span></div>
+                        <p class="text-xs text-gray-400">สวัสดีนายท่าน! พร้อมช่วยจัดการทุกอย่างแล้ว</p>
+                    </div>
                 </div>
-                <!-- ปุ่มตอบสนอง -->
-                <div class="flex justify-between text-gray-400 text-sm pt-2 px-2">
-                    <button class="flex items-center space-x-1 hover:text-blue-400 transition"><span class="text-lg">🔥</span> <span>โคตรเจ๋ง</span></button>
-                    <button class="flex items-center space-x-1 hover:text-white transition"><span class="text-lg">💬</span> <span>แชทคุยคลิปนี้</span></button>
-                    <button class="flex items-center space-x-1 hover:text-white transition"><span class="text-lg">↗️</span> <span>แชร์</span></button>
+                <div class="glass-panel rounded-2xl p-4 flex items-center space-x-3">
+                    <img src="https://i.pravatar.cc/100?img=12" class="w-12 h-12 rounded-full object-cover">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center"><h4 class="font-bold text-sm">แก๊งเพื่อนซี้ (4 คน)</h4><span class="text-[10px] text-gray-500">10:42 น.</span></div>
+                        <p class="text-xs text-gray-300">จอห์น: คืนนี้คอลเปิดกล้องดูบอลกันไหม? กดปุ่มวิดีโอบนมุมขวาได้เลยนะเว้ย</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- ฟีดที่ 2: แชทกลุ่มและกิจกรรม -->
-            <div class="glass-panel rounded-3xl p-4 flex flex-col space-y-3">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px]">
-                        <div class="w-full h-full bg-gray-900 rounded-full flex items-center justify-center text-xs font-bold">VIP</div>
+            <!-- หน้า Hub รวมบริการ (Delivery & Shopping) -->
+            <div id="tab-hub" class="space-y-4 hidden animate-fade-in">
+                <h2 class="text-lg font-bold text-gradient px-1">Nexus Universal Hub</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div onclick="alert('เปิดระบบสั่งอาหารด่วน เดลิเวอรีส่งไวใน 15 นาที')" class="glass-panel p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-cyan-400 transition">
+                        <span class="text-3xl">🍜</span>
+                        <h4 class="font-bold text-sm">สั่งอาหาร / Delivery</h4>
+                        <p class="text-[10px] text-gray-400">ส่งไว ไร้ค่าส่งแอบแฝง</p>
                     </div>
-                    <div>
-                        <h3 class="font-bold text-sm text-purple-400">กลุ่มเพื่อนสนิท</h3>
-                        <p class="text-[11px] text-gray-500">ออนไลน์อยู่</p>
+                    <div onclick="alert('เปิดตลาดช้อปปิ้งออนไลน์ไร้ค่าธรรมเนียม')" class="glass-panel p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-cyan-400 transition">
+                        <span class="text-3xl">🛍️</span>
+                        <h4 class="font-bold text-sm">ช้อปปิ้งออนไลน์</h4>
+                        <p class="text-[10px] text-gray-400">รวมดีลที่ดีที่สุด</p>
                     </div>
-                </div>
-                <div class="bg-gray-800/50 rounded-xl p-3 text-sm border border-gray-700/50">
-                    <span class="font-bold text-blue-400">จอร์น:</span> คืนนี้คอลเปิดกล้องดูบอลกันไหม? กดปุ่มวิดีโอข้างบนมุมขวาได้เลยนะเว้ย
+                    <div onclick="alert('กระเป๋าเงินดิจิทัล & โอนเงินไร้รอยต่อ')" class="glass-panel p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-cyan-400 transition">
+                        <span class="text-3xl">💳</span>
+                        <h4 class="font-bold text-sm">Nexus Wallet</h4>
+                        <p class="text-[10px] text-gray-400">จ่าย โอน หารเงินง่ายๆ</p>
+                    </div>
+                    <div onclick="alert('ระบบสตรีมความบันเทิงและพอดแคสต์')" class="glass-panel p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-cyan-400 transition">
+                        <span class="text-3xl">🎬</span>
+                        <h4 class="font-bold text-sm">Movie & Stream</h4>
+                        <p class="text-[10px] text-gray-400">ดูหนังพร้อมเพื่อน</p>
+                    </div>
                 </div>
             </div>
-            
+
         </main>
 
-        <!-- แถบเมนูด้านล่าง (Navigation Bar) -->
-        <nav class="absolute bottom-4 left-4 right-4 glass-panel rounded-full flex justify-around items-center py-3 px-2 z-50">
-            <button class="flex flex-col items-center text-blue-400 w-16">
-                <svg class="w-6 h-6 mb-1 drop-shadow-[0_0_8px_rgba(79,172,254,0.8)]" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+        <!-- แถบเมนูด้านล่าง (Bottom Navigation) -->
+        <nav class="absolute bottom-4 left-4 right-4 glass-panel rounded-full flex justify-around items-center py-3 px-4 z-50 border border-white/10 shadow-2xl">
+            <button onclick="switchTab('feed')" id="nav-feed" class="flex flex-col items-center text-cyan-400 transition transform hover:scale-110">
+                <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                <span class="text-[10px] font-bold">ฟีด</span>
             </button>
-            <button class="flex flex-col items-center text-gray-500 hover:text-white transition w-16">
+            <button onclick="switchTab('chat')" id="nav-chat" class="flex flex-col items-center text-gray-400 hover:text-white transition transform hover:scale-110">
                 <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <span class="text-[10px] font-bold">แชท</span>
             </button>
-            <button class="flex flex-col items-center text-gray-500 hover:text-white transition w-16">
-                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            </button>
-            <button class="flex flex-col items-center text-gray-500 hover:text-white transition w-16">
+            <button onclick="switchTab('hub')" id="nav-hub" class="flex flex-col items-center text-gray-400 hover:text-white transition transform hover:scale-110">
                 <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                <span class="text-[10px] font-bold">ซูเปอร์ฮับ</span>
             </button>
         </nav>
     </div>
+
+    <!-- ส่วนระบบการทำงานอัจฉริยะ (JavaScript) -->
+    <script>
+        // สลับหน้าจอแท็บต่างๆ
+        function switchTab(tabName) {
+            document.getElementById('tab-feed').classList.add('hidden');
+            document.getElementById('tab-chat').classList.add('hidden');
+            document.getElementById('tab-hub').classList.add('hidden');
+            
+            document.getElementById('nav-feed').className = "flex flex-col items-center text-gray-400 transition transform hover:scale-110";
+            document.getElementById('nav-chat').className = "flex flex-col items-center text-gray-400 transition transform hover:scale-110";
+            document.getElementById('nav-hub').className = "flex flex-col items-center text-gray-400 transition transform hover:scale-110";
+
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            document.getElementById('nav-' + tabName).className = "flex flex-col items-center text-cyan-400 transition transform hover:scale-110";
+        }
+
+        // ระบบโพสต์ข้อความใหม่สดๆ
+        function addNewPost() {
+            const input = document.getElementById('post-input');
+            const text = input.value.trim();
+            if(!text) {
+                alert('กรุณากรอกข้อความก่อนโพสต์ครับนายท่าน!');
+                return;
+            }
+
+            const feed = document.getElementById('dynamic-feed');
+            const newPostHTML = `
+                <div class="glass-panel rounded-3xl p-4 flex flex-col space-y-3 animate-fade-in border border-cyan-500/30">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <img src="https://i.pravatar.cc/100?img=33" class="w-10 h-10 rounded-full object-cover border border-cyan-400">
+                            <div>
+                                <h3 class="font-bold text-sm text-cyan-300">คุณ (ผู้สร้างอาณาจักร NEXUS)</h3>
+                                <p class="text-[11px] text-gray-400">เมื่อสักครู่นี้</p>
+                            </div>
+                        </div>
+                        <span class="text-xs bg-cyan-500/20 text-cyan-300 px-2.5 py-1 rounded-full border border-cyan-500/30">Founder</span>
+                    </div>
+                    <p class="text-sm text-gray-100 leading-relaxed">${text}</p>
+                    <div class="flex justify-around text-gray-400 text-xs pt-2 border-t border-white/5">
+                        <button onclick="likePost(this)" class="flex items-center space-x-1 hover:text-cyan-400 transition py-1 px-3 rounded-lg hover:bg-white/5">
+                            <span>🔥</span> <span class="like-count">1</span> โคตรเจ๋ง
+                        </button>
+                        <button onclick="alert('เปิดห้องแชทโพสต์นี้')" class="flex items-center space-x-1 hover:text-white transition py-1 px-3 rounded-lg hover:bg-white/5">
+                            <span>💬</span> แชท
+                        </button>
+                        <button onclick="alert('แชร์เรียบร้อย!')" class="flex items-center space-x-1 hover:text-white transition py-1 px-3 rounded-lg hover:bg-white/5">
+                            <span>↗️</span> แชร์
+                        </button>
+                    </div>
+                </div>
+            `;
+            feed.insertAdjacentHTML('afterbegin', newPostHTML);
+            input.value = '';
+        }
+
+        // ระบบกดไลก์เพิ่มจำนวนจริง
+        function likePost(btn) {
+            const countSpan = btn.querySelector('.like-count');
+            let currentCount = parseInt(countSpan.innerText);
+            countSpan.innerText = currentCount + 1;
+            btn.classList.add('text-cyan-400', 'scale-110');
+            setTimeout(() => btn.classList.remove('scale-110'), 200);
+        }
+
+        // ระบบจำลองเปิดหน้าวิดีโอคอล
+        function openCallModal() {
+            alert('🟢 Nexus Quantum Call: กำลังเชื่อมต่อระบบวิดีโอคอลความคมชัดระดับ 4K ไร้ดีเลย์...');
+        }
+    </script>
 </body>
 </html>
