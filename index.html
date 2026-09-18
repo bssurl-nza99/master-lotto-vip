@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Lottery Analysis System - Pro Compact v6.0</title>
+    <title>AI Lottery Analysis System - Pro Compact v6.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -339,11 +339,11 @@
 <body>
 
 <div class="container">
-    <h2>📊 AI Smart Lottery Analytics - Pro Compact v6.0</h2>
+    <h2>📊 AI Smart Lottery Analytics - Pro Compact v6.2</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ:</label>
-        <textarea id="dataInput" placeholder="หุ้นไทย เช้า
+        <textarea id="dataInput" placeholder="หุ้นไทย ทั้งวัน
 18 ก.ย. 69
 799
 47"></textarea>
@@ -456,6 +456,14 @@
             if (CARD_CATALOG[key].name === clean) return key;
         }
 
+        // จัดลำดับความสำคัญของหุ้นไทยก่อน เพื่อไม่ให้คำว่า "หุ้นไทย" ไปทับซ้อนกันผิดรอบ
+        if (clean.includes('ทั้งวัน')) return 'thai_allday';
+        if (clean.includes('เที่ยง')) return 'thai_noon';
+        if (clean.includes('บ่าย') && !clean.includes('นิเคอิ') && !clean.includes('จีน') && !clean.includes('ฮั่งเส็ง')) return 'thai_pm';
+        if (clean.includes('เย็น')) return 'thai_eve';
+        if (clean.includes('รัฐบาล')) return 'thai_gov';
+        if (clean.includes('หุ้นไทย')) return 'thai_am';
+
         if (clean.includes('นิเคอิ') || clean.includes('นิกเคอิ')) {
             if (clean.includes('เช้า') && clean.includes('VIP')) return 'nikkei_vip_am';
             if (clean.includes('บ่าย') && clean.includes('VIP')) return 'nikkei_vip_pm';
@@ -522,14 +530,7 @@
         if (clean.includes('อินเดีย')) return 'india';
         if (clean.includes('อียิปต์')) return 'egypt';
 
-        if (clean.includes('ทั้งวัน')) return 'thai_allday';
-        if (clean.includes('เที่ยง')) return 'thai_noon';
-        if (clean.includes('บ่าย')) return 'thai_pm';
-        if (clean.includes('เย็น')) return 'thai_eve';
-        if (clean.includes('รัฐบาล')) return 'thai_gov';
-        if (clean.includes('หุ้นไทย')) return 'thai_am';
-
-        return 'nikkei_vip_am';
+        return null;
     }
 
     function isLotteryHoliday(internalKey, dateObj) {
@@ -586,19 +587,17 @@
         let freqMap = {};
         for(let i=0; i<10; i++) freqMap[i] = 15;
 
-        // เช็คว่าเป็นกลุ่มหุ้นไทยหรือไม่ (เน้นบนเป็นหลัก)
         let isThaiStock = internalKey.startsWith('thai_');
 
         recentDays.forEach((r, idx) => {
             let weight = Math.pow(1.25, (15 - idx));
             if(r.top) {
-                // หากเป็นหุ้นไทย ให้เพิ่มค่าน้ำหนักฝั่งเลขบน (Top) เป็นพิเศษ เพื่อให้โอกาสออกฝั่งบนสูงกว่าล่าง
                 let topMultiplier = isThaiStock ? 2.2 : 1.5;
                 freqMap[parseInt(r.top[0]) || 0] += weight * topMultiplier;
                 freqMap[parseInt(r.top[1]) || 0] += weight * (topMultiplier * 0.8);
             }
             if(r.bottom) {
-                let bottomMultiplier = isThaiStock ? 0.9 : 1.3; // หุ้นไทยลดน้ำหนักฝั่งล่างลงเล็กน้อยเพื่อให้ไปเน้นบน
+                let bottomMultiplier = isThaiStock ? 0.9 : 1.3;
                 freqMap[parseInt(r.bottom[0]) || 0] += weight * bottomMultiplier;
             }
         });
@@ -803,14 +802,17 @@
             if (line.includes('|')) {
                 let parts = line.split('|');
                 let rawTitle = parts[0].trim();
-                activeInternalKey = mapRawNameToInternalKey(rawTitle);
-                currentDate = parts[1] ? parts[1].trim() : currentDate;
-                if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
+                let mappedKey = mapRawNameToInternalKey(rawTitle);
+                if (mappedKey) {
+                    activeInternalKey = mappedKey;
+                    currentDate = parts[1] ? parts[1].trim() : currentDate;
+                    if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
+                }
                 continue;
             }
 
             let detectedKey = mapRawNameToInternalKey(line);
-            if (CARD_CATALOG[detectedKey]) {
+            if (detectedKey && CARD_CATALOG[detectedKey]) {
                 activeInternalKey = detectedKey;
                 if (!groups[activeInternalKey]) groups[activeInternalKey] = [];
                 continue;
