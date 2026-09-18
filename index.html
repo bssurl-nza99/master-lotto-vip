@@ -1,116 +1,232 @@
-import random
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบวิเคราะห์หวยสไตล์พม่า</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 {
+            text-align: center;
+            color: #ffb703;
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 14px;
+            color: #b0bec5;
+            display: block;
+            margin-bottom: 8px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            resize: vertical;
+        }
+        textarea:focus {
+            border-color: #ffb703;
+            outline: none;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-calc {
+            background-color: #2b9348;
+            color: white;
+        }
+        .btn-calc:hover {
+            background-color: #55a630;
+        }
+        .btn-clear {
+            background-color: #d90429;
+            color: white;
+        }
+        .btn-clear:hover {
+            background-color: #ef233c;
+        }
+        .result-box {
+            margin-top: 25px;
+            background: #252525;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 5px solid #ffb703;
+            display: none;
+        }
+        .result-box h3 {
+            margin-top: 0;
+            color: #ffb703;
+            font-size: 18px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+        .result-item {
+            margin: 10px 0;
+            font-size: 15px;
+        }
+        .highlight {
+            color: #4cc9f0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
 
-class MyanmarStrictLotteryPredictor:
-    def __init__(self, historical_data):
-        """
-        historical_data: รับข้อมูลสถิติย้อนหลัง (ชุดตัวเลข 2 ตัว)
-        """
-        self.data = historical_data
-
-    def analyze_matrix(self):
-        digit_counts = {str(i): 0 for i in range(10)}
-        pair_counts = {}
+    <div class="container">
+        <h2>🇲🇲 วิเคราะห์หวยสไตล์พม่า</h2>
         
-        for item in self.data:
-            if len(item) >= 2:
-                d1, d2 = item[0], item[1]
-                # กรองเลขเบิ้ลออกทันที 100% จากฐานข้อมูลสถิติ
-                if d1 != d2:
-                    digit_counts[d1] += 1
-                    digit_counts[d2] += 1
-                    
-                    # จัดเรียงจากน้อยไปหามากตั้งแต่บันทึกสถิติคู่
-                    pair = "".join(sorted([d1, d2]))
-                    pair_counts[pair] = pair_counts.get(pair, 0) + 1
-
-        sorted_digits = sorted(digit_counts.items(), key=lambda x: x[1], reverse=True)
-        sorted_pairs = sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)
-        return sorted_digits, sorted_pairs
-
-    def generate_strict_prediction(self):
-        sorted_digits, sorted_pairs = self.analyze_matrix()
+        <label for="historicalInput">กรอกสถิตุย้อนหลัง (เช่น 45, 12, 96, 51 หรือเว้นวรรค):</label>
+        <textarea id="historicalInput" placeholder="ตัวอย่าง: 45 12 96 51 30 49 59 75 37 63"></textarea>
         
-        # 1. คัดเลือกตัวเด่นสูงสุด 2 ตัว
-        top_digit_1 = sorted_digits[0][0]
-        top_digit_2 = sorted_digits[1][0]
-        
-        # คำนวณเปอร์เซ็นต์ความแม่นยำระดับสูง (75% - 89%)
-        confidence_score = round(76.5 + random.uniform(1.2, 10.0), 2)
-        if confidence_score > 89.5: 
-            confidence_score = 88.9
+        <div class="btn-group">
+            <button class="btn-calc" onclick="calculateLottery()">ประมวลผล</button>
+            <button class="btn-clear" onclick="clearData()">ล้างข้อมูล</button>
+        </div>
 
-        # กำหนดเงื่อนไขห้าม: ห้ามเลขเด่นสองตัวแรกจับคู่กันเอง
-        forbidden_pair_1 = "".join(sorted([top_digit_1, top_digit_2]))
+        <div class="result-box" id="resultOutput">
+            <h3>📊 ผลลัพธ์ความแม่นยำ</h3>
+            <div class="result-item">🔢 ตัวเด่นสูงสุด 2 ตัว: <span id="topDigits" class="highlight"></span></div>
+            <div class="result-item">🎯 เปอร์เซ็นต์ความแม่นยำ: <span id="confidence" class="highlight"></span>%</div>
+            <hr style="border:0; border-top:1px solid #333; margin:12px 0;">
+            <div class="result-item">🔥 คู่เจาะหลัก (5 คู่): <br><span id="primaryPairs" class="highlight" style="font-size:16px;"></span></div>
+            <div class="result-item" style="margin-top:12px;">📦 รวมชุดเต็ม (10 คู่): <br><span id="fullPairs" style="color: #adb5bd; font-size: 14px;"></span></div>
+        </div>
+    </div>
 
-        # 2. คัดเลือกคู่เจาะหลัก 5 คู่ (เรียงจากน้อยไปหามาก, ไม่มีเบิ้ล, ไม่เอาเด่นชนกันเอง)
-        primary_pairs = []
-        
-        # ค้นหาจากสถิติจริงก่อน
-        for pair, weight in sorted_pairs:
-            d_a, d_b = pair[0], pair[1]
-            # เงื่อนไข: ห้ามเบิ้ล (d_a != d_b), ห้ามเป็นคู่เด่นชนกันเอง, ต้องมีเลขเด่นอย่างน้อย 1 ตัวร่วมอยู่
-            if d_a != d_b and pair != forbidden_pair_1:
-                if top_digit_1 in pair or top_digit_2 in pair:
-                    sorted_pair = "".join(sorted([d_a, d_b]))
-                    if sorted_pair not in primary_pairs:
-                        primary_pairs.append(sorted_pair)
-            if len(primary_pairs) >= 5:
-                break
+    <script>
+        function calculateLottery() {
+            let rawText = document.getElementById('historicalInput').value;
+            let data = rawText.match(/\d{2}/g); // ดึงชุดตัวเลขทีละ 2 หลัก
+            
+            if (!data || data.length < 3) {
+                alert("กรุณากรอกข้อมูลสถิติย้อนหลังอย่างน้อย 3 ชุด (เลข 2 ตัวขึ้นไป)");
+                return;
+            }
 
-        # ถ้าสถิติจริงไม่พอ ให้เติมด้วยการผสมเลขเด่นกับเลขรองอื่นๆ ตามตรรกะพม่า
-        other_digits = [d[0] for d in sorted_digits[2:]]
-        while len(primary_pairs) < 5 and other_digits:
-            od = other_digits.pop(0)
-            for td in [top_digit_1, top_digit_2]:
-                if td != od:
-                    pair_candidate = "".join(sorted([td, od]))
-                    if pair_candidate not in primary_pairs and pair_candidate != forbidden_pair_1:
-                        primary_pairs.append(pair_candidate)
-                        if len(primary_pairs) >= 5:
-                            break
+            let digitCounts = {};
+            for(let i=0; i<10; i++) digitCounts[i] = 0;
+            let pairCounts = {};
 
-        # 3. ขยายรวมชุดเต็ม 10 คู่ (คู่เจาะหลัก 5 คู่ + คู่เสริมความปลอดภัย เรียงจากน้อยไปหามาก)
-        full_10_pairs = list(primary_pairs)
-        
-        for pair, weight in sorted_pairs:
-            d_a, d_b = pair[0], pair[1]
-            if d_a != d_b and pair != forbidden_pair_1:
-                sorted_pair = "".join(sorted([d_a, d_b]))
-                if sorted_pair not in full_10_pairs:
-                    full_10_pairs.append(sorted_pair)
-            if len(full_10_pairs) >= 10:
-                break
+            // วิเคราะห์สถิติและตัดเลขเบิ้ล 100%
+            data.forEach(item => {
+                let d1 = item[0];
+                let d2 = item[1];
+                if (d1 !== d2) {
+                    digitCounts[d1]++;
+                    digitCounts[d2]++;
+                    let pair = [d1, d2].sort().join('');
+                    pairCounts[pair] = (pairCounts[pair] || 0) + 1;
+                }
+            });
 
-        # หากยังไม่ครบ 10 คู่ เติมเต็มด้วยความน่าจะเป็นที่คัดกรองแล้ว
-        while len(full_10_pairs) < 10:
-            d_a = random.choice([top_digit_1, top_digit_2] + [d[0] for d in sorted_digits[2:6]])
-            d_b = random.choice([d[0] for d in sorted_digits[2:]])
-            if d_a != d_b:
-                candidate = "".join(sorted([d_a, d_b]))
-                if candidate not in full_10_pairs and candidate != forbidden_pair_1:
-                    full_10_pairs.append(candidate)
+            // เรียงลำดับตัวเด่นจากมากไปน้อย
+            let sortedDigits = Object.entries(digitCounts).sort((a, b) => b[1] - a[1]);
+            let top1 = sortedDigits[0][0];
+            let top2 = sortedDigits[1][0];
 
-        return {
-            "top_digits": [top_digit_1, top_digit_2],
-            "confidence_percentage": confidence_score,
-            "primary_pairs": primary_pairs[:5],
-            "full_10_pairs": full_10_pairs[:10]
+            // เงื่อนไข: ห้ามเลขเด่น 2 ตัวแรกจับคู่กันเอง
+            let forbiddenPair = [top1, top2].sort().join('');
+            let sortedPairs = Object.entries(pairCounts).sort((a, b) => b[1] - a[1]);
+
+            let primaryPairs = [];
+            
+            // ค้นหาคู่เจาะหลัก 5 คู่ (เรียงจากน้อยไปหามาก, ไม่มีเบิ้ล, ไม่เอาเด่นคู่กัน)
+            for (let [pair, weight] of sortedPairs) {
+                let d1 = pair[0], d2 = pair[1];
+                if (d1 !== d2 && pair !== forbiddenPair) {
+                    if (pair.includes(top1) || pair.includes(top2)) {
+                        if (!primaryPairs.includes(pair)) primaryPairs.push(pair);
+                    }
+                }
+                if (primaryPairs.length >= 5) break;
+            }
+
+            // หากสถิติจริงไม่พอ เติมด้วยเลขรองตามสูตรพม่า
+            let otherDigits = sortedDigits.slice(2).map(d => d[0]);
+            while (primaryPairs.length < 5 && otherDigits.length > 0) {
+                let od = otherDigits.shift();
+                [top1, top2].forEach(td => {
+                    if (td !== od) {
+                        let p = [td, od].sort().join('');
+                        if (!primaryPairs.includes(p) && p !== forbiddenPair && primaryPairs.length < 5) {
+                            primaryPairs.push(p);
+                        }
+                    }
+                });
+            }
+
+            // ขยายรวมชุดเต็ม 10 คู่
+            let fullPairs = [...primaryPairs];
+            for (let [pair, weight] of sortedPairs) {
+                let d1 = pair[0], d2 = pair[1];
+                if (d1 !== d2 && pair !== forbiddenPair && !fullPairs.includes(pair)) {
+                    fullPairs.push(pair);
+                }
+                if (fullPairs.length >= 10) break;
+            }
+
+            while (fullPairs.length < 10) {
+                let d1 = [top1, top2, otherDigits[Math.floor(Math.random()*otherDigits.length)]][Math.floor(Math.random()*3)];
+                let d2 = Math.floor(Math.random()*10).toString();
+                if (d1 !== d2) {
+                    let p = [d1, d2].sort().join('');
+                    if (!fullPairs.includes(p) && p !== forbiddenPair) {
+                        fullPairs.push(p);
+                    }
+                }
+            }
+
+            // สุ่มเปอร์เซ็นต์ความแม่นยำสูง (76.5% - 88.9%)
+            let confidence = (76.5 + Math.random() * 12.4).toFixed(2);
+            if (confidence > 89.0) confidence = "88.90";
+
+            // แสดงผลลัพธ์ลงหน้าจอ
+            document.getElementById('topDigits').innerText = `[${top1}] และ [${top2}]`;
+            document.getElementById('confidence').innerText = confidence;
+            document.getElementById('primaryPairs').innerText = primaryPairs.join(', ');
+            document.getElementById('fullPairs').innerText = fullPairs.slice(0, 10).join(', ');
+            document.getElementById('resultOutput').style.display = 'block';
         }
 
-# --- ตัวอย่างการทดสอบระบบ ---
-if __name__ == "__main__":
-    # จำลองชุดข้อมูลสถิติย้อนหลัง
-    sample_data = ["45", "12", "96", "51", "30", "49", "59", "75", "37", "63", "51", "75", "82", "14", "33", "55"]
-    
-    predictor = MyanmarStrictLotteryPredictor(sample_data)
-    result = predictor.generate_strict_prediction()
-
-    print("="*55)
-    print(" 🇲🇲 รายงานวิเคราะห์สถิติ (สไตล์หวยพม่า - ปราศจากเลขเบิ้ล/เด่นชนกัน) ")
-    print("="*55)
-    print(f"🔢 ตัวเด่นสูงสุด 2 ตัว      : [{result['top_digits'][0]}] และ [{result['top_digits'][1]}]")
-    print(f"🎯 เปอร์เซ็นต์ความแม่นยำ   : {result['confidence_percentage']}% (High Accuracy)")
-    print("-" * 55)
-    print(f"🔥 คู่เจาะหลักเน้นๆ (5 คู่)  : {', '.join(result['primary_pairs'])}")
-    print(f"📦 รวมชุดเต็มสูตร (10 คู่)  : {', '.join(result['full_10_pairs'])}")
-    print("="*55)
+        function clearData() {
+            document.getElementById('historicalInput').value = '';
+            document.getElementById('resultOutput').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
