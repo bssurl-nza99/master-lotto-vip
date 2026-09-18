@@ -171,7 +171,7 @@ function getNextTargetDate(topDateStr,internalKey){
  let cleanStr=topDateStr.replace('🗓','').trim(),parts=cleanStr.replace(/\./g, '').split(/\s+/);
  if(parts.length>=3){
   let day=parseInt(parts[0]),monthStr=parts[1]||'กย',year=parseInt(parts[2]); if(year<100)year+=2500;if(year<2500)year+=543;
-  const mm={'มค':0,'กพ':1,'มีค':2,'เมย':3,'พค':4,'มิย':5,'กค':6,'สค':7,'กย':8,'ตค':9,'พย':10,'ธค':11};
+  const mm={'มค':0,'กพ':1,'มีค':2,'เมย':3,'พค':4,'มิย':5,'កค':6,'สค':7,'กย':8,'ตค':9,'พย':10,'ธค':11};
   let d=new Date(year-543,mm[monthStr]??8,day); do{d.setDate(d.getDate()+1)}while(isLotteryHoliday(internalKey,d));
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return `${d.getDate()} ${months[d.getMonth()]} ${(d.getFullYear()+543).toString().slice(-2)}`;
@@ -179,47 +179,61 @@ function getNextTargetDate(topDateStr,internalKey){
  return cleanStr;
 }
 
-/* =========================
-   OPTIMIZED PAIR GENERATION ENGINE (ปรับปรุงเพิ่มความแม่นยำชุดเจาะ)
-   ========================= */
-function generateControlledPairs(tDigitStr, otherDigitStr, records){
- let tDigit = parseInt(tDigitStr);
+/* =====================================================================
+   HUMAN LOGIC OPTIMIZED PAIR GENERATION ENGINE (ตามกฎที่คุณต้องการเป๊ะๆ)
+   1. ห้ามเลขเด่นและเลขรองไขว้กันเอง (เช่น เด่น 0 รอง 2 ตัด 02 ออกทันที)
+   2. เลขเด่นต้องอยู่หลักสิบ (ด้านหน้า) เสมอ
+   3. ตัดเลขเบิ้ลและเลขกลับทิ้งทั้งหมดเพื่อไม่ให้เสียโควต้า
+   4. เรียงลำดับจากน้อยไปหามากอย่างเป็นระเบียบ
+   ===================================================================== */
+function generateControlledPairs(primaryDigitStr, secondaryDigitStr, records){
+ let primary = parseInt(primaryDigitStr);
+ let secondary = parseInt(secondaryDigitStr);
  let candidates = [];
- 
- // 1. ขยายขอบเขตการสร้างคู่ชุดให้ครอบคลุมทั้งแบบตรงและสลับตำแหน่ง (เปิดรับผลเลขกลับที่มีโอกาสออกจริงสูง)
+
+ // สร้างเฉพาะตัวเลขที่หลักสิบเป็นตัวเด่น (primary)
  for(let u = 0; u <= 9; u++){
-  let pair1 = tDigit.toString() + u.toString();
-  let pair2 = u.toString() + tDigit.toString();
-  
-  if(!candidates.includes(pair1)) candidates.push(pair1);
-  if(!candidates.includes(pair2)) candidates.push(pair2);
+  // เงื่อนไขที่ 1: ตัดเลขเบิ้ล (u === primary)
+  // เงื่อนไขที่ 2: ห้ามเอาตัวรองมาไขว้ (u === secondary)
+  if(u === primary || u === secondary) continue;
+
+  let pair = primary.toString() + u.toString();
+  let revPair = u.toString() + primary.toString(); // เช็คเลขกลับด้วย
+
+  if(!candidates.includes(pair) && !candidates.includes(revPair)){
+   candidates.push(pair);
+  }
  }
 
- // 2. ให้คะแนนแบบ True Pair History (เช็คความถี่จริงที่คู่นี้เคยออกในอดีต พร้อมให้น้ำหนักงวดล่าสุดสูงขึ้น)
+ // ให้คะแนนความถี่จริงจากประวัติย้อนหลัง (True Pair Scoring)
  candidates.sort((a, b) => {
   let scoreA = 0, scoreB = 0;
   records.forEach((r, idx) => {
-   let weight = (records.length - idx) * 2; 
+   let weight = (records.length - idx) * 2;
    if(r.bottom){
     let bVal = r.bottom;
-    let revB = bVal[1] + bVal[0];
-    
-    if(bVal === a || revB === a) scoreA += weight * 3;
-    if(bVal === b || revB === b) scoreB += weight * 3;
-    
-    if(bVal.includes(tDigitStr)) { scoreA += 1; scoreB += 1; }
+    if(bVal === a) scoreA += weight * 3;
+    if(bVal === b) scoreB += weight * 3;
    }
   });
   return scoreB - scoreA;
  });
 
- // 3. เลือก 5 ชุดที่ดีที่สุดและเรียงลำดับจากน้อยไปมากเพื่อให้ดูง่ายเป็นระเบียบ
+ // คัดเลือกมา 5 ชุด แล้วจัดเรียงจากน้อยไปหามากให้เป็นระเบียบ
  let selected = candidates.slice(0, 5);
  selected.sort((a, b) => parseInt(a) - parseInt(b));
- 
+
+ // เผื่อกรณีแคนดิเดตไม่พอ ให้เติมตัวเลขที่ถูกต้องตามเงื่อนไข
  while(selected.length < 5){
-  let fallback = tDigit.toString() + ((selected.length * 2) % 10).toString();
-  if(!selected.includes(fallback)) selected.push(fallback);
+  for(let u = 0; u <= 9; u++){
+   if(u === primary || u === secondary) continue;
+   let p = primary.toString() + u.toString();
+   let revP = u.toString() + primary.toString();
+   if(!selected.includes(p) && !selected.includes(revP)){
+    selected.push(p);
+    break;
+   }
+  }
   selected.sort((a, b) => parseInt(a) - parseInt(b));
   if(selected.length >= 5) break;
  }
@@ -261,6 +275,7 @@ function runEngineWithStrategy(records, targetIndex, strategy){
  let d1 = sortedDigits[0]??'4', d2 = sortedDigits[1]??'6';
  if(d1 === d2) d2 = sortedDigits[2]??'3';
 
+ // ส่ง d1 (ตัวเด่น) และ d2 (ตัวรอง) เข้าฟังก์ชันสร้างชุดเจาะควบคุมพิเศษ
  let pairsT1 = generateControlledPairs(d1, d2, records);
  let pairsT2 = generateControlledPairs(d2, d1, records);
 
