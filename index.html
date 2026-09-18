@@ -171,17 +171,6 @@
         .flag { font-size: 26px; }
         
         .title-text h3 { margin: 0; font-size: 16px; color: #2c221e; font-weight: 600; }
-        .time-badge {
-            font-size: 11px;
-            color: #7c5c2c;
-            background: #fdf6e2;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-weight: 500;
-            border: 1px solid #f7ebd0;
-            display: inline-block;
-            margin-top: 3px;
-        }
         
         .date-badge { 
             font-weight: 600; 
@@ -285,7 +274,6 @@
         document.getElementById('resultContainer').innerHTML = '';
     }
 
-    // ฟังก์ชันแปลงชื่อหวยเป็นธงชาติที่ถูกต้อง
     function getFlagForLottery(titleName) {
         let name = titleName.toLowerCase();
         if (name.includes('ฮานอย') || name.includes('เวียดนาม')) return '🇻🇳';
@@ -299,26 +287,27 @@
         if (name.includes('อังกฤษ')) return '🇬🇧';
         if (name.includes('เยอรมัน')) return '🇩🇪';
         if (name.includes('หุ้นไทย')) return '🇹🇭';
-        return '🎫'; // ค่าเริ่มต้นสำหรับหวยอื่นๆ
+        return '🎫';
     }
 
     function formatThaiDate(dateStr) {
         if (!dateStr) return "18 ก.ย. 69";
-        let clean = dateStr.replace('🗓', '').trim();
-        return clean;
+        return dateStr.replace('🗓', '').trim();
     }
 
+    // คำนวณวันถัดไปจากวันที่ล่าสุดในข้อมูลจริงอย่างแม่นยำ
     function getNextTargetDate(lastDateStr) {
         if (!lastDateStr) return "18 ก.ย. 69";
         let cleanStr = lastDateStr.replace('🗓', '').trim();
         let parts = cleanStr.replace(/\./g, '').split(/\s+/);
+        
         if (parts.length >= 3) {
             let day = parseInt(parts[0]);
             let monthStr = parts[1];
             let year = parts[2];
             
             if (!isNaN(day)) {
-                day += 1;
+                day += 1; // ขยับไป 1 วันจากรอบล่าสุด
                 const monthMap = {
                     'มค': 'ม.ค.', 'มกราคม': 'ม.ค.', 'กพ': 'ก.พ.', 'กุมภาพันธ์': 'ก.พ.',
                     'มีค': 'มี.ค.', 'มีนาคม': 'มี.ค.', 'เมย': 'เม.ย.', 'เมษายน': 'เม.ย.',
@@ -330,14 +319,13 @@
                     'ม.ค': 'ม.ค.', 'ก.พ': 'ก.พ.', 'มี.ค': 'มี.ค.', 'เม.ย': 'เม.ย.', 'พ.ค': 'พ.ค.', 'มิ.ย': 'มิ.ย.'
                 };
                 let cleanMonth = monthStr.replace(/\./g, '').trim();
-                let mappedMonth = monthMap[cleanMonth] || monthMap[monthStr] || 'ก.ย.';
+                let mappedMonth = monthMap[cleanMonth] || monthMap[monthStr] || monthStr;
                 return `${day} ${mappedMonth} ${year}`;
             }
         }
-        return "18 ก.ย. 69";
+        return cleanStr;
     }
 
-    // ประมวลผลและวัดผลเปอร์เซ็นต์เลขเจาะย้อนหลังรวมทั้งหมด
     function runBacktestAudit(records) {
         if (!records || records.length < 3) {
             return { total: 10, hits: 8, misses: 2, maxWinStreak: 8, maxLoseStreak: 1, topHitAcc: '72.5', pairHitAcc: '78.4', nextDayProb: '84.2' };
@@ -437,6 +425,7 @@
             return pairs.slice(0, 5).sort((a, b) => parseInt(a) - parseInt(b));
         }
 
+        // ใช้ฟังก์ชันคำนวณวันถัดไปจากวันล่าสุดของหวยแต่ละประเภท
         let nextDate = getNextTargetDate(lastRecord.date);
         
         return {
@@ -460,7 +449,6 @@
                     <span class="flag">${flagIcon}</span>
                     <div class="title-text">
                         <h3>${title}</h3>
-                        <div class="time-badge">3 ตัวบน / 2 ตัวล่าง</div>
                     </div>
                 </div>
                 <div class="date-badge">🗓️ ${data.targetDate}</div>
@@ -478,12 +466,12 @@
             </div>
 
             <div class="section-group row-1">
-                <div class="section-title">ชุดเด่น (5 คู่)</div>
+                <div class="section-title">ชุดเด่น</div>
                 <div class="grid-pairs">${renderRow(data.pairsT1)}</div>
             </div>
 
             <div class="section-group row-2">
-                <div class="section-title">ชุดรอง (5 คู่)</div>
+                <div class="section-title">ชุดรอง</div>
                 <div class="grid-pairs">${renderRow(data.pairsT2)}</div>
             </div>
         `;
