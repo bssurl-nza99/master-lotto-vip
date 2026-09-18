@@ -3,139 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE VOID - สงครามแบ่งชนชั้น & บัลลังก์ความว่างเปล่า</title>
+    <title>THE VOID - ตลาดประมูลอีโก้ระดับพรีเมียม</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #030305; color: #fff; font-family: monospace; }
-        .glow-red { box-shadow: 0 0 30px rgba(255, 0, 0, 0.4); }
-        .glass { background: rgba(20, 20, 30, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        @keyframes pulse-slow { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.3; } }
-        .void-bg { animation: pulse-slow 5s infinite ease-in-out; }
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;900&display=swap');
+        body { background-color: #050508; color: #f3f4f6; font-family: 'Prompt', sans-serif; }
+        .glass-panel { background: rgba(15, 15, 25, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glass-card { background: rgba(25, 25, 38, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow-gold { box-shadow: 0 0 35px rgba(234, 179, 8, 0.25); }
+        .glow-red { box-shadow: 0 0 35px rgba(239, 68, 68, 0.3); }
+        @keyframes ticker { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+        .ticker-wrap { overflow: hidden; height: 24px; position: relative; }
+        .ticker-move { display: flex; flex-direction: column; animation: ticker 10s linear infinite; }
+        .ticker-move:hover { animation-play-state: paused; }
     </style>
 </head>
-<body class="min-h-[100dvh] flex flex-col justify-between items-center p-3 select-none relative overflow-x-hidden">
+<body class="min-h-[100dvh] flex flex-col justify-between p-3 max-w-md mx-auto relative select-none overflow-x-hidden">
 
-    <!-- พื้นหลัง -->
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-950/20 via-black to-black void-bg pointer-events-none"></div>
+    <!-- แถบวิ่ง ticker ด้านบนสุด (จำลองราคาหุ้นพุ่ง) -->
+    <div class="glass-panel rounded-full px-4 py-1.5 flex items-center justify-between text-[11px] mb-3 shadow-lg">
+        <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="text-gray-400 font-light">ตลาดความว่างเปล่า:</span>
+            <span id="market-status" class="text-emerald-400 font-semibold">📈 ขาขึ้น (Bullish)</span>
+        </div>
+        <div id="total-platform-vol" class="text-xs font-bold text-yellow-400">สะสมรวม: 1,492 THB</div>
+    </div>
 
-    <!-- ส่วนหัว -->
-    <header class="relative z-10 text-center space-y-0.5 mt-2">
-        <h1 class="text-2xl font-black tracking-widest text-red-600 drop-shadow-[0_0_10px_rgba(255,0,0,0.6)]">THE VOID</h1>
-        <p class="text-[9px] text-gray-400 uppercase tracking-widest">สนามประลองอีโก้ • เริ่มต้นแค่ 1 บาท</p>
+    <!-- ส่วนหัวหลัก -->
+    <header class="text-center space-y-1 mb-3">
+        <h1 class="text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 to-purple-500">THE VOID</h1>
+        <p class="text-[11px] text-gray-400 font-light tracking-widest">THE ULTIMATE EGO EXCHANGE</p>
     </header>
 
-    <!-- ส่วนกลาง: บัลลังก์ & บ้านตามชนชั้น -->
-    <main class="relative z-10 flex flex-col items-center justify-center space-y-3 my-auto w-full max-w-sm">
-        
-        <!-- ป้ายบอกชนชั้นปัจจุบัน -->
-        <div id="tier-badge" class="bg-neutral-800 text-yellow-400 border border-yellow-500/30 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-md">
-            🏚️ สถานะปัจจุบัน: กระท่อมสังกะสีผุๆ (ยาจกผู้ยิ่งใหญ่)
-        </div>
+    <!-- แท็บเมนูด้านบน (สลับหน้าห้องประมูล / อันดับ / โปรไฟล์) -->
+    <nav class="grid grid-cols-3 gap-2 mb-3">
+        <button onclick="switchTab('arena')" id="tab-btn-arena" class="py-2 rounded-xl text-xs font-bold bg-red-600 text-white shadow-md transition">🏛️ ห้องประมูล</button>
+        <button onclick="switchTab('ranking')" id="tab-btn-ranking" class="py-2 rounded-xl text-xs font-bold bg-neutral-900/80 text-gray-400 border border-white/5 transition">📊 กระดานหุ้น</button>
+        <button onclick="switchTab('profile')" id="tab-btn-profile" class="py-2 rounded-xl text-xs font-bold bg-neutral-900/80 text-gray-400 border border-white/5 transition">⚙️ โปรไฟล์</button>
+    </nav>
 
-        <!-- การ์ดแสดงราชาปัจจุบัน -->
-        <div class="glass w-full rounded-2xl p-4 space-y-2 border border-red-500/30 shadow-xl relative overflow-hidden">
-            <div id="price-tag" class="absolute top-3 right-3 bg-red-600/20 text-red-400 text-[9px] px-2 py-0.5 rounded-full border border-red-500/30">ราคา: 1 THB</div>
-            <div class="text-[10px] text-red-400 font-bold uppercase tracking-wider text-left">👑 ผู้อยู่อาศัยสูงสุดตอนนี้</div>
+    <!-- เนื้อหาหลัก: ห้องประมูล (Arena) -->
+    <main id="view-arena" class="space-y-3 my-auto">
+        
+        <!-- การ์ดราชาปัจจุบัน (แบบหุ้นพุ่ง) -->
+        <div class="glass-panel rounded-3xl p-5 space-y-4 glow-red relative overflow-hidden border-t-2 border-red-500">
+            <div class="absolute top-4 right-4 bg-red-500/10 text-red-400 text-[10px] px-3 py-1 rounded-full border border-red-500/30 font-semibold flex items-center space-x-1">
+                <span>🔥 ราคาปัจจุบัน</span>
+                <span id="current-price-badge" class="text-sm font-black text-red-500">1 THB</span>
+            </div>
             
-            <div class="flex items-center space-x-3 pt-1">
-                <div class="w-14 h-14 rounded-full bg-neutral-900 border-2 border-red-500 overflow-hidden flex items-center justify-center shrink-0">
-                    <span id="king-icon" class="text-2xl">🛖</span>
+            <div class="flex items-center space-x-3">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-yellow-600 p-0.5 shrink-0 shadow-lg">
+                    <div id="king-avatar-box" class="w-full h-full bg-neutral-900 rounded-[14px] flex items-center justify-center text-2xl overflow-hidden">
+                        👑
+                    </div>
                 </div>
                 <div class="overflow-hidden">
-                    <h2 id="king-name" class="text-sm font-black text-white truncate">ยังไม่มีใครมาจับจอง</h2>
-                    <p id="king-status-text" class="text-[10px] text-gray-400 italic">นั่งตบยุงอยู่ในกระท่อม</p>
+                    <span id="king-tier-label" class="text-[10px] uppercase font-bold text-yellow-400 tracking-wider">🏚️ บ้านสังกะสีเริ่มต้น</span>
+                    <h2 id="king-name" class="text-base font-black text-white truncate">ยังไม่มีเจ้าของบัลลังก์</h2>
+                    <p class="text-[11px] text-gray-400 truncate">ลงทุนไป: <span id="king-spent" class="text-yellow-400 font-bold">1 THB</span></p>
+                </div>
+            </div>
+
+            <!-- กราฟจำลองการไต่ระดับ -->
+            <div class="w-full bg-black/40 rounded-xl p-2.5 space-y-1.5 border border-white/5">
+                <div class="flex justify-between text-[10px] text-gray-400 font-light">
+                    <span>ความร้อนแรงตลาด</span>
+                    <span id="trend-percent" class="text-emerald-400 font-bold">+100% (กำลังพุ่ง)</span>
+                </div>
+                <div class="w-full h-2 bg-neutral-800 rounded-full overflow-hidden">
+                    <div id="trend-bar" class="w-1/4 h-full bg-gradient-to-r from-red-500 to-yellow-500 transition-all duration-500"></div>
                 </div>
             </div>
         </div>
 
-        <!-- ฟีด Real-time การประมูล -->
-        <div class="w-full glass rounded-xl p-2.5 space-y-1 text-left border border-white/5">
-            <div class="text-[9px] text-gray-400 uppercase font-bold flex justify-between">
-                <span>⚡ Live Feed การซัดกันสดๆ</span>
-                <span class="text-red-500 animate-pulse">● Real-time</span>
+        <!-- ฟีด Real-time การซัดกัน -->
+        <div class="glass-card rounded-2xl p-3 space-y-2 border border-white/5">
+            <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex justify-between items-center">
+                <span>⚡ Live Order Book (คำสั่งซื้อสด)</span>
+                <span class="text-red-400 animate-pulse text-[9px]">● อัปเดตอัตโนมัติ</span>
             </div>
-            <div id="live-feed" class="text-[10px] text-gray-300 space-y-1 h-14 overflow-y-auto font-mono">
-                <div class="text-gray-500 italic">- ยินดีต้อนรับสู่สนามรบความว่างเปล่า เริ่มต้นสาดกระสุนได้เลย -</div>
+            <div id="live-order-feed" class="text-xs space-y-1.5 max-h-24 overflow-y-auto pr-1">
+                <div class="text-gray-500 italic text-center py-1">รอคำสั่งซื้อแรกเข้าสู่ระบบ...</div>
             </div>
         </div>
 
-        <!-- ปุ่มแย่งชิงบัลลังก์ -->
-        <button onclick="conquerVoid()" class="w-36 h-36 rounded-full bg-gradient-to-b from-red-600 to-red-950 text-white font-black text-base tracking-wider glow-red border-4 border-red-500 active:scale-95 transition transform flex flex-col items-center justify-center space-y-0.5 cursor-pointer">
-            <span>ยึดบัลลังก์!</span>
-            <span id="btn-price" class="text-[11px] font-normal text-red-200">1 THB เท่านั้น</span>
-        </button>
+        <!-- ปุ่มควบคุมการประมูล (ดีไซน์พรีเมียม ไม่ใหญ่เทอะทะ) -->
+        <div class="space-y-2 pt-1">
+            <button onclick="openBidModal()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-yellow-600 text-white font-black text-sm tracking-widest shadow-xl shadow-red-600/20 active:scale-[0.98] transition flex items-center justify-center space-x-2 cursor-pointer">
+                <span>⚡ ส่งคำสั่งซื้อประมูล (Bid)</span>
+                <span id="btn-price-label" class="bg-black/30 px-2.5 py-0.5 rounded-lg text-xs font-normal">ราคา 2 THB</span>
+            </button>
+            <p class="text-[10px] text-gray-500 text-center">
+                *ระบบบอทอัตโนมัติจะสลับกันเข้ามาแย่งชิงเรื่อยๆ ทุก 15 วินาที*
+            </p>
+        </div>
+    </main>
 
-        <p class="text-[9px] text-gray-500 text-center max-w-xs">
-            *ยิ่งจ่ายแพง ชนชั้นบ้านยิ่งอัปเกรด ยอดสะสมรวมเป็นความลับ ห้ามให้ใครรู้เด็ดขาด!*
-        </p>
+    <!-- เนื้อหา: กระดานหุ้น / อันดับ Top 5 (Ranking) -->
+    <main id="view-ranking" class="space-y-3 my-auto hidden">
+        <div class="glass-panel rounded-3xl p-4 space-y-3">
+            <h3 class="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center space-x-1">
+                <span>🏆 ทำเนียบมหาเศรษฐีผู้ครอบครอง THE VOID</span>
+            </h3>
+            <div id="ranking-list" class="space-y-2">
+                <!-- รายการอันดับจะถูกเติมด้วย JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- เนื้อหา: โปรไฟล์ผู้ใช้ (Profile Settings) -->
+    <main id="view-profile" class="space-y-3 my-auto hidden">
+        <div class="glass-panel rounded-3xl p-5 space-y-4">
+            <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">⚙️ ปรับแต่งโปรไฟล์ & ฉายา</h3>
+            
+            <div class="space-y-3 text-left">
+                <div>
+                    <label class="text-[10px] text-gray-400 block mb-1">ฉายา / ชื่อในกระดาน</label>
+                    <input id="user-input-name" type="text" value="คุณชายสายเปย์" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-red-500 font-mono">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 block mb-1">ลิงก์โซเชียลโปรโมท (IG/TikTok)</label>
+                    <input id="user-input-link" type="url" placeholder="https://instagram.com/your_id" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-red-500 font-mono">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 block mb-1">เลือกไอคอนประจำตัว</label>
+                    <div class="grid grid-cols-5 gap-2 pt-1">
+                        <button onclick="selectAvatarIcon('👑')" class="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lg">👑</button>
+                        <button onclick="selectAvatarIcon('💎')" class="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lg">💎</button>
+                        <button onclick="selectAvatarIcon('🔥')" class="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lg">🔥</button>
+                        <button onclick="selectAvatarIcon('🤑')" class="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lg">🤑</button>
+                        <button onclick="selectAvatarIcon('🐈')" class="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lg">🐈</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="saveProfile()" class="w-full py-2.5 bg-cyan-600 text-white font-bold text-xs rounded-xl shadow-lg hover:bg-cyan-500 transition">บันทึกโปรไฟล์</button>
+        </div>
     </main>
 
     <!-- ส่วนท้าย -->
-    <footer class="relative z-10 w-full max-w-sm glass rounded-xl p-2.5 text-center space-y-1 mb-1">
-        <div class="text-[9px] text-gray-400 font-bold uppercase">📜 ทำเนียบความไร้สาระล่าสุด</div>
-        <div id="hall-of-fame" class="text-[10px] text-gray-400 italic truncate">
-            ยังไม่มีประวัติการบันทึก
-        </div>
+    <footer class="text-center text-[10px] text-gray-500 mt-3 pt-2 border-t border-white/5">
+        THE VOID ENGINE v2.0 • Decentralized Ego System
     </footer>
 
-    <!-- จาวาสคริปต์จำลองระบบครบสูตร -->
+    <!-- Modal ยืนยันการประมูลสู้ราคา -->
+    <div id="bid-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-xs rounded-3xl p-5 space-y-4 border border-red-500/40 text-center">
+            <h3 class="text-sm font-bold text-red-400">⚡ ยืนยันคำสั่งซื้อประมูลสู้</h3>
+            <p class="text-xs text-gray-300">คุณกำลังจะลงทุนซื้อบัลลังก์ในราคา <span id="modal-price-val" class="text-yellow-400 font-bold text-sm">2 THB</span></p>
+            <div class="flex space-x-2 pt-1">
+                <button onclick="closeBidModal()" class="w-1/2 py-2.5 rounded-xl text-xs bg-neutral-800 text-gray-300 font-bold">ยกเลิก</button>
+                <button onclick="executeUserBid()" class="w-1/2 py-2.5 rounded-xl text-xs bg-gradient-to-r from-red-600 to-yellow-600 text-white font-bold shadow-lg">ยืนยันส่งคำสั่ง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- จาวาสคริปต์ระบบจำลองและบอทเรียลไทม์ -->
     <script>
         let currentPrice = 1;
-        let bidHistory = [
-            { name: "สมชาย สายเปย์", amount: 1, tier: "กระท่อมสังกะสีผุๆ", icon: "🛖" }
+        let nextPrice = 2;
+        let totalPlatformVolume = 1492;
+        let myProfileName = "คุณชายสายเปย์";
+        let myProfileIcon = "👑";
+        let rankingData = [
+            { name: "มหาเศรษฐีเงาแค้น", spent: 512, icon: "💎", tier: "🏰 ปราสาทผู้คุมโลก" },
+            { name: "เจ๊ดันพันล้าน", spent: 256, icon: "🔥", tier: "🏡 คฤหาสน์หรู" },
+            { name: "เด็กเกรียนสายป่วน", spent: 128, icon: "🤑", tier: "🏠 ทาวน์โฮม" }
         ];
 
-        function conquerVoid() {
-            // จำลองชื่อผู้ท้าชิงสุ่มๆ หรือจำลองการกด
-            const names = ["เจ๊ดันพันล้าน", "เด็กเกรียนสายป่วน", "เศรษฐีเงาแค้น", "คนว่างงานแต่รวยมาก"];
-            const randomName = names[Math.floor(Math.random() * names.length)];
+        let currentKing = { name: "มหาเศรษฐีเงาแค้น", spent: 512, icon: "💎", tier: "🏰 ปราสาทผู้คุมโลก" };
+
+        function switchTab(tab) {
+            document.getElementById('view-arena').classList.add('hidden');
+            document.getElementById('view-ranking').classList.add('hidden');
+            document.getElementById('view-profile').classList.add('hidden');
             
-            let tierName = "กระท่อมสังกะสีผุๆ";
-            let iconEmoji = "🛖";
-            let badgeColor = "text-yellow-400 border-yellow-500/30 bg-neutral-800";
+            document.getElementById('tab-btn-arena').className = "py-2 rounded-xl text-xs font-bold bg-neutral-900/80 text-gray-400 border border-white/5 transition";
+            document.getElementById('tab-btn-ranking').className = "py-2 rounded-xl text-xs font-bold bg-neutral-900/80 text-gray-400 border border-white/5 transition";
+            document.getElementById('tab-btn-profile').className = "py-2 rounded-xl text-xs font-bold bg-neutral-900/80 text-gray-400 border border-white/5 transition";
 
-            // คำนวณชนชั้นตามราคา
-            if (currentPrice >= 1000) {
-                tierName = "🏰 ปราสาทผู้คุมโลก (Overlord Tower)";
-                iconEmoji = "👑";
-                badgeColor = "text-purple-300 border-purple-500/40 bg-purple-950/40";
-            } else if (currentPrice >= 100) {
-                tierName = "🏡 คฤหาสน์หรูติดแอร์";
-                iconEmoji = "🏰";
-                badgeColor = "text-cyan-400 border-cyan-500/30 bg-cyan-950/30";
-            } else if (currentPrice >= 20) {
-                tierName = "🏠 ทาวน์โฮมชานเมือง";
-                iconEmoji = "🏠";
-                badgeColor = "text-green-400 border-green-500/30 bg-green-950/30";
-            }
+            document.getElementById('view-' + tab).classList.remove('hidden');
+            document.getElementById('tab-btn-' + tab).className = "py-2 rounded-xl text-xs font-bold bg-red-600 text-white shadow-md transition";
 
-            // อัปเดตหน้าจอราชาปัจจุบัน
-            document.getElementById('king-name').innerText = randomName;
-            document.getElementById('king-icon').innerText = iconEmoji;
-            document.getElementById('king-status-text').innerText = `ย้ายเข้ามาอยู่ใน: ${tierName}`;
-            
-            const badge = document.getElementById('tier-badge');
-            badge.className = `text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-md border ${badgeColor}`;
-            badge.innerText = `✨ สถานะปัจจุบัน: ${tierName}`;
-
-            // อัปเดตราคา
-            document.getElementById('price-tag').innerText = `ราคา: ${currentPrice} THB`;
-            document.getElementById('btn-price').innerText = `${currentPrice * 2} THB รอบหน้า`;
-
-            // เพิ่มเข้า Real-time Feed
-            const feed = document.getElementById('live-feed');
-            const newLog = document.createElement('div');
-            newLog.innerText = `🔥 ${randomName} โยนเงิน ${currentPrice} บาท ยึดสำเร็จ!`;
-            feed.prepend(newLog);
-
-            // อัปเดตทำเนียบ
-            document.getElementById('hall-of-fame').innerText = `👑 ล่าสุด: ${randomName} ครองบัลลังก์ด้วยราคา ${currentPrice} บาท`;
-
-            alert(`🎉 ยินดีด้วย! ${randomName} จ่าย ${currentPrice} บาท ยึดบัลลังก์สำเร็จ และได้อัปเกรดเป็น "${tierName}" เรียบร้อย!`);
-
-            // เบิ้ลราคาขึ้นไปรอบถัดไป
-            currentPrice *= 2;
+            if(tab === 'ranking') renderRanking();
         }
+
+        function openBidModal() {
+            document.getElementById('modal-price-val').innerText = nextPrice + " THB";
+            document.getElementById('bid-modal').classList.remove('hidden');
+        }
+        function closeBidModal() {
+            document.getElementById('bid-modal').classList.add('hidden');
+        }
+
+        function executeUserBid() {
+            closeBidModal();
+            currentPrice = nextPrice;
+            nextPrice *= 2;
+            totalPlatformVolume += currentPrice;
+
+            let tierName = "🏚️ บ้านสังกะสีเริ่มต้น";
+            if(currentPrice >= 100) tierName = "🏰 ปราสาทผู้คุมโลก";
+            else if(currentPrice >= 20) tierName = "🏡 คฤหาสน์หรู";
+            else if(currentPrice >= 5) tierName = "🏠 ทาวน์โฮมชานเมือง";
+
+            currentKing = { name: myProfileName, spent: currentPrice, icon: myProfileIcon, tier: tierName };
+
+            updateArenaUI();
+            addFeedLog(`🚀 [คุณ] ส่งคำสั่งซื้อสำเร็จ ที่ราคา ${currentPrice} บาท!`);
+            
+            // อัปเดตกระดานอันดับ
+            rankingData.unshift(currentKing);
+            alert(`🎉 ยินดีด้วย! คุณส่งคำสั่งประมูลสำเร็จที่ ${currentPrice} บาท ครองบัลลังก์เรียบร้อย!`);
+        }
+
+        function updateArenaUI() {
+            document.getElementById('current-price-badge').innerText = currentPrice + " THB";
+            document.getElementById('btn-price-label').innerText = "ราคา " + nextPrice + " THB";
+            document.getElementById('king-name').innerText = currentKing.name;
+            document.getElementById('king-spent').innerText = currentKing.spent + " THB";
+            document.getElementById('king-tier-label').innerText = currentKing.tier;
+            document.getElementById('king-avatar-box').innerText = currentKing.icon;
+            document.getElementById('total-platform-vol').innerText = "สะสมรวม: " + totalPlatformVolume.toLocaleString() + " THB";
+            
+            let percent = Math.min((currentPrice / 1000) * 100, 100);
+            document.getElementById('trend-bar').style.width = percent + "%";
+        }
+
+        function addFeedLog(text) {
+            const feed = document.getElementById('live-order-feed');
+            const div = document.createElement('div');
+            div.className = "text-[11px] text-gray-300 font-mono border-l-2 border-red-500 pl-2 py-0.5 animate-pulse";
+            div.innerText = text;
+            feed.prepend(div);
+        }
+
+        function renderRanking() {
+            const list = document.getElementById('ranking-list');
+            list.innerHTML = "";
+            rankingData.sort((a,b) => b.spent - a.spent).forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = "glass-card p-2.5 rounded-xl flex items-center justify-between text-xs";
+                row.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="font-black text-yellow-500">#${index+1}</span>
+                        <span class="text-lg">${item.icon}</span>
+                        <div>
+                            <div class="font-bold text-white">${item.name}</div>
+                            <div class="text-[9px] text-gray-400">${item.tier}</div>
+                        </div>
+                    </div>
+                    <div class="font-black text-yellow-400">${item.spent} THB</div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function selectAvatarIcon(icon) {
+            myProfileIcon = icon;
+            alert('เปลี่ยนไอคอนโปรไฟล์เป็น ' + icon + ' เรียบร้อย!');
+        }
+
+        function saveProfile() {
+            myProfileName = document.getElementById('user-input-name').value || "ผู้เล่นนิรนาม";
+            alert('บันทึกโปรไฟล์เรียบร้อยแล้ว!');
+            switchTab('arena');
+        }
+
+        // ระบบบอทสุ่มเข้ามาประมูลแข่งช้าๆ แบบสมจริง
+        const botNamesPool = ["เซียนหุ้นสายปั่น", "วาฬคริปโตนอนไม่หลับ", "อินฟลูหน้าเงิน", "คนรวยเงียบๆ คนนึง"];
+        const botIconsPool = ["🤑", "💎", "🔥", "🚀"];
+        
+        setInterval(() => {
+            // สุ่มบอทมาดันราคาเรื่อยๆ ช้าๆ
+            let botName = botNamesPool[Math.floor(Math.random() * botNamesPool.length)];
+            let botIcon = botIconsPool[Math.floor(Math.random() * botIconsPool.length)];
+            
+            currentPrice = nextPrice;
+            nextPrice *= 2;
+            totalPlatformVolume += currentPrice;
+
+            let tierName = "🏚️ บ้านสังกะสีเริ่มต้น";
+            if(currentPrice >= 100) tierName = "🏰 ปราสาทผู้คุมโลก";
+            else if(currentPrice >= 20) tierName = "🏡 คฤหาสน์หรู";
+            else if(currentPrice >= 5) tierName = "🏠 ทาวน์โฮมชานเมือง";
+
+            currentKing = { name: botName, spent: currentPrice, icon: botIcon, tier: tierName };
+            rankingData.unshift(currentKing);
+
+            updateArenaUI();
+            addFeedLog(`⚡ [Bot] ${botName} เข้าซื้อที่ราคา ${currentPrice} บาท!`);
+        }, 18000); // ทุกๆ 18 วินาที บอทจะเข้ามาสาดกระสุนทีนึง
     </script>
 </body>
 </html>
