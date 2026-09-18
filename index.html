@@ -190,18 +190,17 @@ function getNextTargetDate(topDateStr,internalKey){
 }
 
 /* =========================
-   TRUE DNA & STRICT SORT ENGINE v3.9
+   TRUE RAW PRECISION ENGINE v3.9 (แก้ไขให้เป็นเปอร์เซ็นต์ดิบแท้ 100%)
    ========================= */
 function calculateTruePairPrecision(pair, records){
- if(!records || records.length === 0) return 45.0;
+ if(!records || records.length === 0) return 0.0;
  let hits = 0, totalChecks = records.length;
  records.forEach(r => {
   let bot = r.bottom;
   if(bot && (bot === pair || bot === pair[1] + pair[0])) { hits++; }
  });
  let rawPercent = (hits / totalChecks) * 100;
- let dnaScore = Math.min(96.5, Math.max(38.0, rawPercent + (records.length * 1.5) + 40));
- return parseFloat(dnaScore.toFixed(1));
+ return parseFloat(rawPercent.toFixed(1));
 }
 
 function generateStrictControlledPairs(leadingDigitStr, records){
@@ -383,8 +382,8 @@ function generateCardHTML(canonicalName,data,flagIcon,records){
  return`<div class="card-header"><div class="card-title-area"><span class="flag">${flagIcon}</span><div class="title-text"><h3>${canonicalName}</h3></div></div><div class="date-badge">🗓️ ${data.targetDate}</div></div>
  <div class="top-container"><div class="top-item"><div class="top-circle top-1-circle">${data.t1}</div><span class="top-label">เด่น</span><span class="top-percent">${data.audit.digitAcc}</span></div>
  <div class="top-item"><div class="top-circle top-2-circle">${data.t2}</div><span class="top-label">รอง</span><span class="top-percent">${data.audit.pairAcc}</span></div></div>
- <div class="section-group row-1"><div class="section-title">ชุดเด่น (Strict Ascending & True DNA)</div><div class="grid-pairs">${render(data.pairsT1)}</div></div>
- <div class="section-group row-2"><div class="section-title">ชุดรอง (Strict Ascending & True DNA)</div><div class="grid-pairs">${render(data.pairsT2)}</div></div>`;
+ <div class="section-group row-1"><div class="section-title">ชุดเด่น (Strict Ascending & True Raw Data)</div><div class="grid-pairs">${render(data.pairsT1)}</div></div>
+ <div class="section-group row-2"><div class="section-title">ชุดรอง (Strict Ascending & True Raw Data)</div><div class="grid-pairs">${render(data.pairsT2)}</div></div>`;
 }
 
 function generateAuditTableHTML(roundName,audit){
@@ -434,14 +433,13 @@ function processAllLotteries(){
  let avgPairAcc = totalLotteries > 0 ? (sumPairAcc / totalLotteries).toFixed(1) : '0.0';
  let avgConfidence = totalLotteries > 0 ? (sumConfidence / totalLotteries).toFixed(1) : '0.0';
 
- // สร้างกล่องสรุปภาพรวมรวมทั้งหมด (Global Summary Dashboard)
  html += `<div class="global-summary-card">
  <div class="global-summary-title">📈 สรุปภาพรวมความแม่นยำทุกประเภทหวย (${totalLotteries} รายการ)</div>
  <div class="global-metrics-grid">
   <div class="global-metric-box">
    <div class="global-metric-label">เฉลี่ยความแม่นยำเลขเด่น</div>
    <div class="global-metric-value">${avgDigitAcc}%</div>
-   <div class="global-metric-sub">True DNA Engine</div>
+   <div class="global-metric-sub">True Raw Data</div>
   </div>
   <div class="global-metric-box">
    <div class="global-metric-label">เฉลี่ยความแม่นยำเลขเจาะ</div>
@@ -463,7 +461,7 @@ function processAllLotteries(){
   html+=`<div class="card-wrapper" id="${wrapper}"><button class="btn-capture" onclick="captureCard('${wrapper}','${safe}')">📷 แคปภาพ</button><div class="card">${generateCardHTML(item.name,data,item.flag,records)}</div></div>
   <div class="audit-section">${generateAuditTableHTML(`${item.flag}${item.name}`,audit)}
   <div class="data-audit"><b>🔐 Data Integrity:</b> ${records.length} งวด ✓ &nbsp;|&nbsp; <b>DATA-ID:</b> ${fid}<br>
-  ประมวลผลด้วย True DNA Engine v3.9 (ล็อกเลขเด่นเป็นหลักสิบ ห้ามเลขเบิ้ล จัดเรียงชุดเจาะจากน้อยไปหามากแบบ Strict Ascending และคำนวณ % จริงจากสถิติดิบ 100%)</div></div>`;
+  ประมวลผลด้วย True Raw Data Engine (คำนวณ % จากสถิติดิบจริงที่ออกจริง 100% ไม่มีบวกคะแนนชดเชยทิพย์)</div></div>`;
   idx++;
  });
 
