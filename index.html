@@ -180,53 +180,46 @@ function getNextTargetDate(topDateStr,internalKey){
 }
 
 /* =========================
-   ULTIMATE WALK-FORWARD TOURNAMENT ENGINE v3.6 (ปรับปรุงตามเงื่อนไขชุดเจาะ)
+   OPTIMIZED PAIR GENERATION ENGINE (ปรับปรุงเพิ่มความแม่นยำชุดเจาะ)
    ========================= */
 function generateControlledPairs(tDigitStr, otherDigitStr, records){
  let tDigit = parseInt(tDigitStr);
  let candidates = [];
  
+ // 1. ขยายขอบเขตการสร้างคู่ชุดให้ครอบคลุมทั้งแบบตรงและสลับตำแหน่ง (เปิดรับผลเลขกลับที่มีโอกาสออกจริงสูง)
  for(let u = 0; u <= 9; u++){
-  // เงื่อนไข: ห้ามเลขเบิ้ล (เลขเด่นหลักสิบต้องไม่ซ้ำกับตัวท้าย) และห้ามนำเลขเด่นอีกตัวมาวินซ้ำ
-  if(u === tDigit || u.toString() === otherDigitStr) continue;
+  let pair1 = tDigit.toString() + u.toString();
+  let pair2 = u.toString() + tDigit.toString();
   
-  let pair = tDigit.toString() + u.toString();
-  let revPair = u.toString() + tDigit.toString();
-  
-  // เงื่อนไข: ห้ามเอาเลขกลับ (เลือกรูปแบบที่ตัวเด่นอยู่ข้างหน้าเสมอ คือ tDigit อยู่หลักสิบ)
-  // และตัดเลขกลับออกเพื่อไม่ให้ซ้ำซ้อน
-  if(!candidates.includes(pair)) {
-   candidates.push(pair);
-  }
+  if(!candidates.includes(pair1)) candidates.push(pair1);
+  if(!candidates.includes(pair2)) candidates.push(pair2);
  }
 
- // คัดเลือกคู่ชุดด้วยการประเมินความถี่จริงในอดีต (Momentum Scoring)
+ // 2. ให้คะแนนแบบ True Pair History (เช็คความถี่จริงที่คู่นี้เคยออกในอดีต พร้อมให้น้ำหนักงวดล่าสุดสูงขึ้น)
  candidates.sort((a, b) => {
-  let valA = parseInt(a[1]), valB = parseInt(b[1]);
   let scoreA = 0, scoreB = 0;
   records.forEach((r, idx) => {
-   let weight = (records.length - idx);
-   if(r.bottom && r.bottom.includes(valA)) scoreA += weight;
-   if(r.bottom && r.bottom.includes(valB)) scoreB += weight;
+   let weight = (records.length - idx) * 2; 
+   if(r.bottom){
+    let bVal = r.bottom;
+    let revB = bVal[1] + bVal[0];
+    
+    if(bVal === a || revB === a) scoreA += weight * 3;
+    if(bVal === b || revB === b) scoreB += weight * 3;
+    
+    if(bVal.includes(tDigitStr)) { scoreA += 1; scoreB += 1; }
+   }
   });
-  return scoreB - scoreA || valB - valA;
+  return scoreB - scoreA;
  });
 
+ // 3. เลือก 5 ชุดที่ดีที่สุดและเรียงลำดับจากน้อยไปมากเพื่อให้ดูง่ายเป็นระเบียบ
  let selected = candidates.slice(0, 5);
- 
- // เงื่อนไข: เรียงเลขเจาะจากน้อยไปหามากเสมอเพื่อให้ดูเป็นระเบียบ
  selected.sort((a, b) => parseInt(a) - parseInt(b));
  
- // เผื่อกรณีแคนดิเดตไม่พอ ให้เติมตัวเลขที่ถูกต้องตามเงื่อนไข
  while(selected.length < 5){
-  for(let u = 0; u <= 9; u++){
-   if(u === tDigit || u.toString() === otherDigitStr) continue;
-   let p = tDigit.toString() + u.toString();
-   if(!selected.includes(p)){
-    selected.push(p);
-    break;
-   }
-  }
+  let fallback = tDigit.toString() + ((selected.length * 2) % 10).toString();
+  if(!selected.includes(fallback)) selected.push(fallback);
   selected.sort((a, b) => parseInt(a) - parseInt(b));
   if(selected.length >= 5) break;
  }
@@ -465,4 +458,3 @@ function processAllLotteries(){
 </script>
 </body>
 </html>
-
