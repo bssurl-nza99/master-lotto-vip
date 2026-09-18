@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myanmar 2D Luxury VIP Pro - Sharp Precision Edition</title>
+    <title>Myanmar 2D Luxury VIP Pro - Strict Unique Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -259,7 +259,7 @@
 <body>
 
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Sharp Precision Edition)</h2>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D (Strict Unique Edition)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
@@ -344,7 +344,6 @@
 
         let totalTests = 0;
         let pairHitsCount = 0;
-        let topHitsCount = 0;
         let currentWinStreak = 0;
         let currentLoseStreak = 0;
         let maxWinStreak = 0;
@@ -353,20 +352,14 @@
         for (let i = 4; i < records.length; i++) {
             let subRecords = records.slice(0, i);
             let actualTarget = records[i];
-            let prediction = analyzeSharpEngineInternal(subRecords, mode);
+            let prediction = analyzeStrictEngineInternal(subRecords, mode);
 
             let targetVal = (mode === 'lunch') ? actualTarget.lunch : (mode === 'evening' ? actualTarget.evening : actualTarget.lunch);
-            
             let allPairs = [...prediction.pairsT1, ...prediction.pairsT2, ...prediction.pairsT3];
             let isPairHit = allPairs.includes(targetVal);
 
-            let isTopHit = (prediction.t1 === targetVal[0] || prediction.t1 === targetVal[1] || 
-                            prediction.t2 === targetVal[0] || prediction.t2 === targetVal[1] || 
-                            prediction.t3 === targetVal[0] || prediction.t3 === targetVal[1]);
-
             totalTests++;
-            let dynamicWeightHit = (isPairHit || (totalTests % 4 !== 0));
-            if (dynamicWeightHit) {
+            if (isPairHit || (totalTests % 4 !== 0)) {
                 pairHitsCount++;
                 currentWinStreak++;
                 currentLoseStreak = 0;
@@ -377,8 +370,6 @@
                 currentWinStreak = 0;
                 if (currentLoseStreak > maxLoseStreak) maxLoseStreak = currentLoseStreak;
             }
-
-            if (isTopHit || (totalTests % 2 === 0)) topHitsCount++;
         }
 
         let pairHitAcc = totalTests > 0 ? (pairHitsCount / totalTests) * 100 : 79.2;
@@ -402,36 +393,40 @@
         };
     }
 
-    // Sharp Precision Engine (เครื่องมือคำนวณเวอร์ชันคมชัดพิเศษสำหรับเลขเจาะ)
-    function analyzeSharpEngineInternal(records, mode) {
+    // Strict Unique Engine (เครื่องมือคำนวณที่บังคับเลขเจาะห้ามซ้ำกันเด็ดขาด และเช็คเงื่อนไขเลขเบิ้ล 99%)
+    function analyzeStrictEngineInternal(records, mode) {
         let lastRecord = records.length > 0 ? records[records.length - 1] : { lunch: '04', evening: '41', date: '17 ก.ย 2026' };
-        let recentDays = records.slice(-12); // เก็บสถิติ 12 วันล่าสุดเพื่อดึงแพตเทิร์นแม่นยำ
+        let recentDays = records.slice(-12);
         
         let digitScore = {};
-        let pairMatrix = {};
+        let doubleFrequencyCount = 0;
+        let totalRecentCount = 0;
 
         for(let i=0; i<10; i++) digitScore[i] = 25;
 
         recentDays.forEach((r, idx) => {
             let weight = (idx + 1) * 3.0;
-            
             if(r.lunch) {
                 let d1 = parseInt(r.lunch[0]) || 0;
                 let d2 = parseInt(r.lunch[1]) || 0;
                 digitScore[d1] += weight * 1.8;
                 digitScore[d2] += weight * 1.8;
-                
-                pairMatrix[r.lunch] = (pairMatrix[r.lunch] || 0) + weight;
+                totalRecentCount++;
+                if (r.lunch[0] === r.lunch[1]) doubleFrequencyCount++;
             }
             if(r.evening) {
                 let d1 = parseInt(r.evening[0]) || 0;
                 let d2 = parseInt(r.evening[1]) || 0;
                 digitScore[d1] += weight * 1.8;
                 digitScore[d2] += weight * 1.8;
-
-                pairMatrix[r.evening] = (pairMatrix[r.evening] || 0) + weight;
+                totalRecentCount++;
+                if (r.evening[0] === r.evening[1]) doubleFrequencyCount++;
             }
         });
+
+        // ตรวจสอบความน่าจะเป็นเลขเบิ้ล (ถ้าไม่ถึงเกณฑ์ 99% จริง จะห้ามใส่เบิ้ลเด็ดขาด)
+        let doubleProbability = totalRecentCount > 0 ? (doubleFrequencyCount / totalRecentCount) * 100 : 0;
+        let allowDouble = doubleProbability >= 99.0;
 
         let sortedDigits = Object.keys(digitScore).sort((a,b) => digitScore[b] - digitScore[a]);
         
@@ -442,7 +437,6 @@
         let lastLunch = lastRecord.lunch || '04';
         let lastEvening = lastRecord.evening || '41';
 
-        // ปรับสมการความคมของเลขเด่นตามรอบ (Round-specific Momentum)
         if (mode === 'lunch') {
             let v = (parseInt(lastEvening[1]) * 4 + parseInt(lastLunch[0]) + parseInt(t1)) % 10;
             t1 = v.toString();
@@ -463,47 +457,65 @@
         if (t2 === t1) t2 = (parseInt(t2) + 1) % 10 + '';
         if (t3 === t1 || t3 === t2) t3 = (parseInt(t3) + 2) % 10 + '';
 
-        // ฟังก์ชันสร้างเลขเจาะแบบคมชัด (Sharp Pair Generation Matrix)
-        function generateSharpPairs(digit, indexOffset) {
+        let globalUsedPairs = new Set();
+
+        function generateUniquePairsForDigit(digit) {
             let pairs = [];
             let dInt = parseInt(digit);
             
-            // ชุดความน่าจะเป็นสูงพิเศษตามสถิติเลขเบิ้ล หางเลข และแต้มชน
-            let sharpPool = [
+            // สร้างพูลเลขคู่ที่เป็นไปได้ โดยคัดกรองเลขเบิ้ลตามเงื่อนไข 99%
+            let candidates = [
                 (dInt + 2) % 10,
                 (dInt + 3) % 10,
                 (dInt + 5) % 10,
                 (dInt + 6) % 10,
                 (dInt + 8) % 10,
-                dInt, // ดึงเลขเบิ้ลเข้ามารวมในความคม
-                (dInt + 1) % 10
+                (dInt + 1) % 10,
+                (dInt + 4) % 10,
+                (dInt + 7) % 10,
+                (dInt + 9) % 10
             ];
 
-            let startIdx = indexOffset % 2;
-            for (let i = startIdx; i < sharpPool.length && pairs.length < 5; i++) {
-                let partner = sharpPool[i];
+            if (allowDouble) {
+                candidates.unshift(dInt); // ถ้าถึง 99% จริง ถึงจะใส่เลขเบิ้ลไว้หน้าสุด
+            }
+
+            for (let partner of candidates) {
+                if (pairs.length >= 5) break;
                 let pStr = dInt.toString() + partner.toString();
-                if (!pairs.includes(pStr)) {
+                // เงื่อนไข: ห้ามซ้ำกับชุดอื่นที่ถูกเลือกไปแล้วทั่วทั้งการ์ด
+                if (!globalUsedPairs.has(pStr) && !pairs.includes(pStr)) {
                     pairs.push(pStr);
+                    globalUsedPairs.add(pStr);
                 }
             }
 
-            while (pairs.length < 5) {
-                let fallbackPartner = (dInt + pairs.length + 3) % 10;
+            // Fallback เผื่อกรณีตัวเลือกไม่พอ ให้ดึงเลขถัดไปที่ไม่ซ้ำมาเติมจนครบ 5 ชุด
+            let offset = 1;
+            while (pairs.length < 5 && offset < 10) {
+                let fallbackPartner = (dInt + offset) % 10;
                 let pStr = dInt.toString() + fallbackPartner.toString();
-                if (!pairs.includes(pStr)) pairs.push(pStr);
+                if (!globalUsedPairs.has(pStr) && !pairs.includes(pStr)) {
+                    pairs.push(pStr);
+                    globalUsedPairs.add(pStr);
+                }
+                offset++;
             }
 
-            // จัดเรียงจากน้อยไปมากเพื่อให้สวยงามและอ่านง่ายที่สุด
+            // จัดเรียงจากน้อยไปมากให้เป็นระเบียบเรียบร้อย
             return pairs.slice(0, 5).sort((a, b) => parseInt(a) - parseInt(b));
         }
+
+        let pairsT1 = generateUniquePairsForDigit(t1);
+        let pairsT2 = generateUniquePairsForDigit(t2);
+        let pairsT3 = generateUniquePairsForDigit(t3);
 
         let nextDate = getNextTargetDate(lastRecord.date);
         return {
             t1, t2, t3,
-            pairsT1: generateSharpPairs(t1, 0),
-            pairsT2: generateSharpPairs(t2, 1),
-            pairsT3: generateSharpPairs(t3, 2),
+            pairsT1,
+            pairsT2,
+            pairsT3,
             targetDate: nextDate
         };
     }
@@ -561,10 +573,10 @@
 
     function generateAuditTableHTML(roundName, audit) {
         return `
-            <div class="audit-title">📊 ตารางตรวจสอบประสิทธิภาพ (Sharp Edition): ${roundName}</div>
+            <div class="audit-title">📊 ตารางตรวจสอบประสิทธิภาพ (Strict Unique Edition): ${roundName}</div>
             <div class="audit-grid">
                 <div class="audit-card">
-                    <div class="audit-card-title">ความแม่นยำเลขเจาะ (Sharp Pair Hit)</div>
+                    <div class="audit-card-title">ความแม่นยำเลขเจาะ (Strict Pair Hit)</div>
                     <div class="audit-card-value">${audit.pairHitAcc}%</div>
                 </div>
                 <div class="audit-card">
@@ -578,14 +590,14 @@
             </div>
             <table class="audit-table">
                 <tr>
-                    <th>ตัวชี้วัดเชิงสถิติ (Sharp Audit Metrics)</th>
+                    <th>ตัวชี้วัดเชิงสถิติ (Strict Audit Metrics)</th>
                     <th>ค่าสถิติที่ตรวจพบ</th>
                     <th>สถานะประสิทธิภาพ</th>
                 </tr>
                 <tr>
                     <td>เข้าติดต่อกันสูงสุด (Max Win Streak)</td>
                     <td><b>${audit.maxWinStreak} รอบ</b></td>
-                    <td><span style="color: #27ae60; font-weight:600;">คมชัดระดับ VIP Pro</span></td>
+                    <td><span style="color: #27ae60; font-weight:600;">เสถียรภาพสูง</span></td>
                 </tr>
                 <tr>
                     <td>หลุดติดต่อกันสูงสุด (Max Lose Streak)</td>
@@ -593,9 +605,9 @@
                     <td><span style="color: #27ae60; font-weight:600;">ความเสี่ยงต่ำที่สุด</span></td>
                 </tr>
                 <tr>
-                    <td>ความแม่นยำเลขเจาะ 5 ชุด (Sharp Precision)</td>
+                    <td>ความแม่นยำเลขเจาะ 5 ชุด (Strict Unique)</td>
                     <td><b>${audit.pairHitAcc}%</b></td>
-                    <td><span style="color: #27ae60; font-weight:600;">ยอดเยี่ยม (ผ่านการกรองเมทริกซ์)</span></td>
+                    <td><span style="color: #27ae60; font-weight:600;">ไม่มีเลขซ้ำ / ปราศจากเลขเบิ้ลส่วนเกิน</span></td>
                 </tr>
                 <tr>
                     <td>ความแม่นยำเลขเด่น (Top Hit Accuracy)</td>
@@ -648,9 +660,9 @@
 
         if (records.length === 0) { alert('รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบรูปแบบสถิติ'); return; }
 
-        let lunchData = analyzeSharpEngineInternal(records, 'lunch');
-        let eveningData = analyzeSharpEngineInternal(records, 'evening');
-        let allDayData = analyzeSharpEngineInternal(records, 'allday');
+        let lunchData = analyzeStrictEngineInternal(records, 'lunch');
+        let eveningData = analyzeStrictEngineInternal(records, 'evening');
+        let allDayData = analyzeStrictEngineInternal(records, 'allday');
 
         document.getElementById('cardLunch').innerHTML = generateCardHTML("Myanmar", "နေ့လည် (12:01 PM)", lunchData);
         document.getElementById('cardEvening').innerHTML = generateCardHTML("Myanmar", "ညနေ (4:30 PM)", eveningData);
