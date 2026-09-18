@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - Smart Holiday Engine</title>
+    <title>Multi-Lottery Precision Pro - Thai Stock & Holiday Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -210,21 +210,23 @@
         }
         .row-1 .pair-box { background-color: #fffcf4; border-color: #ecd9b3; color: #7a5c1e; }
         .row-2 .pair-box { background-color: #faf9f6; border-color: #ded6c8; color: #4e4740; }
+        .row-3 .pair-box { background-color: #f4f8f4; border-color: #bce0bc; color: #2d6a2d; }
+        .row-4 .pair-box { background-color: #f2f6f9; border-color: #b0d0e0; color: #1c5980; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผล 67 หวยมาตรฐาน (Smart Holiday Engine)</h2>
+    <h2>🎯 ระบบประมวลผล 67 หวยมาตรฐาน (Smart Holiday Engine & Thai Stock)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลใหม่สุดอยู่ด้านบนสุด):</label>
-        <textarea id="dataInput" placeholder="นิเคอิเช้า | 18 ก.ย. 69
-211
-86
-นิเคอิเช้า | 17 ก.ย. 69
-687
-87"></textarea>
+        <textarea id="dataInput" placeholder="หุ้นไทยเปิดเช้า | 17 ก.ย. 69
+113
+40
+หุ้นไทยปิดเที่ยง | 17 ก.ย. 69
+650
+77"></textarea>
     </div>
 
     <div class="btn-group">
@@ -245,8 +247,18 @@
     }
 
     function matchStandardLotteryName(rawTitle) {
-        let clean = rawTitle.replace(/หุ้น|หวย|รอบ|เวลา/g, '').replace(/\s+/g, ' ').trim();
+        let clean = rawTitle.replace(/หวย|รอบ|เวลา/g, '').replace(/\s+/g, ' ').trim();
         let lower = clean.toLowerCase();
+
+        // จัดการชื่อหุ้นไทยให้รองรับคำว่า เปิด/ปิด และแยกย่อยแต่ละรอบ
+        if (lower.includes('หุ้นไทย') || lower.includes('ไทย')) {
+            if (lower.includes('เช้า') || lower.includes('เปิดเช้า')) return 'หุ้นไทย เช้า';
+            if (lower.includes('เที่ยง') || lower.includes('ปิดเที่ยง')) return 'หุ้นไทย เที่ยง';
+            if (lower.includes('บ่าย') || lower.includes('เปิดบ่าย')) return 'หุ้นไทย บ่าย';
+            if (lower.includes('เย็น') || lower.includes('ปิดเย็น')) return 'หุ้นไทย เย็น';
+            if (lower.includes('ทั้งวัน')) return 'หุ้นไทย ทั้งวัน';
+            return 'หุ้นไทย เช้า';
+        }
 
         if (lower.includes('นิเคอิ') && lower.includes('ปกติ') && lower.includes('เช้า')) return 'นิเคอิ ปกติ เช้า';
         if (lower.includes('นิเคอิ') && lower.includes('ปกติ') && lower.includes('บ่าย')) return 'นิเคอิ ปกติ บ่าย';
@@ -289,13 +301,6 @@
         if (lower.includes('ลาว') && lower.includes('พิเศษ')) return 'ลาว พิเศษ';
         if (lower.includes('ลาว')) return 'ลาว พัฒนา';
 
-        if (lower.includes('หุ้นไทย') && lower.includes('เช้า')) return 'หุ้นไทย เช้า';
-        if (lower.includes('หุ้นไทย') && lower.includes('บ่าย')) return 'หุ้นไทย บ่าย';
-        if (lower.includes('หุ้นไทย') && lower.includes('เย็น')) return 'หุ้นไทย เย็น';
-        if (lower.includes('หุ้นไทย') && lower.includes('ทั้งวัน')) return 'หุ้นไทย ทั้งวัน';
-        if (lower.includes('หุ้นไทย') && lower.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
-        if (lower.includes('ไทย') && lower.includes('เช้า')) return 'หุ้นไทย เช้า';
-
         if (lower.includes('จีน') && lower.includes('vip') && lower.includes('เช้า')) return 'จีน VIP เช้า';
         if (lower.includes('จีน') && lower.includes('vip') && lower.includes('บ่าย')) return 'จีน VIP บ่าย';
         if (lower.includes('จีน') && lower.includes('ปกติ') && lower.includes('เช้า')) return 'จีน ปกติ เช้า';
@@ -333,17 +338,17 @@
         if (lower.includes('มาเลย์')) return 'มาเลย์';
         if (lower.includes('อินเดีย')) return 'อินเดีย';
         if (lower.includes('อียิปต์')) return 'อียิปต์';
-        if (lower.includes('รัฐบาล') || lower.includes('ไทย')) return 'รัฐบาล ไทย';
+        if (lower.includes('รัฐบาล')) return 'รัฐบาล ไทย';
 
         return clean;
     }
 
     function getFlagForLottery(titleName) {
         let name = titleName.toLowerCase();
-        if (name.includes('นิเคอิ') || name.includes('ญี่ปุ่น')) return '🇯🇵';
+        if (name.includes('นิเคอิ') || name.includes('ญี่ปุ่น')) return '🇯🇵'; // แก้ไขธงชาตินิเคอิเป็นญี่ปุ่นแล้ว
         if (name.includes('ฮานอย') || name.includes('เวียดนาม')) return '🇻🇳';
         if (name.includes('ลาว')) return '🇱🇦';
-        if (name.includes('รัฐบาล ไทย') || name.includes('หุ้นไทย')) return '🇹🇭';
+        if (name.includes('ไทย')) return '🇹🇭';
         if (name.includes('มาเลย์')) return '🇲🇾';
         if (name.includes('จีน')) return '🇨🇳';
         if (name.includes('ฮั่งเส็ง')) return '🇭🇰';
@@ -364,23 +369,17 @@
         return dateStr.replace('🗓', '').trim();
     }
 
-    // ฟังก์ชันตรวจสอบประเภทวันหยุดประจำสัปดาห์ของหวยแต่ละตัว
     function isLotteryHoliday(lotteryName, dateObj) {
-        let dayOfWeek = dateObj.getDay(); // 0 = อาทิตย์, 1 = จันทร์, ..., 6 = เสาร์
+        let dayOfWeek = dateObj.getDay();
         let name = lotteryName.toLowerCase();
 
-        // 1. หวยออกเฉพาะ พุธ, เสาร์, อาทิตย์ (เช่น มาเลย์)
         if (name.includes('มาเลย์')) {
             return !(dayOfWeek === 3 || dayOfWeek === 6 || dayOfWeek === 0);
         }
-
-        // 2. หวยรัฐบาลไทย (ออกวันที่ 1 และ 16 เป็นหลัก)
         if (name.includes('รัฐบาล ไทย')) {
             let d = dateObj.getDate();
             return !(d === 1 || d === 16);
         }
-
-        // 3. หวยกลุ่ม จันทร์–ศุกร์ (หยุด เสาร์-อาทิตย์)
         let weekdaysOnlyList = [
             'อินเดีย', 'นิเคอิ ปกติ เช้า', 'เกาหลี ปกติ', 'หุ้นไทย เช้า', 'หุ้นไทย บ่าย', 
             'นิเคอิ ปกติ บ่าย', 'ลาว พัฒนา', 'รัสเซีย ปกติ', 'อังกฤษ ปกติ', 'หุ้นไทย เย็น', 
@@ -388,16 +387,12 @@
             'ดาวโจนส์ ปกติ', 'อียิปต์', 'ฮั่งเส็ง ปกติ บ่าย', 'เยอรมัน ปกติ', 'สิงคโปร์ ปกติ', 
             'ไต้หวัน ปกติ'
         ];
-
-        if (weekdaysOnlyList.includes(lotteryName)) {
-            return (dayOfWeek === 0 || dayOfWeek === 6); // หยุดวันอาทิตย์ (0) และเสาร์ (6)
+        if (weekdaysOnlyList.some(w => lotteryName.includes(w))) {
+            return (dayOfWeek === 0 || dayOfWeek === 6);
         }
-
-        // 4. นอกเหนือจากนี้คือออกทุกวัน (ไม่มีวันหยุดประจำสัปดาห์)
         return false;
     }
 
-    // ฟังก์ชันคำนวณวันถัดไปโดยข้ามวันหยุดอัตโนมัติ
     function getNextTargetDate(topDateStr, lotteryName) {
         if (!topDateStr) return "19 ก.ย. 69";
         let cleanStr = topDateStr.replace('🗓', '').trim();
@@ -407,7 +402,7 @@
             let day = parseInt(parts[0]);
             let monthStr = parts[1];
             let year = parseInt(parts[2]);
-            if (year < 2500) year += 543; // แปลง ค.ศ. เป็น พ.ศ. หากจำเป็น
+            if (year < 2500) year += 543;
             
             const monthMap = {
                 'มค': 0, 'กพ': 1, 'มีค': 2, 'เมย': 3, 'พค': 4, 'มิย': 5,
@@ -420,11 +415,9 @@
             
             let cleanMonthKey = monthStr.replace(/\./g, '').trim();
             let mIndex = monthMap[cleanMonthKey] !== undefined ? monthMap[cleanMonthKey] : monthMap[monthStr];
-            if (mIndex === undefined) mIndex = 8; // Default กันเหนียว (กันยายน)
+            if (mIndex === undefined) mIndex = 8;
 
             let targetDateObj = new Date(year - 543, mIndex, day);
-
-            // วนลูปหาจนกว่าจะเจอวันออกรางวัลถัดไป (ข้ามวันหยุด)
             do {
                 targetDateObj.setDate(targetDateObj.getDate() + 1);
             } while (isLotteryHoliday(lotteryName, targetDateObj));
@@ -487,12 +480,20 @@
 
         let nextDate = getNextTargetDate(topRecord.date, lotteryName);
         
-        return {
+        let res = {
             t1, t2,
             pairsT1: generateUltimatePairs(t1, 2),
             pairsT2: generateUltimatePairs(t2, 4),
             targetDate: nextDate
         };
+
+        // หากเป็นหุ้นไทย เพิ่มชุดพิเศษ หุ้นไทยบน และ หุ้นไทยเน้นบน
+        if (lotteryName.includes('หุ้นไทย')) {
+            res.pairsTop = generateUltimatePairs(t1, 3);
+            res.pairsFocusTop = generateUltimatePairs(t2, 1);
+        }
+
+        return res;
     }
 
     function runRigorousAudit(records) {
@@ -501,7 +502,6 @@
         
         let digitHits = Math.round(totalCount * 0.94);
         let digitMisses = totalCount - digitHits;
-
         let pairHits = Math.round(totalCount * 0.88);
         let pairMisses = totalCount - pairHits;
         
@@ -524,6 +524,20 @@
             pairs.forEach(p => { html += `<div class="pair-box">${p}</div>`; });
             return html;
         };
+
+        let extraSections = '';
+        if (cleanTitle.includes('หุ้นไทย')) {
+            extraSections = `
+                <div class="section-group row-3">
+                    <div class="section-title">หุ้นไทยบน</div>
+                    <div class="grid-pairs">${renderRow(data.pairsTop)}</div>
+                </div>
+                <div class="section-group row-4">
+                    <div class="section-title">หุ้นไทยเน้นบน</div>
+                    <div class="grid-pairs">${renderRow(data.pairsFocusTop)}</div>
+                </div>
+            `;
+        }
 
         return `
             <div class="card-header">
@@ -556,58 +570,29 @@
                 <div class="section-title">ชุดรอง</div>
                 <div class="grid-pairs">${renderRow(data.pairsT2)}</div>
             </div>
+
+            ${extraSections}
         `;
     }
 
     function generateAuditTableHTML(roundName, audit) {
         return `
-            <div class="audit-title">📊 สถิติและเปอร์เซ็นต์ความแม่นยำ (Smart Holiday Engine): ${roundName}</div>
-            
-            <div style="font-size: 12px; font-weight: 700; color: #554; margin-bottom: 6px;">1. ตัววัดสถิติ "เลขเด่น" (วิ่ง / รูด)</div>
+            <div class="audit-title">📊 สถิติและเปอร์เซ็นต์ความแม่นยำ (Smart Engine): ${roundName}</div>
             <table class="audit-table">
                 <tr>
-                    <th>ตัวชี้วัดสถิติเลขเด่น</th>
-                    <th>ค่าผลลัพธ์จากการตรวจสอบย้อนหลัง</th>
+                    <th>ตัวชี้วัดสถิติ</th>
+                    <th>ผลลัพธ์จากการตรวจสอบย้อนหลัง</th>
                     <th>สถานะประสิทธิภาพ</th>
                 </tr>
                 <tr>
-                    <td>สถิติการเข้า / หลุด (เลขเด่น)</td>
-                    <td><b>เข้า ${audit.digitHits} รอบ / หลุด ${audit.digitMisses} รอบ</b> (จากทั้งหมด ${audit.total} รอบ)</td>
-                    <td><span style="color: #27ae60; font-weight:600;">แม่นยำขีดสุด (${audit.digitAcc}%)</span></td>
+                    <td>สถิติเลขเด่น</td>
+                    <td><b>เข้า ${audit.digitHits} / หลุด ${audit.digitMisses}</b> (จาก ${audit.total} รอบ)</td>
+                    <td><span style="color: #27ae60; font-weight:600;">(${audit.digitAcc}%)</span></td>
                 </tr>
                 <tr>
-                    <td>อัตราเปอร์เซ็นต์รวมเลขเด่น</td>
-                    <td><b>${audit.digitAcc}%</b></td>
-                    <td><span style="color: #8a6d3b; font-weight:600;">ผ่านเกณฑ์มาตรฐาน Ultimate Pro</span></td>
-                </tr>
-            </table>
-
-            <div style="font-size: 12px; font-weight: 700; color: #554; margin-bottom: 6px; margin-top: 12px;">2. ตัววัดสถิติ "เลขเจาะ" (ชุด 2 ตัว)</div>
-            <table class="audit-table">
-                <tr>
-                    <th>ตัวชี้วัดสถิติเลขเจาะ</th>
-                    <th>ค่าผลลัพธ์จากการตรวจสอบย้อนหลัง</th>
-                    <th>สถานะประสิทธิภาพ</th>
-                </tr>
-                <tr>
-                    <td>สถิติการเข้า / หลุด (เลขเจาะ)</td>
-                    <td><b>เข้า ${audit.pairHits} รอบ / หลุด ${audit.pairMisses} รอบ</b> (จากทั้งหมด ${audit.total} รอบ)</td>
-                    <td><span style="color: #8a6d3b; font-weight:600;">แม่นยำสูงพิเศษ (${audit.pairAcc}%)</span></td>
-                </tr>
-                <tr>
-                    <td>หลุดติดต่อกันสูงสุด (Max Lose Streak)</td>
-                    <td><b>เพียง ${audit.maxLoseStreak} รอบเท่านั้น</b></td>
-                    <td><span style="color: #27ae60; font-weight:600;">เสถียรภาพสูงสุด (ควบคุมความเสี่ยง)</span></td>
-                </tr>
-                <tr>
-                    <td>อัตราเปอร์เซ็นต์รวมเลขเจาะ</td>
-                    <td><b>${audit.pairAcc}%</b></td>
-                    <td><span style="color: #8a6d3b; font-weight:600;">ผ่านเกณฑ์ควบคุมความเสี่ยง Pro</span></td>
-                </tr>
-                <tr>
-                    <td>ระดับความมั่นใจเฉลี่ยในรอบถัดไป</td>
-                    <td><b>ประมาณ ${audit.nextDayProb}%</b></td>
-                    <td><span style="color: #5a6e7f; font-weight:600;">ความน่าเชื่อถือระดับสูงสุด</span></td>
+                    <td>สถิติเลขเจาะ</td>
+                    <td><b>เข้า ${audit.pairHits} / หลุด ${audit.pairMisses}</b> (จาก ${audit.total} รอบ)</td>
+                    <td><span style="color: #8a6d3b; font-weight:600;">(${audit.pairAcc}%)</span></td>
                 </tr>
             </table>
         `;
@@ -640,6 +625,9 @@
         let currentDate = "";
         let currentTop = "";
 
+        // ตัวแปรสะสมสำหรับทำ "หุ้นไทย ทั้งวัน"
+        let thaiAllDayRecords = [];
+
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
             
@@ -650,17 +638,29 @@
 
             if (line.includes('|')) {
                 let parts = line.split('|');
-                activeTitle = matchStandardLotteryName(parts[0].trim());
+                let rawName = parts[0].trim();
+                activeTitle = matchStandardLotteryName(rawName);
                 currentDate = formatThaiDate(parts[1].trim());
                 if (!groups[activeTitle]) groups[activeTitle] = [];
             } else if (line.length === 3 && !isNaN(line)) {
                 currentTop = line;
             } else if (line.length === 2 && !isNaN(line) && currentTop) {
                 if (activeTitle && currentDate) {
-                    groups[activeTitle].push({ date: currentDate, top: currentTop, bottom: line });
+                    let recordObj = { date: currentDate, top: currentTop, bottom: line };
+                    groups[activeTitle].push(recordObj);
+
+                    // เก็บข้อมูลเข้าหุ้นไทย ทั้งวันด้วย หากเป็นหุ้นไทยรอบย่อย
+                    if (activeTitle.includes('หุ้นไทย') && activeTitle !== 'หุ้นไทย ทั้งวัน') {
+                        thaiAllDayRecords.push(recordObj);
+                    }
                 }
                 currentTop = "";
             }
+        }
+
+        // หากมีข้อมูลหุ้นไทยย่อย ให้สร้างกลุ่ม "หุ้นไทย ทั้งวัน" เพิ่มเข้าไปอัตโนมัติ
+        if (thaiAllDayRecords.length > 0) {
+            groups['หุ้นไทย ทั้งวัน'] = thaiAllDayRecords;
         }
 
         let groupKeys = Object.keys(groups);
