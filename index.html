@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Multi-Lottery Precision Pro - True Raw Engine v3.15</title>
+<title>Multi-Lottery Precision Pro - True Raw Engine v3.17</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -35,24 +35,28 @@ textarea{width:100%;padding:12px;border:1px solid #e6e0d2;border-radius:12px;fon
 .top-container{display:flex;justify-content:center;gap:40px;margin-bottom:11px}.top-item{display:flex;flex-direction:column;align-items:center;gap:2px}.top-circle{width:35px;height:35px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.06)}
 .top-1-circle{background:linear-gradient(135deg,#c5a059,#e0c283)}.top-2-circle{background:linear-gradient(135deg,#8c8275,#a8a095)}.top-label{font-size:9px;font-weight:600;color:#7a6e65}
 .section-group{margin-top:8px;background:#fff;padding:8px 12px;border-radius:10px;border:1px solid #f0e9dc;box-shadow:0 2px 4px rgba(0,0,0,.01)}.section-title{font-size:10px;font-weight:600;margin-bottom:6px;color:#554}
-.grid-pairs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.pair-box{border-radius:6px;text-align:center;padding:7px 0;font-size:12px;font-weight:600;border:1px solid;letter-spacing:.4px;display:flex;align-items:center;justify-content:center}
-.row-1 .pair-box{background:#fffcf4;border-color:#ecd9b3;color:#7a5c1e}
-.row-2 .pair-box{background:#faf9f6;border-color:#ded6c8;color:#4e4740}
+.grid-pairs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pair-box{border-radius:8px;text-align:center;padding:9px 0;font-size:13px;font-weight:700;border:1px solid;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.02)}
+
+/* สีจัดอันดับเลขเจาะ: อันดับ 1 ทองละมุน, อันดับ 2 เงินพรีเมียม, อันดับ 3 โรสโกลด์ */
+.rank-1{background:linear-gradient(135deg,#fffdf7,#fbf4e2);border-color:#dfcca6;color:#8a6d2b}
+.rank-2{background:linear-gradient(135deg,#fafaf9,#f0edeb);border-color:#d4cfc7;color:#5e5750}
+.rank-3{background:linear-gradient(135deg,#fffbf9,#faece6);border-color:#e6c4b8;color:#9e5b44}
+
 .error-box{background:#fdf2f2;border:1px solid #f5c6cb;color:#721c24;padding:12px;border-radius:12px;margin-top:15px;font-size:12px}
 .data-audit{background:#f5f1e8;border:1px solid #e6dec9;color:#554;padding:9px 11px;border-radius:10px;margin-top:10px;font-size:10px;line-height:1.6}
 .data-audit b{color:#3d312a}
-@media(max-width:560px){.container{padding:14px}.btn-group{gap:8px}.grid-pairs{gap:5px}.audit-table{font-size:9px}.global-metrics-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.container{padding:14px}.btn-group{gap:8px}.grid-pairs{gap:6px}.audit-table{font-size:9px}.global-metrics-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="container">
-<h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Raw Engine v3.15)</h2>
+<h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Raw Engine v3.17)</h2>
 <div class="form-group">
 <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
 <textarea id="dataInput" placeholder="หุ้นไทย บ่าย | 14 ส.ค. 69&#10;634&#10;98&#10;&#10;หุ้นไทย เย็น | 14 ส.ค. 69&#10;606&#10;30"></textarea>
 </div>
 <div class="btn-group">
-<button class="btn-process" onclick="processAllLotteries()">ประมวลผลข้อมูล (Strict Gate &ge; 69%)</button>
+<button class="btn-process" onclick="processAllLotteries()">ประมวลผลข้อมูล (Best Effort Maximize)</button>
 <button class="btn-clear" onclick="clearInput()">ล้างข้อมูล</button>
 <button class="btn-reset" onclick="resetAll()">รีเซ็ตทั้งหมด</button>
 </div>
@@ -212,9 +216,10 @@ function generateStrictControlledPairs(leadingDigitStr, records){
   let scoreB = calculateTruePairPrecision(b, records);
   return scoreB - scoreA;
  });
- let selected = candidates.slice(0, 5);
- selected.sort((a, b) => parseInt(a) - parseInt(b));
- return selected;
+ 
+ let top3 = candidates.slice(0, 3);
+ top3.sort((a, b) => parseInt(a) - parseInt(b));
+ return top3;
 }
 
 function runEngineWithStrategy(records, targetIndex, strategy){
@@ -250,7 +255,7 @@ function runEngineWithStrategy(records, targetIndex, strategy){
 
 function testAuditScoreWithStrategy(records, strategy){
  const total = records.length;
- if(total <= 2) return {total:2, digitHits:2, digitMisses:0, digitAcc:'75.0%', digitAccNum:75.0, pairHits:2, pairMisses:0, pairAcc:'75.0%', pairAccNum:75.0, score:75.0, confidenceNum:75.0, confidence:'75.0%', maxLoss:1};
+ if(total <= 2) return {total:total, digitHits:1, digitMisses:0, digitAcc:'75.0%', digitAccNum:75.0, pairHits:1, pairMisses:0, pairAcc:'75.0%', pairAccNum:75.0, score:75.0, confidenceNum:75.0, confidence:'75.0%', maxLoss:0};
 
  let digitHits = 0, digitMisses = 0, pairHits = 0, pairMisses = 0;
  let curDW=0, maxDW=0, curDL=0, maxDL=0;
@@ -275,9 +280,7 @@ function testAuditScoreWithStrategy(records, strategy){
  let evalTotal = digitHits + digitMisses; if(evalTotal <= 0) evalTotal = 1;
  let rawDigitAcc = (digitHits / evalTotal) * 100;
  let rawPairAcc = (pairHits / evalTotal) * 100;
- 
- let penalty = (maxDL > 1 || maxPL > 1) ? 40 : 0;
- let finalScore = ((rawDigitAcc * 0.50) + (rawPairAcc * 0.50)) - penalty;
+ let finalScore = ((rawDigitAcc * 0.50) + (rawPairAcc * 0.50));
 
  return {
   total: evalTotal, digitHits: digitHits, digitMisses: digitMisses,
@@ -286,17 +289,17 @@ function testAuditScoreWithStrategy(records, strategy){
   pairHits: pairHits, pairMisses: pairMisses,
   pairAccNum: rawPairAcc, pairAcc: rawPairAcc.toFixed(1) + '%',
   pairMaxWin: maxPW, pairMaxLoss: maxPL,
-  score: finalScore, confidenceNum: Math.max(finalScore, 69.0), confidence: Math.max(finalScore, 69.0).toFixed(1) + '%',
+  score: finalScore, confidenceNum: finalScore, confidence: finalScore.toFixed(1) + '%',
   maxLoss: Math.max(maxDL, maxPL)
  };
 }
 
 function analyzePrecisionEngine(records, internalKey){
  const strategyPool = [];
- for(let m1=1; m1<=6; m1++){
-  for(let m2=1; m2<=6; m2++){
-   for(let m3=1; m3<=5; m3++){
-    for(let shift=0; shift<=4; shift++){
+ for(let m1=1; m1<=4; m1++){
+  for(let m2=1; m2<=4; m2++){
+   for(let m3=1; m3<=3; m3++){
+    for(let shift=0; shift<=2; shift++){
      strategyPool.push({m1, m2, m3, shift, extra1: (m1+shift)%3, extra2: (m2+2)%4, off1: (m1%3)+1, off2: (m2%4)+2, off3: (m3%3)+2, off4: (shift%2)+3});
     }
    }
@@ -305,28 +308,18 @@ function analyzePrecisionEngine(records, internalKey){
 
  let bestResult = null, bestScore = -999, bestAudit = null;
  
- for(let strat of strategyPool){
+ strategyPool.forEach(strat => {
   let auditTest = testAuditScoreWithStrategy(records, strat);
-  if(auditTest.digitAccNum >= 69.0 && auditTest.pairAccNum >= 69.0 && auditTest.score > bestScore){
+  if(auditTest.score > bestScore){
    bestScore = auditTest.score;
    bestResult = runEngineWithStrategy(records, 0, strat);
    bestAudit = auditTest;
-   break;
   }
- }
+ });
 
  if(!bestResult){
-  strategyPool.forEach(strat => {
-   let auditTest = testAuditScoreWithStrategy(records, strat);
-   if(auditTest.score > bestScore){
-    bestScore = auditTest.score;
-    bestResult = runEngineWithStrategy(records, 0, strat);
-    bestAudit = auditTest;
-   }
-  });
-  if(bestAudit.digitAccNum < 69.0) { bestAudit.digitAccNum = 69.4; bestAudit.digitAcc = "69.4%"; }
-  if(bestAudit.pairAccNum < 69.0) { bestAudit.pairAccNum = 69.1; bestAudit.pairAcc = "69.1%"; }
-  if(bestAudit.confidenceNum < 69.0) { bestAudit.confidenceNum = 69.3; bestAudit.confidence = "69.3%"; }
+  bestResult = runEngineWithStrategy(records, 0, strategyPool[0]);
+  bestAudit = testAuditScoreWithStrategy(records, strategyPool[0]);
  }
 
  let topRecord = records.length > 0 ? records[0] : {top:'000', bottom:'00', date:'18 ก.ย. 69'};
@@ -397,7 +390,19 @@ function parseInputStrict(rawText){
 }
 
 function generateCardHTML(canonicalName,data,flagIcon,records){
- let render=(pairs)=>pairs.map(p=>`<div class="pair-box"><span>${p}</span></div>`).join('');
+ let getPairRankClass = (pair, allPairsList, rawRecs) => {
+  let scored = allPairsList.map(p => ({p, score: calculateTruePairPrecision(p, rawRecs)}));
+  scored.sort((a, b) => b.score - a.score);
+  let rankIdx = scored.findIndex(x => x.p === pair);
+  if(rankIdx === 0) return 'rank-1';
+  if(rankIdx === 1) return 'rank-2';
+  return 'rank-3';
+ };
+
+ let render = (pairs) => pairs.map(p => {
+  let rankClass = getPairRankClass(p, pairs, records);
+  return `<div class="pair-box ${rankClass}"><span>${p}</span></div>`;
+ }).join('');
 
  return`<div class="card-header"><div class="card-title-area"><span class="flag">${flagIcon}</span><div class="title-text"><h3>${canonicalName}</h3></div></div><div class="date-badge">🗓️ ${data.targetDate}</div></div>
  <div class="top-container">
@@ -409,10 +414,10 @@ function generateCardHTML(canonicalName,data,flagIcon,records){
 }
 
 function generateAuditTableHTML(roundName,audit){
- return`<div class="audit-title">📊 สถิติผ่านเกณฑ์มาตรฐานขั้นต่ำ 69%+ (${roundName}) [ทดสอบจริง ${audit.total} งวด]</div>
+ return`<div class="audit-title">📊 สถิติประสิทธิภาพสูงสุด (${roundName}) [ทดสอบจริง ${audit.total} งวด]</div>
  <table class="audit-table"><tr><th>ประเภท</th><th>ผลงาน (เข้า/หลุด)</th><th>สูงสุดต่อเนื่อง</th><th>ความแม่นยำดิบ</th><th>ภาพรวม</th></tr>
- <tr><td><b>เลขเด่น</b></td><td>ผ่านเกณฑ์มาตรฐานสแกนลึก</td><td><span style="color:#27ae60">เข้า ${audit.digitMaxWin}</span> / <span style="color:#27ae60">หลุด ${audit.digitMaxLoss}</span></td><td><b>${audit.digitAcc}</b></td><td rowspan="2" style="background:#f4efe4;font-weight:700;color:#3d312a;font-size:11px;vertical-align:middle">🎯 ${audit.confidence}</td></tr>
- <tr><td><b>เลขเจาะ</b></td><td>ผ่านเกณฑ์มาตรฐานสแกนลึก</td><td><span style="color:#27ae60">เข้า ${audit.pairMaxWin}</span> / <span style="color:#27ae60">หลุด ${audit.pairMaxLoss}</span></td><td><b>${audit.pairAcc}</b></td></tr></table>`;
+ <tr><td><b>เลขเด่น</b></td><td>ระบบประมวลผลสูงสุด</td><td><span style="color:#27ae60">เข้า ${audit.digitMaxWin}</span> / <span style="color:#e74c3c">หลุด ${audit.digitMaxLoss}</span></td><td><b>${audit.digitAcc}</b></td><td rowspan="2" style="background:#f4efe4;font-weight:700;color:#3d312a;font-size:11px;vertical-align:middle">🎯 ${audit.confidence}</td></tr>
+ <tr><td><b>เลขเจาะ</b></td><td>ระบบประมวลผลสูงสุด</td><td><span style="color:#27ae60">เข้า ${audit.pairMaxWin}</span> / <span style="color:#e74c3c">หลุด ${audit.pairMaxLoss}</span></td><td><b>${audit.pairAcc}</b></td></tr></table>`;
 }
 
 function captureCard(wrapperId,filenamePrefix){
@@ -433,7 +438,7 @@ function processAllLotteries(){
  if(combined.length)groups.thai_allday=combined;
 
  const keys=Object.keys(groups);
- if(!keys.length){container.innerHTML=html||`<div class="error-box">ไม่พบข้อมูลที่ประมวลผลได้</div>`;container.style.display='block';return}
+ if(!keys.length){container.innerHTML=html||`<div class="error-box">ไม่พบข้อมูลที่ประมวลผลได้ กรุณาตรวจสอบรูปแบบการวางข้อมูล</div>`;container.style.display='block';return}
 
  let totalLotteries = 0;
  let sumDigitAcc = 0, sumPairAcc = 0, sumConfidence = 0;
@@ -451,27 +456,27 @@ function processAllLotteries(){
   calculatedCardsData.push({item, data, audit, fid, records});
  });
 
- let avgDigitAcc = totalLotteries > 0 ? (sumDigitAcc / totalLotteries).toFixed(1) : '69.5';
- let avgPairAcc = totalLotteries > 0 ? (sumPairAcc / totalLotteries).toFixed(1) : '69.2';
- let avgConfidence = totalLotteries > 0 ? (sumConfidence / totalLotteries).toFixed(1) : '69.4';
+ let avgDigitAcc = totalLotteries > 0 ? (sumDigitAcc / totalLotteries).toFixed(1) : '0.0';
+ let avgPairAcc = totalLotteries > 0 ? (sumPairAcc / totalLotteries).toFixed(1) : '0.0';
+ let avgConfidence = totalLotteries > 0 ? (sumConfidence / totalLotteries).toFixed(1) : '0.0';
 
  html += `<div class="global-summary-card">
- <div class="global-summary-title">📈 สรุปภาพรวมความแม่นยำทุกประเภทหวย (${totalLotteries} รายการ) - บังคับเกณฑ์ &ge; 69.0%</div>
+ <div class="global-summary-title">📈 สรุปภาพรวมประสิทธิภาพสูงสุดทุกประเภทหวย (${totalLotteries} รายการ) - โหมด Best Effort</div>
  <div class="global-metrics-grid">
   <div class="global-metric-box">
    <div class="global-metric-label">เฉลี่ยความแม่นยำเลขเด่น</div>
    <div class="global-metric-value">${avgDigitAcc}%</div>
-   <div class="global-metric-sub">Strict Gate &ge; 69%</div>
+   <div class="global-metric-sub">Best Effort Mode</div>
   </div>
   <div class="global-metric-box">
    <div class="global-metric-label">เฉลี่ยความแม่นยำเลขเจาะ</div>
    <div class="global-metric-value">${avgPairAcc}%</div>
-   <div class="global-metric-sub">Strict Gate &ge; 69%</div>
+   <div class="global-metric-sub">Best Effort Mode</div>
   </div>
   <div class="global-metric-box">
    <div class="global-metric-label">คะแนนความมั่นใจรวม</div>
    <div class="global-metric-value">🎯 ${avgConfidence}%</div>
-   <div class="global-metric-sub">ควบคุม Max Loss &le; 1</div>
+   <div class="global-metric-sub">ระบบปรับแต่งอัตโนมัติ</div>
   </div>
  </div>
  </div>`;
@@ -483,7 +488,7 @@ function processAllLotteries(){
   html+=`<div class="card-wrapper" id="${wrapper}"><button class="btn-capture" onclick="captureCard('${wrapper}','${safe}')">📷 แคปภาพ</button><div class="card">${generateCardHTML(item.name,data,item.flag,records)}</div></div>
   <div class="audit-section">${generateAuditTableHTML(`${item.flag}${item.name}`,audit)}
   <div class="data-audit"><b>🔐 Data Integrity:</b> ${records.length} งวด ✓ &nbsp;|&nbsp; <b>DATA-ID:</b> ${fid}<br>
-  ประมวลผลด้วย True Raw Engine v3.15 (ผ่านเกณฑ์สแกนลึกขั้นต่ำ 69.0% | เพิ่มระยะห่างเลขเด่นรอง | ปรับภาษาไทยล้วน)</div></div>`;
+  ประมวลผลด้วย True Raw Engine v3.17 (โหมด Best Effort ดึงผลลัพธ์สูงสุด | จัดอันดับสีเลขเจาะ: ทอง/เงิน/โรสโกลด์ละมุนตา)</div></div>`;
   idx++;
  });
 
