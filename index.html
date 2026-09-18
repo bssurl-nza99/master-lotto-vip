@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.7</title>
+    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -240,7 +240,7 @@
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.7)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.8)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
@@ -680,55 +680,62 @@
         const rawText = document.getElementById('dataInput').value.trim();
         if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
 
-        const lines = rawText.split('\n').map(l => l.trim());
+        // [ISOLATED PARSER v2.8] ตัดแบ่งข้อความตามบล็อกหัวข้อหวยอย่างเด็ดขาด ป้องกันข้อมูลไหลปะปนกัน
+        let rawBlocks = rawText.split(/(?=[^\r\n]+\|[^\r\n]+)/g);
         let groups = {};
         let unrecognizedHeaders = [];
 
-        let activeInternalKey = null;
-        let currentDate = "18 ก.ย. 69";
-        let currentTop = "";
+        // ตัวแปรสำหรับรวบรวมข้อมูลหุ้นไทยทั้งวันอัตโนมัติ
+        let thaiAllDayRecords = [];
 
-        for (let i = 0; i < lines.length; i++) {
-            let line = lines[i];
-            if (!line) continue;
+        rawBlocks.forEach(block => {
+            let blockLines = block.split('\n').map(l => l.trim()).filter(l => l !== '');
+            if (blockLines.length === 0) return;
 
-            if (line.includes('งดออกผล')) {
-                currentTop = "";
-                continue;
+            let headerLine = blockLines[0];
+            if (!headerLine.includes('|')) return;
+
+            let parts = headerLine.split('|');
+            let rawName = parts[0].trim();
+            let headerDate = parts[1] ? parts[1].trim() : "18 ก.ย. 69";
+
+            let internalKey = mapRawNameToInternalKey(rawName);
+            if (!internalKey) {
+                if (!unrecognizedHeaders.includes(rawName)) {
+                    unrecognizedHeaders.push(rawName);
+                }
+                return;
             }
 
-            if (line.includes('|')) {
-                let parts = line.split('|');
-                let rawName = parts[0].trim();
-                let key = mapRawNameToInternalKey(rawName);
-                if (key) {
-                    activeInternalKey = key;
-                    currentDate = parts[1] ? parts[1].trim() : "18 ก.ย. 69";
-                } else {
-                    if (!unrecognizedHeaders.includes(rawName)) {
-                        unrecognizedHeaders.push(rawName);
-                    }
-                }
-                currentTop = "";
-            } else if (line.length === 3 && !isNaN(line)) {
-                currentTop = line;
-            } else if (line.length === 2 && !isNaN(line) && currentTop) {
-                if (activeInternalKey) {
-                    if (!groups[activeInternalKey]) {
-                        groups[activeInternalKey] = [];
-                    }
-                    groups[activeInternalKey].push({ date: currentDate, top: currentTop, bottom: line });
-                    
-                    // หากเป็นรอบหุ้นไทย เช้า/เที่ยง/บ่าย/เย็น ให้รวบรวมเข้า "หุ้นไทย ทั้งวัน" (thai_allday) โดยอัตโนมัติด้วย
-                    if (['thai_am', 'thai_noon', 'thai_pm', 'thai_eve'].includes(activeInternalKey)) {
-                        if (!groups['thai_allday']) {
-                            groups['thai_allday'] = [];
-                        }
-                        groups['thai_allday'].push({ date: currentDate, top: currentTop, bottom: line });
-                    }
-                }
-                currentTop = "";
+            if (!groups[internalKey]) {
+                groups[internalKey] = { date: headerDate, records: [] };
             }
+
+            let currentTop = "";
+            for (let j = 1; j < blockLines.length; j++) {
+                let line = blockLines[j];
+                if (line.includes('งดออกผล')) {
+                    currentTop = "";
+                    continue;
+                }
+                if (line.length === 3 && !isNaN(line)) {
+                    currentTop = line;
+                } else if (line.length === 2 && !isNaN(line) && currentTop) {
+                    let recordObj = { date: headerDate, top: currentTop, bottom: line };
+                    groups[internalKey].records.push(recordObj);
+
+                    // ถ้ารอบนี้เป็นหุ้นไทย เช้า/เที่ยง/บ่าย/เย็น ให้นำเข้าสู่อะเรย์รวมของ "หุ้นไทย ทั้งวัน" ด้วย
+                    if (['thai_am', 'thai_noon', 'thai_pm', 'thai_eve'].includes(internalKey)) {
+                        thaiAllDayRecords.push(recordObj);
+                    }
+                    currentTop = "";
+                }
+            }
+        });
+
+        // จัดการใส่ข้อมูลลงใน "หุ้นไทย ทั้งวัน" (thai_allday) หากมีข้อมูลหุ้นไทยย่อยเข้ามา
+        if (thaiAllDayRecords.length > 0) {
+            groups['thai_allday'] = { date: "18 ก.ย. 69", records: thaiAllDayRecords };
         }
 
         let container = document.getElementById('resultContainer');
@@ -752,7 +759,10 @@
             let catalogItem = CARD_CATALOG[internalKey];
             if (!catalogItem) return;
 
-            let records = groups[internalKey];
+            let blockData = groups[internalKey];
+            let records = blockData.records;
+            if (records.length === 0) return;
+
             let analyzedData = analyzePrecisionEngine(records, internalKey);
             let auditData = runRigorousAudit(records);
             
