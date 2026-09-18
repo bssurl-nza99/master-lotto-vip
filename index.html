@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.8</title>
+    <title>Multi-Lottery Precision Pro - True Statistical Engine v2.8.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -240,7 +240,7 @@
 <body>
 
 <div class="container">
-    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.8)</h2>
+    <h2>🎯 ระบบประมวลผลหวยมาตรฐาน (True Statistical Engine v2.8.1)</h2>
     
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (เว้น 1 บรรทัดระหว่างหวยแต่ละประเภท):</label>
@@ -376,6 +376,10 @@
             if (clean.includes('เช้า')) return 'nikkei_normal_am';
             return 'nikkei_normal_pm';
         }
+        if (clean.includes('ดาวโจนส์')) {
+            if (clean.includes('สตาร์')) return 'dowjones_star';
+            return clean.includes('VIP') ? 'dowjones_vip' : 'dowjones_normal';
+        }
         if (clean.includes('ลาว')) {
             if (clean.includes('ประตูชัย')) return 'lao_pratoochai';
             if (clean.includes('เช้า')) return 'lao_am';
@@ -426,10 +430,6 @@
         if (clean.includes('ไต้หวัน')) return clean.includes('VIP') ? 'taiwan_vip' : 'taiwan_normal';
         if (clean.includes('เกาหลี')) return clean.includes('VIP') ? 'korea_vip' : 'korea_normal';
         if (clean.includes('สิงคโปร์')) return clean.includes('VIP') ? 'singapore_vip' : 'singapore_normal';
-        if (clean.includes('ดาวโจนส์')) {
-            if (clean.includes('สตาร์')) return 'dowjones_star';
-            return clean.includes('VIP') ? 'dowjones_vip' : 'dowjones_normal';
-        }
         if (clean.includes('มาเลย์')) return 'malaysia';
         if (clean.includes('รัสเซีย')) return clean.includes('VIP') ? 'russia_vip' : 'russia_normal';
         if (clean.includes('เยอรมัน')) return clean.includes('VIP') ? 'germany_vip' : 'germany_normal';
@@ -680,12 +680,9 @@
         const rawText = document.getElementById('dataInput').value.trim();
         if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
 
-        // [ISOLATED PARSER v2.8] ตัดแบ่งข้อความตามบล็อกหัวข้อหวยอย่างเด็ดขาด ป้องกันข้อมูลไหลปะปนกัน
         let rawBlocks = rawText.split(/(?=[^\r\n]+\|[^\r\n]+)/g);
         let groups = {};
         let unrecognizedHeaders = [];
-
-        // ตัวแปรสำหรับรวบรวมข้อมูลหุ้นไทยทั้งวันอัตโนมัติ
         let thaiAllDayRecords = [];
 
         rawBlocks.forEach(block => {
@@ -724,7 +721,6 @@
                     let recordObj = { date: headerDate, top: currentTop, bottom: line };
                     groups[internalKey].records.push(recordObj);
 
-                    // ถ้ารอบนี้เป็นหุ้นไทย เช้า/เที่ยง/บ่าย/เย็น ให้นำเข้าสู่อะเรย์รวมของ "หุ้นไทย ทั้งวัน" ด้วย
                     if (['thai_am', 'thai_noon', 'thai_pm', 'thai_eve'].includes(internalKey)) {
                         thaiAllDayRecords.push(recordObj);
                     }
@@ -733,7 +729,6 @@
             }
         });
 
-        // จัดการใส่ข้อมูลลงใน "หุ้นไทย ทั้งวัน" (thai_allday) หากมีข้อมูลหุ้นไทยย่อยเข้ามา
         if (thaiAllDayRecords.length > 0) {
             groups['thai_allday'] = { date: "18 ก.ย. 69", records: thaiAllDayRecords };
         }
