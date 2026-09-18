@@ -245,7 +245,7 @@
         document.getElementById('resultContainer').innerHTML = '';
     }
 
-    // รายชื่อหวยครบทั้ง 67 รายการ พร้อมระบุธงชาติและชื่อบนการ์ดที่ถูกต้องตรงตามระบบ
+    // รายชื่อหวยครบทั้ง 67 รายการ พร้อมเว้นวรรคชื่อหุ้นไทยและกำหนดธงชาติที่ถูกต้องแม่นยำ
     const lotteryRules = {
         "มาเลย์": { drawDays: [3, 6, 0], flag: "🇲🇾", cardName: "มาเลย์" },
         "ลาว ประตูชัย": { drawDays: [0, 1, 2, 3, 4, 5, 6], flag: "🇱🇦", cardName: "ลาว ประตูชัย" },
@@ -318,6 +318,18 @@
 
     function matchStandardLotteryName(rawTitle) {
         let clean = rawTitle.replace(/หวย|รอบ|เวลา/g, '').replace(/\s+/g, ' ').trim();
+        
+        // แปลงคำติดกันของผู้ใช้ให้เป็นชื่อมาตรฐานที่มีการเว้นวรรคถูกต้องอัตโนมัติ
+        if (clean.includes('หุ้นไทยเช้า') || clean.includes('หุ้นนิเคอิเช้า') && clean.includes('ไทย')) clean = 'หุ้นไทย เช้า';
+        if (clean === 'หุ้นไทยเช้า') return 'หุ้นไทย เช้า';
+        if (clean === 'หุ้นไทยเที่ยง') return 'หุ้นไทย เที่ยง';
+        if (clean === 'หุ้นไทยบ่าย') return 'หุ้นไทย บ่าย';
+        if (clean === 'หุ้นไทยเย็น') return 'หุ้นไทย เย็น';
+        if (clean === 'หุ้นไทยทั้งวัน') return 'หุ้นไทย ทั้งวัน';
+        
+        if (clean.includes('นิเคอิตอนเช้า') || clean.includes('นิเคอิเช้า')) return 'นิเคอิ ปกติ เช้า';
+        if (clean.includes('นิเคอิตอนบ่าย') || clean.includes('นิเคอิบ่าย')) return 'นิเคอิ ปกติ บ่าย';
+
         for (let key in lotteryRules) {
             if (clean === key || clean.includes(key) || key.includes(clean)) {
                 return key;
