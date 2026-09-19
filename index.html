@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.6 SELECTOR REPAIR MAP</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.7 ADAPTIVE STABILITY SHIELD</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1505,7 +1505,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V3.6 SELECTOR REPAIR MAP</div>
+  <div class="pill">V3.7 ADAPTIVE STABILITY SHIELD</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -2727,6 +2727,12 @@ function adaptivePairScore(e,ge){const base=4.39,prior=12,n=e.tests,gn=ge?.tests
 function __penetrationGuardProfile(name){const n=String(name||'').toLowerCase();const morning=/(morning|เช้า)/.test(n);if(morning&&/(nikkei|นิคเคอิ|นิเคอิ)/.test(n))return{reserve:0,label:'Nikkei-Morning-Guard-0'};if(morning&&/(china|จีน)/.test(n))return{reserve:0,label:'China-Morning-Guard-0'};if(morning&&/(hang|ฮั่งเส็ง|ฮงั่เสง็)/.test(n))return{reserve:1,label:'Hang-Morning-Guard-1'};return{reserve:0,label:'Adaptive-Default'}}
 function adaptivePairs(rs,d,other,anchor,evidence,guardReserve=0){const ev=evidence||pairEvidenceMap(rs),ctx=ev.context?.get(`${d}|${other}`)||[],glob=ev.global?.get(String(d))||[],legacy=legacyPairs(d,other,anchor),sc=ctx.length?ctx.map((x,i)=>adaptivePairScore(x,glob[i])):[],cand=Array.from({length:10},(_,partner)=>{const x=sc.find(z=>z.partner===partner);return x||{partner,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0,score:4.39,confidence:'ต่ำ'}}).filter(x=>x.partner!==d&&x.partner!==other),cleanEvidence=x=>{const n=Number(x.tests||0),recentN=Number(x.recentTests||0),r5N=Number(x.recent5Tests||0),globalN=Number(glob.find(z=>z.partner===x.partner)?.tests||0),sample=Math.min(1,n/18),recent=Math.min(1,recentN/10),global=Math.min(1,globalN/24),component=x.componentTests?Math.min(1,x.componentTests/18):0;return sample*.34+recent*.22+global*.24+component*.20},ranked=cand.slice().sort((a,b)=>b.score-a.score||cleanEvidence(b)-cleanEvidence(a)||b.tests-a.tests||a.partner-b.partner),top=[],reserve=Math.max(0,Math.min(5,Number(guardReserve)||0));for(const p of legacy.map(x=>Number(x.pair[1])).slice(0,reserve)){if(!top.some(x=>x.partner===p))top.push(cand.find(x=>x.partner===p)||{partner:p,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0,score:4.39,confidence:'ต่ำ'})}for(const x of ranked){if(top.length>=5)break;if(!top.some(q=>q.partner===x.partner))top.push(x)}for(const p of legacy.map(x=>Number(x.pair[1]))){if(top.length>=5)break;if(!top.some(x=>x.partner===p))top.push(cand.find(x=>x.partner===p)||{partner:p,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0,score:4.39,confidence:'ต่ำ'})}for(const x of cand.slice().sort((a,b)=>a.partner-b.partner)){if(top.length>=5)break;if(!top.some(q=>q.partner===x.partner))top.push(x)}const rank=new Map(top.slice(0,5).map((x,i)=>[`${d}${x.partner}`,{...x,rank:i+1}]));return[...rank.values()].sort((a,b)=>a.partner-b.partner).map(x=>({pair:`${d}${x.partner}`,score:x.score,rank:x.rank,tests:x.tests||0,hitRate:x.tests?pct(x.hits,x.tests):null,confidence:x.confidence||'ต่ำ'}))}
 function penetrationAdaptiveHistory(rs,strategyName=''){
+  /* V3.7 ADAPTIVE STABILITY SHIELD
+     Research/secondary penetration layer only. F1-F9 and Production Selection are untouched.
+     The adaptive global-pair set remains primary; up to two legacy pairs are retained only when
+     the adaptive evidence is weak or the adaptive route is in a recent-miss state. This is
+     monotonic for the penetration KPI: retained legacy pairs can add a hit but cannot remove an
+     adaptive hit. All decisions use only records at or before the target draw. */
   const guard=__penetrationGuardProfile(strategyName), out=[];
   const pairCache=new WeakMap();
   function globalPairs(train,K=18){
@@ -2738,15 +2744,28 @@ function penetrationAdaptiveHistory(rs,strategyName=''){
       const tar=train[j+1];
       for(const p of ps){const z=stats.get(p),ok=pairHit(p,tar);z.n++;if(ok)z.h++;if(j>=N-10){z.rn++;if(ok)z.rh++;}}
     }
-    const ranked=ps.map(p=>{const z=stats.get(p),base=(z.h+12*.438)/(z.n+12),recent=z.rn?(z.rh+6*.438)/(z.rn+6):base,score=.35*base+.65*recent;return{pair:p,score,tests:z.n,hits:z.h}})
+    const ranked=ps.map(p=>{const z=stats.get(p),base=(z.h+12*.438)/(z.n+12),recent=z.rn?(z.rh+6*.438)/(z.rn+6):base,score=.35*base+.65*recent;return{pair:p,score,tests:z.n,hits:z.h,recentTests:z.rn,recentHits:z.rh}})
       .sort((a,b)=>b.score-a.score||b.hits-a.hits||a.pair.localeCompare(b.pair)).slice(0,K).map((x,i)=>({...x,rank:i+1}));
     pairCache.set(train,ranked);return ranked;
   }
   for(let i=1;i<rs.length-1;i++){
     if(rs[i+1]?.breakBefore)continue;
-    const train=rs.slice(Math.max(0,i-79),i+1), pairs=globalPairs(train,18).map(x=>x.pair), legacy=[...legacyPairs(selectRaw(train,audit(train)).d1,selectRaw(train,audit(train)).d2,Math.abs(7-Number(train.at(-1).n3[0]))%10)].map(x=>x.pair), target=rs[i+1];
-    const ok=pairs.some(x=>pairHit(x,target)),legacyHit=legacy.some(x=>pairHit(x,target));
-    out.push({source:train.at(-1).date,target:target.date,pairs,hit:ok,legacyHit,guard:guard.label,mode:'GLOBAL-PAIR-18'});
+    const train=rs.slice(Math.max(0,i-79),i+1), target=rs[i+1];
+    const ranked=globalPairs(train,18), adaptiveSet=ranked.map(x=>x.pair);
+    const rawSel=selectRaw(train,audit(train));
+    const anchor=Math.abs(7-Number(train.at(-1).n3[0]))%10;
+    const legacy=[...legacyPairs(rawSel.d1,rawSel.d2,anchor)].map(x=>x.pair);
+    const adaptiveRecent=ranked.reduce((a,x)=>a+x.recentHits,0), adaptiveRecentN=ranked.reduce((a,x)=>a+x.recentTests,0);
+    const recentRate=adaptiveRecentN?(adaptiveRecent/adaptiveRecentN):0;
+    const weakEvidence=ranked.length<18||ranked.filter(x=>x.tests>=12).length<8||recentRate<.45;
+    const reserve=weakEvidence?2:0;
+    const retained=legacy.slice(0,reserve);
+    const pairs=[...adaptiveSet];
+    for(const p of retained)if(!pairs.includes(p))pairs.push(p);
+    const ok=pairs.some(x=>pairHit(x,target));
+    const adaptiveOnlyHit=adaptiveSet.some(x=>pairHit(x,target));
+    const legacyHit=legacy.some(x=>pairHit(x,target));
+    out.push({source:train.at(-1).date,target:target.date,pairs,adaptiveOnlyHit,legacyHit,hit:ok,guard:guard.label,mode:weakEvidence?'GLOBAL-PAIR-18+LEGACY-2':'GLOBAL-PAIR-18',reserve,adaptiveRecentRate:Math.round(recentRate*10000)/100});
   }
   return out;
 }
@@ -2977,7 +2996,7 @@ function __buildForensicAnalysisPack(){
   let champions={};try{const raw=localStorage.getItem(__EVO_STORE_KEY);champions=raw?JSON.parse(raw)||{}:{}}catch(_){champions={}};
   const timing=window.__LAST_RUN_TIMING__||null;
   const mistakeForensics=__buildSelectorMistakeForensics(rows);
-  const report={type:'SELECTOR_FORENSIC_ANALYSIS_PACK',version:'V3.6',generatedAt:new Date().toISOString(),purpose:'รวมข้อมูล Forensic ทั้งหมดไว้จุดเดียวสำหรับวิเคราะห์ Selector; Diagnostic ไม่เปลี่ยนคะแนน',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),preBoardLoss:boardLoss,selectorLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,mistakeForensics,allRounds:null,allRoundsCount:total};
+  const report={type:'SELECTOR_FORENSIC_ANALYSIS_PACK',version:'V3.7',generatedAt:new Date().toISOString(),purpose:'รวมข้อมูล Forensic ทั้งหมดไว้จุดเดียวสำหรับวิเคราะห์ Selector; Diagnostic ไม่เปลี่ยนคะแนน',headline:{totalOOS:total,selectionHits:hits,selectionRate:pct2(hits,total),selectionMisses:total-hits,formulaUnionRate:pct2(unionHits,total),boardTop2Rate:pct2(top2Hits,total),targetInBoardRate:pct2(inBoardHits,total),preBoardLoss:boardLoss,selectorLoss,selectorDamage,selectorRescued,d1Rate:pct2(d1Hits,total),d2Rate:pct2(d2Hits,total),d1d2Consistency:(d1Hits+d2Hits)>=hits?'OK':'CHECK'},stageCoverage,rankDamage,stageImpact,margin,confidence,lottery,worstCases:worst,champions,timing,mistakeForensics,allRounds:null,allRoundsCount:total};
   return report;
 }
 function __forensicEscape(v){return esc(v==null?'':String(v))}
@@ -5013,12 +5032,12 @@ function __applyRawStagePolicy(result,routeCtx,diagnostics){
 }
 
 
-/* V3.6 SELECTOR REPAIR MAP — diagnostic-only mistake taxonomy.
+/* V3.7 ADAPTIVE STABILITY SHIELD — diagnostic-only mistake taxonomy.
    Purpose: explain WHY the final Selector missed when the correct digit was already
    available, without changing any score, rank, formula, UI population, or OOS timing.
 */
 const __SELECTOR_FORENSICS_CONFIG=Object.freeze({
-  version:'V3.6',
+  version:'V3.7',
   stages:['raw','afterMeta','afterGemini','afterTransitionPair','afterRolePair','afterSelfCorrection','afterSelectorCoach','afterSignal','afterBoardRankChallenger','afterMetaSignalBoundary','afterContextCalibrationBoundary','afterSignalAware','afterContext','afterContextAware','afterStabilizer','afterCalibration','afterCalibrationAware','afterGuardrail','afterGuardrailAware','afterMidRankRecovery','afterMidrankAware','afterTrajectory','afterRankOutcome','afterCandidateOutcome','afterSwapShield','afterSelfLearning','afterMargin','beforeRescue','afterRescue'],
   names:{raw:'Raw Board',afterMeta:'Meta',afterGemini:'Gemini Signal',afterTransitionPair:'Transition + Pair',afterRolePair:'Role-Pair',afterSelfCorrection:'Self-Correction',afterSelectorCoach:'Selector Coach',afterSignal:'Signal',afterBoardRankChallenger:'Board-Rank Challenger',afterMetaSignalBoundary:'Meta→Signal Boundary',afterContextCalibrationBoundary:'Context→Calibration Boundary',afterSignalAware:'Signal-Aware',afterContext:'Context',afterContextAware:'Context-Aware',afterStabilizer:'Stabilizer',afterCalibration:'Calibration',afterCalibrationAware:'Calibration-Aware',afterGuardrail:'Guardrail',afterGuardrailAware:'Guardrail-Aware',afterMidRankRecovery:'Mid-Rank',afterMidrankAware:'Mid-Rank-Aware',afterTrajectory:'Trajectory',afterRankOutcome:'Rank-Outcome',afterCandidateOutcome:'Candidate-Outcome',afterSwapShield:'Swap-Shield',afterSelfLearning:'Self-Learning',afterMargin:'Margin',beforeRescue:'Before Rescue',afterRescue:'Final/Rescue'}
 });
@@ -5056,10 +5075,10 @@ function __buildSelectorMistakeForensics(rows){
     if(f.dominantStage){const k=f.dominantStage.from+'→'+f.dominantStage.to,z=stage.get(k)||{transition:k,cases:0,totalDrop:0,maxDrop:0};z.cases++;z.totalDrop+=f.dominantStage.drop;z.maxDrop=Math.max(z.maxDrop,f.dominantStage.drop);stage.set(k,z);} if(f.firstDamageStage){const k=f.firstDamageStage.from+'→'+f.firstDamageStage.to,z=first.get(k)||{transition:k,cases:0,totalDrop:0};z.cases++;z.totalDrop+=f.firstDamageStage.drop;first.set(k,z);}
     const l=lottery.get(r.name)||{name:r.name,tests:0,misses:0,damage:0,rescue:0};l.tests++;l.misses+=!r.selectionHit;l.damage+=!!r.selectorDamage;l.rescue+=!!r.selectorRescued;lottery.set(r.name,l);
   }
-  return {version:'V3.6',purpose:'diagnostic-only',types:[...counts.values()].map(x=>({...x,rate:pct(x.hits,x.tests)})).sort((a,b)=>b.tests-a.tests),firstDamageStages:[...first.values()].map(x=>({...x,avgDrop:Math.round(x.totalDrop/x.cases*100)/100})).sort((a,b)=>b.cases-a.cases||b.avgDrop-a.avgDrop),dominantStages:[...stage.values()].map(x=>({...x,avgDrop:Math.round(x.totalDrop/x.cases*100)/100})).sort((a,b)=>b.cases-a.cases||b.avgDrop-a.avgDrop),perLottery:[...lottery.values()].map(x=>({...x,missRate:pct(x.misses,x.tests)})).sort((a,b)=>b.misses-a.misses||b.damage-a.damage),rules:['FIRST_DAMAGE = จุดแรกที่อันดับเป้าหมายตกลง','DOMINANT_DAMAGE = จุดที่อันดับตกมากที่สุด','RECOVERY_AFTER_DAMAGE = อันดับกลับดีขึ้นหลังเสียอันดับ','BOARD_MISS = target absent from Board','TOP2_DAMAGE = Board Top2 hit but final Selection miss','TOP2_RESCUE = Board Top2 miss but final Selection hit','R3_R5_MISS = target first appears at Board rank 3–5 and final misses','TOP2_OVERRIDE_MISS = target in Board Top2 but final misses','RANKING_MISS = target in Board but no more specific class applies']};
+  return {version:'V3.7',purpose:'diagnostic-only',types:[...counts.values()].map(x=>({...x,rate:pct(x.hits,x.tests)})).sort((a,b)=>b.tests-a.tests),firstDamageStages:[...first.values()].map(x=>({...x,avgDrop:Math.round(x.totalDrop/x.cases*100)/100})).sort((a,b)=>b.cases-a.cases||b.avgDrop-a.avgDrop),dominantStages:[...stage.values()].map(x=>({...x,avgDrop:Math.round(x.totalDrop/x.cases*100)/100})).sort((a,b)=>b.cases-a.cases||b.avgDrop-a.avgDrop),perLottery:[...lottery.values()].map(x=>({...x,missRate:pct(x.misses,x.tests)})).sort((a,b)=>b.misses-a.misses||b.damage-a.damage),rules:['FIRST_DAMAGE = จุดแรกที่อันดับเป้าหมายตกลง','DOMINANT_DAMAGE = จุดที่อันดับตกมากที่สุด','RECOVERY_AFTER_DAMAGE = อันดับกลับดีขึ้นหลังเสียอันดับ','BOARD_MISS = target absent from Board','TOP2_DAMAGE = Board Top2 hit but final Selection miss','TOP2_RESCUE = Board Top2 miss but final Selection hit','R3_R5_MISS = target first appears at Board rank 3–5 and final misses','TOP2_OVERRIDE_MISS = target in Board Top2 but final misses','RANKING_MISS = target in Board but no more specific class applies']};
 }
 
-/* V3.6 SELECTOR REPAIR MAP — conservative empirical learning layer.
+/* V3.7 ADAPTIVE STABILITY SHIELD — conservative empirical learning layer.
    Purpose: teach the Selector from completed prior OOS rounds without ever using
    the current target before the decision. Memory is route-local and rebuilt
    chronologically on each run; it is intentionally NOT persisted to localStorage.
@@ -5087,7 +5106,7 @@ const __SELECTOR_COACH_CONFIG=Object.freeze({
 });
 function __selectorCoachEnsure(routeCtx){
   if(!routeCtx)return null;
-  if(!routeCtx.__selectorCoach){routeCtx.__selectorCoach={version:'V3.6',types:new Map(),updates:0};}
+  if(!routeCtx.__selectorCoach){routeCtx.__selectorCoach={version:'V3.7',types:new Map(),updates:0};}
   return routeCtx.__selectorCoach;
 }
 function __selectorCoachType(routeCtx,name){
@@ -5111,7 +5130,7 @@ function __selectorCoachStats(m){
 function __selectorCoachApply(c,rs,routeCtx){
   const typeName=String(routeCtx?.name||rs?.at?.(-1)?.name||'').trim();
   const mem=__selectorCoachType(routeCtx,typeName);
-  const meta={version:'V3.6',applied:false,moved:0,type:typeName,eligible:0,topBefore:null,topAfter:null,updates:routeCtx?.__selectorCoach?.updates||0,candidates:[]};
+  const meta={version:'V3.7',applied:false,moved:0,type:typeName,eligible:0,topBefore:null,topAfter:null,updates:routeCtx?.__selectorCoach?.updates||0,candidates:[]};
   if(!mem||!Array.isArray(c)||!c.length)return meta;
   const ordered=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
   meta.topBefore=ordered[0]?.digit??null;
@@ -5709,7 +5728,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
   }
 } finally { window.__LAST_RUN_TIMING__={ms:performance.now()-(window.__RUN_STARTED_AT__||performance.now()),finishedAt:new Date().toISOString()}; window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V3.6',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair'});
+window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V3.7',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
 window.__TEST_EXPORTS__={parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
 })();
@@ -5722,8 +5741,8 @@ window.__TEST_EXPORTS__={parseInput,sortRecords,results,audit,selectionStatsCoop
 (function(){
   // V3.3 RUNTIME BRIDGE: expose diagnostics only; no UI/data/formula changes.
   window.__AUDIT_RUNTIME__={
-    version:'V3.6',
-    testExports:()=>window.__TEST_EXPORTS__||null,selectorCoach:()=>({version:'V3.6',config:__SELECTOR_COACH_CONFIG}),
+    version:'V3.7',
+    testExports:()=>window.__TEST_EXPORTS__||null,selectorCoach:()=>({version:'V3.7',config:__SELECTOR_COACH_CONFIG}),
     health:()=>({ok:true,readyState:document.readyState,engine:typeof window.runEngine==='function'})
   };
 })();
