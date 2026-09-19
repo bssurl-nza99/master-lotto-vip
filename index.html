@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.18 FINAL COACH</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.20 CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1505,7 +1505,7 @@ html{scroll-behavior:auto!important}
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
-  <div class="pill">V3.18 FINAL COACH</div>
+  <div class="pill">V3.20 CALENDAR DATE ENGINE</div>
 </div>
 <div id="console">
 <section class="panel">
@@ -1631,8 +1631,45 @@ function cleanDatasetKey(rawName){return String(rawName||'').split('\u2063')[0].
 function exactNikkeiCanonicalTitle(value){const s=String(value||'').normalize('NFC').replace(/[\u200B-\u200D\uFEFF\u2063]/g,'').replace(/\s+/g,'').toLowerCase();if(!/นิเคอิ|นิกเคอิ|นิคเคอิ|nikkei/.test(s))return'';const vip=s.includes('vip')||s.includes('พิเศษ'),morning=s.includes('เช้า'),afternoon=s.includes('บ่าย')||s.includes('เย็น');if(vip&&morning)return'นิเคอิ VIP เช้า';if(vip&&afternoon)return'นิเคอิ VIP บ่าย';if(vip)return'นิเคอิ VIP';if(morning)return'นิเคอิ เช้า';if(afternoon)return'นิเคอิ บ่าย';return'นิเคอิ'}
 function parseThaiDate(dateStr){const m={'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};const raw=String(dateStr||'').trim().replace(/\s+/g,' ');let x=raw.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{2,4})$/);let day,month,year;if(x&&m[x[2]]){day=Number(x[1]);month=m[x[2]];year=Number(x[3]);}else{const n=raw.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);if(!n)return 0;day=Number(n[1]);month=Number(n[2]);year=Number(n[3]);}if(year<100)year+=2500;if(year>=2400)year-=543;const d=new Date(year,month-1,day);if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return 0;return d.getTime()}
 function formatThaiShortDate(date){const ms=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];const d=date instanceof Date?date:new Date(date);return `${d.getDate()} ${ms[d.getMonth()]} ${String(d.getFullYear()+543).slice(-2)}`}
-function marketSchedule(name){const s=String(name||'').toLowerCase().replace(/\s+/g,'');if(s.includes('รัฐบาลไทย')||s.includes('รัฐบาล'))return'รัฐบาล';if(s.includes('ลาวพัฒนา'))return'ลาวพัฒนา';if(s.includes('มาเลย์')||s.includes('มาเลเซีย'))return'มาเลย์';if(s.includes('ดาวโจนส์')&& (s.includes('vip')||s.includes('พิเศษ')))return'ดาวโจนส์vip';if(s.includes('ดาวโจนส์'))return'ดาวโจนส์';return'weekday'}
-function validDrawDate(d,kind){const dow=d.getDay();if(kind==='รัฐบาล')return d.getDate()===1||d.getDate()===16;if(kind==='ลาวพัฒนา')return dow>=1&&dow<=5;if(kind==='มาเลย์')return dow===0||dow===3||dow===6;if(kind==='ดาวโจนส์vip')return true;if(kind==='ดาวโจนส์')return dow>=2&&dow<=5;return dow>=1&&dow<=5}
+/* V3.20 CALENDAR DATE ENGINE
+   Calendar-only patch: card names/layout remain untouched.
+   Rules supplied by the operator are applied before generic weekday logic.
+   JS Date uses the device/browser local calendar, so next dates follow the
+   machine's local day-of-week rather than a hard-coded date sequence. */
+function marketSchedule(name){
+  const s=String(name||'').toLowerCase().replace(/\s+/g,'');
+  if(s.includes('รัฐบาลไทย')||s.includes('รัฐบาล'))return'รัฐบาล';
+  if(s.includes('ลาวพัฒนา'))return'ลาวพัฒนา';
+  if(s.includes('ลาว'))return'ลาวทุกวัน';
+  if(s.includes('ฮานอย'))return'ฮานอยทุกวัน';
+  if(s.includes('มาเลย์')||s.includes('มาเลเซีย'))return'มาเลย์';
+  /* Dow: normal draws are Tue-Sat; Star and VIP are daily. */
+  if(s.includes('ดาวโจนส์')&&(s.includes('vip')||s.includes('สตาร์')))return'ดาวโจนส์ทุกวัน';
+  if(s.includes('ดาวโจนส์'))return'ดาวโจนส์';
+  /* User-confirmed VIP markets: daily, regardless of morning/afternoon. */
+  const vipRoots=['นิเคอิ','นิกเคอิ','นิคเคอิ','จีน','ฮั่งเส็ง','ฮ่องกง','ไต้หวัน','เกาหลี','สิงคโปร์','รัสเซีย','เยอรมัน','อังกฤษ'];
+  if(s.includes('vip')&&vipRoots.some(x=>s.includes(x)))return'vipทุกวัน';
+  /* Thai stock cards, including synthetic หุ้นไทย ทั้งวัน, are Mon-Fri. */
+  if(s.includes('หุ้นไทย'))return'หุ้นไทย';
+  return'weekday';
+}
+function validDrawDate(d,kind){
+  const dow=d.getDay(); // 0 Sun ... 6 Sat, from the device/browser local calendar
+  if(kind==='รัฐบาล')return d.getDate()===1||d.getDate()===16;
+  if(kind==='ลาวพัฒนา')return dow>=1&&dow<=5;
+  if(kind==='ลาวทุกวัน'||kind==='ฮานอยทุกวัน'||kind==='ดาวโจนส์ทุกวัน'||kind==='vipทุกวัน')return true;
+  if(kind==='มาเลย์')return dow===0||dow===3||dow===6; // Wed/Sat/Sun standard draw days
+  if(kind==='ดาวโจนส์')return dow>=2&&dow<=6; // Tue 03:05 through Sat 03:05
+  if(kind==='หุ้นไทย'||kind==='weekday')return dow>=1&&dow<=5;
+  return dow>=1&&dow<=5;
+}
+function marketDrawTime(name){
+  const s=String(name||'').toLowerCase().replace(/\s+/g,'');
+  if(s.includes('ดาวโจนส์')&&s.includes('vip'))return'00:30';
+  if(s.includes('ดาวโจนส์')&&s.includes('สตาร์'))return'01:30';
+  if(s.includes('ดาวโจนส์'))return'03:05';
+  return'';
+}
 function getNextValidDrawDateStr(dateStr,marketName){const base=parseThaiDate(dateStr);if(!base)return'';const d=new Date(base),kind=marketSchedule(marketName);for(let i=1;i<=370;i++){d.setDate(d.getDate()+1);if(validDrawDate(d,kind))return formatThaiShortDate(d)}return formatThaiShortDate(new Date(base+86400000))}
 function formatDisplayTitle(rawName){ const exactNikkei=exactNikkeiCanonicalTitle(rawName); if(exactNikkei){ /* V108.6 MARKET TYPE LOCK: a non-VIP Nikkei card is explicitly Normal. */ return exactNikkei.replace(/^นิเคอิ(?: (เช้า|บ่าย))?$/,m=>m.replace('นิเคอิ','นิเคอิ ปกติ')); } rawName=cleanDatasetKey(rawName); let name=String(rawName||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim(); const thaiSynthetic=String(rawName||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
 // NIKKEI DISPLAY HARDENING: the visible title must NEVER start with the
@@ -5268,6 +5305,42 @@ function __repairGateUpdate(routeCtx,name,board,target,selectedHit){
   if(routeCtx?.__repairGate)routeCtx.__repairGate.updates++;
 }
 
+/* V3.19 ADAPTIVE DIGIT BRIDGE
+   Production bridge from the already OOS-tested adaptive penetration evidence.
+   It is deliberately narrow: only R3-R5 candidates, only when pair evidence is
+   sufficiently mature, and only a bounded score lift. No future target data. */
+function __v319AdaptiveDigitBridge(c,rs,routeCtx){
+  if(!Array.isArray(c)||c.length<3||typeof adaptivePairs!=='function'||typeof pairEvidenceMap!=='function')return {applied:0};
+  const ordered=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  const valid=ordered.filter(x=>x.gate); const pool=valid.length?valid:ordered;
+  const owner1=pool[0],owner2=pool.find(x=>Number(x.digit)!==Number(owner1?.digit));
+  if(!owner1||!owner2)return {applied:0};
+  const anchor=Math.abs(7-Number(rs?.at?.(-1)?.n3?.[0]??0))%10;
+  const ev=pairEvidenceMap(rs), name=String(routeCtx?.name||rs?.at?.(-1)?.name||'');
+  const g=__penetrationGuardProfile(name), p1=adaptivePairs(rs,Number(owner1.digit),Number(owner2.digit),anchor,ev,g.reserve), p2=adaptivePairs(rs,Number(owner2.digit),Number(owner1.digit),anchor,ev,g.reserve);
+  const evidence=new Map();
+  for(const p of [...p1,...p2]){
+    const d=Number(String(p.pair).slice(-1));
+    if(!Number.isFinite(d)||d===Number(owner1.digit)||d===Number(owner2.digit))continue;
+    const tests=Number(p.tests||0), rate=Number(p.hitRate||0);
+    if(tests<12||!Number.isFinite(rate)||rate<52)continue;
+    const conf=Math.min(1,tests/24)*Math.min(1,Math.max(0,(rate-50)/15));
+    const z=evidence.get(d)||{score:0,tests:0,rate:0};
+    if(conf>z.score) evidence.set(d,{score:conf,tests,rate});
+  }
+  let applied=0;
+  for(const q of c){
+    const r=pool.indexOf(q)+1,z=evidence.get(Number(q.digit));
+    if(!z||r<3||r>5)continue;
+    const topScore=Number(pool[0]?.score||0),gap=topScore-Number(q.score||0);
+    if(gap>.055)continue;
+    const lift=Math.min(.028,.010+z.score*.018);
+    q.__v319AdaptiveLift=+lift.toFixed(4);q.__v319AdaptiveTests=z.tests;q.__v319AdaptiveRate=z.rate;
+    q.score=Number(q.score||0)+lift;applied++;
+  }
+  if(applied)c.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(b.support||0)-Number(a.support||0)||Number(a.digit)-Number(b.digit));
+  return {applied,owners:[Number(owner1.digit),Number(owner2.digit)]};
+}
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
@@ -5392,7 +5465,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
       const __v23Valid=c.filter(x=>x.gate),__v23Ordered=__v23Valid.length?__v23Valid:c;
       if(__v23Ordered.length){top=__v23Ordered[0];second=__v23Ordered.find(x=>Number(x.digit)!==Number(top.digit))||second;}
     }
-    /* V3.18 FINAL COACH: learn whether candidates that are
+    /* V3.20 CALENDAR DATE ENGINE + ADAPTIVE DIGIT BRIDGE: learn whether candidates that are
        pushed down specifically at Context→Calibration were actually target digits. */
     let __v15Applied=0;
     const __v15mem=routeCtx?.__stageAwareMemory||null;
@@ -5406,6 +5479,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __repairGateMeta=__repairGateApply(c,rs,routeCtx);
     const __afterSelectorCoach=__cloneRank(c);
     const __afterRepairGate=__cloneRank(c);
+    const __v319AdaptiveBridge=__v319AdaptiveDigitBridge(c,rs,routeCtx);
     const __v29SafeShadowMeta={mode:'SHADOW_ONLY',candidate:__safeShadow};
     let d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
     const __rspDiag=routeCtx?.__rawStageDiagnostics||window.__RAW_STAGE_POLICY_DIAGNOSTICS__||null;
@@ -5415,7 +5489,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
       if(__tmp.__selectorDiag.rawStagePolicy?.applied){top=__tmp.selection.d1;second=__tmp.selection.d2;d1=top.digit;d2=second.digit;}
     }
     const __rsp=__rspDiag?__rawStagePolicy(routeCtx||{},__rspDiag):null;
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,safeTop2Shadow:__v29SafeShadowMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,safeTop2Shadow:__v29SafeShadowMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
