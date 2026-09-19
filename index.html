@@ -1621,7 +1621,7 @@ window.__PERFTRACE__ = window.__PERFTRACE__ || (() => {
 
 
 (()=>{'use strict';
-const $=id=>document.getElementById(id),STORAGE_KEY='lottery_audit_v1_clean__AUDIT_ISOLATED_V2',WIN=[25,26,27,28,29,30],DISPLAY_WIN=[5,10,15,20,25,30],RECENT_MAX=30,MEDIUM_MAX=50,HIST_MAX=100,AUDIT_TUNING=Object.freeze({supportCap:1.80,cacheVersion:2,summaryCollapseMinLotteries:5}),norm=n=>((Number(n)%10)+10)%10,esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'),avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0,pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
+const $=id=>document.getElementById(id),STORAGE_KEY='lottery_audit_v1_clean',WIN=[25,26,27,28,29,30],DISPLAY_WIN=[5,10,15,20,25,30],RECENT_MAX=30,MEDIUM_MAX=50,HIST_MAX=100,AUDIT_TUNING=Object.freeze({supportCap:1.80,cacheVersion:2,summaryCollapseMinLotteries:5}),norm=n=>((Number(n)%10)+10)%10,esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'),avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0,pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
 let currentAuditDataMap={},currentPredictionDataMap={},manualCards=[];
 
 
@@ -1713,7 +1713,6 @@ function routingFamily(name){
   if(n.includes('อังกฤษ'))return'อังกฤษ';
   if(n.includes('อินเดีย'))return'อินเดีย';
   if(n.includes('อียิปต์'))return'อียิปต์';
-  if(n.includes('มาเลย์')||n.includes('มาเลเซีย'))return'มาเลย์';
   return n.replace(/vip|ปกติ|พิเศษ|เช้า|เที่ยง|บ่าย|เย็น|ดึก|extra|hd|4d|ทีวี|กาชาด|เฉพาะกิจ|สามัคคี|พัฒนา|ประตูชัย|สตาร์|สันติภาพ/g,'').replace(/\s+/g,'')||'อื่น';
 }
 function routingFilteredRecords(rs,cutoffTs=null){return sortRecords(rs||[]).filter(r=>{const t=r.timestamp||parseThaiDate(r.date)||0;return !cutoffTs||!t||t<=cutoffTs})}
@@ -3252,8 +3251,8 @@ function __coopRsKey(rs,routeCtx=null){
   return `${n}|${rs?.length||0}|${a?recordKey(a):''}|${z?recordKey(z):''}`;
 }
 function __coopRouteKey(routeCtx=null){return routeCtx?.name||'__none__'}
-function __coopSelectCacheGet(rs,routeCtx){if(routeCtx?.__oosIsolated||routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)return null;return __COOP_SELECT_CACHE__.get(__coopRsKey(rs,routeCtx))}
-function __coopSelectCacheSet(rs,routeCtx,v){if(routeCtx?.__oosIsolated||routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)return v;__COOP_SELECT_CACHE__.set(__coopRsKey(rs,routeCtx),v);return v}
+function __coopSelectCacheGet(rs,routeCtx){if(routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)return null;return __COOP_SELECT_CACHE__.get(__coopRsKey(rs,routeCtx))}
+function __coopSelectCacheSet(rs,routeCtx,v){if(routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)return v;__COOP_SELECT_CACHE__.set(__coopRsKey(rs,routeCtx),v);return v}
 async function decisionMemoryCooperative(rs,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("decisionMemoryCooperative");
   try{
@@ -4130,21 +4129,18 @@ const __EVO_POLICIES=Object.freeze((()=>{
    Low-performing routes continue challenger search. Promotion happens only after
    completed OOS outcomes, so the current target can never train its own choice. */
 const __EVO_TARGET=.70, __EVO_MIN=20, __EVO_PROMOTE_EDGE=.018, __EVO_LOCK_TESTS=24;
-const __EVO_STORE_KEY='__V1_9_29_CHAMPION_REGISTRY__AUDIT_ISOLATED_V2';
-/* AUDIT SEAL: chronological OOS is always cold-start. Persistent Champion state is
-   production-only and is never read/written during an OOS replay. */
+const __EVO_STORE_KEY='__V1_9_29_CHAMPION_REGISTRY__';
 function __evoEnsure(mem){
   if(!mem)return null;
   if(!mem.selfLearning)mem.selfLearning={route:new Map(),family:new Map(),base:new Map(),champion:new Map(),total:0,loaded:false};
   if(!mem.selfLearning.champion)mem.selfLearning.champion=new Map();
   if(!mem.selfLearning.loaded){
     mem.selfLearning.loaded=true;
-    if(!window.__OOS_COLD_START__){try{const raw=localStorage.getItem(__EVO_STORE_KEY),obj=raw?JSON.parse(raw):{};for(const [k,v] of Object.entries(obj||{})){if(v&&v.id)mem.selfLearning.champion.set(k,v)}}catch(e){}}
+    try{const raw=localStorage.getItem(__EVO_STORE_KEY),obj=raw?JSON.parse(raw):{};for(const [k,v] of Object.entries(obj||{})){if(v&&v.id)mem.selfLearning.champion.set(k,v)}}catch(e){}
   }
   return mem.selfLearning;
 }
 function __evoPersistChampion(route,champ){
-  if(window.__OOS_COLD_START__)return;
   if(!route||!champ)return;
   try{const raw=localStorage.getItem(__EVO_STORE_KEY),obj=raw?JSON.parse(raw):{};obj[route]={id:champ.id,tests:champ.tests,hits:champ.hits,rate:champ.rate,edge:champ.edge||0,locked:!!champ.locked,updatedAt:champ.updatedAt||Date.now()};localStorage.setItem(__EVO_STORE_KEY,JSON.stringify(obj))}catch(e){}
 }
@@ -4167,7 +4163,7 @@ function __evoApplyChampion(c,rawStages,champion){
 }
 function __evoApply(c,rawStages,mem,routeCtx,risk){
   const e=__evoEnsure(mem);if(!e||!Array.isArray(c)||c.length<2)return{selected:null,policies:[],searching:false};
-  const route=routeCtx?.name||'__none__',champ=routeCtx?.__oosIsolated?null:e.champion.get(route);
+  const route=routeCtx?.name||'__none__',champ=e.champion.get(route);
   /* Fast path: locked Champion is applied directly. This is the main runtime win
      for routes that have already demonstrated stable >=70% performance. */
   if(champ&&champ.locked&&champ.tests>=__EVO_LOCK_TESTS){
@@ -5134,7 +5130,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __v23TypeName=String(routeCtx?.name||rs.at(-1)?.name||'');
     // V2.8 research promotion: exact archived Candidate-E OOS showed these 21 types gain Selection with zero Top2 loss. Penetration uses robust GLOBAL-PAIR-18 research path.
     const __v23SafeTypes=new Set(['หุ้นไทยเช้า','หุ้นไทยเย็น','ลาวอาเซียน','ลาวสามัคคีVIP','ฮานอยเช้า','ฮานอยอาเซียน','ฮานอยทีวี','ฮานอยกาชาด','หุ้นเกาหลี','หุ้นสิงคโปร์','หุ้นอียิปต์','หุ้นดาวโจนส์','ฮานอยExtra','ฮานอยดึก','จีนVIPเช้า','จีนVIPบ่าย','ไต้หวันVIP','สิงคโปร์VIP','ดาวโจนส์VIP','หุ้นจีนเช้า','หุ้นไต้หวัน']);
-    if(!routeCtx?.__oosIsolated&&__v23SafeTypes.has(__v23TypeName)){
+    if(__v23SafeTypes.has(__v23TypeName)){
       applyTop2DNA(c,rs);
       const __v23Valid=c.filter(x=>x.gate),__v23Ordered=__v23Valid.length?__v23Valid:c;
       if(__v23Ordered.length){top=__v23Ordered[0];second=__v23Ordered.find(x=>Number(x.digit)!==Number(top.digit))||second;}
@@ -5158,8 +5154,7 @@ async function __coopOosBundle(rs,routeCtx=null){
      A missing research meta object must never abort OOS/Selection processing. */
   const __typeAwareMeta=routeCtx?.__typeAwareMeta||window.__TYPE_AWARE_META__||{version:'V2.2',enabled:false,mode:'SHADOW',type:null,family:null,support:0,confidence:0,adjustment:0,cap:0,reason:'not-available',oosTests:0,oosHits:0};
   if(routeCtx&&!routeCtx.__typeAwareMeta)routeCtx.__typeAwareMeta=__typeAwareMeta;
-  if(routeCtx){routeCtx.__oosIsolated=true;routeCtx.__stageAwareMemory=__stageMemoryNew();}
-  const key=__coopRsKey(rs,routeCtx),cached=(routeCtx?.__oosIsolated||routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)?null:window.__COOP_OOS_BUNDLE_CACHE__?.get?.(key);
+  const key=__coopRsKey(rs,routeCtx),cached=(routeCtx?.__boardRankChallenger||routeCtx?.__boundaryChallenger)?null:window.__COOP_OOS_BUNDLE_CACHE__?.get?.(key);
   if(cached){if(routeCtx&&cached.stageMemory)routeCtx.__stageAwareMemory=cached.stageMemory;return cached}
   const selection=[],decision=[],diagnostic=[],state={last:performance.now()};
   if(routeCtx&&!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew();
@@ -5202,7 +5197,7 @@ async function __coopOosBundle(rs,routeCtx=null){
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
   }
-  const bundle={selection,decision,diagnostic,stageMemory:routeCtx?.__stageAwareMemory||null};if(!routeCtx?.__oosIsolated&&!routeCtx?.__boardRankChallenger&&!routeCtx?.__boundaryChallenger){if(!window.__COOP_OOS_BUNDLE_CACHE__)window.__COOP_OOS_BUNDLE_CACHE__=new Map();window.__COOP_OOS_BUNDLE_CACHE__.set(key,bundle)}return bundle;
+  const bundle={selection,decision,diagnostic,stageMemory:routeCtx?.__stageAwareMemory||null};if(!routeCtx?.__boardRankChallenger&&!routeCtx?.__boundaryChallenger){if(!window.__COOP_OOS_BUNDLE_CACHE__)window.__COOP_OOS_BUNDLE_CACHE__=new Map();window.__COOP_OOS_BUNDLE_CACHE__.set(key,bundle)}return bundle;
 }
 async function selectionHistoryCooperative(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("selectionHistoryCooperative");try{return(await __coopOosBundle(rs,routeCtx)).selection}finally{window.__PERFTRACE__.end("selectionHistoryCooperative",__pt0)}}
 async function selectionStatsCooperative(rs,routeCtx=null){
@@ -5343,7 +5338,6 @@ function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
 window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
 function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
-/* External dependency retained for the existing capture feature. No external data/API calls are used by the calculation engine. */
 let html2canvasLoader=null;function ensureHtml2Canvas(){if(typeof html2canvas==='function')return Promise.resolve();if(html2canvasLoader)return html2canvasLoader;html2canvasLoader=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.crossOrigin='anonymous';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('html2canvas load failed'));document.head.appendChild(sc)});return html2canvasLoader}
 window.captureSnapshotImage=async()=>{const el=document.querySelector('.ai-snapshot');if(!el)return;const btn=el.querySelector('.ai-snapshot-capture');try{await ensureHtml2Canvas();if(btn)btn.style.visibility='hidden';await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const c=await html2canvas(el,{backgroundColor:'#06101e',scale:2,useCORS:true,allowTaint:false,imageTimeout:15000,logging:false});const a=document.createElement('a');a.download='BAN-NGERN-KONG-AI-SNAPSHOT.png';a.href=c.toDataURL('image/png');a.click();showToast('✓ แคปภาพรวมแล้ว')}catch(e){showToast('⚠️ แคปภาพรวมไม่สำเร็จ')}finally{if(btn)btn.style.visibility=''}};
 window.captureCardImage=async(id,title)=>{const el=$(id);if(!el)return;const actions=el.querySelector('.card-btn-group');try{await ensureHtml2Canvas();if(actions)actions.style.visibility='hidden';await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const c=await html2canvas(el,{backgroundColor:null,scale:3,useCORS:true,allowTaint:false,imageTimeout:15000,logging:false});const a=document.createElement('a');a.download=`${title||'card'}.png`;a.href=c.toDataURL('image/png');a.click();showToast('✓ แคปภาพการ์ดแล้ว')}catch(e){showToast('⚠️ แคปภาพไม่สำเร็จ')}finally{if(actions)actions.style.visibility=''}};
@@ -5386,9 +5380,9 @@ function runSystemHealth(){
    V2.0 FIX: research controls no longer depend on IndexedDB/download APIs
    for the primary path. Snapshot is always validated, backed up to localStorage,
    and export has a safe JSON + clipboard fallback. */
-const __RESEARCH_DB__='lottery_research_v1981__AUDIT_ISOLATED_V2';
+const __RESEARCH_DB__='lottery_research_v1981';
 const __RESEARCH_STORE__='snapshots';
-const __RESEARCH_BACKUP_KEY__='lottery_research_latest_v1981__AUDIT_ISOLATED_V2';
+const __RESEARCH_BACKUP_KEY__='lottery_research_latest_v1981';
 let __RESEARCH_BUSY__=false;
 function __researchDownload(filename,payload){
   try{
@@ -5567,19 +5561,12 @@ window.__TEST_EXPORTS__={parseInput,sortRecords,results,audit,selectionStatsCoop
 
 <script>
 (function(){
-  // Mobile-safe: runEngine itself opens the summary automatically when it finishes.
-  // Keep this fallback only for cases where runEngine is not instrumented by the trace.
-  let lastStart=0;
-  const obs=new MutationObserver(()=>{
-    const p=document.getElementById('processingPanel');
-    if(p && !p.hidden && p.style.display!=='none' && !lastStart){
-      lastStart=performance.now();
-      window.__PERFTRACE__.reset();
-    }
-  });
-  obs.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['hidden','style','class']});
-window.__TEST_EXPORTS__={parseInput,sortRecords,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle};
-window.__TEST_EXPORTS__={parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile};
+  // V3.3 RUNTIME BRIDGE: expose diagnostics only; no UI/data/formula changes.
+  window.__AUDIT_RUNTIME__={
+    version:'V3.3',
+    testExports:()=>window.__TEST_EXPORTS__||null,
+    health:()=>({ok:true,readyState:document.readyState,engine:typeof window.runEngine==='function'})
+  };
 })();
 </script>
 </body>
