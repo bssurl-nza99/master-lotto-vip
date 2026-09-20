@@ -2981,8 +2981,55 @@ function applyTop2DNA(c,rs){
   return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
 }
 function top2DNAStatus(rs){const m=top2DNAMemory(rs);if(!m)return{rate:null,tests:0};return{rate:m.globalRate,tests:m.total};}
+/* V4.2 STABILITY-CHAMPION / RECOVERY LAYER
+   Development challenger: exact-type only, prior OOS prefixes only.
+   Uses the existing selectionMetaMemory snapshots to estimate digit stability,
+   miss-streak pressure and recovery behavior. This layer never changes F1-F9.
+   It is deliberately bounded so stability evidence cannot overpower the Board.
+*/
+function __stabilityChampionProfile(rs){
+  const meta=selectionMetaMemory(rs); if(!meta||!Array.isArray(meta.log)||!meta.log.length)return null;
+  const byDigit=Array.from({length:10},(_,digit)=>({digit,tests:0,hits:0,recentTests:0,recentHits:0,maxMiss:0,curMiss:0,maxHit:0,curHit:0}));
+  const ordered=meta.log.slice(); const cut=Math.max(0,ordered.length-36);
+  for(let i=0;i<ordered.length;i++){
+    const d=Number(ordered[i]?.digit); if(!Number.isInteger(d)||d<0||d>9)continue;
+    const z=byDigit[d],hit=!!ordered[i].hit; z.tests++; if(hit)z.hits++;
+    if(i>=cut){z.recentTests++;if(hit)z.recentHits++;}
+    if(hit){z.curHit++;z.curMiss=0;z.maxHit=Math.max(z.maxHit,z.curHit)}
+    else{z.curMiss++;z.curHit=0;z.maxMiss=Math.max(z.maxMiss,z.curMiss)}
+  }
+  // Recover the current miss/hit streak per digit from the latest observations.
+  for(const z of byDigit){
+    let h=0,m=0;
+    for(let i=ordered.length-1;i>=0;i--){if(Number(ordered[i]?.digit)!==z.digit)continue;if(ordered[i].hit){if(m)break;h++}else{if(h)break;m++}}
+    z.curHit=h;z.curMiss=m;
+  }
+  return {byDigit,total:ordered.length};
+}
+function applyStabilityChampion(c,rs){
+  const p=__stabilityChampionProfile(rs); if(!p||!Array.isArray(c)||!c.length)return c;
+  for(const q of c){
+    const z=p.byDigit[Number(q.digit)]||{}; const n=Number(z.tests||0), rn=Number(z.recentTests||0);
+    const longRate=n>=8?z.hits/n:.5, recent=rn>=5?z.recentHits/rn:longRate;
+    const sample=Math.min(1,n/16), recentSample=Math.min(1,rn/12);
+    const edge=(longRate-.5)*.10*sample+(recent-.5)*.08*recentSample;
+    // Penalize only unusually long current misses; do not hard-ban a digit.
+    const missPenalty=z.curMiss>=4?Math.min(.045,(z.curMiss-3)*.012):0;
+    // Reward demonstrated recovery after prior misses, very conservatively.
+    const recoveryBonus=(z.maxHit>=2&&z.maxMiss>=1&&z.curMiss<=1)?Math.min(.025,(z.maxHit-1)*.006):0;
+    // Stability bonus is intentionally tiny and requires evidence.
+    const stabilityBonus=n>=12&&recent>=.55?Math.min(.045,(recent-.5)*.18):0;
+    const adj=Math.max(-.055,Math.min(.055,edge+stabilityBonus+recoveryBonus-missPenalty));
+    q.stabilityTests=n;q.stabilityRate=n?Math.round(longRate*10000)/100:null;
+    q.stabilityRecentTests=rn;q.stabilityRecentRate=rn?Math.round(recent*10000)/100:null;
+    q.stabilityCurMiss=z.curMiss||0;q.stabilityMaxMiss=z.maxMiss||0;q.stabilityMaxHit=z.maxHit||0;
+    q.stabilityAdj=Math.round(adj*1000)/1000;
+    q.score=Math.max(0,Number(q.score||0)+adj);
+  }
+  return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
+}
 function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("select"); try {
-  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);applySelectorCalibration(c,rs);const __prodRankPolicy={minEvidence:.56,minEvidenceGap:.045,gain:.70,maxLift:.040,maxMoves:1,evidenceWeights:{score:.414,independentSupport:.060,support:.276,gemini:.053,radar:.128}};const __prodRankMeta=__boardRankChallengerApply(c,__prodRankPolicy);c.forEach((q,i)=>{q._preTop2Rank=i+1});applyTop2DNA(c,rs);applySelectorGuardrail(c,__baselineRankMap,risk);applyMidRankRecovery(c,rs,__baselineRankMap,risk);
+  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);applySelectorCalibration(c,rs);const __prodRankPolicy={minEvidence:.56,minEvidenceGap:.045,gain:.70,maxLift:.040,maxMoves:1,evidenceWeights:{score:.414,independentSupport:.060,support:.276,gemini:.053,radar:.128}};const __prodRankMeta=__boardRankChallengerApply(c,__prodRankPolicy);c.forEach((q,i)=>{q._preTop2Rank=i+1});applyTop2DNA(c,rs);applyStabilityChampion(c,rs);applySelectorGuardrail(c,__baselineRankMap,risk);applyMidRankRecovery(c,rs,__baselineRankMap,risk);
   const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c;let top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
   const __rolePairMeta=__rolePairApply(c,Number(top.digit),routeCtx?.__stageAwareMemory||null,routeCtx);
   const __afterRolePair=__cloneRank(c);
