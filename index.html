@@ -1621,7 +1621,7 @@ window.__PERFTRACE__ = window.__PERFTRACE__ || (() => {
 
 
 (()=>{'use strict';
-const $=id=>document.getElementById(id),STORAGE_KEY='lottery_audit_v1_clean',WIN=[25,26,27,28,29,30],DISPLAY_WIN=[5,10,15,20,25,30],RECENT_MAX=30,MEDIUM_MAX=50,HIST_MAX=100,AUDIT_TUNING=Object.freeze({supportCap:1.80,cacheVersion:2,summaryCollapseMinLotteries:5}),norm=n=>((Number(n)%10)+10)%10,esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'),avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0,pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
+const $=id=>document.getElementById(id),STORAGE_KEY='lottery_audit_v1_clean',WIN=[25,26,27,28,29,30],DISPLAY_WIN=[5,10,15,20,25,30],RECENT_MAX=30,MEDIUM_MAX=50,HIST_MAX=100,AUDIT_TUNING=Object.freeze({supportCap:1.80,cacheVersion:3,summaryCollapseMinLotteries:5}),norm=n=>((Number(n)%10)+10)%10,esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'),avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0,pct=(a,b)=>b?Math.round(a/b*10000)/100:0;
 let currentAuditDataMap={},currentPredictionDataMap={},manualCards=[];
 
 
@@ -2989,8 +2989,115 @@ function applyTop2DNA(c,rs){
   return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||b.rawCount-a.rawCount||a.digit-b.digit);
 }
 function top2DNAStatus(rs){const m=top2DNAMemory(rs);if(!m)return{rate:null,tests:0};return{rate:m.globalRate,tests:m.total};}
+
+/* V4.0 FUTURE-SAFE CHALLENGER
+   Additive challenger layer: learns rank/context outcomes only from draws strictly
+   before the current decision. It never reads the target draw while scoring it,
+   never changes F1-F9, and is bounded so weak evidence cannot freely overturn the
+   production board. It is intentionally conservative: when evidence is insufficient,
+   the original selector remains unchanged. */
+const __FUTURE_SAFE_CACHE__=new WeakMap();
+function futureSafeContextKey(rs){
+  const r=rs?.at?.(-1); if(!r)return '';
+  const a=[...(r.n3||'')].slice(0,3).concat([...(r.n2||'')].slice(0,2)).map(Number).filter(Number.isFinite);
+  if(a.length<5)return '';
+  return `${a.map(x=>x%2).join('')}:${(a.reduce((s,x)=>s+x,0)%5)}:${Math.abs(a[1]-a[3])%5}:${Math.abs(a[2]-a[4])%5}`;
+}
+function futureSafeMemory(rs){
+  if(!Array.isArray(rs)||rs.length<12)return null;
+  if(__FUTURE_SAFE_CACHE__.has(rs))return __FUTURE_SAFE_CACHE__.get(rs);
+  const byDigit=Array.from({length:10},(_,digit)=>({digit,n:0,h:0}));
+  const byCtx=new Map(); const byRank=Array.from({length:10},(_,rank)=>({rank,n:0,h:0}));
+  for(let i=1;i<rs.length-1;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const train=rs.slice(Math.max(0,i-79),i+1), ad=audit(train);
+    const board=candidateBoardRaw(train,ad,train);
+    const ordered=(board.filter(x=>x.gate).length?board.filter(x=>x.gate):board).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit);
+    const target=selectorTarget(rs[i+1]); const ctx=futureSafeContextKey(train);
+    ordered.slice(0,6).forEach((q,idx)=>{
+      const d=Number(q.digit),hit=target.has(d); if(!Number.isFinite(d))return;
+      const z=byDigit[d];z.n++;if(hit)z.h++;
+      const rk=byRank[idx];rk.n++;if(hit)rk.h++;
+      if(ctx){const m=byCtx.get(ctx)||new Map(),z2=m.get(d)||{n:0,h:0};z2.n++;if(hit)z2.h++;m.set(d,z2);byCtx.set(ctx,m);}
+    });
+  }
+  const out={byDigit,byCtx,byRank,tests:byRank.reduce((s,x)=>s+x.n,0)};
+  __FUTURE_SAFE_CACHE__.set(rs,out); return out;
+}
+function applyFutureSafeChallenger(c,rs){
+  const m=futureSafeMemory(rs); if(!m||!Array.isArray(c)||!c.length)return c;
+  const ctx=futureSafeContextKey(rs),cm=ctx?m.byCtx.get(ctx):null;
+  const baseTop=c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit)[0];
+  if(!baseTop)return c;
+  const currentRank=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i]));
+  for(const q of c){
+    const d=Number(q.digit),z=m.byDigit[d],cz=cm?.get(d),n=Number(z?.n||0),cn=Number(cz?.n||0);
+    const globalRate=n>=12?z.h/n:null,contextRate=cn>=6?cz.h/cn:null;
+    q.futureSafeTests=n; q.futureSafeRate=globalRate==null?null:+(globalRate*100).toFixed(2);
+    q.futureSafeContextTests=cn; q.futureSafeContextRate=contextRate==null?null:+(contextRate*100).toFixed(2);
+    if(n<12 || globalRate==null) {q.futureSafeAdj=0;continue;}
+    const rank=(currentRank.get(d)||9), rankPrior=m.byRank[Math.min(5,rank)]||{n:0,h:0};
+    const rankRate=rankPrior.n>=12?rankPrior.h/rankPrior.n:globalRate;
+    const local=contextRate==null?globalRate:(.65*contextRate+.35*globalRate);
+    const topZ=m.byDigit[Number(baseTop.digit)], topRate=topZ?.n>=12?topZ.h/topZ.n:null;
+    let edge=local-(topRate==null?globalRate:topRate);
+    // Require a real empirical edge before changing the board. Shrink heavily.
+    let adj=Math.max(-.045,Math.min(.055,edge*.055));
+    if(contextRate!=null && contextRate>=.62 && contextRate-globalRate>=.06)adj+=.012;
+    if(rankRate<.48 && globalRate<.48)adj-=.010;
+    q.futureSafeAdj=Math.round(adj*1000)/1000;
+    q.futureSafeMode=contextRate!=null?'CONTEXT+GLOBAL':'GLOBAL';
+    q.score=Math.max(0,Number(q.score||0)+q.futureSafeAdj);
+  }
+  return c.sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||b.support-a.support||a.digit-b.digit);
+}
+
+/* V4.1 INCREMENTAL FUTURE-SAFE MEMORY
+   Production OOS uses route-local online memory. Unlike the research-only v4.0
+   implementation, this never replays the whole history inside every prediction.
+   The observer is updated only after the target is known. */
+function __futureSafeState(routeCtx){
+  if(!routeCtx)return null;
+  if(routeCtx.__futureSafeState)return routeCtx.__futureSafeState;
+  const st={byDigit:Array.from({length:10},(_,digit)=>({digit,n:0,h:0})),byRank:Array.from({length:6},(_,rank)=>({rank,n:0,h:0})),byCtx:new Map(),observed:0};
+  routeCtx.__futureSafeState=st; return st;
+}
+function __futureSafeApply(c,rs,routeCtx){
+  const st=__futureSafeState(routeCtx); if(!st||!Array.isArray(c)||!c.length)return {applied:0,tests:st?.observed||0};
+  const ctx=futureSafeContextKey(rs),cm=ctx?st.byCtx.get(ctx):null;
+  const base=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  const baseTop=base[0]; if(!baseTop)return {applied:0,tests:st.observed};
+  const bz=st.byDigit[Number(baseTop.digit)],baseRate=bz?.n>=18?bz.h/bz.n:null;
+  let moved=0;
+  for(const q of c){
+    const d=Number(q.digit),z=st.byDigit[d],cz=cm?.get(d),n=z?.n||0,cn=cz?.n||0;
+    const gr=n>=18?z.h/n:null,cr=cn>=10?cz.h/cn:null;
+    q.futureSafeTests=n;q.futureSafeRate=gr==null?null:+(gr*100).toFixed(2);q.futureSafeContextTests=cn;q.futureSafeContextRate=cr==null?null:+(cr*100).toFixed(2);
+    q.futureSafeAdj=0;
+    // Only intervene when there is strong, repeated, context-specific evidence.
+    // Otherwise the original production score/rank is preserved exactly.
+    if(gr==null||cr==null||baseRate==null||cr<.70||gr<.60)continue;
+    const local=.65*cr+.35*gr,edge=local-baseRate;
+    if(edge<.08)continue;
+    const rank=base.findIndex(x=>Number(x.digit)===d),rp=st.byRank[Math.max(0,Math.min(5,rank))],rr=rp&&rp.n>=18?rp.h/rp.n:null;
+    if(rr!=null&&rr<.50)continue;
+    const adj=Math.min(.010,Math.max(0,edge*.012));
+    if(adj<.003)continue;
+    q.futureSafeAdj=+adj.toFixed(3);q.futureSafeMode='ONLINE_STRONG_CONTEXT';q.score=Math.max(0,Number(q.score||0)+adj);moved++;
+  }
+  c.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  return {applied:moved,tests:st.observed};
+}
+function __futureSafeObserve(routeCtx,consensus,targetSet){
+  const st=__futureSafeState(routeCtx); if(!st||!Array.isArray(consensus)||!(targetSet instanceof Set))return;
+  const ordered=consensus.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).slice(0,6);
+  const rs=routeCtx?.__lastFutureSafeContextKey||'';
+  ordered.forEach((q,idx)=>{const d=Number(q.digit);if(!Number.isInteger(d)||d<0||d>9)return;const z=st.byDigit[d];z.n++;if(targetSet.has(d))z.h++;const r=st.byRank[Math.min(5,idx)];r.n++;if(targetSet.has(d))r.h++;if(rs){const m=st.byCtx.get(rs)||new Map(),x=m.get(d)||{n:0,h:0};x.n++;if(targetSet.has(d))x.h++;m.set(d,x);st.byCtx.set(rs,m);}});
+  st.observed+=ordered.length; routeCtx.__lastFutureSafeContextKey=null;
+}
+
 function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("select"); try {
-  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);applySelectorCalibration(c,rs);const __prodRankPolicy={minEvidence:.56,minEvidenceGap:.045,gain:.70,maxLift:.040,maxMoves:1,evidenceWeights:{score:.414,independentSupport:.060,support:.276,gemini:.053,radar:.128}};const __prodRankMeta=__boardRankChallengerApply(c,__prodRankPolicy);c.forEach((q,i)=>{q._preTop2Rank=i+1});applyTop2DNA(c,rs);applySelectorGuardrail(c,__baselineRankMap,risk);applyMidRankRecovery(c,rs,__baselineRankMap,risk);
+  const risk=riskOverride||selectionRiskProfile(rs),c=candidateBoard(rs,ad,historyRs,routeProfile,routeCtx),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1])),anchor=signalAnchor(c,routeProfile,ad,rs);applySignalPreservingSelection(c,anchor,risk);applyContextSelection(c,rs);stabilizeSelectorRanks(c,__rankBaseline);applySelectorCalibration(c,rs);const __prodRankPolicy={minEvidence:.56,minEvidenceGap:.045,gain:.70,maxLift:.040,maxMoves:1,evidenceWeights:{score:.414,independentSupport:.060,support:.276,gemini:.053,radar:.128}};const __prodRankMeta=__boardRankChallengerApply(c,__prodRankPolicy);c.forEach((q,i)=>{q._preTop2Rank=i+1});applyTop2DNA(c,rs);applyFutureSafeChallenger(c,rs);applySelectorGuardrail(c,__baselineRankMap,risk);applyMidRankRecovery(c,rs,__baselineRankMap,risk);
   const valid=c.filter(x=>x.gate),ordered=valid.length?valid:c;let top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false};
   const __rolePairMeta=__rolePairApply(c,Number(top.digit),routeCtx?.__stageAwareMemory||null,routeCtx);
   const __afterRolePair=__cloneRank(c);
@@ -3000,7 +3107,7 @@ function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=
   let second=d2Pool[0]||ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};
   const minMargin=risk.curMiss>=3?.45:risk.curMiss>=2?.32:risk.curMiss>=1?.25:.18,margin0=top.score-(second.score||0);if(valid.length>1&&margin0<minMargin){const stronger=d2Pool.find(x=>top.score-x.score>=minMargin);if(stronger)second=stronger}
   const rescue=chooseContextRescue(c,rs,risk,__baselineRankMap);if(rescue&&rescue.digit!==top.digit){second=top;top=rescue;}const d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-  return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)}} finally { window.__PERFTRACE__.end("select",__pt0); }}
+  return{d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,futureSafe:!!top.futureSafeTests,futureSafeTopRate:top.futureSafeRate??null,futureSafeTopContextRate:top.futureSafeContextRate??null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs)}} finally { window.__PERFTRACE__.end("select",__pt0); }}
 const __SELECTOR_DIAGNOSTIC__={enabled:true,rows:[],reset(){this.rows=[]},add(row){this.rows.push(row)}};
 function __buildForensicAnalysisPack(){
   const rows=__SELECTOR_DIAGNOSTIC__.rows||[];
@@ -5481,6 +5588,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __afterRepairGate=__cloneRank(c);
     const __v319AdaptiveBridge=__v319AdaptiveDigitBridge(c,rs,routeCtx);
     const __v29SafeShadowMeta={mode:'SHADOW_ONLY',candidate:__safeShadow};
+        if(routeCtx){ routeCtx.__lastFutureSafeContextKey=futureSafeContextKey(rs); __futureSafeApply(c,rs,routeCtx); const __fsValid=c.filter(x=>x.gate),__fsOrd=__fsValid.length?__fsValid:c; if(__fsOrd.length){top=__fsOrd[0];second=__fsOrd.find(x=>Number(x.digit)!==Number(top.digit))||second;} }
     let d1=top.digit,d2=second.digit,last=rs.at(-1),H=Number(last.n3[0]),anchorDigit=Math.abs(7-H)%10,margin=Math.round((top.score-(second.score||0))*100)/100,signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ',confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
     const __rspDiag=routeCtx?.__rawStageDiagnostics||window.__RAW_STAGE_POLICY_DIAGNOSTICS__||null;
     if(__rspDiag){
@@ -5541,6 +5649,7 @@ async function __coopOosBundle(rs,routeCtx=null){
     
     if(routeCtx){ if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
+    __futureSafeObserve(routeCtx,sel.consensus,new Set(target));
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
   }
