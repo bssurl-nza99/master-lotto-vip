@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V2.6 SMART 2D · CALENDAR DATE ENGINE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V2.6+ SMART 2D+ · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1491,148 +1491,8 @@ html{scroll-behavior:auto!important}
 .penetration-hero-note{margin:-2px 0 12px;padding:8px 10px;border-radius:9px;background:rgba(212,175,55,.08);font-size:.68rem;color:#6f5b35;line-height:1.45}
 .penetration-hero .global-kpi:first-child{border:2px solid rgba(46,125,50,.28);background:rgba(46,125,50,.055)}
 </style>
-<script>
-/* ================================================================
-   SMART-2D SHADOW RESEARCH LAYER — R1.0
-   BASE: V2.6 Champion Reference
-   PURPOSE: regime/drift/evidence diagnostics ONLY.
-   PRODUCTION SELECTION IS NOT MODIFIED BY THIS MODULE.
-   UI / lottery metadata / F1-F9 remain untouched.
-   ================================================================ */
-(()=>{
-  'use strict';
-  const M=window.__SMART2D_RESEARCH_MANIFEST__={
-    researchVersion:'R1.0-SHADOW', productionReference:'V2.6',
-    mode:'SHADOW_ONLY', productionMutation:false, autoPromotion:false,
-    formulas:'F1-F9-LOCKED', typeIsolation:'STRICT', oosPolicy:'CHRONOLOGICAL',
-    uiContract:'LOCKED'
-  };
-  const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,Number(x)||0));
-  const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
-  const rate=(hits,n,prior=.5,k=12)=>(Number(hits||0)+k*prior)/(Number(n||0)+k);
-  const freq=(rows,keyFn)=>{const m=new Map();for(const r of rows){const k=keyFn(r);m.set(k,(m.get(k)||0)+1)}return m};
-  const dist=(rows,keyFn)=>{const m=freq(rows,keyFn),n=Math.max(1,rows.length);for(const [k,v] of m)m.set(k,v/n);return m};
-  function jsDiv(a,b){let z=0;const keys=new Set([...a.keys(),...b.keys()]);for(const k of keys){const p=Math.max(1e-9,a.get(k)||0),q=Math.max(1e-9,b.get(k)||0);z+=p*Math.log(p/q)}return z;}
-  function digitRows(rows){return rows.map(r=>{const n3=String(r.n3??'').padStart(3,'0').slice(-2),n2=String(r.n2??'').padStart(2,'0');return [...n3,...n2].map(Number).filter(Number.isFinite)})}
-  function digitDist(rows){const m=new Map();for(let d=0;d<10;d++)m.set(d,0);for(const ds of digitRows(rows))for(const d of ds)m.set(d,m.get(d)+1);const n=Math.max(1,[...m.values()].reduce((a,b)=>a+b,0));for(const [k,v] of m)m.set(k,v/n);return m}
-  function regime(rows){
-    const n=rows.length;if(n<12)return {state:'INSUFFICIENT',drift:0,stability:0,recent:0,baseline:0};
-    const recent=rows.slice(-Math.min(8,n)),base=rows.slice(0,Math.max(1,n-Math.min(8,n)));
-    const recentD=digitDist(recent),baseD=digitDist(base),d=clamp(jsDiv(recentD,baseD)/1.25);
-    const r5=rows.slice(-5),r10=rows.slice(-10),r20=rows.slice(-20);
-    const d5= digitDist(r5), d10=digitDist(r10), d20=digitDist(r20);
-    const inner=clamp(1-jsDiv(d5,d10)/1.25), outer=clamp(1-jsDiv(d10,d20)/1.25);
-    const stability=.5*inner+.5*outer;
-    let state='STABLE';
-    if(d>=.70) state='SHIFT'; else if(d>=.38) state='TRANSITION'; else if(stability<.38) state='VOLATILE';
-    return {state,drift:d,stability,recent:mean([...recentD.values()]),baseline:mean([...baseD.values()])};
-  }
-  function evidenceFamily(q){
-    const f=[];if(Array.isArray(q?.formulas)&&q.formulas.length)f.push('FORMULA');
-    if(Number(q?.support||0)>0||Number(q?.independentSupport||0)>0)f.push('DIGIT');
-    if(Number(q?.memoryTests||0)>0||q?.memoryRate!=null)f.push('RECENCY');
-    if(q?.rankStabilized||q?.rankDisplacement!=null)f.push('RANK');
-    if(q?.selfCorrectionPairRate!=null||q?.selfCorrectionPairAdj)f.push('PAIR');
-    if(q?.stageAwareApplied||q?.stageAwareRate!=null)f.push('STAGE');
-    if(q?.rescueGuardApproved||q?.midRankRecoveryApplied)f.push('RECOVERY');
-    return [...new Set(f)];
-  }
-  function interventionBudget(q){
-    const lifts=[q?.contextAdj,q?.selfCorrectionAdj,q?.midRankRecoveryLift,q?.anchorBonus].map(Number).filter(Number.isFinite);
-    const raw=lifts.reduce((a,b)=>a+Math.abs(b),0);
-    return {raw,used:clamp(raw/0.50),capped:raw>0.50};
-  }
-  function shadowDecision(rows,board){
-    const rg=regime(rows);const arr=Array.isArray(board)?board:[];
-    const enriched=arr.map((q,i)=>{const fam=evidenceFamily(q),ib=interventionBudget(q);return {rank:i+1,digit:Number(q.digit),score:Number(q.score||0),baseRank:i+1,evidenceFamilies:fam,intervention:ib,regime:rg.state,drift:rg.drift}});
-    return {manifest:M,regime:rg,board:enriched,top5:enriched.slice(0,5),budgetViolations:enriched.filter(x=>x.intervention.capped).length};
-  }
-  function walkForwardShadow(rs,boardGetter){
-    const out=[];for(let i=1;i<rs.length-1;i++){
-      const train=rs.slice(0,i+1);let board=[];try{board=boardGetter(train,i)||[]}catch(e){board=[]}
-      const sh=shadowDecision(train,board);out.push({i,source:rs[i]?.date,target:rs[i+1]?.date,...sh});
-    }return out;
-  }
-  window.__SMART2D_SHADOW__={manifest:M,regime,evidenceFamily,interventionBudget,shadowDecision,walkForwardShadow,rate};
-  /* ================================================================
-     R1.1 DIFFERENTIAL AUDIT — SHADOW ONLY
-     Purpose: compare Champion vs Shadow traces without changing runtime.
-     Input is explicit OOS trace data supplied by the evaluator/runner.
-     ================================================================ */
-  const pct=x=>`${(100*Number(x||0)).toFixed(2)}%`;
-  const safeNum=x=>Number.isFinite(Number(x))?Number(x):null;
-  function normalizeTrace(x){
-    const a=Array.isArray(x)?x:[];
-    return a.map((r,i)=>({
-      type:String(r.type??r.lotteryType??''),
-      date:String(r.date??r.targetDate??''),
-      target:String(r.target??r.winner??r.actual??''),
-      baseRank:safeNum(r.baseRank??r.rank),
-      finalRank:safeNum(r.finalRank??r.selectionRank),
-      selected:String(r.selected??r.selection??r.d1??''),
-      top2Hit:!!(r.top2Hit??r.top2),
-      selectionHit:!!(r.selectionHit??r.hit),
-      inBoard:!!(r.inBoard??r.boardHit),
-      regime:String(r.regime??''),
-      intervention:Number(r.interventionBudget??r.intervention??0)||0,
-      rescued:!!r.rescued,
-      damaged:!!r.damaged
-    }));
-  }
-  function compareTrace(champion,shadow){
-    const C=normalizeTrace(champion),S=normalizeTrace(shadow),n=Math.min(C.length,S.length),rows=[];
-    let cSel=0,sSel=0,cTop=0,sTop=0,cBoard=0,sBoard=0,rescue=0,damage=0;
-    for(let i=0;i<n;i++){
-      const c=C[i],s=S[i];
-      const sameTarget=c.target===s.target && c.target!=='';
-      const selGain=Number(s.selectionHit)-Number(c.selectionHit);
-      const topGain=Number(s.top2Hit)-Number(c.top2Hit);
-      const rescued=!c.selectionHit&&s.selectionHit;
-      const damaged=c.selectionHit&&!s.selectionHit;
-      if(c.selectionHit)cSel++;if(s.selectionHit)sSel++;if(c.top2Hit)cTop++;if(s.top2Hit)sTop++;if(c.inBoard)cBoard++;if(s.inBoard)sBoard++;
-      if(rescued)rescue++;if(damaged)damage++;
-      rows.push({...s,index:i,targetMatch:sameTarget,selectionDelta:selGain,top2Delta:topGain,rescued,damaged,rankDelta:(safeNum(s.finalRank)||0)-(safeNum(c.finalRank)||0)});
-    }
-    const byType=new Map();
-    for(const r of rows){const k=r.type||'UNKNOWN';if(!byType.has(k))byType.set(k,[]);byType.get(k).push(r)}
-    const typeSummary=[...byType.entries()].map(([type,a])=>({
-      type,N:a.length,
-      championSelection:a.filter(x=>C[x.index]?.selectionHit).length/a.length,
-      shadowSelection:a.filter(x=>S[x.index]?.selectionHit).length/a.length,
-      championTop2:a.filter(x=>C[x.index]?.top2Hit).length/a.length,
-      shadowTop2:a.filter(x=>S[x.index]?.top2Hit).length/a.length,
-      rescue:a.filter(x=>x.rescued).length,
-      damage:a.filter(x=>x.damaged).length,
-      netRescue:a.filter(x=>x.rescued).length-a.filter(x=>x.damaged).length
-    })).sort((a,b)=>b.netRescue-a.netRescue);
-    const regimes=new Map();
-    for(const r of rows){const k=r.regime||'UNSPECIFIED';if(!regimes.has(k))regimes.set(k,[]);regimes.get(k).push(r)}
-    const regimeSummary=[...regimes.entries()].map(([regime,a])=>({
-      regime,N:a.length,rescue:a.filter(x=>x.rescued).length,damage:a.filter(x=>x.damaged).length,
-      netRescue:a.filter(x=>x.rescued).length-a.filter(x=>x.damaged).length,
-      shadowSelection:a.filter(x=>S[x.index]?.selectionHit).length/a.length
-    }));
-    return {
-      manifest:M, N:n, lengthMismatch:C.length!==S.length, targetMismatchCount:rows.filter(x=>!x.targetMatch).length,
-      champion:{selection:cSel/n,top2:cTop/n,inBoard:cBoard/n},
-      shadow:{selection:sSel/n,top2:sTop/n,inBoard:sBoard/n},
-      delta:{selection:(sSel-cSel)/n,top2:(sTop-cTop)/n,inBoard:(sBoard-cBoard)/n},
-      rescue,damage,netRescue:rescue-damage,
-      typeSummary,regimeSummary,rows
-    };
-  }
-  function dnaSummary(rows){
-    const a=normalizeTrace(rows),n=a.length;if(!n)return null;
-    const types=new Map();for(const r of a){const k=r.type||'UNKNOWN';if(!types.has(k))types.set(k,[]);types.get(k).push(r)}
-    const ts=[...types.entries()].map(([type,x])=>({type,N:x.length,selection:x.filter(r=>r.selectionHit).length/x.length,top2:x.filter(r=>r.top2Hit).length/x.length,inBoard:x.filter(r=>r.inBoard).length/x.length}));
-    return {N:n,types:ts.length,selection:a.filter(r=>r.selectionHit).length/n,top2:a.filter(r=>r.top2Hit).length/n,inBoard:a.filter(r=>r.inBoard).length/n,typeSummary:ts};
-  }
-  window.__SMART2D_SHADOW_R11__={manifest:{...M,researchVersion:'R1.1-DIFFERENTIAL-SHADOW'},normalizeTrace,compareTrace,dnaSummary,pct};
-
-})();
-</script>
 </head>
-<body><div id="__smart_v24_badge" style="position:fixed;top:8px;right:10px;z-index:99999;padding:5px 9px;border-radius:999px;background:rgba(8,18,32,.92);color:#fff;font:800 11px/1.1 Arial,sans-serif;letter-spacing:.3px;box-shadow:0 3px 12px rgba(0,0,0,.18);pointer-events:none">V2.6 · SMART 2D OOS PASS · 64.78 / 64.78 / 63.28%</div>
+<body><div id="__smart_v24_badge" style="position:fixed;top:8px;right:10px;z-index:99999;padding:5px 9px;border-radius:999px;background:rgba(8,18,32,.92);color:#fff;font:800 11px/1.1 Arial,sans-serif;letter-spacing:.3px;box-shadow:0 3px 12px rgba(0,0,0,.18);pointer-events:none">V2.6+ · SMART 2D OOS+ · FINAL ARBITRATOR</div>
 <canvas id="snow"></canvas>
 <div class="shell">
 <div class="app">
@@ -5630,7 +5490,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     const __v23TypeName=String(routeCtx?.name||rs.at(-1)?.name||'');
     // V2.8 research promotion: exact archived Candidate-E OOS showed these 21 types gain Selection with zero Top2 loss. Penetration uses robust GLOBAL-PAIR-18 research path.
     const __v23SafeTypes=new Set(['หุ้นไทยเช้า','หุ้นไทยเย็น','ลาวอาเซียน','ลาวสามัคคีVIP','ฮานอยเช้า','ฮานอยอาเซียน','ฮานอยทีวี','ฮานอยกาชาด','หุ้นเกาหลี','หุ้นสิงคโปร์','หุ้นอียิปต์','หุ้นดาวโจนส์','ฮานอยExtra','ฮานอยดึก','จีนVIPเช้า','จีนVIPบ่าย','ไต้หวันVIP','สิงคโปร์VIP','ดาวโจนส์VIP','หุ้นจีนเช้า','หุ้นไต้หวัน']);
-    if(__v23SafeTypes.has(__v23TypeName)){
+    if(false && __v23SafeTypes.has(__v23TypeName)){
       applyTop2DNA(c,rs);
       const __v23Valid=c.filter(x=>x.gate),__v23Ordered=__v23Valid.length?__v23Valid:c;
       if(__v23Ordered.length){top=__v23Ordered[0];second=__v23Ordered.find(x=>Number(x.digit)!==Number(top.digit))||second;}
@@ -5677,7 +5537,59 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
       if(__tmp.__selectorDiag.rawStagePolicy?.applied){top=__tmp.selection.d1;second=__tmp.selection.d2;d1=top.digit;d2=second.digit;}
     }
     const __rsp=__rspDiag?__rawStagePolicy(routeCtx||{},__rspDiag):null;
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,safeTop2Shadow:__v29SafeShadowMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+
+    /* V2.6+ TRUE FINAL ARBITRATOR
+       One and only one final decision point after ALL late-stage mutations.
+       It never replaces Champion D1. It may replace only D2 when an exact-type
+       R3-R5 candidate has completed-OOS transition evidence strong enough to
+       justify the rescue, and the candidate is not already the SMART-2D pair.
+       No hard-coded lottery-type list, no family/global fallback, max one move. */
+    let __v26PlusFinal={applied:false,reason:'no-qualified-rescue',candidate:null,from:null,to:null,rate:null,lift:null,tests:0,source:'none'};
+    try{
+      const __champD1=Number(__smart2dFinal?.d1), __champD2=Number(__smart2dFinal?.d2);
+      const __routeName=String(routeCtx?.name||rs.at(-1)?.name||'');
+      const __fm=__stageMemory;
+      const __routeMem=__fm?.route?.get?.(__routeName)||null;
+      const __eligible=[];
+      for(const q of c){
+        const d=Number(q.digit);
+        if(!Number.isInteger(d)||d===__champD1||d===__champD2)continue;
+        if(!q.gate)continue;
+        const pre=__stageRankMap((__afterContext||[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)));
+        const post=__stageRankMap((__afterCalibrationAware||[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)));
+        const from=pre.get(d)||0,to=post.get(d)||0;
+        if(from<3||from>5||to<=from||to>7)continue;
+        const key=`R${from}>R${to}|D${d}|G1`;
+        const z=__routeMem?.get?.(key);
+        if(!z||z.tests<8)continue;
+        const rate=(Number(z.hits||0)+3)/(Number(z.tests||0)+6);
+        const base=__fm?.base?.get?.(`R${from}>R${to}`);
+        const baseRate=base?((Number(base.hits||0)+3)/(Number(base.tests||0)+6)):.5;
+        const lift=rate-baseRate;
+        const margin=Number(top.score||0)-Number(q.score||0);
+        if(rate<.62||lift<.08)continue;
+        if(margin>.30)continue;
+        __eligible.push({q,from,to,rate,lift,tests:z.tests,margin,source:'exact-type-route'});
+      }
+      __eligible.sort((a,b)=> (b.lift*Math.min(1,b.tests/24))- (a.lift*Math.min(1,a.tests/24)) || a.margin-b.margin || Number(a.q.digit)-Number(b.q.digit));
+      const win=__eligible[0];
+      if(win){
+        const oldSecond=Number(__smart2dFinal?.d2);
+        top=c.find(q=>Number(q.digit)===__champD1)||top;
+        second=win.q;
+        __v26PlusFinal={applied:true,reason:'exact-type-r3-r5-rescue',candidate:Number(win.q.digit),from:win.from,to:win.to,rate:+win.rate.toFixed(4),lift:+win.lift.toFixed(4),tests:win.tests,source:win.source,displaced:oldSecond};
+        win.q.v26PlusFinalArbApplied=true;
+        win.q.v26PlusFinalArbRate=win.rate;
+        win.q.v26PlusFinalArbLift=win.lift;
+        win.q.v26PlusFinalArbTests=win.tests;
+        c.sort((a,b)=>{const ia=Number(a.digit)===__champD1?0:Number(a.digit)===Number(win.q.digit)?1:2;const ib=Number(b.digit)===__champD1?0:Number(b.digit)===Number(win.q.digit)?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)});
+        __diagBoard.sort((a,b)=>{const ia=Number(a.digit)===__champD1?0:Number(a.digit)===Number(win.q.digit)?1:2;const ib=Number(b.digit)===__champD1?0:Number(b.digit)===Number(win.q.digit)?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)});
+      }
+    }catch(__v26PlusErr){
+      __v26PlusFinal={applied:false,reason:'safe-fallback:'+String(__v26PlusErr?.message||__v26PlusErr),candidate:null,from:null,to:null,rate:null,lift:null,tests:0,source:'error-safe-fallback'};
+    }
+    d1=Number(top.digit);d2=Number(second.digit);
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,safeTop2Shadow:__v29SafeShadowMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -5794,7 +5706,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   // Do not accumulate 65 lottery detail templates into one giant innerHTML string.
   // Build the shell first, then append each lottery block incrementally so Android
   // WebView can reclaim intermediate strings/DOM work and repaint between blocks.
-  root.innerHTML=`<div class="vip-dashboard v193-dashboard"><div id="__v193_snapshot_mount"></div><div id="__v193_global_mount"></div><div id="__v193_details_heading_mount"></div><div id="__v193_details_mount"></div><div id="__v193_diag_mount"></div></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.8</span><span class="brand-star">✦</span></div>`;
+  root.innerHTML=`<div class="vip-dashboard v193-dashboard"><div id="__v193_snapshot_mount"></div><div id="__v193_global_mount"></div><div id="__v193_details_heading_mount"></div><div id="__v193_details_mount"></div><div id="__v193_diag_mount"></div></div><div class="brand-footer"><span class="brand-star">✦</span><span>ระบบบ้านเงินกอง V2.6+</span><span class="brand-star">✦</span></div>`;
   const dash=root.querySelector('.vip-dashboard'),snapMount=$("__v193_snapshot_mount"),headMount=$("__v193_details_heading_mount"),detailsMount=$("__v193_details_mount"),globalMount=$("__v193_global_mount"),diagMount=$("__v193_diag_mount");
   snapMount.innerHTML=`<section class="ai-snapshot"><div class="ai-snapshot-head"><div><span class="ai-eyebrow">AI หลายมุม</span><b>${names.length>1?'ภาพรวมการ์ดหวย':'การ์ดหวย'}</b><small>${names.length>1?`รวมการ์ด ${names.length} หวย · เรียงตามลำดับการประมวลผล`:'การ์ดผลลัพธ์ของหวยที่ประมวลผล'}</small></div><div class="ai-snapshot-actions"><span class="ai-live-dot">● LIVE</span><button class="ai-snapshot-capture" onclick="captureSnapshotImage()">📸 แคปภาพรวม</button></div></div><div id="__v193_snapshot_grid" class="ai-snapshot-grid ${names.length===1?'single':''}"></div></section>`;
   const snapshotGrid=$("__v193_snapshot_grid");
@@ -5813,7 +5725,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
       <div class="ai-section"><div class="ai-section-head"><div><b>องค์ประกอบการตัดสินใจ</b><small>แสดงเฉพาะสัญญาณที่ผู้ใช้ควรอ่าน</small></div><span class="ai-section-tag">หลักฐาน</span></div><div class="ai-metric-grid">${metric('OOS แบบเดินหน้า',sx.rate+'%',`${sx.hits}/${sx.total} เข้า`,sx.rate)}${metric('ความจำระบบ',0+'%',`0/0 เข้า`,0)}${metric('ประวัติเลข',dx.digitRate+'%',`${dx.digitHits}/${dx.digitTotal}`,dx.digitRate)}${metric('สถิติคู่',dx.pairRate+'%',`${dx.pairHits}/${dx.total} เข้า`,dx.pairRate)}</div><div class="ai-horizon"><div><span>ช่วง OOS</span><b>5 · 10 · 15 · 20 · 25</b></div><strong>${sx.displayHorizon.map(h=>h.rate==null?'—':h.rate+'%').join(' · ')}</strong></div></div>
       <div class="ai-section ai-trend-section"><div class="ai-section-head"><div><b>แนวโน้ม OOS</b><small>แนวโน้มจากข้อมูล OOS จริง 5 · 10 · 15 · 20 · 25 · 30 งวด</small></div><span class="ai-section-tag">ข้อมูลจริง</span></div><div class="ai-trend-wrap"><div class="ai-trend-chart">${(()=>{const vals=sx.displayHorizon.map(h=>h.rate).filter(v=>Number.isFinite(v));if(!vals.length)return '<span class="ai-muted">ยังไม่มีข้อมูล OOS เพียงพอ</span>';const min=Math.max(0,Math.min(...vals)-5),max=Math.min(100,Math.max(...vals)+5),w=260,h=72,pad=6,den=Math.max(1,max-min);const pts=vals.map((v,i)=>{const x=pad+(w-pad*2)*(i/Math.max(1,vals.length-1));const y=h-pad-(v-min)/den*(h-pad*2);return[x,y,v]});const poly=pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="OOS performance trend"><polyline points="${poly}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.5" fill="currentColor"><title>${q[2]}%</title></circle>`).join('')}</svg>`})()}</div><div class="ai-trend-values">${sx.displayHorizon.map(h=>`<span><b>${h.w}</b><em>${h.rate==null?'—':h.rate+'%'}</em></span>`).join('')}</div></div></div>
       <div class="ai-section ai-two-col"><div><div class="ai-section-head"><div><b>เรดาร์ตัวเลข</b><small>ตัวเลขที่มีหลักฐานย้อนหลังสูงสุด</small></div></div><div class="ai-digit-grid">${digitCards}</div></div><div><div class="ai-section-head"><div><b>กระดานตัวเลือก</b><small>ตัวเลือกจากสัญญาณสนับสนุน</small></div></div><div class="ai-board-grid">${boardCards}</div></div></div>
-      <div class="ai-footer"><span>V2.8 TYPE-DNA DECISION SHIELD</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
+      <div class="ai-footer"><span>V2.6+ TYPE-DNA DECISION SHIELD</span><span>AI Dashboard · ข้อมูลเชิงลึกที่ไม่จำเป็นต่อหน้าหลักเก็บไว้หลังบ้าน</span></div>
     </section></template></details>`);
   };
   for(let ni=0;ni<names.length;ni++){
@@ -6087,7 +5999,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
 window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__V1_CONFIG__=Object.freeze({version:'V3.8',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V2.6',engine:'SMART-2D',ready:false,error:null,oos:{selection:64.78,top2:64.78,penetration:63.28,tests:1800,verification:'chronological walk-forward reproduction'}};
+window.__V24_RUNTIME__={version:'V2.6+',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
