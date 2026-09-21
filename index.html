@@ -1554,6 +1554,81 @@ html{scroll-behavior:auto!important}
     }return out;
   }
   window.__SMART2D_SHADOW__={manifest:M,regime,evidenceFamily,interventionBudget,shadowDecision,walkForwardShadow,rate};
+  /* ================================================================
+     R1.1 DIFFERENTIAL AUDIT — SHADOW ONLY
+     Purpose: compare Champion vs Shadow traces without changing runtime.
+     Input is explicit OOS trace data supplied by the evaluator/runner.
+     ================================================================ */
+  const pct=x=>`${(100*Number(x||0)).toFixed(2)}%`;
+  const safeNum=x=>Number.isFinite(Number(x))?Number(x):null;
+  function normalizeTrace(x){
+    const a=Array.isArray(x)?x:[];
+    return a.map((r,i)=>({
+      type:String(r.type??r.lotteryType??''),
+      date:String(r.date??r.targetDate??''),
+      target:String(r.target??r.winner??r.actual??''),
+      baseRank:safeNum(r.baseRank??r.rank),
+      finalRank:safeNum(r.finalRank??r.selectionRank),
+      selected:String(r.selected??r.selection??r.d1??''),
+      top2Hit:!!(r.top2Hit??r.top2),
+      selectionHit:!!(r.selectionHit??r.hit),
+      inBoard:!!(r.inBoard??r.boardHit),
+      regime:String(r.regime??''),
+      intervention:Number(r.interventionBudget??r.intervention??0)||0,
+      rescued:!!r.rescued,
+      damaged:!!r.damaged
+    }));
+  }
+  function compareTrace(champion,shadow){
+    const C=normalizeTrace(champion),S=normalizeTrace(shadow),n=Math.min(C.length,S.length),rows=[];
+    let cSel=0,sSel=0,cTop=0,sTop=0,cBoard=0,sBoard=0,rescue=0,damage=0;
+    for(let i=0;i<n;i++){
+      const c=C[i],s=S[i];
+      const sameTarget=c.target===s.target && c.target!=='';
+      const selGain=Number(s.selectionHit)-Number(c.selectionHit);
+      const topGain=Number(s.top2Hit)-Number(c.top2Hit);
+      const rescued=!c.selectionHit&&s.selectionHit;
+      const damaged=c.selectionHit&&!s.selectionHit;
+      if(c.selectionHit)cSel++;if(s.selectionHit)sSel++;if(c.top2Hit)cTop++;if(s.top2Hit)sTop++;if(c.inBoard)cBoard++;if(s.inBoard)sBoard++;
+      if(rescued)rescue++;if(damaged)damage++;
+      rows.push({...s,index:i,targetMatch:sameTarget,selectionDelta:selGain,top2Delta:topGain,rescued,damaged,rankDelta:(safeNum(s.finalRank)||0)-(safeNum(c.finalRank)||0)});
+    }
+    const byType=new Map();
+    for(const r of rows){const k=r.type||'UNKNOWN';if(!byType.has(k))byType.set(k,[]);byType.get(k).push(r)}
+    const typeSummary=[...byType.entries()].map(([type,a])=>({
+      type,N:a.length,
+      championSelection:a.filter(x=>C[x.index]?.selectionHit).length/a.length,
+      shadowSelection:a.filter(x=>S[x.index]?.selectionHit).length/a.length,
+      championTop2:a.filter(x=>C[x.index]?.top2Hit).length/a.length,
+      shadowTop2:a.filter(x=>S[x.index]?.top2Hit).length/a.length,
+      rescue:a.filter(x=>x.rescued).length,
+      damage:a.filter(x=>x.damaged).length,
+      netRescue:a.filter(x=>x.rescued).length-a.filter(x=>x.damaged).length
+    })).sort((a,b)=>b.netRescue-a.netRescue);
+    const regimes=new Map();
+    for(const r of rows){const k=r.regime||'UNSPECIFIED';if(!regimes.has(k))regimes.set(k,[]);regimes.get(k).push(r)}
+    const regimeSummary=[...regimes.entries()].map(([regime,a])=>({
+      regime,N:a.length,rescue:a.filter(x=>x.rescued).length,damage:a.filter(x=>x.damaged).length,
+      netRescue:a.filter(x=>x.rescued).length-a.filter(x=>x.damaged).length,
+      shadowSelection:a.filter(x=>S[x.index]?.selectionHit).length/a.length
+    }));
+    return {
+      manifest:M, N:n, lengthMismatch:C.length!==S.length, targetMismatchCount:rows.filter(x=>!x.targetMatch).length,
+      champion:{selection:cSel/n,top2:cTop/n,inBoard:cBoard/n},
+      shadow:{selection:sSel/n,top2:sTop/n,inBoard:sBoard/n},
+      delta:{selection:(sSel-cSel)/n,top2:(sTop-cTop)/n,inBoard:(sBoard-cBoard)/n},
+      rescue,damage,netRescue:rescue-damage,
+      typeSummary,regimeSummary,rows
+    };
+  }
+  function dnaSummary(rows){
+    const a=normalizeTrace(rows),n=a.length;if(!n)return null;
+    const types=new Map();for(const r of a){const k=r.type||'UNKNOWN';if(!types.has(k))types.set(k,[]);types.get(k).push(r)}
+    const ts=[...types.entries()].map(([type,x])=>({type,N:x.length,selection:x.filter(r=>r.selectionHit).length/x.length,top2:x.filter(r=>r.top2Hit).length/x.length,inBoard:x.filter(r=>r.inBoard).length/x.length}));
+    return {N:n,types:ts.length,selection:a.filter(r=>r.selectionHit).length/n,top2:a.filter(r=>r.top2Hit).length/n,inBoard:a.filter(r=>r.inBoard).length/n,typeSummary:ts};
+  }
+  window.__SMART2D_SHADOW_R11__={manifest:{...M,researchVersion:'R1.1-DIFFERENTIAL-SHADOW'},normalizeTrace,compareTrace,dnaSummary,pct};
+
 })();
 </script>
 </head>
