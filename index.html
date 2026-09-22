@@ -5894,27 +5894,26 @@ function __researchDeepTypeAnalysis(rows){
   }
   return [...by.values()].map(x=>{const sorted=x.margins.slice().sort((a,b)=>a-b),avg=a=>a.length?Math.round((a.reduce((z,v)=>z+v,0)/a.length)*10000)/10000:null;return {...x,selectionRate:rate(x.hits,x.tests),top2Rate:rate(x.top2,x.tests),inBoardRate:rate(x.inBoard,x.tests),unionRate:rate(x.union,x.tests),damageRate:rate(x.damage,x.tests),rescueRate:rate(x.rescue,x.tests),dominantFailure:Object.entries(x.failures).sort((a,b)=>b[1]-a[1])[0]?.[0]||'NONE',formulaPreference:Object.entries(x.formulas).map(([f,q])=>({...q,formula:f,hitRate:rate(q.hits,q.tests)})).filter(q=>q.tests).sort((a,b)=>b.hitRate-a.hitRate||b.hits-a.hits),digitProfile:x.digits.filter(q=>q.seen||q.selected).map(q=>({...q,targetBoardRate:rate(q.hit,q.seen),selectedHitRate:rate(q.selectedHit,q.selected)})),stageProfile:Object.fromEntries(Object.entries(x.stages).map(([k,q])=>[k,{...q,avgRank:q.seen?Math.round(q.rankSum/q.seen*100)/100:null,rank1Rate:rate(q.rank1,q.seen),rank2Rate:rate(q.rank2,q.seen),rank3_5Rate:rate(q.rank3_5,q.seen)}])),margin:{n:sorted.length,avg:avg(sorted),median:sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2):null,min:sorted.length?sorted[0]:null,max:sorted.length?sorted.at(-1):null}}}).sort((a,b)=>b.tests-a.tests||b.selectionRate-a.selectionRate);
 }
-function __researchExportManifest(s){return {schema:'LOTTERY_RESEARCH_EXPORT_MANIFEST',version:'V2.2',generatedAt:new Date().toISOString(),ready:!!__researchExportReady(s).ok,required:['records','oos','diagnosticRows','typeDNA','deepTypeAnalysis','selectionLog','decisionLog','formulaPerformance','formulaTransformLab','integrity','systemHealth'],counts:{records:s.records?.length||0,oosRows:s.diagnosticRows?.length||0,types:s.integrity?.typeCount||0,selectionLog:s.selectionLog?.length||0,decisionLog:s.decisionLog?.length||0},integrity:s.integrity||{},systemHealth:s.systemHealth||null};}
+function __researchExportManifest(s){return {schema:'LOTTERY_RESEARCH_EXPORT_MANIFEST',version:'V2.2',generatedAt:new Date().toISOString(),ready:!!__researchExportReady(s).ok,required:['records','oos','diagnosticRows','typeDNA','deepTypeAnalysis','selectionLog','decisionLog','formulaPerformance','integrity','systemHealth'],counts:{records:s.records?.length||0,oosRows:s.diagnosticRows?.length||0,types:s.integrity?.typeCount||0,selectionLog:s.selectionLog?.length||0,decisionLog:s.decisionLog?.length||0},integrity:s.integrity||{},systemHealth:s.systemHealth||null};}
 function __researchExportReady(s){if(!__researchValidSnapshot(s))return{ok:false,reason:'INVALID_SNAPSHOT'};const i=s.integrity||{},ok=!!i.ok&&Number(i.recordCount)>0&&Number(i.oosRows)>0&&Number(i.typeCount)>=1&&Array.isArray(s.diagnosticRows)&&Array.isArray(s.records)&&Array.isArray(s.selectionLog)&&Array.isArray(s.decisionLog)&&!!s.typeDNA&&Array.isArray(s.deepTypeAnalysis);return{ok:!!ok,reason:ok?'READY':(!i.ok?'INTEGRITY_FAILED':'INCOMPLETE'),manifest:__researchExportManifest(s)};}
 function __researchBuildSnapshot(records,groups,bundles,startedAt){
   const rows=bundles.flatMap(b=>Array.isArray(b?.diagnostic)?b.diagnostic:[]),types=__researchTypeSummary(rows);
   const formula={};for(const f of FORMULAS){let h=0,n=0;for(const r of rows){const x=r?.formulaAudit?.[f]??r?.formulaHits?.[f];if(x&&typeof x==='object'){h+=Number(x.hit??x.hits??0)||0;n+=Number(x.total??x.tests??0)||0}}formula[f]={hits:h,total:n,rate:n?Math.round(h/n*10000)/100:0}}
   const sel=rows.filter(r=>r.selectionHit).length,top2=rows.filter(r=>r.boardTop2Hit).length,inb=rows.filter(r=>r.targetInBoard).length,uni=rows.filter(r=>r.unionHit).length;
   const rate=(h,n)=>n?Math.round(h/n*10000)/100:0,rank={R1:0,R2:0,R3_5:0,R6_10:0,OUT:0};for(const r of rows){const rk=Number(r.targetRank);if(rk===1)rank.R1++;else if(rk===2)rank.R2++;else if(rk>=3&&rk<=5)rank.R3_5++;else if(rk>=6&&rk<=10)rank.R6_10++;else rank.OUT++}
-  const formulaTransformLab=window.__FORMULA_TRANSFORM_LAB__?.aggregate(groups)||null;
-  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V2.2',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:rows.length,selection:rate(sel,rows.length),boardTop2:rate(top2,rows.length),inBoard:rate(inb,rows.length),union:rate(uni,rows.length),source:'current_actual_oos'},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,formulaTransformLab,typeSummary:types,typeDNA:window.__TYPE_DNA__?.last||null,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
+  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V2.2',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:rows.length,selection:rate(sel,rows.length),boardTop2:rate(top2,rows.length),inBoard:rate(inb,rows.length),union:rate(uni,rows.length),source:'current_actual_oos'},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,typeDNA:window.__TYPE_DNA__?.last||null,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
 }
 function __researchPanel(snapshot,status='READY'){
   const root=$('researchPanel');if(!root)return;const s=__researchValidSnapshot(snapshot)?snapshot:null;
   if(!s){root.innerHTML=`<section class="research-panel"><h3>🧬 V2.0 · RESEARCH HARVEST</h3><p>ยังไม่มี Research Pack ที่ถูกต้อง · ให้กด “เก็บข้อมูล Forensic ทั้งระบบ” หลังประมวลผลข้อมูล</p></section>`;return}
-  const o=s.oos||{};root.innerHTML=`<section class="research-panel"><h3>🧬 V2.0 · FULL FORENSIC RESEARCH HARVEST</h3><p>สถานะ ${esc(status)} · เก็บ Full-history OOS แยกจาก Production และตรวจสอบความสมบูรณ์ก่อน Export</p><div class="research-grid"><div class="research-kpi"><small>สถานะ</small><b>${esc(status)}</b></div><div class="research-kpi"><small>หวย</small><b>${s.integrity?.typeCount??0}</b></div><div class="research-kpi"><small>Raw Records</small><b>${s.integrity?.recordCount??0}</b></div><div class="research-kpi"><small>OOS Rows</small><b>${o.tests??0}</b></div><div class="research-kpi"><small>Board Top2</small><b>${o.top2Rate??'—'}%</b></div><div class="research-kpi"><small>Selection</small><b>${o.selectionRate??'—'}%</b></div><div class="research-kpi"><small>InBoard</small><b>${o.inBoardRate??'—'}%</b></div><div class="research-kpi"><small>Damage / Rescue</small><b>${o.damage??0} / ${o.rescue??0}</b></div></div><div class="research-actions"><button id="researchExportNow" type="button">📦 ดาวน์โหลดแพ็กเต็ม</button><button id="researchExportSummary" type="button">📊 Summary</button><button id="researchExportRows" type="button">🧾 OOS Rows</button><button id="researchExportTypes" type="button">🧬 Type DNA</button><button id="researchExportDeep" type="button">🔬 Deep DNA</button><button id="researchExportManifest" type="button">✅ Manifest</button><button id="researchExportParts" type="button">🗂️ 6 ไฟล์แยก</button><button id="researchExportFTLAB" type="button">🧪 F-TLAB</button><button id="researchCopyAll" type="button">📋 คัดลอกทั้งหมด</button><button id="researchCopyOOS" type="button">📋 คัดลอก OOS</button><button id="researchCopyDNA" type="button">📋 คัดลอก DNA</button><button id="researchCopySystem" type="button">📋 คัดลอก SYSTEM</button></div><div class="research-note">ข้อมูลนี้เป็นหลักฐาน Actual OOS สำหรับรอบถัดไป · V2.0 Selection Bottleneck Repair · ไม่มี Auto-Promotion · F1–F9 / Champion / Production Core LOCKED · ถ้าข้อมูลไม่ครบระบบต้องขึ้น ERROR ไม่สร้างไฟล์ปลอม</div>${(()=>{const x=s.formulaTransformLab;if(!x)return '';const rows=FORMULAS.map(f=>{const q=x.formulas?.[f];const b=q?.base?.rate??0;const a=q?.adaptiveRate??0;const bc=q?.bestCandidate?.label||'เดิม';const bl=q?.bestLiftVsBase??0;return `<tr><td>${esc(f)}</td><td>${b.toFixed(2)}%</td><td>${a.toFixed(2)}%</td><td>${bl>=0?'+':''}${bl.toFixed(2)} pp</td><td>${esc(bc)}</td></tr>`}).join('');return `<div class="research-note"><b>🧪 F-TLAB · Shadow Formula Transformation</b><br>F1–F9 เดิมยัง LOCKED · Adaptive เลือก transformation จากข้อมูลก่อนหน้าเท่านั้น · ไม่เปลี่ยน Selection/Production รอบนี้<br><div style="overflow:auto;margin-top:8px"><table><thead><tr><th>Formula</th><th>Base</th><th>Adaptive</th><th>Best lift</th><th>Best candidate</th></tr></thead><tbody>${rows}</tbody></table></div></div>`})()}</section>`;
+  const o=s.oos||{};root.innerHTML=`<section class="research-panel"><h3>🧬 V2.0 · FULL FORENSIC RESEARCH HARVEST</h3><p>สถานะ ${esc(status)} · เก็บ Full-history OOS แยกจาก Production และตรวจสอบความสมบูรณ์ก่อน Export</p><div class="research-grid"><div class="research-kpi"><small>สถานะ</small><b>${esc(status)}</b></div><div class="research-kpi"><small>หวย</small><b>${s.integrity?.typeCount??0}</b></div><div class="research-kpi"><small>Raw Records</small><b>${s.integrity?.recordCount??0}</b></div><div class="research-kpi"><small>OOS Rows</small><b>${o.tests??0}</b></div><div class="research-kpi"><small>Board Top2</small><b>${o.top2Rate??'—'}%</b></div><div class="research-kpi"><small>Selection</small><b>${o.selectionRate??'—'}%</b></div><div class="research-kpi"><small>InBoard</small><b>${o.inBoardRate??'—'}%</b></div><div class="research-kpi"><small>Damage / Rescue</small><b>${o.damage??0} / ${o.rescue??0}</b></div></div><div class="research-actions"><button id="researchExportNow" type="button">📦 ดาวน์โหลดแพ็กเต็ม</button><button id="researchExportSummary" type="button">📊 Summary</button><button id="researchExportRows" type="button">🧾 OOS Rows</button><button id="researchExportTypes" type="button">🧬 Type DNA</button><button id="researchExportDeep" type="button">🔬 Deep DNA</button><button id="researchExportManifest" type="button">✅ Manifest</button><button id="researchExportParts" type="button">🗂️ 6 ไฟล์แยก</button><button id="researchCopyAll" type="button">📋 คัดลอกทั้งหมด</button><button id="researchCopyOOS" type="button">📋 คัดลอก OOS</button><button id="researchCopyDNA" type="button">📋 คัดลอก DNA</button><button id="researchCopySystem" type="button">📋 คัดลอก SYSTEM</button></div><div class="research-note">ข้อมูลนี้เป็นหลักฐาน Actual OOS สำหรับรอบถัดไป · V2.0 Selection Bottleneck Repair · ไม่มี Auto-Promotion · F1–F9 / Champion / Production Core LOCKED · ถ้าข้อมูลไม่ครบระบบต้องขึ้น ERROR ไม่สร้างไฟล์ปลอม</div></section>`;
   const dl=(name,data)=>()=>__researchDownload(name,data);
   root.querySelector('#researchExportNow').onclick=()=>__researchDownload(`LOTTERY-FORENSIC-V2.2-${Date.now()}.json`,s);
   root.querySelector('#researchExportSummary').onclick=dl(`LOTTERY-FORENSIC-SUMMARY-V2.2-${Date.now()}.json`,{schema:'SUMMARY',version:'V2.2',baseline:s.baseline,oos:s.oos,formulaPerformance:s.formulaPerformance,typeSummary:s.typeSummary,integrity:s.integrity,systemHealth:s.systemHealth,rules:s.rules});
   root.querySelector('#researchExportRows').onclick=dl(`LOTTERY-FORENSIC-OOS-ROWS-V2.2-${Date.now()}.json`,{schema:'OOS_ROWS',version:'V2.2',rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]});
   root.querySelector('#researchExportTypes').onclick=dl(`LOTTERY-TYPE-DNA-V2.2-${Date.now()}.json`,{schema:'TYPE_DNA_RESEARCH',version:'V2.2',typeSummary:s.typeSummary||[],formulaPerformance:s.formulaPerformance||[],deepTypeAnalysis:s.deepTypeAnalysis||[],baseline:s.baseline});
   root.querySelector('#researchExportDeep').onclick=dl(`LOTTERY-DEEP-DNA-V2.2-${Date.now()}.json`,{schema:'DEEP_TYPE_DNA_RESEARCH',version:'V2.2',baseline:s.baseline,deepTypeAnalysis:s.deepTypeAnalysis||[],typeDNA:s.typeDNA||null});
-  root.querySelector('#researchExportManifest').onclick=dl(`LOTTERY-RESEARCH-MANIFEST-V2.2-${Date.now()}.json`,__researchExportManifest(s));root.querySelector('#researchExportFTLAB').onclick=dl(`LOTTERY-FORMULA-TRANSFORM-LAB-${Date.now()}.json`,s.formulaTransformLab||{schema:'F-TLAB',status:'NOT_RUN'});
+  root.querySelector('#researchExportManifest').onclick=dl(`LOTTERY-RESEARCH-MANIFEST-V2.2-${Date.now()}.json`,__researchExportManifest(s));
   const __copyResearch=async data=>{const text=JSON.stringify(data,null,2);try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text)}else{throw new Error('clipboard-unavailable')}showToast('✓ คัดลอกข้อมูลเรียบร้อย')}catch(e){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('✓ คัดลอกข้อมูลเรียบร้อย')}catch(_){showToast('⚠️ คัดลอกไม่สำเร็จ')}ta.remove()}};
   root.querySelector('#researchCopyAll').onclick=()=>__copyResearch(s);
   root.querySelector('#researchCopyOOS').onclick=()=>__copyResearch({schema:'OOS_RESEARCH',version:'V2.2',oos:s.oos||{},rows:s.diagnosticRows||[],selection:s.selectionLog||[],decision:s.decisionLog||[]});
@@ -6009,92 +6008,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.__V24_RUNTIME__.ready=true;
   }catch(e){window.__V24_RUNTIME__.error=String(e?.stack||e); console.error('V2.4 RUNTIME SELF-CHECK',e);}
 });
-
-/* V3.9 F-TLAB — FORMULA TRANSFORMATION LAB (SHADOW / OOS RESEARCH ONLY)
-   F1-F9 remain mathematically LOCKED. This layer never mutates production
-   candidates or Selection. It tests post-formula transformations causally:
-   history -> choose transform -> next target -> update. The first OOS run is
-   intentionally diagnostic so we can inspect lift, stability and regime fit
-   before any promotion. */
-const __FTLAB_VERSION__='V3.9-FTLAB.1';
-const __FTLAB_TRANSFORMS__=Object.freeze([
-  {id:'BASE',label:'เดิม',kind:'identity',fn:d=>d},
-  {id:'OFF_M3',label:'−3',kind:'offset',fn:d=>d-3},
-  {id:'OFF_M2',label:'−2',kind:'offset',fn:d=>d-2},
-  {id:'OFF_M1',label:'−1',kind:'offset',fn:d=>d-1},
-  {id:'OFF_P1',label:'+1',kind:'offset',fn:d=>d+1},
-  {id:'OFF_P2',label:'+2',kind:'offset',fn:d=>d+2},
-  {id:'OFF_P3',label:'+3',kind:'offset',fn:d=>d+3},
-  {id:'MUL2',label:'×2',kind:'scale',fn:d=>d*2},
-  {id:'MUL3',label:'×3',kind:'scale',fn:d=>d*3},
-  {id:'REF9',label:'9−x',kind:'reflection',fn:d=>9-d},
-  {id:'REF10',label:'10−x',kind:'reflection',fn:d=>10-d}
-]);
-function __ftNorm(v){return((Number(v)%10)+10)%10}
-function __ftApply(pred,tr){return Array.isArray(pred)?pred.map(d=>__ftNorm(tr.fn(Number(d)))).filter(Number.isFinite):null}
-function __ftHit(pred,r){return !!(pred&&r&&hit(pred,r)?.hit)}
-function __ftRate(h,n){return n?Math.round(h/n*10000)/100:0}
-function __ftWilson(h,n){if(!n)return 0;const p=h/n,z=1.959963984540054;return (p+z*z/(2*n)-z*Math.sqrt((p*(1-p)+z*z/(4*n))/n))/(1+z*z/n)}
-function __ftScore(st){
-  const n=Number(st?.tests)||0,h=Number(st?.hits)||0;
-  if(!n)return -Infinity;
-  const mean=(h+4)/(n+8); // conservative Beta shrinkage; research only
-  const lower=__ftWilson(h,n);
-  const recentN=Math.min(12,n),recent=(st?.recent||[]).slice(-recentN),rh=recent.filter(Boolean).length;
-  const rr=recentN?rh/recentN:mean;
-  return .50*lower+.30*mean+.20*rr;
-}
-function __ftMakeStats(){return Object.fromEntries(__FTLAB_TRANSFORMS__.map(t=>[t.id,{id:t.id,label:t.label,kind:t.kind,tests:0,hits:0,recent:[],blocks:[],byHorizon:{}}]))}
-function __ftUpdate(st,ok){st.tests++;if(ok)st.hits++;st.recent.push(ok?1:0);if(st.recent.length>12)st.recent.shift()}
-function __ftPick(st){
-  const eligible=Object.values(st).filter(x=>x.tests>=6);
-  if(!eligible.length)return st.BASE;
-  return eligible.slice().sort((a,b)=>__ftScore(b)-__ftScore(a)||b.hits-a.hits||a.id.localeCompare(b.id))[0];
-}
-function __ftBlock(n){return n<0?'ALL':n<20?'B1_20':n<40?'B21_40':n<60?'B41_60':n<80?'B61_80':n<100?'B81_100':'B101_PLUS'}
-function __ftEvaluateType(rs){
-  const rows=results(rs||[]),out={tests:0,adaptive:{tests:0,hits:0,chosen:{}},formulas:{},notes:[]};
-  if(rows.length<3)return out;
-  for(const f of FORMULAS){
-    const statsMap=__ftMakeStats(), per=[]; let adTests=0,adHits=0;
-    for(let i=1;i<rows.length-1;i++){
-      if(rows[i+1]?.breakBefore)continue;
-      const pred=execFormula(f,rows[i],i?rows[i-1]:null); if(!pred)continue;
-      const target=rows[i+1], baseOk=__ftHit(pred,target);
-      const chosen=__ftPick(statsMap);
-      const chosenPred=__ftApply(pred,chosen);
-      const chosenOk=__ftHit(chosenPred,target);
-      const rec={index:i,date:target.date,baseHit:baseOk,chosen:chosen.id,chosenHit:chosenOk,pred:pred.slice(),chosenPred:chosenPred?.slice()||null};
-      per.push(rec);adTests++;if(chosenOk)adHits++;out.tests++;
-      for(const tr of __FTLAB_TRANSFORMS__){const tp=__ftApply(pred,tr),ok=__ftHit(tp,target),st=statsMap[tr.id];__ftUpdate(st,ok);const b=__ftBlock(st.tests);st.byHorizon[b]??={tests:0,hits:0};st.byHorizon[b].tests++;st.byHorizon[b].hits+=ok?1:0;}
-      statsMap[chosen.id].chosen=(statsMap[chosen.id].chosen||0)+1;
-    }
-    const variants=Object.values(statsMap).map(st=>({id:st.id,label:st.label,kind:st.kind,tests:st.tests,hits:st.hits,rate:__ftRate(st.hits,st.tests),lower95:Math.round(__ftWilson(st.hits,st.tests)*10000)/100,chosen:st.chosen||0,byHorizon:Object.fromEntries(Object.entries(st.byHorizon).map(([k,v])=>[k,{tests:v.tests,hits:v.hits,rate:__ftRate(v.hits,v.tests)}]))}));
-    const base=variants.find(x=>x.id==='BASE'),adRate=__ftRate(adHits,adTests);
-    const best=variants.filter(x=>x.tests>=8).slice().sort((a,b)=>b.lower95-a.lower95||b.rate-a.rate||b.tests-a.tests)[0]||base;
-    const liftVsBase=best&&base?Math.round((best.rate-base.rate)*100)/100:0;
-    const adaptiveLift=base&&adTests?Math.round((adRate-base.rate)*100)/100:0;
-    const chosenCounts={};per.forEach(x=>chosenCounts[x.chosen]=(chosenCounts[x.chosen]||0)+1);
-    out.formulas[f]={tests:per.length,base,adaptive:{tests:adTests,hits:adHits,rate:adRate,liftVsBase:adaptiveLift,chosenCounts},bestCandidate:best,bestLiftVsBase:liftVsBase,variants,chronology:per.slice(-120)};
-  }
-  out.adaptive.tests=Object.values(out.formulas).reduce((s,x)=>s+(x.adaptive?.tests||0),0);
-  out.adaptive.hits=Object.values(out.formulas).reduce((s,x)=>s+(x.adaptive?.hits||0),0);
-  out.adaptive.rate=__ftRate(out.adaptive.hits,out.adaptive.tests);
-  return out;
-}
-function __ftAggregate(groups){
-  const all={},typeCount=Object.keys(groups||{}).filter(k=>k!=='__THAI_ALLDAY__').length;
-  for(const f of FORMULAS)all[f]={tests:0,baseHits:0,adaptiveTests:0,adaptiveHits:0,variants:Object.fromEntries(__FTLAB_TRANSFORMS__.map(t=>[t.id,{tests:0,hits:0}])),types:[]};
-  for(const [name,rs] of Object.entries(groups||{})){
-    if(name==='__THAI_ALLDAY__'||!Array.isArray(rs))continue;
-    const e=__ftEvaluateType(rs);for(const f of FORMULAS){const x=e.formulas[f];if(!x)continue;const a=all[f];a.tests+=x.tests;a.baseHits+=x.base?.hits||0;a.adaptiveTests+=x.adaptive?.tests||0;a.adaptiveHits+=x.adaptive?.hits||0;for(const v of x.variants||[]){a.variants[v.id].tests+=v.tests;a.variants[v.id].hits+=v.hits}a.types.push({name,tests:x.tests,baseRate:x.base?.rate||0,adaptiveRate:x.adaptive?.rate||0,adaptiveLift:x.adaptive?.liftVsBase||0,best:x.bestCandidate?.id||'BASE',bestRate:x.bestCandidate?.rate||0,bestLift:x.bestLiftVsBase||0});}}
-  }
-  for(const f of FORMULAS){const a=all[f];a.baseRate=__ftRate(a.baseHits,a.tests);a.adaptiveRate=__ftRate(a.adaptiveHits,a.adaptiveTests);a.adaptiveLift=Math.round((a.adaptiveRate-a.baseRate)*100)/100;a.variants=Object.fromEntries(Object.entries(a.variants).map(([id,v])=>[id,{...v,rate:__ftRate(v.hits,v.tests),liftVsBase:Math.round((__ftRate(v.hits,v.tests)-a.baseRate)*100)/100}]));a.types.sort((x,y)=>y.adaptiveLift-x.adaptiveLift);}
-  return {version:__FTLAB_VERSION__,typeCount,formulaCount:FORMULAS.length,transformCount:__FTLAB_TRANSFORMS__.length,transforms:__FTLAB_TRANSFORMS__.map(x=>({id:x.id,label:x.label,kind:x.kind})),formulas:all,rules:{shadowOnly:true,productionMutation:false,f1f9Locked:true,causalSelection:true,minTestsForAdaptivePick:6,bestCandidateGate:8,selectionTarget:'digit hit semantics identical to existing formulaHistory/hit()'},warning:'Research evidence only. No transformation is promoted automatically.'};
-}
-window.__FORMULA_TRANSFORM_LAB__=Object.freeze({version:__FTLAB_VERSION__,transforms:__FTLAB_TRANSFORMS__,evaluateType:__ftEvaluateType,aggregate:__ftAggregate});
-
-window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG,__FORMULA_TRANSFORM_LAB__};
+window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
 })();
 </script>
 
@@ -6109,6 +6023,125 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
     testExports:()=>window.__TEST_EXPORTS__||null,selectorCoach:()=>({version:'V3.9',config:__SELECTOR_COACH_CONFIG}),
     health:()=>({ok:true,readyState:document.readyState,engine:typeof window.runEngine==='function'})
   };
+})();
+</script>
+
+<script>
+/* F-TLAB v0.2 MULTI-EXPERIMENT RESEARCH PACK
+   Shadow-only. One run executes a broad, causal transformation matrix,
+   stability checks, context slices, and Champion-facing diagnostics.
+   No Production Selector mutation. */
+(function(){
+  'use strict';
+  const FT_VER='F-TLAB v0.2-MULTI';
+  const FT_KEY='__FTLAB_MULTI__';
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const pct=x=>Number.isFinite(x)?+(x*100).toFixed(2):null;
+  const uniq=a=>[...new Set((a||[]).map(Number).filter(Number.isFinite).map(x=>((Math.round(x)%10)+10)%10))];
+  function targetDigits(r){
+    const top=String(r?.n3??'').padStart(3,'0').slice(-2), bot=String(r?.n2??'').padStart(2,'0');
+    return uniq([top[0],top[1],bot[0],bot[1]]);
+  }
+  function hit(pred,r){const t=new Set(targetDigits(r));return uniq(pred).some(d=>t.has(d));}
+  function transformers(){
+    const a=[];
+    const add=(id,label,fn)=>a.push({id,label,fn});
+    add('BASE','base',x=>x);
+    for(const k of [-3,-2,-1,1,2,3])add('OFF'+(k>0?'P':'M')+Math.abs(k),(k>0?'+':'')+k,x=>x+k);
+    add('X2','×2',x=>2*x); add('X3','×3',x=>3*x);
+    add('H2','÷2 floor',x=>Math.floor(x/2)); add('H3','÷3 floor',x=>Math.floor(x/3));
+    add('R9','9-x',x=>9-x); add('R10','10-x',x=>10-x);
+    add('ABS0','|x|',x=>Math.abs(x)); add('NEG','-x',x=>-x);
+    add('MOD9','x mod 9',x=>((x%9)+9)%9); add('MOD10','x mod 10',x=>((x%10)+10)%10);
+    add('C9','9-(x mod 10)',x=>9-(((x%10)+10)%10)); add('C10','10-(x mod 10)',x=>10-(((x%10)+10)%10));
+    return a;
+  }
+  function makeVariants(pred,t){return uniq((pred||[]).map(x=>t.fn(Number(x))));}
+  function rowsByType(records){
+    const m=new Map();
+    for(const r of (records||[])){const n=String(r?.name||'').trim();if(!n)continue;(m.get(n)||m.set(n,[]).get(n)).push(r)}
+    for(const [n,rs] of m) m.set(n,typeof sortRecords==='function'?sortRecords(rs):rs.slice());
+    return m;
+  }
+  function evalTransform(records,formula,trans,opts={}){
+    const minTrain=2, blocks=[]; let total=0,hitN=0;
+    const by=rowsByType(records);
+    for(const rs of by.values()){
+      if(rs.length<=minTrain)continue;
+      const local=[];
+      for(let i=minTrain;i<rs.length;i++){
+        const prev=rs[i-1],prev2=rs[i-2], target=rs[i];
+        if(target?.breakBefore)continue;
+        let base=[];try{base=typeof execFormula==='function'?execFormula(formula,prev,prev2):[]}catch(_){base=[]}
+        const pred=makeVariants(base,trans); if(!pred.length)continue;
+        const h=hit(pred,target);total++;if(h)hitN++;local.push(h?1:0);
+      }
+      if(local.length)blocks.push(local);
+    }
+    const rate=total?hitN/total:0;
+    const sizes=blocks.map(x=>x.length).filter(Boolean), max=Math.max(1,...sizes);
+    const rates=blocks.filter(x=>x.length>=Math.min(10,Math.max(5,Math.floor(max*.15)))).map(x=>x.reduce((a,b)=>a+b,0)/x.length);
+    const mean=rates.length?rates.reduce((a,b)=>a+b,0)/rates.length:rate;
+    const variance=rates.length?rates.reduce((s,x)=>s+(x-mean)**2,0)/rates.length:0;
+    const stability=clamp(1-Math.sqrt(variance)*2,0,1);
+    return {formula,transformation:trans.id,label:trans.label,n:total,hit:hitN,rate,stability,blockMin:rates.length?Math.min(...rates):rate,blockMax:rates.length?Math.max(...rates):rate,blocks:rates.length,rates};
+  }
+  function evalFormulaSet(records,formula,trans,windows){
+    const full=evalTransform(records,formula,trans);
+    const recent=evalTransform(records.slice(-Math.min(records.length,windows.recent)),formula,trans);
+    return {...full,recentRate:recent.rate,recentN:recent.n};
+  }
+  function score(x){
+    if(!x.n)return -1;
+    const nWeight=1-Math.exp(-x.n/250);
+    const recentGap=Math.max(0,x.recentRate-x.rate);
+    const robust=.55*x.rate+.20*x.stability+.15*x.blockMin+.10*x.recentRate;
+    return robust*nWeight-.06*recentGap;
+  }
+  function buildMatrix(records){
+    const ts=transformers(), out=[];
+    const forms=Array.isArray(window.FORMULAS)?window.FORMULAS.map((_,i)=>'F'+(i+1)):['F1','F2','F3','F4','F5','F6','F7','F8','F9'];
+    for(const f of forms){for(const t of ts){const x=evalFormulaSet(records,f,t,{recent:Math.min(400,records.length)});x.researchScore=score(x);out.push(x)}}
+    return out;
+  }
+  function summarize(matrix){
+    const by={};for(const x of matrix)(by[x.formula]??=[]).push(x);
+    const best={};for(const [f,arr] of Object.entries(by))best[f]=arr.slice().sort((a,b)=>b.researchScore-a.researchScore).slice(0,5);
+    const all=matrix.slice().sort((a,b)=>b.researchScore-a.researchScore).slice(0,25);
+    return {bestByFormula:best,overallTop:all};
+  }
+  function addUI(){
+    if(document.getElementById('ftlabMultiBtn'))return;
+    const b=document.createElement('button');b.id='ftlabMultiBtn';b.type='button';b.textContent='🧪 F-TLAB MULTI-RUN';
+    b.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;padding:11px 14px;border-radius:12px;border:1px solid #888;background:#111;color:#fff;font-weight:700;box-shadow:0 4px 18px #0003;cursor:pointer';
+    b.onclick=run;document.body.appendChild(b);
+  }
+  function show(report){
+    let p=document.getElementById('ftlabMultiPanel');if(!p){p=document.createElement('div');p.id='ftlabMultiPanel';p.style.cssText='position:fixed;left:10px;right:10px;top:10px;bottom:70px;z-index:99998;background:#fff;color:#111;border:1px solid #aaa;border-radius:14px;box-shadow:0 8px 30px #0004;overflow:auto;padding:16px;font:13px/1.45 system-ui';document.body.appendChild(p)}
+    const esc2=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const top=report.summary.overallTop||[];
+    p.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">'+FT_VER+' · Multi-Experiment Report</h3><button id="ftClose">ปิด</button></div>'+
+      '<p><b>Records:</b> '+report.records+' · <b>Types:</b> '+report.types+' · <b>Experiments:</b> '+report.experiments+' · <b>Status:</b> SHADOW-ONLY</p>'+
+      '<button id="ftCopy">คัดลอก JSON</button> <button id="ftDownload">ส่งออก JSON</button><hr>'+
+      '<h4>Top research survivors</h4><table style="border-collapse:collapse;width:100%"><tr><th align="left">Formula</th><th align="left">Transform</th><th>OOS</th><th>Hit</th><th>Recent</th><th>Stable</th><th>Score</th></tr>'+top.map(x=>'<tr><td>'+esc2(x.formula)+'</td><td>'+esc2(x.label)+'</td><td align="right">'+x.n+'</td><td align="right">'+pct(x.rate)+'%</td><td align="right">'+pct(x.recentRate)+'%</td><td align="right">'+pct(x.stability)+'%</td><td align="right">'+x.researchScore.toFixed(4)+'</td></tr>').join('')+'</table>'+
+      '<hr><small>กติกา: chronological per-type, target ไม่ถูกใช้สร้างสูตรของรอบเดียวกัน, ไม่แก้ Production Selector. รายการนี้เป็น research candidates เท่านั้น.</small>';
+    p.querySelector('#ftClose').onclick=()=>p.remove();p.querySelector('#ftCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(report,null,2));showToast?.('✓ คัดลอก Multi-Experiment Report แล้ว')}catch(_){}};p.querySelector('#ftDownload').onclick=()=>{try{const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='FTLAB-MULTI-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(_){}};
+  }
+  async function run(){
+    const b=document.getElementById('ftlabMultiBtn');if(b)b.disabled=true;
+    try{
+      let snap=window.__RESEARCH_ARCHIVE__;
+      if(!snap||!Array.isArray(snap.records)||!snap.records.length){if(typeof window.runFullResearchHarvest==='function')snap=await window.runFullResearchHarvest()}
+      if(!snap||!Array.isArray(snap.records)||snap.records.length<10){showToast?.('⚠️ ต้องมีข้อมูลสะสมก่อนรัน F-TLAB Multi');return}
+      const records=snap.records.slice().sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+      const matrix=buildMatrix(records), summary=summarize(matrix);
+      const report={schema:'FTLAB_MULTI_RESEARCH',version:FT_VER,createdAt:new Date().toISOString(),records:records.length,types:rowsByType(records).size,experiments:matrix.length,settings:{chronological:true,typeIsolation:true,productionMutation:false,transformers:transformers().map(x=>x.id)},matrix,summary};
+      window[FT_KEY]=report;show(report);showToast?.('✓ F-TLAB Multi เสร็จแล้ว · '+matrix.length+' experiments');
+    }catch(e){console.error('F-TLAB MULTI',e);showToast?.('⚠️ F-TLAB Multi error: '+String(e?.message||e).slice(0,120))}
+    finally{if(b)b.disabled=false}
+  }
+  window.runFTLABMulti=run;window.__FTLAB_MULTI_VERSION__=FT_VER;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addUI);else addUI();
 })();
 </script>
 </body>
