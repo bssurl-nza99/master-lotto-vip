@@ -5784,7 +5784,8 @@ function __productionCorePanel(){const rows=__SELECTOR_DIAGNOSTIC__?.rows||[];co
 function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
 window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
-function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
+function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};window.showToast=showToast;
+function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
 let html2canvasLoader=null;function ensureHtml2Canvas(){if(typeof html2canvas==='function')return Promise.resolve();if(html2canvasLoader)return html2canvasLoader;html2canvasLoader=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.crossOrigin='anonymous';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('html2canvas load failed'));document.head.appendChild(sc)});return html2canvasLoader}
 window.captureSnapshotImage=async()=>{const el=document.querySelector('.ai-snapshot');if(!el)return;const btn=el.querySelector('.ai-snapshot-capture');try{await ensureHtml2Canvas();if(btn)btn.style.visibility='hidden';await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const c=await html2canvas(el,{backgroundColor:'#06101e',scale:2,useCORS:true,allowTaint:false,imageTimeout:15000,logging:false});const a=document.createElement('a');a.download='BAN-NGERN-KONG-AI-SNAPSHOT.png';a.href=c.toDataURL('image/png');a.click();showToast('✓ แคปภาพรวมแล้ว')}catch(e){showToast('⚠️ แคปภาพรวมไม่สำเร็จ')}finally{if(btn)btn.style.visibility=''}};
 window.captureCardImage=async(id,title)=>{const el=$(id);if(!el)return;const actions=el.querySelector('.card-btn-group');try{await ensureHtml2Canvas();if(actions)actions.style.visibility='hidden';await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const c=await html2canvas(el,{backgroundColor:null,scale:3,useCORS:true,allowTaint:false,imageTimeout:15000,logging:false});const a=document.createElement('a');a.download=`${title||'card'}.png`;a.href=c.toDataURL('image/png');a.click();showToast('✓ แคปภาพการ์ดแล้ว')}catch(e){showToast('⚠️ แคปภาพไม่สำเร็จ')}finally{if(actions)actions.style.visibility=''}};
@@ -5871,9 +5872,20 @@ function __researchIntegrity(records,rows,types){
   const seen=new Set(),dupes=[];for(const r of rs){const name=String(r?.name||'').trim(),d=String(r?.date||'').trim(),k=`${name}|${dateOf(r)??d}`;if(!name||!d)continue;if(seen.has(k))dupes.push(k);else seen.add(k)}
   const by=new Map();let chronologyErrors=0;for(const r of rs){const n=String(r?.name||'').trim(),t=dateOf(r);if(!n||t==null)continue;const prev=by.get(n);if(prev!=null&&t<prev)chronologyErrors++;by.set(n,t)}
   const oosInvalid=os.filter(r=>{const td=Array.isArray(r?.targetDigits)?r.targetDigits.map(Number):[];return !r||!String(r?.name||'').trim()||!String(r?.source||'').trim()||!String(r?.target||'').trim()||td.length!==4||td.some(d=>!Number.isInteger(d)||d<0||d>9)}).length;
-  const expectedByType=new Map();for(const r of rs){const n=String(r?.name||'').trim();if(n)expectedByType.set(n,(expectedByType.get(n)||0)+1)}
+  // Expected OOS must mirror __coopOosBundle exactly. Raw record count - 2 is wrong
+  // when skipped/non-result boundaries are present because the bundle intentionally
+  // suppresses the OOS row immediately after a breakBefore boundary.
+  const expectedByType=new Map(), groupedByType=new Map();
+  for(const r of rs){const n=String(r?.name||'').trim();if(n){expectedByType.set(n,(expectedByType.get(n)||0)+1);let a=groupedByType.get(n);if(!a)groupedByType.set(n,a=[]);a.push(r)}}
+  const expectedOosByType=new Map();
+  for(const [name,raw] of groupedByType){
+    const ordered=results(sortRecords(raw));
+    let expected=0;
+    for(let i=1;i<ordered.length-1;i++){if(ordered[i+1]?.breakBefore)continue;expected++}
+    expectedOosByType.set(name,expected);
+  }
   const oosByType=new Map();for(const r of os){const n=String(r?.name||'').trim();if(n)oosByType.set(n,(oosByType.get(n)||0)+1)}
-  const typeCoverage=[...expectedByType].map(([name,n])=>({name,records:n,oos:oosByType.get(name)||0,expectedOOS:Math.max(0,n-2),coverageRate:n>2?Math.round((oosByType.get(name)||0)/Math.max(0,n-2)*10000)/100:100}));
+  const typeCoverage=[...expectedByType].map(([name,n])=>{const expectedOOS=expectedOosByType.get(name)||0;const actual=oosByType.get(name)||0;return {name,records:n,oos:actual,expectedOOS,coverageRate:expectedOOS?Math.round(actual/expectedOOS*10000)/100:100}});
   const coverageFailures=typeCoverage.filter(x=>x.oos!==x.expectedOOS).length;
   return {recordCount:rs.length,typeCount:names.length,oosRows:os.length,typeRows:Array.isArray(types)?types.length:0,duplicateKeys:dupes.length,duplicateSamples:dupes.slice(0,10),invalidRows:oosInvalid+shapeInvalid,rawShapeInvalid:shapeInvalid,chronologyErrors,oosInvalid,coverageFailures,typeCoverage,generatedAt:new Date().toISOString(),ok:dupes.length===0&&shapeInvalid===0&&chronologyErrors===0&&oosInvalid===0&&coverageFailures===0};
 }
@@ -6035,6 +6047,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
   'use strict';
   const FT_VER='F-TLAB v0.2-MULTI';
   const FT_KEY='__FTLAB_MULTI__';
+  const ftToast=(m)=>{try{if(typeof window.showToast==='function'){window.showToast(m);return}const t=document.getElementById('toast');if(t){t.textContent=String(m);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}}catch(_){}};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const pct=x=>Number.isFinite(x)?+(x*100).toFixed(2):null;
   const uniq=a=>[...new Set((a||[]).map(Number).filter(Number.isFinite).map(x=>((Math.round(x)%10)+10)%10))];
@@ -6125,19 +6138,19 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
       '<button id="ftCopy">คัดลอก JSON</button> <button id="ftDownload">ส่งออก JSON</button><hr>'+
       '<h4>Top research survivors</h4><table style="border-collapse:collapse;width:100%"><tr><th align="left">Formula</th><th align="left">Transform</th><th>OOS</th><th>Hit</th><th>Recent</th><th>Stable</th><th>Score</th></tr>'+top.map(x=>'<tr><td>'+esc2(x.formula)+'</td><td>'+esc2(x.label)+'</td><td align="right">'+x.n+'</td><td align="right">'+pct(x.rate)+'%</td><td align="right">'+pct(x.recentRate)+'%</td><td align="right">'+pct(x.stability)+'%</td><td align="right">'+x.researchScore.toFixed(4)+'</td></tr>').join('')+'</table>'+
       '<hr><small>กติกา: chronological per-type, target ไม่ถูกใช้สร้างสูตรของรอบเดียวกัน, ไม่แก้ Production Selector. รายการนี้เป็น research candidates เท่านั้น.</small>';
-    p.querySelector('#ftClose').onclick=()=>p.remove();p.querySelector('#ftCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(report,null,2));showToast?.('✓ คัดลอก Multi-Experiment Report แล้ว')}catch(_){}};p.querySelector('#ftDownload').onclick=()=>{try{const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='FTLAB-MULTI-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(_){}};
+    p.querySelector('#ftClose').onclick=()=>p.remove();p.querySelector('#ftCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(report,null,2));ftToast('✓ คัดลอก Multi-Experiment Report แล้ว')}catch(_){}};p.querySelector('#ftDownload').onclick=()=>{try{const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='FTLAB-MULTI-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(_){}};
   }
   async function run(){
     const b=document.getElementById('ftlabMultiBtn');if(b)b.disabled=true;
     try{
       let snap=window.__RESEARCH_ARCHIVE__;
       if(!snap||!Array.isArray(snap.records)||!snap.records.length){if(typeof window.runFullResearchHarvest==='function')snap=await window.runFullResearchHarvest()}
-      if(!snap||!Array.isArray(snap.records)||snap.records.length<10){showToast?.('⚠️ ต้องมีข้อมูลสะสมก่อนรัน F-TLAB Multi');return}
+      if(!snap||!Array.isArray(snap.records)||snap.records.length<10){ftToast('⚠️ ต้องมีข้อมูลสะสมก่อนรัน F-TLAB Multi');return}
       const records=snap.records.slice().sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
       const matrix=buildMatrix(records), summary=summarize(matrix);
       const report={schema:'FTLAB_MULTI_RESEARCH',version:FT_VER,createdAt:new Date().toISOString(),records:records.length,types:rowsByType(records).size,experiments:matrix.length,settings:{chronological:true,typeIsolation:true,productionMutation:false,transformers:transformers().map(x=>x.id)},matrix,summary};
-      window[FT_KEY]=report;show(report);showToast?.('✓ F-TLAB Multi เสร็จแล้ว · '+matrix.length+' experiments');
-    }catch(e){console.error('F-TLAB MULTI',e);showToast?.('⚠️ F-TLAB Multi error: '+String(e?.message||e).slice(0,120))}
+      window[FT_KEY]=report;show(report);ftToast('✓ F-TLAB Multi เสร็จแล้ว · '+matrix.length+' experiments');
+    }catch(e){console.error('F-TLAB MULTI',e);ftToast('⚠️ F-TLAB Multi error: '+String(e?.message||e).slice(0,120))}
     finally{if(b)b.disabled=false}
   }
   window.runFTLABMulti=run;window.__FTLAB_MULTI_VERSION__=FT_VER;
