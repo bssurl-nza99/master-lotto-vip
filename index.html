@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.8.0 SMART 2D+ · CALENDAR DATE ENGINE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V4.3 · SMART 2D+ · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1501,7 +1501,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>BAN NGERN KONG <span class="header-version">· V3.8.0 — OOS VERIFIED</span></b>
+      <b>BAN NGERN KONG <span class="header-version">· V4.3 — TERMINAL TOP2 PRESERVATION + COUNTERFACTUAL FINAL-PAIR</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5403,8 +5403,8 @@ function __v319AdaptiveDigitBridge(c,rs,routeCtx){
    lottery's prior records; no cross-lottery outcome memory is stored.
    Fixed coefficients are frozen after development and never use the target draw.
 */
-/* V3.8 OOS VERIFIED: SMART-2D feature-2 weight recalibrated from -0.18000000 to -0.06000000 after chronological development/validation replay. F1-F9 remain unchanged. */
-const __SMART2D_V23_W=Object.freeze([0.39300365,-0.06000000,-0.19535350,-0.30952791,0.00211831,-0.49010162,0.52998598,-0.26687769,-0.11857743,0.17603619]);
+/* V3.8.1 OOS VERIFIED: SMART-2D weights recalibrated by chronological research replay. F1-F9 remain unchanged. */
+const __SMART2D_V23_W=Object.freeze([0.39974978,-0.10472159,-0.16062460,-0.47092903,0.01015427,-0.49645722,0.61073815,-0.20498646,-0.14780805,0.20922521]);
 function __smart2dFeatures(rs,d){
   const td=(rs||[]).map(r=>[Number(r.n3?.[1]),Number(r.n3?.[2]),Number(String(r.n2||'').padStart(2,'0')[0]),Number(String(r.n2||'').padStart(2,'0')[1])]);
   const n=td.length, out=[];
@@ -5414,6 +5414,130 @@ function __smart2dFeatures(rs,d){
   out.push(h20.length?h20.filter(x=>x[0]===d).length/20:0);
   return out;
 }
+const __AH_CACHE=new Map();
+const __AH_PICK_CACHE=new Map();
+function __ahPrefixKey(rs,alpha){const a=rs?.[0],z=rs?.at?.(-1);return `${a?.name||""}|${a?.date||""}|${z?.date||z?.timestamp||""}|${rs?.length||0}|${alpha}`;}
+function __ahBaseCached(rs){const k=`B|${__ahPrefixKey(rs,0)}`,v=__AH_PICK_CACHE.get(k);if(v)return v;const x=__smart2dPick(rs);__AH_PICK_CACHE.set(k,x);return x;}
+function __ahHybridCached(rs,c,alpha){const k=`H|${__ahPrefixKey(rs,alpha)}`,v=__AH_PICK_CACHE.get(k);if(v)return v;const x=__hybridSmart2dPick(rs,c,alpha);__AH_PICK_CACHE.set(k,x);return x;}
+function __adaptiveHybridSmart2dPick(rs,c,alpha){const base=__ahBaseCached(rs);if(!Array.isArray(rs)||rs.length<14)return base;const key=String(rs?.[0]?.name||'')+'|'+String(rs?.at(-1)?.timestamp||rs?.at(-1)?.date||'')+'|'+String(rs.length)+'|'+String(alpha);const hit=__AH_CACHE.get(key);if(hit)return hit;const n=rs.length-1,start=Math.max(3,n-12);let bh=0,hh=0,rn=0;for(let i=start;i<n;i++){const tr=rs[i+1],tar=new Set([...String(tr?.n3||'').slice(1),...String(tr?.n2||'')].map(Number));if(!tar.size)continue;const p=rs.slice(0,i+1),b=__ahBaseCached(p),h=__ahHybridCached(p,c,alpha);const bo=[b.d1,b.d2],ho=[h.d1,h.d2],bhit=bo.some(d=>tar.has(Number(d))),hhit=ho.some(d=>tar.has(Number(d)));bh+=bhit?1:0;hh+=hhit?1:0;rn++;}const lift=(hh-bh)/Math.max(1,rn);const ok=rn>=7&&hh>=bh+1&&lift>=.07;const out=ok?__ahHybridCached(rs,c,alpha):base;__AH_CACHE.set(key,out);if(__AH_CACHE.size>2000)__AH_CACHE.delete(__AH_CACHE.keys().next().value);if(__AH_PICK_CACHE.size>10000){const first=__AH_PICK_CACHE.keys().next().value;__AH_PICK_CACHE.delete(first);}return out;}
+function __hybridSmart2dPick(rs,c,alpha){
+  const b=__smart2dPick(rs);if(!Array.isArray(c)||!c.length)return b;
+  const last=rs?.at(-1),prev=rs?.at(-2)||null;if(!last)return b;
+  const base=new Map((b.scores||[]).map(x=>[Number(x.d),Number(x.v)||0]));
+  const fs=FORMULAS.map(f=>{const p=execFormula(f,last,prev);if(!p)return null;const h=formulaHistory(rs,f),n=h.length,rate=n?(h.filter(x=>x.hit).length/n):.5,recent=h.slice(-12),rr=recent.length?recent.filter(x=>x.hit).length/recent.length:rate;return{p:[...new Set(p.map(Number))],w:.65*rate+.35*rr};}).filter(Boolean);
+  const vote=new Map();for(const z of fs)for(const d of z.p)vote.set(d,(vote.get(d)||0)+(z.w-.5));
+  const digitScore=new Map([...base.keys()].map(d=>[d,(base.get(d)||0)+alpha*(vote.get(d)||0)]));
+  const topDigits=[...digitScore.entries()].sort((a,z)=>z[1]-a[1]||a[0]-z[0]).slice(0,8).map(x=>Number(x[0]));
+  const targets=Array.isArray(rs)?rs:[],pair=[];
+  const horizon=Math.min(18,Math.max(10,targets.length-1));
+  const from=Math.max(1,targets.length-1-horizon);
+  const targetSetAt=i=>new Set([...String(targets[i]?.n3||'').slice(1),...String(targets[i]?.n2||'')].map(Number));
+  const baseHits=[];const basePair=[b.d1,b.d2].map(Number);
+  for(let i=from;i<targets.length;i++){const ts=targetSetAt(i);if(!ts.size)continue;baseHits.push(ts.has(basePair[0])||ts.has(basePair[1]));}
+  const baseRecentRate=baseHits.length?baseHits.filter(Boolean).length/baseHits.length:.5;
+  for(let ai=0;ai<topDigits.length;ai++)for(let bi=ai+1;bi<topDigits.length;bi++){
+    const a=topDigits[ai],bb=topDigits[bi];let n=0,h=0;
+    for(let i=from;i<targets.length;i++){const ts=targetSetAt(i);if(!ts.size)continue;n++;if(ts.has(a)||ts.has(bb))h++;}
+    if(n<8)continue;
+    const rate=(h+6*.5)/(n+6),lift=rate-baseRecentRate;
+    const ds=(digitScore.get(a)||0)+(digitScore.get(bb)||0);
+    const agreement=(Math.max(0,vote.get(a)||0)+Math.max(0,vote.get(bb)||0));
+    const stability=Math.min(1,n/18);
+    pair.push({a,b:bb,n,h,pairRate:rate,lift,ds,agreement,score:.68*ds+.20*Math.max(-.25,Math.min(.25,lift))*stability+.12*agreement*stability});
+  }
+  pair.sort((x,y)=>y.score-x.score||y.lift-x.lift||y.pairRate-x.pairRate||x.a-y.a||x.b-y.b);
+  const baseTop=[...digitScore.entries()].sort((x,y)=>y[1]-x[1]||x[0]-y[0]);
+  let d1=baseTop[0]?.[0]??b.d1,d2=baseTop[1]?.[0]??b.d2;
+  const best=pair[0];
+  if(best){
+    const currentPairRate=baseRecentRate;
+    const minLift=targets.length>=36?.08:targets.length>=26?.10:.12;
+    const minN=targets.length>=36?12:10;
+    const enough=best.n>=minN;
+    const evidence=best.h>=Math.ceil(best.n*.55)&&best.lift>=minLift&&best.agreement>=0;
+    /* V3.95: counterfactual incumbent-relative promotion. The challenger must beat
+       the incumbent on the same completed recent window AND on a coarse
+       historical regime matching the current draw. Absolute pair strength
+       alone is never sufficient; weak-context evidence is ignored. */
+    if(enough&&evidence){
+      const baseScore=(digitScore.get(d1)||0)+(digitScore.get(d2)||0);
+      const challengerScore=(digitScore.get(best.a)||0)+(digitScore.get(best.b)||0);
+      const margin=best.score-baseScore;
+      // Coarse regime: only completed prior draws sharing the current
+      // tens/unit parity signature are used. This avoids exact-state
+      // overfitting while asking the challenger to beat the incumbent
+      // under a context that resembles the present state.
+      const sigOf=r=>{
+        const a=String(r?.n3||'').padStart(3,'0'), z=String(r?.n2||'').padStart(2,'0');
+        if(!/^\d{3}$/.test(a)||!/^\d{2}$/.test(z))return null;
+        return `${Number(a[1])%2}|${Number(z[1])%2}|${(Number(a[2])+Number(z[1]))%2}`;
+      };
+      const curSig=sigOf(last); let cn=0,bh=0,ch=0;
+      if(curSig){
+        const start=Math.max(0,targets.length-1-Math.min(48,Math.max(24,targets.length-1)));
+        for(let i=start;i<targets.length-1;i++){
+          if(sigOf(targets[i])!==curSig)continue;
+          const ts=targetSetAt(i+1); if(!ts.size)continue; cn++;
+          bh+=ts.has(basePair[0])||ts.has(basePair[1])?1:0;
+          ch+=ts.has(best.a)||ts.has(best.b)?1:0;
+        }
+      }
+      const contextLift=cn>=6?(ch-bh)/cn:null;
+      const contextPass=contextLift==null ? (best.lift>=minLift+.02) : contextLift>=.05;
+
+      // V3.98 COUNTERFACTUAL EDGE: compare the challenger against the incumbent
+      // draw-by-draw on the exact same completed window. A raw rate lift can hide
+      // a dangerous trade (one extra win paid for several incumbent wins lost).
+      let cw=0,lw=0,ct=0;
+      for(let i=from;i<targets.length;i++){
+        const ts=targetSetAt(i);if(!ts.size)continue;
+        const bhit=ts.has(basePair[0])||ts.has(basePair[1]);
+        const chit=ts.has(best.a)||ts.has(best.b);
+        ct++; if(chit&&!bhit)cw++; else if(bhit&&!chit)lw++;
+      }
+      const netEdge=cw-lw;
+      const edgeRate=ct?netEdge/ct:0;
+      const edgeSE=ct>0?Math.sqrt(Math.max(0,(cw+lw)/ct-Math.pow(edgeRate,2))/ct):1;
+      const edgeLower=edgeRate-1.28*edgeSE;
+      const lossRatio=(cw+lw)>0?lw/(cw+lw):0;
+      // V3.98: confidence guard. A challenger is not promoted merely because
+      // netEdge is positive; small samples need a clear tradeoff advantage.
+      const requiredNet=ct>=18?1:ct>=14?2:3;
+      const deepEntry=(baseTop.findIndex(x=>Number(x[0])===best.a)>=6)||(baseTop.findIndex(x=>Number(x[0])===best.b)>=6);
+      const deepNet=deepEntry?Math.max(requiredNet+1,3):requiredNet;
+      const deepLower=deepEntry?.05:edgeLower;
+      // V3.98 INCUMBENT-STRENGTH GUARD: the stronger the incumbent has been
+      // on the same recent window, the stronger the challenger evidence must be.
+      // This protects already-good pairs from being displaced by noisy small lifts.
+      const incumbentStrength=Math.max(0,Math.min(1,(baseRecentRate-.55)/.25));
+      const strengthFloor=.055+.035*incumbentStrength;
+      const lossCap=.68-.10*incumbentStrength;
+      const edgePass=ct>=minN&&netEdge>=deepNet&&edgeRate>=strengthFloor&&edgeLower>=Math.max(deepLower,strengthFloor-.015)&&lossRatio<=lossCap;
+      best._edgeMeta={wins:cw,losses:lw,tests:ct,net:netEdge,rate:+(edgeRate*100).toFixed(2),lower:+(edgeLower*100).toFixed(2),lossRatio:+(lossRatio*100).toFixed(2),requiredNet:deepNet,deepEntry,incumbentRate:+(baseRecentRate*100).toFixed(2),strength:+incumbentStrength.toFixed(3),strengthFloor:+(strengthFloor*100).toFixed(2),lossCap:+(lossCap*100).toFixed(2)};
+
+      // Context gets the same treatment: require the challenger to create more
+      // context-specific wins than losses, rather than merely having a high rate.
+      let cwn=0,lwn=0;
+      if(curSig){
+        const start=Math.max(0,targets.length-1-Math.min(48,Math.max(24,targets.length-1)));
+        for(let i=start;i<targets.length-1;i++){
+          if(sigOf(targets[i])!==curSig)continue;
+          const ts=targetSetAt(i+1);if(!ts.size)continue;
+          const bhit=ts.has(basePair[0])||ts.has(basePair[1]);
+          const chit=ts.has(best.a)||ts.has(best.b);
+          if(chit&&!bhit)cwn++; else if(bhit&&!chit)lwn++;
+        }
+      }
+      const contextEdge=cwn-lwn;
+      const contextEdgePass=cn>=6 ? (contextEdge>=1 && contextEdge/Math.max(1,cn)>=.05) : true;
+      const strongMargin=margin>=.012 || best.lift>=.14;
+      if(contextPass&&edgePass&&contextEdgePass&&strongMargin&&(best.lift>=minLift || (contextLift!=null&&contextLift>=.08))){d1=best.a;d2=best.b;}
+    }
+  }
+  const scored=[...base.keys()].map(d=>({d,v:digitScore.get(d)||0})).sort((a,z)=>z.v-a.v||a.d-z.d);
+  return{...b,d1,d2,scores:scored,__pairMeta:best?{a:best.a,b:best.b,tests:best.n,hits:best.h,rate:+(best.pairRate*100).toFixed(2),lift:+(best.lift*100).toFixed(2),baseRate:+(baseRecentRate*100).toFixed(2),edgeMeta:best._edgeMeta||null}:null};
+}
+
 function __smart2dPick(rs){
   const raw=Array.from({length:10},(_,d)=>__smart2dFeatures(rs,d)), norm=raw.map(x=>x.slice());
   for(let j=0;j<10;j++){
@@ -5428,6 +5552,17 @@ function __smart2dPick(rs){
    rescue/shadow modules are not instantiated. No change to card/UI contracts. */
 var __v287D2Rescue = null;
 var __v29SafeShadowMeta = null;
+function __v43PairObserve(routeCtx,a,b,hit){
+  if(!routeCtx)return;
+  const key=[Number(a),Number(b)].sort((x,y)=>x-y).join('-');
+  if(!/^\d+-\d+$/.test(key))return;
+  const root=routeCtx.__stageAwareMemory||(routeCtx.__stageAwareMemory=__stageMemoryNew());
+  if(!root.v43PairEvidence)root.v43PairEvidence=new Map();
+  const z=root.v43PairEvidence.get(key)||{tests:0,hits:0,misses:0,lastIndex:0};
+  z.tests++;if(hit)z.hits++;else z.misses++;z.lastIndex=Number(routeCtx.__v43DecisionIndex||z.tests)||z.tests;
+  root.v43PairEvidence.set(key,z);
+}
+
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
@@ -5595,7 +5730,8 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
        It is applied only to the current lottery's prior history and keeps the
        consensus board ordered with the same two digits, so Selection and Board Top2
        are measured on the exact production pair. */
-    const __smart2dFinal=__smart2dPick(historyRs||rs);
+    const __smart2dFinal=__adaptiveHybridSmart2dPick(historyRs||rs,c,Math.min(.30,Math.max(.15,(historyRs||rs).length>=36?.30:(historyRs||rs).length>=26?.24:.18)));
+    /* V3.86: causal pair-aware adaptive hybrid; base remains the fail-safe. */
     /* V2.8.9 RETIRES THE PREVIOUS D2 R8-R10 RESCUE: OOS audit showed net damage in the combined route. */
     /* V2.8.9 CAUSAL WEAK-SELECTION SHIELD
        The archived OOS rank audit shows a recoverable failure mode: when BOTH
@@ -5617,6 +5753,44 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
         __v288Shield={applied:true,from:[__v288D1,__v288D2],to:[__v288Gem[0],__v288Gem[1]],threshold:7,source:'causal-gemini-weak-selection-shield'};
       }
     }catch(__v288e){__v288Shield={applied:false,from:[Number(__smart2dFinal?.d1),Number(__smart2dFinal?.d2)],to:null,threshold:7,source:'safe-fallback:'+String(__v288e?.message||__v288e)}}
+    /* V4.1 TOP2-PRESERVATION FINAL-PAIR GATE
+       The latest production evidence shows a distinct failure mode: the target is
+       already in Board Top2, but the final SMART-2D pair can move away from that
+       pair and turn a Board hit into a Selection miss. This gate makes the Board
+       Top2 pair the incumbent. SMART-2D may replace it only when its pair has a
+       positive counterfactual edge over the incumbent on the SAME completed
+       historical windows. No target row is read for the current decision. */
+    let __v41PairGuard={applied:false,from:null,to:null,wins:0,losses:0,tests:0,net:0,edgeRate:0,reason:'not-needed'};
+    try{
+      const __boardEligible=Array.isArray(__diagEligible)&&__diagEligible.length?__diagEligible:__diagRawBoard;
+      const __bt=__boardEligible.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).slice(0,2).map(q=>Number(q.digit));
+      const __sp=[Number(__smart2dFinal?.d1),Number(__smart2dFinal?.d2)];
+      const __validPair=__bt.length===2&&__sp.length===2&&Number.isInteger(__sp[0])&&Number.isInteger(__sp[1])&&__sp[0]!==__sp[1];
+      const __same=__validPair&&((__sp[0]===__bt[0]&&__sp[1]===__bt[1])||(__sp[0]===__bt[1]&&__sp[1]===__bt[0]));
+      if(__validPair&&!__same){
+        const __targets=Array.isArray(historyRs)&&historyRs.length?historyRs:rs;
+        const __h=Array.isArray(__targets)?__targets.length:0;
+        const __minN=__h>=36?12:__h>=26?10:8;
+        const __window=Math.min(18,Math.max(__minN,__h-1));
+        const __from=Math.max(1,__h-1-__window);
+        let __w=0,__l=0,__n=0;
+        const __setAt=i=>new Set([...String(__targets[i]?.n3||'').slice(1),...String(__targets[i]?.n2||'')].map(Number));
+        for(let i=__from;i<__h;i++){
+          const __ts=__setAt(i);if(!__ts.size)continue;__n++;
+          const __bh=__ts.has(__bt[0])||__ts.has(__bt[1]);
+          const __sh=__ts.has(__sp[0])||__ts.has(__sp[1]);
+          if(__sh&&!__bh)__w++; else if(__bh&&!__sh)__l++;
+        }
+        const __net=__w-__l,__rate=__n?__net/__n:0;
+        const __incumbentRate=__n?(__w+__l?0:0):0;
+        const __strict=__n>=__minN&&__net>=2&&__rate>=.10;
+        __v41PairGuard={applied:!__strict,from:__bt,to:__sp,wins:__w,losses:__l,tests:__n,net:__net,edgeRate:+(__rate*100).toFixed(2),reason:__strict?'smart2d-counterfactual-edge-clears-gate':'board-top2-preserved'};
+        if(!__strict){
+          __smart2dFinal.d1=__bt[0];__smart2dFinal.d2=__bt[1];
+          __smart2dFinal.__pairGuard='V4.1_TOP2_PRESERVATION';
+        }
+      }
+    }catch(__v41e){__v41PairGuard={applied:false,from:null,to:null,wins:0,losses:0,tests:0,net:0,edgeRate:0,reason:'safe-fallback:'+String(__v41e?.message||__v41e)};}
     const __smart2dTop=c.find(q=>Number(q.digit)===Number(__smart2dFinal.d1));
     const __smart2dSecond=c.find(q=>Number(q.digit)===Number(__smart2dFinal.d2));
     if(__smart2dTop&&__smart2dSecond){
@@ -5688,7 +5862,44 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     }catch(__v26PlusErr){
       __v26PlusFinal={applied:false,reason:'safe-fallback:'+String(__v26PlusErr?.message||__v26PlusErr),candidate:null,from:null,to:null,rate:null,lift:null,tests:0,source:'error-safe-fallback'};
     }
-    d1=Number(top.digit);d2=Number(second.digit);
+    /* V4.3 CAUSAL TERMINAL PAIR EVIDENCE GATE
+       V4.2 compared the current final pair against old targets. That is a
+       retrospective static-pair test, not a causal replay of the selector.
+       V4.3 only uses pair outcomes that were actually observed in earlier
+       walk-forward decisions of the same route. No future target can enter
+       this gate before that target has been consumed by the OOS replay. */
+    let __v43Terminal={applied:false,from:null,to:null,wins:0,losses:0,tests:0,net:0,edgeRate:0,reason:'same-or-not-needed',evidence:'causal-prior-decisions'};
+    try{
+      const __boardEligible43=Array.isArray(__diagEligible)&&__diagEligible.length?__diagEligible:__diagRawBoard;
+      const __bt43=__boardEligible43.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).slice(0,2).map(q=>Number(q.digit));
+      const __fp43=[Number(top?.digit),Number(second?.digit)];
+      const __valid43=__bt43.length===2&&__fp43.length===2&&Number.isInteger(__fp43[0])&&Number.isInteger(__fp43[1])&&__fp43[0]!==__fp43[1];
+      const __same43=__valid43&&((__fp43[0]===__bt43[0]&&__fp43[1]===__bt43[1])||(__fp43[0]===__bt43[1]&&__fp43[1]===__bt43[0]));
+      const __pair43=(a,b)=>{const x=Number(a),y=Number(b);return Number.isInteger(x)&&Number.isInteger(y)&&x!==y?[x,y].sort((u,v)=>u-v).join('-'):null};
+      const __pm43=routeCtx?.__stageAwareMemory?.v43PairEvidence||null;
+      const __lookup43=(pair)=>{if(!__pm43||!pair)return null;const z=__pm43.get(pair);return z&&Number(z.tests)>=8?z:null};
+      if(__valid43&&!__same43){
+        const __inc43=__lookup43(__pair43(__bt43[0],__bt43[1]));
+        const __cha43=__lookup43(__pair43(__fp43[0],__fp43[1]));
+        const __prior43=4;
+        const __rate43=z=>z?(Number(z.hits)+__prior43*.5)/(Number(z.tests)+__prior43):null;
+        const __ir43=__rate43(__inc43),__cr43=__rate43(__cha43);
+        const __tests43=Math.min(Number(__inc43?.tests||0),Number(__cha43?.tests||0));
+        const __edge43=__ir43!=null&&__cr43!=null?__cr43-__ir43:0;
+        const __net43=__ir43!=null&&__cr43!=null?Math.round((__cr43-__ir43)*__tests43):0;
+        /* Conservative causal gate: both pairs need repeated prior evidence;
+           challenger must clear an 8pp posterior edge and at least ~1.5
+           effective hits over the shared evidence horizon. */
+        const __pass43=!!(__inc43&&__cha43&&__tests43>=8&&__edge43>=.08&&__net43>=1.5);
+        __v43Terminal={applied:!__pass43,from:__bt43,to:__fp43,wins:__cr43!=null&&__ir43!=null?Math.max(0,Math.round(__cr43*__tests43-__ir43*__tests43)):0,losses:__cr43!=null&&__ir43!=null?Math.max(0,Math.round(__ir43*__tests43-__cr43*__tests43)):0,tests:__tests43,net:+__net43.toFixed(2),edgeRate:+(__edge43*100).toFixed(2),reason:__pass43?'causal-pair-evidence-clears-terminal-gate':'causal-pair-evidence-insufficient-preserve-board-top2',evidence:'causal-prior-decisions',incumbentTests:Number(__inc43?.tests||0),challengerTests:Number(__cha43?.tests||0),incumbentRate:__ir43==null?null:+(__ir43*100).toFixed(2),challengerRate:__cr43==null?null:+(__cr43*100).toFixed(2)};
+        if(!__pass43){
+          top=__boardEligible43.find(q=>Number(q.digit)===__bt43[0])||top;
+          second=__boardEligible43.find(q=>Number(q.digit)===__bt43[1])||second;
+        }
+      }
+    }catch(__v43e){__v43Terminal={applied:false,from:null,to:null,wins:0,losses:0,tests:0,net:0,edgeRate:0,reason:'safe-fallback:'+String(__v43e?.message||__v43e),evidence:'error-safe-fallback'};}
+    
+d1=Number(top.digit);d2=Number(second.digit);
     const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
@@ -5738,6 +5949,12 @@ async function __coopOosBundle(rs,routeCtx=null){
     const __diagBoardForRow=Array.isArray(__diag.board)?__diag.board:[];
     const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),targetDigits:target,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,formulaAudit:__formulaAudit,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length,stageRanks:__targetRanks,targetRanksAll:__targetRanksAll,stagePrevRanks:__stagePrevRanks,stageTop:__stageTop5,optimizerCandidates:(()=>{const src=__diagBoardForRow.slice(0,10),st=__st,arr=k=>(Array.isArray(st[k])?st[k]:[]),mp=k=>new Map(arr(k).map(x=>[Number(x.digit),Number(x.score||0)])),maps={raw:mp('raw'),signal:mp('afterSignal'),context:mp('afterContext'),calibration:mp('afterCalibration'),guardrail:mp('afterGuardrail'),midRank:mp('afterMidRankRecovery'),rolePair:mp('afterRolePair'),selfCorrection:mp('afterSelfCorrection')};return src.map(q=>{const d=Number(q.digit),overlap={};for(const z of src){if(Number(z.digit)!==d){const a=new Set(q.formulas||[]),b=new Set(z.formulas||[]),u=new Set([...a,...b]);overlap[String(z.digit)]=u.size?([...a].filter(f=>b.has(f)).length/u.size):0}}return{digit:d,gate:!!q.gate,formulas:Array.isArray(q.formulas)?q.formulas.slice():[],independentSupport:Number(q.independentSupport||0),support:Number(q.support||0),geminiScore:Number(q.geminiScore??.5),radarSupport:Number(q.radarSupport||0),baselineRank:__baselineRankMap.get(d)||10,overlap,stages:Object.fromEntries(Object.entries(maps).map(([k,m])=>[k,m.get(d)??Number(q.score||0)]))}})})(),rankDropsByTarget:__rankDropsByTarget,rankDropRawToMeta:__rankDrop(__rawRank,__metaRank),rankDropMetaToGemini:__rankDrop(__metaRank,__stageRankMap((__st.afterGemini||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit))),rankDropGeminiToSignal:__rankDrop(__stageRankMap((__st.afterGemini||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit)),__signalRank),rankDropMetaToSignal:__rankDrop(__metaRank,__signalRank),rankDropSignalToContext:__rankDrop(__signalRank,__contextRank),rankDropContextToCalibration:__rankDrop(__contextRank,__calRank),rankDropCalibrationToGuardrail:__rankDrop(__calRank,__guardRank),rankDropGuardrailToMidRank:__rankDrop(__guardRank,__targetRanks.afterMidRankRecovery||null),rankDropMidRankToTrajectory:__rankDrop(__targetRanks.afterMidRankRecovery||null,__targetRanks.afterTrajectory||null),rankDropTrajectoryToRankOutcome:__rankDrop(__targetRanks.afterTrajectory||null,__targetRanks.afterRankOutcome||null),rankDropRankOutcomeToCandidateOutcome:__rankDrop(__targetRanks.afterRankOutcome||null,__targetRanks.afterCandidateOutcome||null),rankDropSelfLearningToRolePair:__rankDrop(__targetRanks.afterSelfLearning||null,__targetRanks.afterRolePair||null),rankDropRolePairToSelfCorrection:__rankDrop(__targetRanks.afterRolePair||null,__targetRanks.afterSelfCorrection||null),selectorDamage:__boardTop2Hit&&!pairHit,selectorRescued:!__boardTop2Hit&&pairHit,gateTop:Array.isArray(__st.afterCandidateOutcome)?!!__st.afterCandidateOutcome[0]?.gate:false,selectedTopScore:sel.selection?.d1?.score??null,selectedSecondScore:sel.selection?.d2?.score??null,selectedMargin:sel.selection?.margin??null,selectedConfidence:sel.selection?.confidence??null,v2IntelligenceMeta:__diag.v2IntelligenceMeta||null,v22DigitFlowMeta:__diag.v22DigitFlowMeta||null,v21RankCalibrationMeta:__diag.v21RankCalibrationMeta||null,guardrailApplied:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.guardrailApplied),midRankRecoveryApplied:Array.isArray(__st.afterMidRankRecovery)&&__st.afterMidRankRecovery.some(x=>x.midRankRecoveryApplied),trajectoryApplied:Array.isArray(__st.afterTrajectory)&&__st.afterTrajectory.some(x=>x.trajectoryArbitrationApplied),rankOutcomeApplied:Array.isArray(__st.afterRankOutcome)&&__st.afterRankOutcome.some(x=>x.rankOutcomeApplied),candidateOutcomeApplied:Array.isArray(__st.afterCandidateOutcome)&&__st.afterCandidateOutcome.some(x=>x.candidateOutcomeApplied),selectorCoachMeta:__diag.selectorCoachMeta||null,selectorCoachApplied:Array.isArray(__st.afterSelectorCoach)&&__st.afterSelectorCoach.some(x=>x.__selectorCoachApplied),geminiApplied:!!__diag.geminiMeta?.applied,geminiWeight:__diag.geminiMeta?.weight??null,geminiLift:__diag.geminiMeta?.lift??null,geminiTests:__diag.geminiMeta?.tests??0,geminiSource:__diag.geminiMeta?.source||null,geminiTop:__diag.geminiMeta?.top||[],transitionPairApplied:!!__diag.transitionPairMeta?.applied,transitionPairWeight:__diag.transitionPairMeta?.weight??null,transitionPairLift:__diag.transitionPairMeta?.lift??null,transitionPairTests:__diag.transitionPairMeta?.tests??0,transitionPairSource:__diag.transitionPairMeta?.source||null,transitionPairTop:__diag.transitionPairMeta?.top||[],rolePairMeta:__diag.rolePairMeta||null,conditionalMeta:__diag.conditionalMeta||null,swapShieldApplied:!!__diag.swapShieldMeta?.applied,swapShieldMeta:__diag.swapShieldMeta||null,selfLearningApplied:!!__diag.selfLearningMeta?.selected&&__diag.selfLearningMeta.selected.id!=='P00',selfLearningPolicy:__diag.selfLearningMeta?.selected?.id||'P00',selfLearningRate:__diag.selfLearningMeta?.selected?.rate??null,selfLearningTests:__diag.selfLearningMeta?.selected?.tests??0,selfLearningBaseRate:__diag.selfLearningMeta?.baseRate??null,selfLearningPolicies:__diag.selfLearningMeta?.policies?.map(x=>({id:x.id,tests:x.tests,rate:x.rate,d1:x.d1,d2:x.d2}))||[],rescueApplied:!!__st.afterRescue?.rescueApplied,rescueDigit:__st.afterRescue?.rescueDigit??null,rescueGuardApproved:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.rescueGuardApproved),mistakeType:null,mistakeLabel:null,repairHint:null,dominantDamageStage:null};
     diagnostic.push(__diagRow);
+      if(routeCtx){
+        routeCtx.__v43DecisionIndex=Number(routeCtx.__v43DecisionIndex||0)+1;
+        const __v43BoardA=__boardDigits.slice(0,2),__v43FinalA=[Number(sel.d1),Number(sel.d2)];
+        if(__v43BoardA.length===2)__v43PairObserve(routeCtx,__v43BoardA[0],__v43BoardA[1],__boardTop2Hit);
+        if(__v43FinalA.length===2&&__v43FinalA[0]!==__v43FinalA[1])__v43PairObserve(routeCtx,__v43FinalA[0],__v43FinalA[1],pairHit);
+      }
     
     if(routeCtx){ if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
@@ -6168,9 +6385,9 @@ window.__OOS_1915_GATE__=Object.freeze({
     };
   }
 });
-window.__V1_CONFIG__=Object.freeze({version:'V3.8.0',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
+window.__V1_CONFIG__=Object.freeze({version:'V4.3',build:'CAUSAL-TERMINAL-PAIR-EVIDENCE-GATE',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V3.8.0',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
+window.__V24_RUNTIME__={version:'V4.3',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
@@ -6179,7 +6396,40 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.__V24_RUNTIME__.ready=true;
   }catch(e){window.__V24_RUNTIME__.error=String(e?.stack||e); console.error('V2.4 RUNTIME SELF-CHECK',e);}
 });
-window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
+
+/* V4.0 COUNTERFACTUAL FORENSIC REPLAY
+   Diagnostic-only: does not mutate production selection. For each chronological
+   decision, it compares the incumbent SMART-2D pair with the pair actually
+   returned by the hybrid challenger gate, using only the completed prefix.
+   The revealed target is used only AFTER the decision to classify rescue/damage.
+*/
+function __counterfactualPairForensics(records,opts={}){
+  const src=Array.isArray(records)?records:[];
+  const groups=new Map();
+  for(const r of src){if(!r||r.status&&r.status!=='result')continue;const n=String(r.name||'').trim();if(!n)continue;(groups.get(n)||groups.set(n,[]).get(n)).push(r);}
+  const out=[];
+  const targetSet=r=>new Set([...String(r?.n3||'').padStart(3,'0').slice(1),...String(r?.n2||'').padStart(2,'0')].map(Number));
+  for(const [name,raw] of groups){
+    const rs=typeof sortRecords==='function'?sortRecords(raw):raw.slice();
+    for(let i=1;i<rs.length;i++){
+      const hist=rs.slice(0,i), cur=rs[i], c=[];
+      try{
+        const base=__smart2dPick(hist);
+        const hybrid=__hybridSmart2dPick(hist,c,Number(opts.alpha??.24));
+        const bp=[Number(base.d1),Number(base.d2)], fp=[Number(hybrid.d1),Number(hybrid.d2)];
+        const ts=targetSet(cur);
+        const bh=ts.has(bp[0])||ts.has(bp[1]), fh=ts.has(fp[0])||ts.has(fp[1]);
+        const changed=bp[0]!==fp[0]||bp[1]!==fp[1];
+        let cls='unchanged'; if(changed)cls=fh&&!bh?'rescue':(!fh&&bh?'damage':(fh&&bh?'both-hit':'both-miss'));
+        out.push({name,date:cur.date||'',index:i,base:bp,final:fp,changed,baseHit:bh,finalHit:fh,class:cls,pairMeta:hybrid.__pairMeta||null});
+      }catch(e){out.push({name,date:cur.date||'',index:i,error:String(e?.message||e)});}
+    }
+  }
+  const changed=out.filter(x=>x.changed&&!x.error),rescued=changed.filter(x=>x.class==='rescue'),damaged=changed.filter(x=>x.class==='damage');
+  return {version:'V4.1',tests:out.filter(x=>!x.error).length,changed:changed.length,rescue:rescued.length,damage:damaged.length,net:rescued.length-damaged.length,rows:out,byType:Object.fromEntries([...groups.keys()].map(n=>{const a=out.filter(x=>x.name===n&&!x.error),c=a.filter(x=>x.changed);return[n,{tests:a.length,changed:c.length,rescue:c.filter(x=>x.class==='rescue').length,damage:c.filter(x=>x.class==='damage').length,net:c.filter(x=>x.class==='rescue').length-c.filter(x=>x.class==='damage').length}]}))};
+}
+
+window.__TEST_EXPORTS__={__counterfactualPairForensics,__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
 })();
 </script>
 
@@ -6205,7 +6455,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
    then evaluated chronologically per lottery type. No production mutation. */
 (function(){
   'use strict';
-  const FT_VER='F-TLAB v0.5-PURE-MATH · BUILD V2.8.9';
+  const FT_VER='F-TLAB v0.5-PURE-MATH · BUILD V4.3';
   const FT_KEY='__FTLAB_PURE_MATH__';
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const pct=x=>Number.isFinite(x)?+(x*100).toFixed(2):null;
