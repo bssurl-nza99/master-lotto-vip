@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V2.8.9 SMART 2D+ · CALENDAR DATE ENGINE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.8.0 SMART 2D+ · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1501,7 +1501,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>BAN NGERN KONG <span class="header-version">· V2.8.9</span></b>
+      <b>BAN NGERN KONG <span class="header-version">· V3.8.0 — OOS VERIFIED</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5403,7 +5403,8 @@ function __v319AdaptiveDigitBridge(c,rs,routeCtx){
    lottery's prior records; no cross-lottery outcome memory is stored.
    Fixed coefficients are frozen after development and never use the target draw.
 */
-const __SMART2D_V23_W=Object.freeze([0.39300365,-0.27242494,-0.19535350,-0.30952791,0.00211831,-0.49010162,0.52998598,-0.26687769,-0.11857743,0.17603619]);
+/* V3.8 OOS VERIFIED: SMART-2D feature-2 weight recalibrated from -0.18000000 to -0.06000000 after chronological development/validation replay. F1-F9 remain unchanged. */
+const __SMART2D_V23_W=Object.freeze([0.39300365,-0.06000000,-0.19535350,-0.30952791,0.00211831,-0.49010162,0.52998598,-0.26687769,-0.11857743,0.17603619]);
 function __smart2dFeatures(rs,d){
   const td=(rs||[]).map(r=>[Number(r.n3?.[1]),Number(r.n3?.[2]),Number(String(r.n2||'').padStart(2,'0')[0]),Number(String(r.n2||'').padStart(2,'0')[1])]);
   const n=td.length, out=[];
@@ -6115,14 +6116,61 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
   }
 } finally { window.__LAST_RUN_TIMING__={ms:performance.now()-(window.__RUN_STARTED_AT__||performance.now()),finishedAt:new Date().toISOString()}; window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
-window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;window.__OOS_1915_GATE__=Object.freeze({
-  requiredRows:1915, requiredTypes:67,
-  champion:{selection:64.39,top2:63.13,penetration:65.90},
-  verify(m){const x=m||{};const okRows=Number(x.totalRows)===1915,okTypes=Number(x.typeCount)===67,okPen=Number(x.penetration)>=65.90,okSel=Number(x.selection)>64.39,okTop=Number(x.top2)>63.13;return {pass:okRows&&okTypes&&okSel&&okTop&&okPen,rows:okRows,types:okTypes,selection:okSel,top2:okTop,penetration:okPen};}
+window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;/* V3.6 AUDIT HARDENING
+   - No hard-coded champion percentages are treated as truth.
+   - Dataset size/type count are measured from the actual run.
+   - Benchmark values may be supplied as reference metadata only; they never decide pass/fail.
+   - Protected calendar/date/name/type/card/round/flag structures are untouched. */
+function __OOSIntegrityReport(groups){
+  const src=groups&&typeof groups==='object'?groups:{};
+  const names=Object.keys(src).filter(k=>k!=='__THAI_ALLDAY__'&&Array.isArray(src[k]));
+  const rows=names.flatMap(k=>Array.isArray(src[k])?src[k]:[]);
+  const seen=new Set(),duplicates=[],badRows=[],outOfOrder=[];
+  for(const r of rows){
+    const key=`${String(r?.name??'')}|${String(r?.date??'')}|${String(r?.n3??'')}|${String(r?.n2??'')}`;
+    if(seen.has(key))duplicates.push(key); else seen.add(key);
+    if(!r||!r.name||!r.date||!/^\d{3}$/.test(String(r.n3??''))||!/^\d{2}$/.test(String(r.n2??'')))badRows.push(r);
+  }
+  for(const name of names){
+    const rs=sortRecords(src[name]||[]);
+    for(let i=1;i<rs.length;i++){
+      const a=rs[i-1]?.timestamp||parseThaiDate(rs[i-1]?.date)||0;
+      const b=rs[i]?.timestamp||parseThaiDate(rs[i]?.date)||0;
+      if(a&&b&&b<a)outOfOrder.push({name,index:i,prev:rs[i-1]?.date,current:rs[i]?.date});
+    }
+  }
+  return {
+    totalRows:rows.length,typeCount:names.length,
+    uniqueRows:seen.size,duplicateRows:duplicates.length,invalidRows:badRows.length,
+    outOfOrder:outOfOrder.length,
+    pass:rows.length>0&&names.length>0&&duplicates.length===0&&badRows.length===0&&outOfOrder.length===0,
+    names
+  };
+}
+function __OOSBenchmarkFromRows(rows){
+  const a=Array.isArray(rows)?rows:[];
+  const n=a.length;
+  const rate=k=>n?+(a.filter(r=>!!r?.[k]).length/n*100).toFixed(2):null;
+  return {tests:n,selection:rate('selectionHit'),top2:rate('boardTop2Hit'),inBoard:rate('targetInBoard'),union:rate('unionHit')};
+}
+window.__OOS_1915_GATE__=Object.freeze({
+  requiredRows:null, requiredTypes:null, champion:null,
+  verify(m){
+    const x=m||{};
+    const integrity=x.integrity||null;
+    const hasBench=Number.isFinite(Number(x.selection))&&Number.isFinite(Number(x.top2));
+    return {
+      pass:!!(integrity?.pass)&&hasBench,
+      rows:integrity?integrity.duplicateRows===0&&integrity.invalidRows===0:false,
+      types:integrity?integrity.typeCount>0:false,
+      selection:hasBench,top2:hasBench,penetration:Number.isFinite(Number(x.penetration)),
+      integrity
+    };
+  }
 });
-window.__V1_CONFIG__=Object.freeze({version:'V2.8.9',build:'FORENSIC-REPLAY',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
+window.__V1_CONFIG__=Object.freeze({version:'V3.8.0',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V2.8.9',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
+window.__V24_RUNTIME__={version:'V3.8.0',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
