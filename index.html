@@ -1501,7 +1501,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>BAN NGERN KONG <span class="header-version">· V3.8.1 — OOS VERIFIED</span></b>
+      <b>BAN NGERN KONG <span class="header-version">· V3.85 — ADAPTIVE HYBRID OOS CANDIDATE</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5414,6 +5414,11 @@ function __smart2dFeatures(rs,d){
   out.push(h20.length?h20.filter(x=>x[0]===d).length/20:0);
   return out;
 }
+const __AH_CACHE=new Map();
+function __adaptiveHybridSmart2dPick(rs,c,alpha){const base=__smart2dPick(rs);if(!Array.isArray(rs)||rs.length<14)return base;const key=String(rs?.[0]?.name||'')+'|'+String(rs?.at(-1)?.timestamp||rs?.at(-1)?.date||'')+'|'+String(rs.length)+'|'+String(alpha);const hit=__AH_CACHE.get(key);if(hit)return hit;const n=rs.length-1,start=Math.max(3,n-12);let bh=0,hh=0,rn=0;for(let i=start;i<n;i++){const tr=rs[i+1],tar=new Set([...String(tr?.n3||'').slice(1),...String(tr?.n2||'')].map(Number));if(!tar.size)continue;const p=rs.slice(0,i+1),b=__smart2dPick(p),h=__hybridSmart2dPick(p,c,alpha);const bo=[b.d1,b.d2],ho=[h.d1,h.d2],bhit=bo.some(d=>tar.has(Number(d))),hhit=ho.some(d=>tar.has(Number(d)));bh+=bhit?1:0;hh+=hhit?1:0;rn++;}const lift=(hh-bh)/Math.max(1,rn);const ok=rn>=7&&hh>=bh+1&&lift>=.07;const out=ok?__hybridSmart2dPick(rs,c,alpha):base;__AH_CACHE.set(key,out);if(__AH_CACHE.size>2000)__AH_CACHE.delete(__AH_CACHE.keys().next().value);return out;}
+function __hybridSmart2dPick(rs,c,alpha){const b=__smart2dPick(rs);if(!Array.isArray(c)||!c.length)return b;const last=rs?.at(-1),prev=rs?.at(-2)||null;if(!last)return b;const base=new Map((b.scores||[]).map(x=>[Number(x.d),Number(x.v)||0]));const fs=FORMULAS.map(f=>{const p=execFormula(f,last,prev);if(!p)return null;const h=formulaHistory(rs,f);const n=h.length,rate=n?(h.filter(x=>x.hit).length/n):.5;const recent=h.slice(-12),rr=recent.length?recent.filter(x=>x.hit).length/recent.length:rate;return{p:[...new Set(p.map(Number))],w:.65*rate+.35*rr};}).filter(Boolean);const vote=new Map();for(const z of fs){for(const d of z.p)vote.set(d,(vote.get(d)||0)+(z.w-.5));}const scored=[...base.keys()].map(d=>({d,v:(base.get(d)||0)+alpha*(vote.get(d)||0)})).sort((a,b)=>b.v-a.v||a.d-b.d);return{...b,d1:scored[0]?.d??b.d1,d2:scored.find(x=>x.d!==scored[0]?.d)?.d??b.d2,scores:scored};}
+
+
 function __smart2dPick(rs){
   const raw=Array.from({length:10},(_,d)=>__smart2dFeatures(rs,d)), norm=raw.map(x=>x.slice());
   for(let j=0;j<10;j++){
@@ -5595,7 +5600,8 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
        It is applied only to the current lottery's prior history and keeps the
        consensus board ordered with the same two digits, so Selection and Board Top2
        are measured on the exact production pair. */
-    const __smart2dFinal=__smart2dPick(historyRs||rs);
+    const __smart2dFinal=__adaptiveHybridSmart2dPick(historyRs||rs,c,Math.min(.30,Math.max(.15,(historyRs||rs).length>=36?.30:(historyRs||rs).length>=26?.24:.18)));
+    /* V3.85: cached adaptive hybrid; base remains the fail-safe. */
     /* V2.8.9 RETIRES THE PREVIOUS D2 R8-R10 RESCUE: OOS audit showed net damage in the combined route. */
     /* V2.8.9 CAUSAL WEAK-SELECTION SHIELD
        The archived OOS rank audit shows a recoverable failure mode: when BOTH
