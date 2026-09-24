@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V3.8.1 SMART 2D+ · CALENDAR DATE ENGINE</title>
+<title>BAN NGERN KONG · AI LOTTERY ANALYSIS SYSTEM · V4.0 · SMART 2D+ · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1501,7 +1501,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>BAN NGERN KONG <span class="header-version">· V3.85 — ADAPTIVE HYBRID OOS CANDIDATE</span></b>
+      <b>BAN NGERN KONG <span class="header-version">· V4.0 — COUNTERFACTUAL FORENSIC REPLAY CANDIDATE</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5427,7 +5427,7 @@ function __hybridSmart2dPick(rs,c,alpha){
   const fs=FORMULAS.map(f=>{const p=execFormula(f,last,prev);if(!p)return null;const h=formulaHistory(rs,f),n=h.length,rate=n?(h.filter(x=>x.hit).length/n):.5,recent=h.slice(-12),rr=recent.length?recent.filter(x=>x.hit).length/recent.length:rate;return{p:[...new Set(p.map(Number))],w:.65*rate+.35*rr};}).filter(Boolean);
   const vote=new Map();for(const z of fs)for(const d of z.p)vote.set(d,(vote.get(d)||0)+(z.w-.5));
   const digitScore=new Map([...base.keys()].map(d=>[d,(base.get(d)||0)+alpha*(vote.get(d)||0)]));
-  const topDigits=[...digitScore.entries()].sort((a,z)=>z[1]-a[1]||a[0]-z[0]).slice(0,6).map(x=>Number(x[0]));
+  const topDigits=[...digitScore.entries()].sort((a,z)=>z[1]-a[1]||a[0]-z[0]).slice(0,8).map(x=>Number(x[0]));
   const targets=Array.isArray(rs)?rs:[],pair=[];
   const horizon=Math.min(18,Math.max(10,targets.length-1));
   const from=Math.max(1,targets.length-1-horizon);
@@ -5455,19 +5455,87 @@ function __hybridSmart2dPick(rs,c,alpha){
     const minN=targets.length>=36?12:10;
     const enough=best.n>=minN;
     const evidence=best.h>=Math.ceil(best.n*.55)&&best.lift>=minLift&&best.agreement>=0;
-    /* V3.93: promote only when the challenger demonstrably beats the
-       current Smart-2D pair on the same completed recent window. A good
-       absolute pair is not enough; it must add lift over the incumbent. */
+    /* V3.95: counterfactual incumbent-relative promotion. The challenger must beat
+       the incumbent on the same completed recent window AND on a coarse
+       historical regime matching the current draw. Absolute pair strength
+       alone is never sufficient; weak-context evidence is ignored. */
     if(enough&&evidence){
       const baseScore=(digitScore.get(d1)||0)+(digitScore.get(d2)||0);
       const challengerScore=(digitScore.get(best.a)||0)+(digitScore.get(best.b)||0);
       const margin=best.score-baseScore;
-      if(best.lift>=minLift && (margin>=.012 || best.lift>=.14)){d1=best.a;d2=best.b;}
-      else if(currentPairRate<.50&&best.lift>=.16){d1=best.a;d2=best.b;}
+      // Coarse regime: only completed prior draws sharing the current
+      // tens/unit parity signature are used. This avoids exact-state
+      // overfitting while asking the challenger to beat the incumbent
+      // under a context that resembles the present state.
+      const sigOf=r=>{
+        const a=String(r?.n3||'').padStart(3,'0'), z=String(r?.n2||'').padStart(2,'0');
+        if(!/^\d{3}$/.test(a)||!/^\d{2}$/.test(z))return null;
+        return `${Number(a[1])%2}|${Number(z[1])%2}|${(Number(a[2])+Number(z[1]))%2}`;
+      };
+      const curSig=sigOf(last); let cn=0,bh=0,ch=0;
+      if(curSig){
+        const start=Math.max(0,targets.length-1-Math.min(48,Math.max(24,targets.length-1)));
+        for(let i=start;i<targets.length-1;i++){
+          if(sigOf(targets[i])!==curSig)continue;
+          const ts=targetSetAt(i+1); if(!ts.size)continue; cn++;
+          bh+=ts.has(basePair[0])||ts.has(basePair[1])?1:0;
+          ch+=ts.has(best.a)||ts.has(best.b)?1:0;
+        }
+      }
+      const contextLift=cn>=6?(ch-bh)/cn:null;
+      const contextPass=contextLift==null ? (best.lift>=minLift+.02) : contextLift>=.05;
+
+      // V3.98 COUNTERFACTUAL EDGE: compare the challenger against the incumbent
+      // draw-by-draw on the exact same completed window. A raw rate lift can hide
+      // a dangerous trade (one extra win paid for several incumbent wins lost).
+      let cw=0,lw=0,ct=0;
+      for(let i=from;i<targets.length;i++){
+        const ts=targetSetAt(i);if(!ts.size)continue;
+        const bhit=ts.has(basePair[0])||ts.has(basePair[1]);
+        const chit=ts.has(best.a)||ts.has(best.b);
+        ct++; if(chit&&!bhit)cw++; else if(bhit&&!chit)lw++;
+      }
+      const netEdge=cw-lw;
+      const edgeRate=ct?netEdge/ct:0;
+      const edgeSE=ct>0?Math.sqrt(Math.max(0,(cw+lw)/ct-Math.pow(edgeRate,2))/ct):1;
+      const edgeLower=edgeRate-1.28*edgeSE;
+      const lossRatio=(cw+lw)>0?lw/(cw+lw):0;
+      // V3.98: confidence guard. A challenger is not promoted merely because
+      // netEdge is positive; small samples need a clear tradeoff advantage.
+      const requiredNet=ct>=18?1:ct>=14?2:3;
+      const deepEntry=(baseTop.findIndex(x=>Number(x[0])===best.a)>=6)||(baseTop.findIndex(x=>Number(x[0])===best.b)>=6);
+      const deepNet=deepEntry?Math.max(requiredNet+1,3):requiredNet;
+      const deepLower=deepEntry?.05:edgeLower;
+      // V3.98 INCUMBENT-STRENGTH GUARD: the stronger the incumbent has been
+      // on the same recent window, the stronger the challenger evidence must be.
+      // This protects already-good pairs from being displaced by noisy small lifts.
+      const incumbentStrength=Math.max(0,Math.min(1,(baseRecentRate-.55)/.25));
+      const strengthFloor=.055+.035*incumbentStrength;
+      const lossCap=.68-.10*incumbentStrength;
+      const edgePass=ct>=minN&&netEdge>=deepNet&&edgeRate>=strengthFloor&&edgeLower>=Math.max(deepLower,strengthFloor-.015)&&lossRatio<=lossCap;
+      best._edgeMeta={wins:cw,losses:lw,tests:ct,net:netEdge,rate:+(edgeRate*100).toFixed(2),lower:+(edgeLower*100).toFixed(2),lossRatio:+(lossRatio*100).toFixed(2),requiredNet:deepNet,deepEntry,incumbentRate:+(baseRecentRate*100).toFixed(2),strength:+incumbentStrength.toFixed(3),strengthFloor:+(strengthFloor*100).toFixed(2),lossCap:+(lossCap*100).toFixed(2)};
+
+      // Context gets the same treatment: require the challenger to create more
+      // context-specific wins than losses, rather than merely having a high rate.
+      let cwn=0,lwn=0;
+      if(curSig){
+        const start=Math.max(0,targets.length-1-Math.min(48,Math.max(24,targets.length-1)));
+        for(let i=start;i<targets.length-1;i++){
+          if(sigOf(targets[i])!==curSig)continue;
+          const ts=targetSetAt(i+1);if(!ts.size)continue;
+          const bhit=ts.has(basePair[0])||ts.has(basePair[1]);
+          const chit=ts.has(best.a)||ts.has(best.b);
+          if(chit&&!bhit)cwn++; else if(bhit&&!chit)lwn++;
+        }
+      }
+      const contextEdge=cwn-lwn;
+      const contextEdgePass=cn>=6 ? (contextEdge>=1 && contextEdge/Math.max(1,cn)>=.05) : true;
+      const strongMargin=margin>=.012 || best.lift>=.14;
+      if(contextPass&&edgePass&&contextEdgePass&&strongMargin&&(best.lift>=minLift || (contextLift!=null&&contextLift>=.08))){d1=best.a;d2=best.b;}
     }
   }
   const scored=[...base.keys()].map(d=>({d,v:digitScore.get(d)||0})).sort((a,z)=>z.v-a.v||a.d-z.d);
-  return{...b,d1,d2,scores:scored,__pairMeta:best?{a:best.a,b:best.b,tests:best.n,hits:best.h,rate:+(best.pairRate*100).toFixed(2),lift:+(best.lift*100).toFixed(2),baseRate:+(baseRecentRate*100).toFixed(2)}:null};
+  return{...b,d1,d2,scores:scored,__pairMeta:best?{a:best.a,b:best.b,tests:best.n,hits:best.h,rate:+(best.pairRate*100).toFixed(2),lift:+(best.lift*100).toFixed(2),baseRate:+(baseRecentRate*100).toFixed(2),edgeMeta:best._edgeMeta||null}:null};
 }
 
 function __smart2dPick(rs){
@@ -6225,9 +6293,9 @@ window.__OOS_1915_GATE__=Object.freeze({
     };
   }
 });
-window.__V1_CONFIG__=Object.freeze({version:'V3.9.3',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
+window.__V1_CONFIG__=Object.freeze({version:'V4.0',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V3.9.3',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
+window.__V24_RUNTIME__={version:'V4.0',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
@@ -6236,7 +6304,40 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.__V24_RUNTIME__.ready=true;
   }catch(e){window.__V24_RUNTIME__.error=String(e?.stack||e); console.error('V2.4 RUNTIME SELF-CHECK',e);}
 });
-window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
+
+/* V4.0 COUNTERFACTUAL FORENSIC REPLAY
+   Diagnostic-only: does not mutate production selection. For each chronological
+   decision, it compares the incumbent SMART-2D pair with the pair actually
+   returned by the hybrid challenger gate, using only the completed prefix.
+   The revealed target is used only AFTER the decision to classify rescue/damage.
+*/
+function __counterfactualPairForensics(records,opts={}){
+  const src=Array.isArray(records)?records:[];
+  const groups=new Map();
+  for(const r of src){if(!r||r.status&&r.status!=='result')continue;const n=String(r.name||'').trim();if(!n)continue;(groups.get(n)||groups.set(n,[]).get(n)).push(r);}
+  const out=[];
+  const targetSet=r=>new Set([...String(r?.n3||'').padStart(3,'0').slice(1),...String(r?.n2||'').padStart(2,'0')].map(Number));
+  for(const [name,raw] of groups){
+    const rs=typeof sortRecords==='function'?sortRecords(raw):raw.slice();
+    for(let i=1;i<rs.length;i++){
+      const hist=rs.slice(0,i), cur=rs[i], c=[];
+      try{
+        const base=__smart2dPick(hist);
+        const hybrid=__hybridSmart2dPick(hist,c,Number(opts.alpha??.24));
+        const bp=[Number(base.d1),Number(base.d2)], fp=[Number(hybrid.d1),Number(hybrid.d2)];
+        const ts=targetSet(cur);
+        const bh=ts.has(bp[0])||ts.has(bp[1]), fh=ts.has(fp[0])||ts.has(fp[1]);
+        const changed=bp[0]!==fp[0]||bp[1]!==fp[1];
+        let cls='unchanged'; if(changed)cls=fh&&!bh?'rescue':(!fh&&bh?'damage':(fh&&bh?'both-hit':'both-miss'));
+        out.push({name,date:cur.date||'',index:i,base:bp,final:fp,changed,baseHit:bh,finalHit:fh,class:cls,pairMeta:hybrid.__pairMeta||null});
+      }catch(e){out.push({name,date:cur.date||'',index:i,error:String(e?.message||e)});}
+    }
+  }
+  const changed=out.filter(x=>x.changed&&!x.error),rescued=changed.filter(x=>x.class==='rescue'),damaged=changed.filter(x=>x.class==='damage');
+  return {version:'V4.0',tests:out.filter(x=>!x.error).length,changed:changed.length,rescue:rescued.length,damage:damaged.length,net:rescued.length-damaged.length,rows:out,byType:Object.fromEntries([...groups.keys()].map(n=>{const a=out.filter(x=>x.name===n&&!x.error),c=a.filter(x=>x.changed);return[n,{tests:a.length,changed:c.length,rescue:c.filter(x=>x.class==='rescue').length,damage:c.filter(x=>x.class==='damage').length,net:c.filter(x=>x.class==='rescue').length-c.filter(x=>x.class==='damage').length}]}))};
+}
+
+window.__TEST_EXPORTS__={__counterfactualPairForensics,__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
 })();
 </script>
 
@@ -6262,7 +6363,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
    then evaluated chronologically per lottery type. No production mutation. */
 (function(){
   'use strict';
-  const FT_VER='F-TLAB v0.5-PURE-MATH · BUILD V3.9.2';
+  const FT_VER='F-TLAB v0.5-PURE-MATH · BUILD V4.0';
   const FT_KEY='__FTLAB_PURE_MATH__';
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const pct=x=>Number.isFinite(x)?+(x*100).toFixed(2):null;
