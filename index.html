@@ -5415,9 +5415,60 @@ function __smart2dFeatures(rs,d){
   return out;
 }
 const __AH_CACHE=new Map();
-function __adaptiveHybridSmart2dPick(rs,c,alpha){const base=__smart2dPick(rs);if(!Array.isArray(rs)||rs.length<14)return base;const key=String(rs?.[0]?.name||'')+'|'+String(rs?.at(-1)?.timestamp||rs?.at(-1)?.date||'')+'|'+String(rs.length)+'|'+String(alpha);const hit=__AH_CACHE.get(key);if(hit)return hit;const n=rs.length-1,start=Math.max(3,n-12);let bh=0,hh=0,rn=0;for(let i=start;i<n;i++){const tr=rs[i+1],tar=new Set([...String(tr?.n3||'').slice(1),...String(tr?.n2||'')].map(Number));if(!tar.size)continue;const p=rs.slice(0,i+1),b=__smart2dPick(p),h=__hybridSmart2dPick(p,c,alpha);const bo=[b.d1,b.d2],ho=[h.d1,h.d2],bhit=bo.some(d=>tar.has(Number(d))),hhit=ho.some(d=>tar.has(Number(d)));bh+=bhit?1:0;hh+=hhit?1:0;rn++;}const lift=(hh-bh)/Math.max(1,rn);const ok=rn>=7&&hh>=bh+1&&lift>=.07;const out=ok?__hybridSmart2dPick(rs,c,alpha):base;__AH_CACHE.set(key,out);if(__AH_CACHE.size>2000)__AH_CACHE.delete(__AH_CACHE.keys().next().value);return out;}
-function __hybridSmart2dPick(rs,c,alpha){const b=__smart2dPick(rs);if(!Array.isArray(c)||!c.length)return b;const last=rs?.at(-1),prev=rs?.at(-2)||null;if(!last)return b;const base=new Map((b.scores||[]).map(x=>[Number(x.d),Number(x.v)||0]));const fs=FORMULAS.map(f=>{const p=execFormula(f,last,prev);if(!p)return null;const h=formulaHistory(rs,f);const n=h.length,rate=n?(h.filter(x=>x.hit).length/n):.5;const recent=h.slice(-12),rr=recent.length?recent.filter(x=>x.hit).length/recent.length:rate;return{p:[...new Set(p.map(Number))],w:.65*rate+.35*rr};}).filter(Boolean);const vote=new Map();for(const z of fs){for(const d of z.p)vote.set(d,(vote.get(d)||0)+(z.w-.5));}const scored=[...base.keys()].map(d=>({d,v:(base.get(d)||0)+alpha*(vote.get(d)||0)})).sort((a,b)=>b.v-a.v||a.d-b.d);return{...b,d1:scored[0]?.d??b.d1,d2:scored.find(x=>x.d!==scored[0]?.d)?.d??b.d2,scores:scored};}
-
+const __AH_PICK_CACHE=new Map();
+function __ahPrefixKey(rs,alpha){const a=rs?.[0],z=rs?.at?.(-1);return `${a?.name||""}|${a?.date||""}|${z?.date||z?.timestamp||""}|${rs?.length||0}|${alpha}`;}
+function __ahBaseCached(rs){const k=`B|${__ahPrefixKey(rs,0)}`,v=__AH_PICK_CACHE.get(k);if(v)return v;const x=__smart2dPick(rs);__AH_PICK_CACHE.set(k,x);return x;}
+function __ahHybridCached(rs,c,alpha){const k=`H|${__ahPrefixKey(rs,alpha)}`,v=__AH_PICK_CACHE.get(k);if(v)return v;const x=__hybridSmart2dPick(rs,c,alpha);__AH_PICK_CACHE.set(k,x);return x;}
+function __adaptiveHybridSmart2dPick(rs,c,alpha){const base=__ahBaseCached(rs);if(!Array.isArray(rs)||rs.length<14)return base;const key=String(rs?.[0]?.name||'')+'|'+String(rs?.at(-1)?.timestamp||rs?.at(-1)?.date||'')+'|'+String(rs.length)+'|'+String(alpha);const hit=__AH_CACHE.get(key);if(hit)return hit;const n=rs.length-1,start=Math.max(3,n-12);let bh=0,hh=0,rn=0;for(let i=start;i<n;i++){const tr=rs[i+1],tar=new Set([...String(tr?.n3||'').slice(1),...String(tr?.n2||'')].map(Number));if(!tar.size)continue;const p=rs.slice(0,i+1),b=__ahBaseCached(p),h=__ahHybridCached(p,c,alpha);const bo=[b.d1,b.d2],ho=[h.d1,h.d2],bhit=bo.some(d=>tar.has(Number(d))),hhit=ho.some(d=>tar.has(Number(d)));bh+=bhit?1:0;hh+=hhit?1:0;rn++;}const lift=(hh-bh)/Math.max(1,rn);const ok=rn>=7&&hh>=bh+1&&lift>=.07;const out=ok?__ahHybridCached(rs,c,alpha):base;__AH_CACHE.set(key,out);if(__AH_CACHE.size>2000)__AH_CACHE.delete(__AH_CACHE.keys().next().value);if(__AH_PICK_CACHE.size>10000){const first=__AH_PICK_CACHE.keys().next().value;__AH_PICK_CACHE.delete(first);}return out;}
+function __hybridSmart2dPick(rs,c,alpha){
+  const b=__smart2dPick(rs);if(!Array.isArray(c)||!c.length)return b;
+  const last=rs?.at(-1),prev=rs?.at(-2)||null;if(!last)return b;
+  const base=new Map((b.scores||[]).map(x=>[Number(x.d),Number(x.v)||0]));
+  const fs=FORMULAS.map(f=>{const p=execFormula(f,last,prev);if(!p)return null;const h=formulaHistory(rs,f),n=h.length,rate=n?(h.filter(x=>x.hit).length/n):.5,recent=h.slice(-12),rr=recent.length?recent.filter(x=>x.hit).length/recent.length:rate;return{p:[...new Set(p.map(Number))],w:.65*rate+.35*rr};}).filter(Boolean);
+  const vote=new Map();for(const z of fs)for(const d of z.p)vote.set(d,(vote.get(d)||0)+(z.w-.5));
+  const digitScore=new Map([...base.keys()].map(d=>[d,(base.get(d)||0)+alpha*(vote.get(d)||0)]));
+  const topDigits=[...digitScore.entries()].sort((a,z)=>z[1]-a[1]||a[0]-z[0]).slice(0,6).map(x=>Number(x[0]));
+  const targets=Array.isArray(rs)?rs:[],pair=[];
+  const horizon=Math.min(18,Math.max(10,targets.length-1));
+  const from=Math.max(1,targets.length-1-horizon);
+  const targetSetAt=i=>new Set([...String(targets[i]?.n3||'').slice(1),...String(targets[i]?.n2||'')].map(Number));
+  const baseHits=[];const basePair=[b.d1,b.d2].map(Number);
+  for(let i=from;i<targets.length;i++){const ts=targetSetAt(i);if(!ts.size)continue;baseHits.push(ts.has(basePair[0])||ts.has(basePair[1]));}
+  const baseRecentRate=baseHits.length?baseHits.filter(Boolean).length/baseHits.length:.5;
+  for(let ai=0;ai<topDigits.length;ai++)for(let bi=ai+1;bi<topDigits.length;bi++){
+    const a=topDigits[ai],bb=topDigits[bi];let n=0,h=0;
+    for(let i=from;i<targets.length;i++){const ts=targetSetAt(i);if(!ts.size)continue;n++;if(ts.has(a)||ts.has(bb))h++;}
+    if(n<8)continue;
+    const rate=(h+6*.5)/(n+6),lift=rate-baseRecentRate;
+    const ds=(digitScore.get(a)||0)+(digitScore.get(bb)||0);
+    const agreement=(Math.max(0,vote.get(a)||0)+Math.max(0,vote.get(bb)||0));
+    const stability=Math.min(1,n/18);
+    pair.push({a,b:bb,n,h,pairRate:rate,lift,ds,agreement,score:.68*ds+.20*Math.max(-.25,Math.min(.25,lift))*stability+.12*agreement*stability});
+  }
+  pair.sort((x,y)=>y.score-x.score||y.lift-x.lift||y.pairRate-x.pairRate||x.a-y.a||x.b-y.b);
+  const baseTop=[...digitScore.entries()].sort((x,y)=>y[1]-x[1]||x[0]-y[0]);
+  let d1=baseTop[0]?.[0]??b.d1,d2=baseTop[1]?.[0]??b.d2;
+  const best=pair[0];
+  if(best){
+    const currentPairRate=baseRecentRate;
+    const minLift=targets.length>=36?.08:targets.length>=26?.10:.12;
+    const minN=targets.length>=36?12:10;
+    const enough=best.n>=minN;
+    const evidence=best.h>=Math.ceil(best.n*.55)&&best.lift>=minLift&&best.agreement>=0;
+    /* V3.93: promote only when the challenger demonstrably beats the
+       current Smart-2D pair on the same completed recent window. A good
+       absolute pair is not enough; it must add lift over the incumbent. */
+    if(enough&&evidence){
+      const baseScore=(digitScore.get(d1)||0)+(digitScore.get(d2)||0);
+      const challengerScore=(digitScore.get(best.a)||0)+(digitScore.get(best.b)||0);
+      const margin=best.score-baseScore;
+      if(best.lift>=minLift && (margin>=.012 || best.lift>=.14)){d1=best.a;d2=best.b;}
+      else if(currentPairRate<.50&&best.lift>=.16){d1=best.a;d2=best.b;}
+    }
+  }
+  const scored=[...base.keys()].map(d=>({d,v:digitScore.get(d)||0})).sort((a,z)=>z.v-a.v||a.d-z.d);
+  return{...b,d1,d2,scores:scored,__pairMeta:best?{a:best.a,b:best.b,tests:best.n,hits:best.h,rate:+(best.pairRate*100).toFixed(2),lift:+(best.lift*100).toFixed(2),baseRate:+(baseRecentRate*100).toFixed(2)}:null};
+}
 
 function __smart2dPick(rs){
   const raw=Array.from({length:10},(_,d)=>__smart2dFeatures(rs,d)), norm=raw.map(x=>x.slice());
@@ -5601,7 +5652,7 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
        consensus board ordered with the same two digits, so Selection and Board Top2
        are measured on the exact production pair. */
     const __smart2dFinal=__adaptiveHybridSmart2dPick(historyRs||rs,c,Math.min(.30,Math.max(.15,(historyRs||rs).length>=36?.30:(historyRs||rs).length>=26?.24:.18)));
-    /* V3.85: cached adaptive hybrid; base remains the fail-safe. */
+    /* V3.86: causal pair-aware adaptive hybrid; base remains the fail-safe. */
     /* V2.8.9 RETIRES THE PREVIOUS D2 R8-R10 RESCUE: OOS audit showed net damage in the combined route. */
     /* V2.8.9 CAUSAL WEAK-SELECTION SHIELD
        The archived OOS rank audit shows a recoverable failure mode: when BOTH
@@ -6174,9 +6225,9 @@ window.__OOS_1915_GATE__=Object.freeze({
     };
   }
 });
-window.__V1_CONFIG__=Object.freeze({version:'V3.8.1',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
+window.__V1_CONFIG__=Object.freeze({version:'V3.9.3',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V3.8.1',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
+window.__V24_RUNTIME__={version:'V3.9.3',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'pending independent chronological walk-forward replay'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
@@ -6211,7 +6262,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
    then evaluated chronologically per lottery type. No production mutation. */
 (function(){
   'use strict';
-  const FT_VER='F-TLAB v0.5-PURE-MATH · BUILD V2.8.9';
+  const FT_VER='F-TLAB v0.5-PURE-MATH · BUILD V3.9.2';
   const FT_KEY='__FTLAB_PURE_MATH__';
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const pct=x=>Number.isFinite(x)?+(x*100).toFixed(2):null;
