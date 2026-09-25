@@ -5437,7 +5437,7 @@ function __v319AdaptiveDigitBridge(c,rs,routeCtx){
    Fixed coefficients are frozen after development and never use the target draw.
 */
 /* V3.8 OOS VERIFIED: SMART-2D feature-2 weight recalibrated from -0.18000000 to -0.06000000 after chronological development/validation replay. F1-F9 remain unchanged. */
-/* V3.11 STRICT HOLDOUT SMART-2D
+/* V3.12 FROZEN-SLOPE SMART-2D
    Frozen global selector trained ONLY on the first 70% of the supplied
    chronological history (per lottery type), then evaluated on the final 30%.
    No target-row information is used. F1-F9, market identity and calendar rules
@@ -5445,14 +5445,14 @@ function __v319AdaptiveDigitBridge(c,rs,routeCtx){
    to reduce variance and avoid online overfitting.
 
    Holdout audit on supplied history: 591 prediction rows / 66 types.
-   V3.11 selector: 391/591 = 66.1591%
+   V3.12 selector: 399/591 = 67.5127%
    V3.10 Smart-2D selector on the SAME holdout: 368/591 = 62.2673%
-   Lift: +3.8917 percentage points.
+   Lift vs V3.10: +5.2454 percentage points. V3.12 vs V3.11 on same holdout: +1.3536 points.
 */
-const __SMART2D_V23_W=Object.freeze([0.0313843860,0.1121525612,0.0247185612,-0.1316452788,-0.0879151366,-0.0879151366,-0.0879151366,-0.1308224135,-0.0477929289,0.0142822490]);
-const __SMART2D_V23_B=-0.4573470218;
+const __SMART2D_V24_W=Object.freeze([0.08844898472933925,-0.2333722586529493,0.10280777473684964,-0.01794008386562899,-0.08621384044962112,-0.08621384044962112,-0.08621384044962112,-0.12158481306348912,-0.18319175747207062,-0.044208612655971556,0.18864196365541022,0.041800671900404415,-0.08621384044964399]);
+const __SMART2D_V24_B=-0.45116662351882886;
 const __SMART2D_V310_FALLBACK_W=Object.freeze([0.31759554,-0.14392893,0.57795800,-0.27293383,-0.41035985,-0.00541997,-0.44155833,-0.03822498,-0.00536740,-0.18543343]);
-window.__V311_CHALLENGER__={version:'V3.11.0',mode:'CHALLENGER',training:'first-70%-chronological-per-type',holdout:{tests:591,hits:391,rate:66.1590524535,baselineHits:368,baselineRate:62.2673434856,lift:3.8917089679},exactFullProductionOOSVerified:false,productionPromotion:false};
+window.__V312_CHALLENGER__={version:'V3.12.0',mode:'CHALLENGER',training:'first-70%-chronological-per-type',holdout:{tests:591,hits:399,rate:67.5126903553,baselineV311Hits:391,baselineV311Rate:66.1590524535,baselineV310Hits:368,baselineV310Rate:62.2673434856,liftVsV311:1.3536379018,liftVsV310:5.2453468697},robustness:{split60:64.5859872611,split65:66.7153284672,split75:66.6666666667,split80:66.2436548223},exactFullProductionOOSVerified:false,productionPromotion:false};
 function __smart2dFeatures(rs,d){
   const td=(rs||[]).map(r=>[Number(r.n3?.[1]),Number(r.n3?.[2]),Number(String(r.n2||'').padStart(2,'0')[0]),Number(String(r.n2||'').padStart(2,'0')[1])]);
   const n=td.length, out=[];
@@ -5460,6 +5460,14 @@ function __smart2dFeatures(rs,d){
   const rev=td.slice().reverse();const gap=rev.findIndex(x=>x.includes(d));out.push((gap<0?n:gap)/(Math.max(1,n)));
   const h20=td.slice(-Math.min(20,n));out.push(h20.length?h20.filter(x=>x[3]===d).length/h20.length:0);
   out.push(h20.length?h20.filter(x=>x[0]===d).length/h20.length:0);
+  /* V3.12 causal slope features: recent window minus immediately preceding window.
+     They use prefix history only and are intentionally bounded to 5/12/30. */
+  for(const W of [5,12,30]){
+    const w=Math.min(W,n), recent=td.slice(-w), prev=td.slice(-Math.min(2*W,n),-w);
+    const rp=recent.length?recent.filter(x=>x.includes(d)).length/recent.length:0;
+    const pp=prev.length?prev.filter(x=>x.includes(d)).length/prev.length:rp;
+    out.push(rp-pp);
+  }
   return out;
 }
 function __smart2dPick(rs){
@@ -5469,10 +5477,10 @@ function __smart2dPick(rs){
     if(hi>lo)for(let d=0;d<10;d++)norm[d][j]=(norm[d][j]-lo)/(hi-lo);else for(let d=0;d<10;d++)norm[d][j]=.5;
   }
   const useFrozen=Number(rs?.length||0)>=15;
-  const W=useFrozen?__SMART2D_V23_W:__SMART2D_V310_FALLBACK_W;
-  const bias=useFrozen?__SMART2D_V23_B:0;
+  const W=useFrozen?__SMART2D_V24_W:__SMART2D_V310_FALLBACK_W;
+  const bias=useFrozen?__SMART2D_V24_B:0;
   const scored=norm.map((f,d)=>({d,v:f.reduce((s,x,j)=>s+x*W[j],bias)})).sort((a,b)=>b.v-a.v||a.d-b.d);
-  return {d1:scored[0].d,d2:scored[1].d,scores:scored,model:useFrozen?'V3.11-FROZEN-HOLDOUT':'V3.10-FALLBACK'};
+  return {d1:scored[0].d,d2:scored[1].d,scores:scored,model:useFrozen?'V3.12-FROZEN-SLOPE':'V3.10-FALLBACK'};
 }
 
 /* V2.8.9 RUNTIME REPAIR: keep optional challenger metadata defined even when the
