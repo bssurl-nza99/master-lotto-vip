@@ -5410,38 +5410,18 @@ function __smart2dFeatures(rs,d){
   const n=td.length, out=[];
   for(const W of [3,5,8,12,20,30,50]){const h=td.slice(-Math.min(W,n));out.push(h.length?h.filter(x=>x.includes(d)).length/h.length:0)}
   const rev=td.slice().reverse();const gap=rev.findIndex(x=>x.includes(d));out.push((gap<0?n:gap)/(Math.max(1,n)));
-  const h20=td.slice(-Math.min(20,n));out.push(h20.length?h20.filter(x=>x[3]===d).length/h20.length:0);
-  out.push(h20.length?h20.filter(x=>x[0]===d).length/h20.length:0);
+  const h20=td.slice(-Math.min(20,n));out.push(h20.length?h20.filter(x=>x[3]===d).length/20:0);
+  out.push(h20.length?h20.filter(x=>x[0]===d).length/20:0);
   return out;
 }
 function __smart2dPick(rs){
-  const hist=Array.isArray(rs)?rs.slice():[];
-  const raw=Array.from({length:10},(_,d)=>__smart2dFeatures(hist,d)), norm=raw.map(x=>x.slice());
-  for(let j=0;j<norm[0].length;j++){
+  const raw=Array.from({length:10},(_,d)=>__smart2dFeatures(rs,d)), norm=raw.map(x=>x.slice());
+  for(let j=0;j<10;j++){
     let lo=Infinity,hi=-Infinity;for(let d=0;d<10;d++){lo=Math.min(lo,norm[d][j]);hi=Math.max(hi,norm[d][j]);}
     if(hi>lo)for(let d=0;d<10;d++)norm[d][j]=(norm[d][j]-lo)/(hi-lo);else for(let d=0;d<10;d++)norm[d][j]=.5;
   }
-  const base=norm.map((f,d)=>({d,v:f.reduce((z,x,j)=>z+x*__SMART2D_V23_W[j],0)}));
-  const n=hist.length, pairs=[];
-  const targetSet=r=>{const a=String(r?.n3??'').padStart(3,'0').slice(-2),b=String(r?.n2??'').padStart(2,'0');return new Set([+a[0],+a[1],+b[0],+b[1]].filter(Number.isFinite));};
-  // Causal pair-learning: only rows already known to the current prediction are used.
-  // Recency-weighted, smoothed, and never reads the target row.
-  for(let d1=0;d1<10;d1++)for(let d2=d1+1;d2<10;d2++){
-    let hit=0,w=0;
-    const W=Math.min(36,n);
-    for(let k=Math.max(0,n-W);k<n;k++){
-      const age=n-1-k, wt=Math.exp(-age/10), t=targetSet(hist[k]);
-      if(t.has(d1)||t.has(d2))hit+=wt; w+=wt;
-    }
-    const pairRate=w?((hit+3*.5)/(w+3)):0.5;
-    const v1=base[d1].v,v2=base[d2].v;
-    const diversity=Math.abs(v1-v2)<.08?0.018:0;
-    pairs.push({d1,d2,score:.58*(v1+v2)+.42*pairRate+diversity,rate:pairRate});
-  }
-  pairs.sort((a,b)=>b.score-a.score||b.rate-a.rate||a.d1-b.d1||a.d2-b.d2);
-  const best=pairs[0]||{d1:base.sort((a,b)=>b.v-a.v)[0]?.d||0,d2:1,score:0,rate:.5};
-  const scored=base.slice().sort((a,b)=>b.v-a.v||a.d-b.d);
-  return {d1:best.d1,d2:best.d2,scores:scored,pairScores:pairs.slice(0,10),pairRate:best.rate};
+  const scored=norm.map((f,d)=>({d,v:f.reduce((s,x,j)=>s+x*__SMART2D_V23_W[j],0)})).sort((a,b)=>b.v-a.v||a.d-b.d);
+  return {d1:scored[0].d,d2:scored[1].d,scores:scored};
 }
 
 /* V2.8.9 RUNTIME REPAIR: keep optional challenger metadata defined even when the
