@@ -1654,6 +1654,346 @@ function analyzePrecisionEngineInternal(records, mode) {
     return {...pred,pairRanker:'v3.1-meta-selector',targetDate:getNextTargetDate(records[records.length-1].date)};
 }
 
+
+/* ============================================================
+   v5.0 JOINT 100-PAIR WALK-FORWARD ENGINE
+   ------------------------------------------------------------
+   Design goals:
+   1) No fabricated accuracy / no percentage clamping.
+   2) Score all 100 exact 2D pairs first.
+   3) Top 3 are always TENS digits.
+   4) Exactly 5 pairs per selected Top digit.
+   5) Top selection is based on the quality of its best 5 pairs.
+   6) Lunch / Evening / All-Day use different temporal contexts.
+   7) Evidence uses multi-window shrinkage + context transitions.
+   8) All-Day optimizes union coverage of the two rounds.
+   9) Walk-forward audit never reads the target day before prediction.
+   ============================================================ */
+
+function v50Clamp(x,a=0,b=1){ return Math.max(a,Math.min(b,x)); }
+
+function v50Norm10(arr){
+    const mn=Math.min(...arr), mx=Math.max(...arr);
+    if(!isFinite(mn)||!isFinite(mx)||mx-mn<1e-12) return arr.map(()=>0.5);
+    return arr.map(x=>(x-mn)/(mx-mn));
+}
+
+function v50Rank100(obj){
+    const keys=Object.keys(obj);
+    const sorted=[...keys].sort((a,b)=>obj[b]-obj[a]);
+    const out={};
+    sorted.forEach((k,i)=>out[k]=1-(i/Math.max(1,sorted.length-1)));
+    return out;
+}
+
+function v50ExtractTarget(r,mode){
+    if(mode==='lunch') return r.lunch;
+    if(mode==='evening') return r.evening;
+    return null;
+}
+
+function v50WindowRows(records,n){
+    return n==null ? records : records.slice(Math.max(0,records.length-n));
+}
+
+function v50WeightedPairStats(records,mode,window,tau){
+    const rows=v50WindowRows(records,window);
+    const pair=Array.from({length:10},()=>Array(10).fill(0));
+    const tens=Array(10).fill(0);
+    const totalWeight=rows.length;
+    for(let i=0;i<rows.length;i++){
+        const value=v50ExtractTarget(rows[i],mode);
+        if(!isValid2D(value)) continue;
+        const d=getDigits(value), age=rows.length-1-i;
+        const w=tau ? Math.exp(-age/tau) : 1;
+        pair[d[0]][d[1]]+=w;
+        tens[d[0]]+=w;
+    }
+    return {pair,tens,totalWeight};
+}
+
+function v50TransitionStats(records,mode,window,tau){
+    const rows=v50WindowRows(records,window);
+    const trans=Array.from({length:10},()=>Array.from({length:100},()=>0));
+    const ctxN=Array(10).fill(0);
+
+    for(let i=1;i<rows.length;i++){
+        let contextValue;
+        if(mode==='lunch') contextValue=rows[i-1].evening;
+        else contextValue=rows[i].lunch;
+
+        const target=v50ExtractTarget(rows[i],mode);
+        if(!isValid2D(contextValue)||!isValid2D(target)) continue;
+
+        const ctxDigits=getDigits(contextValue);
+        const td=getDigits(target);
+        const age=rows.length-1-i;
+        const w=tau ? Math.exp(-age/tau) : 1;
+        const pairIndex=td[0]*10+td[1];
+
+        ctxDigits.forEach(c=>{
+            trans[c][pairIndex]+=w;
+            ctxN[c]+=w;
+        });
+    }
+    return {trans,ctxN};
+}
+
+function v50ContextPairStats(records,mode,window,tau){
+    const rows=v50WindowRows(records,window);
+    const trans=Array.from({length:100},()=>Array(100).fill(0));
+    const ctxN=Array(100).fill(0);
+
+    for(let i=1;i<rows.length;i++){
+        const contextValue=(mode==='lunch') ? rows[i-1].evening : rows[i].lunch;
+        const target=v50ExtractTarget(rows[i],mode);
+        if(!isValid2D(contextValue)||!isValid2D(target)) continue;
+        const c=Number(contextValue), t=Number(target);
+        const age=rows.length-1-i;
+        const w=tau ? Math.exp(-age/tau) : 1;
+        trans[c][t]+=w;
+        ctxN[c]+=w;
+    }
+    return {trans,ctxN};
+}
+
+function v50BuildRoundEvidence(records,mode,window,tau){
+    const stats=v50WeightedPairStats(records,mode,window,tau);
+    const tr=v50TransitionStats(records,mode,window,tau);
+    const cp=v50ContextPairStats(records,mode,window,tau);
+
+    const currentContext = records.length
+        ? ((mode==='lunch') ? records[records.length-1].evening : records[records.length-1].lunch)
+        : '00';
+    const contextDigits=isValid2D(currentContext) ? getDigits(currentContext) : [0,0];
+    const contextPair=Number(isValid2D(currentContext)?currentContext:'00');
+
+    const raw={};
+    const n=Math.max(1,stats.totalWeight);
+
+    for(let t=0;t<10;t++){
+        for(let u=0;u<10;u++){
+            const k=stats.pair[t][u];
+            const tn=stats.tens[t];
+
+            /* Bayesian-smoothed conditional P(unit | tens). */
+            const cond=(k+1)/(tn+10);
+
+            /* Smoothed exact-pair frequency. */
+            const exact=(k+1)/(n+100);
+
+            /* Support reliability: tiny samples cannot dominate. */
+            const support=1-Math.exp(-tn/7);
+
+            /* Context -> exact-pair evidence. */
+            const ctxPair=(cp.trans[contextPair][t*10+u]+1)/(cp.ctxN[contextPair]+100);
+
+            /* Context digit -> exact-pair evidence. */
+            let td=0;
+            contextDigits.forEach(c=>{
+                td=Math.max(td,(tr.trans[c][t*10+u]+1)/(tr.ctxN[c]+100));
+            });
+
+            /* Soft reverse evidence. Never force a reverse pair in/out. */
+            const reverse=stats.pair[u][t];
+            const reverseRate=(reverse+1)/(stats.tens[u]+10);
+
+            /* Doubles receive no automatic bonus; only observed evidence. */
+            const doubleEvidence=(t===u) ? cond : 0;
+
+            raw[`${t}${u}`] =
+                0.42*cond +
+                0.20*exact +
+                0.16*ctxPair +
+                0.10*td +
+                0.07*support +
+                0.03*reverseRate +
+                0.02*doubleEvidence;
+        }
+    }
+
+    const rank=v50Rank100(raw);
+    const scores={};
+    Object.keys(raw).forEach(k=>{
+        scores[k]=0.72*rank[k]+0.28*raw[k];
+    });
+
+    return {scores,raw};
+}
+
+function v50BlendEvidence(records,mode){
+    /* Multi-scale windows. Recent windows are allowed to matter,
+       but only through evidence blending rather than hard recency. */
+    const windows=[
+        {n:null,tau:null,w:0.28},
+        {n:90,tau:55,w:0.20},
+        {n:60,tau:35,w:0.22},
+        {n:30,tau:18,w:0.20},
+        {n:15,tau:8,w:0.10}
+    ];
+
+    const out={};
+    windows.forEach(spec=>{
+        const e=v50BuildRoundEvidence(records,mode,spec.n,spec.tau);
+        Object.keys(e.scores).forEach(k=>{
+            out[k]=(out[k]||0)+spec.w*e.scores[k];
+        });
+    });
+    return out;
+}
+
+function v50AllDayEvidence(records){
+    /*
+      Lunch context: previous observed evening -> current lunch.
+      Evening context: current lunch -> current evening cannot be known
+      before the day happens, so the All-Day model uses a dedicated
+      previous-evening -> next-evening transition plus unconditional
+      evening evidence.
+    */
+    const lunch=v50BlendEvidence(records,'lunch');
+
+    const evBase=v50BlendEvidence(records,'evening');
+
+    /* Build a two-day evening transition model. */
+    const rows=records;
+    const trans=Array.from({length:100},()=>Array(100).fill(0));
+    const ctxN=Array(100).fill(0);
+
+    for(let i=1;i<rows.length;i++){
+        const c=rows[i-1].evening, t=rows[i].evening;
+        if(!isValid2D(c)||!isValid2D(t)) continue;
+        const ci=Number(c), ti=Number(t);
+        trans[ci][ti]+=1;
+        ctxN[ci]+=1;
+    }
+
+    const ctx=rows.length ? Number(rows[rows.length-1].evening) : 0;
+    const ev={};
+    Object.keys(evBase).forEach(k=>{
+        const t=Number(k);
+        const p=(trans[ctx][t]+1)/(ctxN[ctx]+100);
+        ev[k]=0.78*evBase[k]+0.22*p;
+    });
+
+    /* Convert each evidence map to relative pair likelihoods. */
+    const lr=v50Rank100(lunch), er=v50Rank100(ev);
+    const out={};
+
+    Object.keys(lr).forEach(k=>{
+        const pl=v50Clamp(0.03+0.17*lr[k],0.005,0.25);
+        const pe=v50Clamp(0.03+0.17*er[k],0.005,0.25);
+        const union=1-(1-pl)*(1-pe);
+
+        /* Reward complementary coverage, not duplicated evidence. */
+        const complement=Math.abs(pl-pe);
+
+        out[k]=0.72*union+0.18*(lr[k]+er[k])/2+0.10*complement;
+    });
+    return out;
+}
+
+function v50PortfolioSelect(scores){
+    /*
+      Joint selection:
+      - each tens digit contributes its best 5 exact pairs
+      - choose 3 tens jointly, not greedily by raw tens frequency
+      - the objective values the whole 15-pair portfolio
+    */
+    const perTens=[];
+    for(let t=0;t<10;t++){
+        const units=Array.from({length:10},(_,u)=>u)
+            .sort((a,b)=>scores[`${t}${b}`]-scores[`${t}${a}`]);
+        const best5=units.slice(0,5);
+        const vals=best5.map(u=>scores[`${t}${u}`]);
+        const mean=vals.reduce((a,b)=>a+b,0)/5;
+        const top=vals[0];
+        const floor=vals[4];
+
+        /* Tens quality = quality of the entire 5-pair block. */
+        const quality=0.58*mean+0.27*top+0.15*floor;
+        perTens.push({t,units:best5,quality,vals});
+    }
+
+    let best=null;
+
+    for(let a=0;a<8;a++){
+        for(let b=a+1;b<9;b++){
+            for(let c=b+1;c<10;c++){
+                const blocks=[perTens[a],perTens[b],perTens[c]];
+                const base=blocks.reduce((s,x)=>s+x.quality,0);
+
+                /* Mild diversity bonus: prefer portfolios whose
+                   weak fifth pairs are not all simultaneously weak. */
+                const floor=Math.min(...blocks.map(x=>x.vals[4]));
+                const spread=Math.max(...blocks.map(x=>x.quality))
+                            -Math.min(...blocks.map(x=>x.quality));
+
+                const objective=base+0.08*floor-0.015*spread;
+
+                if(!best || objective>best.objective){
+                    best={objective,blocks};
+                }
+            }
+        }
+    }
+
+    const blocks=[...best.blocks].sort((a,b)=>b.quality-a.quality);
+    return {
+        t1:String(blocks[0].t),
+        t2:String(blocks[1].t),
+        t3:String(blocks[2].t),
+        pairsT1:blocks[0].units.map(u=>`${blocks[0].t}${u}`),
+        pairsT2:blocks[1].units.map(u=>`${blocks[1].t}${u}`),
+        pairsT3:blocks[2].units.map(u=>`${blocks[2].t}${u}`),
+        jointScore:best.objective,
+        blockQuality:blocks.map(x=>({digit:x.t,score:x.quality}))
+    };
+}
+
+function v50Prediction(records,mode){
+    if(!records || !records.length){
+        return {
+            t1:'0',t2:'1',t3:'2',
+            pairsT1:['00','01','02','03','04'],
+            pairsT2:['10','11','12','13','14'],
+            pairsT3:['20','21','22','23','24'],
+            targetDate:'Next Date'
+        };
+    }
+
+    const scores=(mode==='allday')
+        ? v50AllDayEvidence(records)
+        : v50BlendEvidence(records,mode);
+
+    const p=v50PortfolioSelect(scores);
+
+    return {
+        ...p,
+        targetDate:getNextTargetDate(records[records.length-1].date),
+        pairRanker:'v5.0-joint-100-pair',
+        learnedProfile:{
+            engine:'v5.0 Joint 100-Pair Evidence',
+            objective:mode==='allday'
+                ? 'All-Day union coverage'
+                : `${mode} exact-pair walk-forward`,
+            windows:[15,30,60,90,'all'],
+            selection:'joint 3x5 portfolio',
+            leakageSafe:true
+        }
+    };
+}
+
+/* Override the old strategy label and prediction entry point. */
+function modelStrategyLabel(mode){
+    if(mode==='allday') return 'v5.0 Joint 100-Pair Evidence + 3x5 Portfolio + All-Day Union';
+    if(mode==='lunch') return 'v5.0 Lunch Context + 100-Pair Evidence + Joint 3x5';
+    return 'v5.0 Evening Context + 100-Pair Evidence + Joint 3x5';
+}
+
+function analyzePrecisionEngineInternal(records,mode){
+    return v50Prediction(records,mode);
+}
+
 /* ============================================================
    REAL HIT TEST
    ============================================================ */
@@ -3701,5 +4041,72 @@ function modelStrategyLabel(mode){
     if(mode==='allday') return 'v4.5 Meta Top Selector + v4.4 Conditional 5-of-10';
     return oldLabel(mode);
   };
+})();
+</script>
+<script>
+/* v4.6 challenger: short-horizon All-Day Top + conditional partner allocation.
+   Only historical data before the prediction point is used. */
+(function(){
+  const previousPrediction = window.analyzePrecisionEngineInternal;
+  function topRecent10(records){
+    const src=records.slice(-Math.min(10,records.length));
+    const c=Array(10).fill(0);
+    for(const x of src){
+      for(const v of [x.lunch,x.evening]){
+        if(typeof isValid2D==='function' && isValid2D(v)) c[+v[0]]++;
+      }
+    }
+    return Array.from({length:10},(_,d)=>({d,v:c[d]}))
+      .sort((a,b)=>b.v-a.v||a.d-b.d).slice(0,3).map(x=>String(x.d));
+  }
+  function rank10(a){
+    const ix=Array.from({length:10},(_,i)=>i).sort((x,y)=>(a[y]??0)-(a[x]??0)||x-y);
+    const r=Array(10).fill(0); ix.forEach((d,i)=>r[d]=1-i/9); return r;
+  }
+  function partnerRows(records,digit){
+    const WINDOWS=[null,20,45];
+    const WEIGHTS=[.20,.30,.50];
+    const sc=Array(10).fill(0);
+    WINDOWS.forEach((win,k)=>{
+      const src=win?records.slice(-Math.min(win,records.length)):records;
+      const c=Array(10).fill(0); let n=0;
+      for(const x of src){
+        for(const v of [x.lunch,x.evening]){
+          if(typeof isValid2D!=='function'||!isValid2D(v)) continue;
+          if(+v[0]===+digit){c[+v[1]]++;n++;}
+        }
+      }
+      const beta=c.map(v=>(v+1)/(n+10));
+      const rr=rank10(beta);
+      for(let u=0;u<10;u++) sc[u]+=WEIGHTS[k]*rr[u];
+    });
+    return Array.from({length:10},(_,u)=>({u,score:sc[u]})).sort((a,b)=>b.score-a.score||a.u-b.u);
+  }
+  function prediction(records,mode){
+    if(mode!=='allday') return previousPrediction(records,mode);
+    const old=previousPrediction(records,mode);
+    const td=topRecent10(records);
+    const used=new Set(), groups=[];
+    for(const d of td){
+      const g=[];
+      for(const r of partnerRows(records,d)){
+        const p=String(d)+String(r.u), rev=String(r.u)+String(d);
+        if(used.has(p)||used.has(rev)) continue;
+        g.push(p); used.add(p); if(g.length===5) break;
+      }
+      if(g.length<5){
+        for(let u=0;u<10&&g.length<5;u++){
+          const p=String(d)+String(u); if(used.has(p)) continue;
+          g.push(p); used.add(p);
+        }
+      }
+      groups.push(g.slice(0,5));
+    }
+    return {...old,t1:td[0],t2:td[1],t3:td[2],pairsT1:groups[0],pairsT2:groups[1],pairsT3:groups[2],pairs:groups.flat(),topThree:td,pairRanker:'v4.6 Recent-10 Top + Conditional 20/45/All Partner',learnedProfile:{top:'All-Day recent 10 observed days',partner:'20% all-history + 30% recent20 + 50% recent45',allocation:'reverse-aware 5-of-10'}};
+  }
+  window.analyzePrecisionEngineInternal=prediction;
+  window.modelStrategyLabel=function(mode){return mode==='allday'?'v4.6 Recent-10 Top + Conditional 5-of-10':'v4.4 Empirical Conditional 5-of-10';};
+  const oldAudit=window.runBacktestAudit;
+  window.runBacktestAudit=async function(records,mode,onProgress){const a=await oldAudit(records,mode,onProgress);if(a)a.strategy=mode==='allday'?'v4.6 Recent-10 Top + Conditional 5-of-10':'v4.4 Empirical Conditional 5-of-10';return a;};
 })();
 </script>
