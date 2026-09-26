@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myanmar 2D Luxury VIP Pro - Max Precision Engine v2.1</title>
+<title>Myanmar 2D Luxury VIP Pro - Max Precision Engine v2.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>body {
@@ -43,6 +43,19 @@
             font-size: 11px; transition: all 0.2s;
         }
         .btn-process { background-color: #1b5e20; color: white; }
+        .engine-status { margin-top: 14px; background: #faf8f5; padding: 13px 15px; border-radius: 15px; border: 1px solid #e7e0d0; display: none; }
+        .engine-status-title { font-size: 12px; font-weight: 700; color: #2c3e50; margin-bottom: 8px; }
+        .progress-track { width: 100%; height: 9px; background: #ece8df; border-radius: 999px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #1b5e20, #66bb6a); border-radius: 999px; transition: width .18s ease; }
+        .progress-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 6px; font-size: 9px; color: #777; }
+        .accuracy-summary { margin-top: 18px; background: #faf8f5; padding: 15px; border-radius: 15px; border: 1px solid #e7e0d0; }
+        .accuracy-summary-title { font-size: 13px; font-weight: 700; color: #2c3e50; margin-bottom: 10px; }
+        .accuracy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .accuracy-box { background: #fff; padding: 10px; border-radius: 10px; border: 1px solid #eae2d0; text-align: center; }
+        .accuracy-box-title { font-size: 9px; color: #7f8c8d; font-weight: 600; margin-bottom: 4px; }
+        .accuracy-box-value { font-size: 16px; font-weight: 700; color: #1b5e20; }
+        .accuracy-box-sub { margin-top: 3px; font-size: 8px; color: #888; line-height: 1.45; }
+        @media (max-width: 600px) { .accuracy-grid { grid-template-columns: 1fr; } }
         .btn-process:hover { background-color: #0d3811; }
         .btn-clear { background-color: #ffc107; color: #333; }
         .btn-reset { background-color: #c62828; color: white; }
@@ -135,6 +148,12 @@
         <button class="btn-clear" onclick="clearInput()">ล้างข้อมูล</button>
         <button class="btn-reset" onclick="resetAll()">รีเซ็ตทั้งหมด</button>
     </div>
+    <div class="engine-status" id="engineStatus">
+        <div class="engine-status-title" id="engineStatusTitle">กำลังเตรียมการประมวลผล...</div>
+        <div class="progress-track"><div class="progress-bar" id="engineProgressBar"></div></div>
+        <div class="progress-meta"><span id="engineProgressText">0%</span><span id="engineProgressDetail">รอเริ่ม</span></div>
+    </div>
+    <div class="accuracy-summary" id="accuracySummary" style="display:none;"></div>
     <div id="resultContainer" style="display: none;">
         <div class="card-wrapper" id="wrapLunch">
             <button class="btn-capture" onclick="captureCard('wrapLunch', 'Myanmar_2D_Lunch')">📷 แคปภาพ</button>
@@ -157,7 +176,7 @@
 
 
 /* ============================================================
-   MYANMAR 2D REAL STATISTICAL ENGINE v2.1 BIG UPGRADE
+   MYANMAR 2D REAL STATISTICAL ENGINE v2.2 ACCURACY + PROGRESS UPGRADE
    ============================================================
 
    DATA MODEL
@@ -196,6 +215,9 @@ function clearInput() {
 function resetAll() {
     document.getElementById('dataInput').value = '';
     document.getElementById('resultContainer').style.display = 'none';
+    document.getElementById('accuracySummary').style.display = 'none';
+    document.getElementById('engineStatus').style.display = 'none';
+    setEngineProgress(0, 'รอเริ่ม', 'พร้อมประมวลผล');
 }
 
 
@@ -1554,264 +1576,82 @@ function getWilson95(
 
    ============================================================ */
 
-function runBacktestAudit(
-    records,
-    mode
-) {
-
-    /*
-       ต้องมี history พอสมควร
-       เพื่อให้ long / medium / recent model
-       ทำงานได้
-    */
-
+async function runBacktestAudit(records, mode, onProgress) {
     const MIN_HISTORY = 60;
-
-
-    if (
-        records.length <=
-        MIN_HISTORY
-    ) {
-
-        return {
-
-            total: 0,
-
-            hits: 0,
-
-            misses: 0,
-
-            topHits: 0,
-
-            topMisses: 0,
-
-            pairHitAcc: null,
-
-            topHitAcc: null,
-
-            pairCI: null,
-
-            topCI: null,
-
-            maxWinStreak: 0,
-
-            maxLoseStreak: 0
-        };
+    const totalPossible = Math.max(0, records.length - MIN_HISTORY);
+    if (totalPossible <= 0) {
+        return { total: 0, hits: 0, misses: 0, topHits: 0, topMisses: 0, pairHitAcc: null, topHitAcc: null, pairCI: null, topCI: null, maxWinStreak: 0, maxLoseStreak: 0, baselinePair: mode === 'allday' ? 27.75 : 15, baselineTop: mode === 'allday' ? 75.99 : 51 };
     }
 
+    let total = 0, pairHits = 0, topHits = 0;
+    let currentWin = 0, currentLose = 0, maxWin = 0, maxLose = 0;
 
-    let total = 0;
+    for (let i = MIN_HISTORY; i < records.length; i++) {
+        const training = records.slice(0, i);
+        const prediction = analyzePrecisionEngineInternal(training, mode);
+        const actualRecord = records[i];
 
-    let pairHits = 0;
-
-    let topHits = 0;
-
-
-    let currentWin = 0;
-
-    let currentLose = 0;
-
-    let maxWin = 0;
-
-    let maxLose = 0;
-
-
-    /*
-       All Day:
-       1 วัน = 2 observations
-
-       Lunch + Evening
-    */
-
-
-    for (
-        let i = MIN_HISTORY;
-        i < records.length;
-        i++
-    ) {
-
-        const training =
-            records.slice(
-                0,
-                i
-            );
-
-
-        const prediction =
-            analyzePrecisionEngineInternal(
-                training,
-                mode
-            );
-
-
-        const actualRecord =
-            records[i];
-
-
-        let actuals = [];
-
-
-        if (mode === 'lunch') {
-
-            actuals = [
-                actualRecord.lunch
-            ];
-
-        }
-
-        else if (
-            mode === 'evening'
-        ) {
-
-            actuals = [
-                actualRecord.evening
-            ];
-
-        }
-
-        else {
-
-            actuals = [
-
-                actualRecord.lunch,
-
-                actualRecord.evening
-
-            ];
-        }
-
-
-        actuals.forEach(
-            actual => {
-
-                total++;
-
-
-                const isPair =
-                    pairHit(
-                        prediction,
-                        actual
-                    );
-
-
-                const isTop =
-                    topDigitHit(
-                        prediction,
-                        actual
-                    );
-
-
-                if (isPair) {
-
-                    pairHits++;
-
-                    currentWin++;
-
-                    currentLose = 0;
-
-                    maxWin =
-                        Math.max(
-                            maxWin,
-                            currentWin
-                        );
-
-                }
-
-                else {
-
-                    currentLose++;
-
-                    currentWin = 0;
-
-                    maxLose =
-                        Math.max(
-                            maxLose,
-                            currentLose
-                        );
-                }
-
-
-                if (isTop) {
-
-                    topHits++;
-                }
-
+        if (mode === 'allday') {
+            const actuals = [actualRecord.lunch, actualRecord.evening];
+            const isPair = actuals.some(a => pairHit(prediction, a));
+            const isTop = actuals.some(a => topDigitHit(prediction, a));
+            total++;
+            if (isPair) {
+                pairHits++; currentWin++; currentLose = 0; maxWin = Math.max(maxWin, currentWin);
+            } else {
+                currentLose++; currentWin = 0; maxLose = Math.max(maxLose, currentLose);
             }
-        );
+            if (isTop) topHits++;
+        } else {
+            const actual = mode === 'lunch' ? actualRecord.lunch : actualRecord.evening;
+            total++;
+            const isPair = pairHit(prediction, actual);
+            const isTop = topDigitHit(prediction, actual);
+            if (isPair) {
+                pairHits++; currentWin++; currentLose = 0; maxWin = Math.max(maxWin, currentWin);
+            } else {
+                currentLose++; currentWin = 0; maxLose = Math.max(maxLose, currentLose);
+            }
+            if (isTop) topHits++;
+        }
+
+        if (onProgress && ((i - MIN_HISTORY) % 3 === 0 || i === records.length - 1)) {
+            onProgress(((i - MIN_HISTORY + 1) / totalPossible) * 100);
+            await nextTick();
+        }
     }
 
-
-    const pairCI =
-        getWilson95(
-            pairHits,
-            total
-        );
-
-
-    const topCI =
-        getWilson95(
-            topHits,
-            total
-        );
-
-
+    const pairCI = getWilson95(pairHits, total);
+    const topCI = getWilson95(topHits, total);
     return {
-
-        total,
-
-        hits:
-            pairHits,
-
-        misses:
-            total -
-            pairHits,
-
-
-        topHits,
-
-        topMisses:
-            total -
-            topHits,
-
-
-        pairHitAcc:
-            pairCI.rate === null
-                ? null
-                : pairCI.rate.toFixed(2),
-
-
-        topHitAcc:
-            topCI.rate === null
-                ? null
-                : topCI.rate.toFixed(2),
-
-
-        pairCI: {
-
-            low:
-                pairCI.low.toFixed(2),
-
-            high:
-                pairCI.high.toFixed(2)
-        },
-
-
-        topCI: {
-
-            low:
-                topCI.low.toFixed(2),
-
-            high:
-                topCI.high.toFixed(2)
-        },
-
-
-        maxWinStreak:
-            maxWin,
-
-        maxLoseStreak:
-            maxLose
+        total, hits: pairHits, misses: total - pairHits, topHits, topMisses: total - topHits,
+        pairHitAcc: pairCI.rate === null ? null : pairCI.rate.toFixed(2),
+        topHitAcc: topCI.rate === null ? null : topCI.rate.toFixed(2),
+        pairCI: { low: pairCI.low.toFixed(2), high: pairCI.high.toFixed(2) },
+        topCI: { low: topCI.low.toFixed(2), high: topCI.high.toFixed(2) },
+        maxWinStreak: maxWin, maxLoseStreak: maxLose,
+        baselinePair: mode === 'allday' ? 27.75 : 15,
+        baselineTop: mode === 'allday' ? 75.99 : 51
     };
+}
+
+function fmtPct(v) { return v === null || v === undefined ? '—' : `${v}%`; }
+
+function generateAccuracySummaryHTML(records, lunch, evening, allDay) {
+    const usable = records.length;
+    const draws = usable * 2;
+    const tested = (lunch.total || 0) + (evening.total || 0);
+    const testedDays = allDay.total || 0;
+    return `
+        <div class="accuracy-summary-title">📈 สรุปความแม่นย้อนหลังของระบบ — แยกจากการ์ดผลลัพธ์</div>
+        <div class="accuracy-grid">
+            <div class="accuracy-box"><div class="accuracy-box-title">ข้อมูลที่นำมาประมวลผล</div><div class="accuracy-box-value">${usable} วัน</div><div class="accuracy-box-sub">${draws} รอบจริง (เที่ยง ${usable} + เย็น ${usable})</div></div>
+            <div class="accuracy-box"><div class="accuracy-box-title">Walk-forward ที่ทดสอบ</div><div class="accuracy-box-value">${testedDays} วัน</div><div class="accuracy-box-sub">อุ่นเครื่อง 60 วันก่อนเริ่มทดสอบ / เที่ยง+เย็นรวม ${tested} observations</div></div>
+            <div class="accuracy-box"><div class="accuracy-box-title">ความแม่น 15 คู่ — เที่ยง</div><div class="accuracy-box-value">${fmtPct(lunch.pairHitAcc)}</div><div class="accuracy-box-sub">${lunch.hits || 0} เข้า / ${lunch.misses || 0} หลุด จาก ${lunch.total || 0} รอบ</div></div>
+            <div class="accuracy-box"><div class="accuracy-box-title">ความแม่น 15 คู่ — เย็น</div><div class="accuracy-box-value">${fmtPct(evening.pairHitAcc)}</div><div class="accuracy-box-sub">${evening.hits || 0} เข้า / ${evening.misses || 0} หลุด จาก ${evening.total || 0} รอบ</div></div>
+            <div class="accuracy-box"><div class="accuracy-box-title">ความแม่น 15 คู่ — ทั้งวัน</div><div class="accuracy-box-value">${fmtPct(allDay.pairHitAcc)}</div><div class="accuracy-box-sub">1 วัน = เช็กว่าจับได้อย่างน้อย 1 จาก 2 รอบ (${allDay.hits || 0}/${allDay.total || 0} วัน)</div></div>
+            <div class="accuracy-box"><div class="accuracy-box-title">Top 3 Hit — ทั้งวัน</div><div class="accuracy-box-value">${fmtPct(allDay.topHitAcc)}</div><div class="accuracy-box-sub">อย่างน้อย 1 รอบของวันมีเลขอยู่ใน Top 3</div></div>
+        </div>`;
 }
 
 
@@ -2119,170 +1959,86 @@ function captureCard(
    MAIN
    ============================================================ */
 
-function processAllCards() {
+function setEngineProgress(percent, stage, detail) {
+    const box = document.getElementById('engineStatus');
+    const bar = document.getElementById('engineProgressBar');
+    const text = document.getElementById('engineProgressText');
+    const title = document.getElementById('engineStatusTitle');
+    const meta = document.getElementById('engineProgressDetail');
+    if (!box || !bar || !text || !title || !meta) return;
+    box.style.display = 'block';
+    const p = Math.max(0, Math.min(100, Number(percent) || 0));
+    bar.style.width = p.toFixed(0) + '%';
+    text.textContent = p.toFixed(0) + '%';
+    title.textContent = stage || '';
+    meta.textContent = detail || '';
+}
 
-    const rawText =
-        document
-            .getElementById(
-                'dataInput'
-            )
-            .value
-            .trim();
+function nextTick() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+}
 
+async function processAllCards() {
+    const button = document.querySelector('.btn-process');
+    try {
+    const rawText = document.getElementById('dataInput').value.trim();
+    if (!rawText) { alert('กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'); return; }
 
-    if (!rawText) {
+    if (button) { button.disabled = true; button.textContent = 'กำลังประมวลผล...'; }
+    document.getElementById('resultContainer').style.display = 'none';
+    document.getElementById('accuracySummary').style.display = 'none';
+    setEngineProgress(3, 'กำลังอ่านและตรวจสอบข้อมูล', 'ตรวจรูปแบบ 2D และวันที่');
+    await nextTick();
 
-        alert(
-            'กรุณากรอกข้อมูลสถิติก่อนทำการประมวลผล'
-        );
-
+    const records = parseRecords(rawText);
+    if (records.length === 0) {
+        if (button) { button.disabled = false; button.textContent = 'ประมวลผลและตรวจสถิติย้อนหลัง'; }
+        setEngineProgress(0, 'ไม่สามารถประมวลผล', 'ไม่พบข้อมูล 2D ที่ถูกต้อง');
+        alert('รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบรูปแบบสถิติ');
         return;
     }
 
+    const sourceDays = records.length;
+    const sourceRounds = sourceDays * 2;
+    setEngineProgress(12, 'กำลังสร้างชุดคาดการณ์ปัจจุบัน', `ข้อมูลที่ใช้ ${sourceDays} วัน / ${sourceRounds} รอบ`);
+    await nextTick();
 
-    const records =
-        parseRecords(rawText);
+    const lunchData = analyzePrecisionEngineInternal(records, 'lunch');
+    setEngineProgress(20, 'สร้างคาดการณ์รอบเที่ยงเสร็จ', 'กำลังคำนวณรอบเย็น');
+    await nextTick();
+    const eveningData = analyzePrecisionEngineInternal(records, 'evening');
+    setEngineProgress(28, 'สร้างคาดการณ์รอบเย็นเสร็จ', 'กำลังคำนวณชุดทั้งวัน');
+    await nextTick();
+    const allDayData = analyzePrecisionEngineInternal(records, 'allday');
+    setEngineProgress(35, 'คาดการณ์ปัจจุบันเสร็จ', 'เริ่ม Walk-forward backtest');
+    await nextTick();
 
+    const auditLunch = await runBacktestAudit(records, 'lunch', p => setEngineProgress(35 + p * 0.20, 'กำลังตรวจย้อนหลังรอบเที่ยง', `ทดสอบแล้ว ${p.toFixed(0)}%`));
+    const auditEvening = await runBacktestAudit(records, 'evening', p => setEngineProgress(55 + p * 0.20, 'กำลังตรวจย้อนหลังรอบเย็น', `ทดสอบแล้ว ${p.toFixed(0)}%`));
+    const auditAllDay = await runBacktestAudit(records, 'allday', p => setEngineProgress(75 + p * 0.20, 'กำลังตรวจย้อนหลังทั้งวัน', `ทดสอบแล้ว ${p.toFixed(0)}%`));
 
-    if (
-        records.length === 0
-    ) {
+    setEngineProgress(96, 'กำลังจัดทำรายงานสถิติ', 'คำนวณเปอร์เซ็นต์และจำนวนรอบ');
+    await nextTick();
 
-        alert(
-            'รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบรูปแบบสถิติ'
-        );
+    document.getElementById('cardLunch').innerHTML = generateCardHTML('Myanmar', 'နေ့လည် (12:01 PM)', lunchData);
+    document.getElementById('cardEvening').innerHTML = generateCardHTML('Myanmar', 'ညနေ (4:30 PM)', eveningData);
+    document.getElementById('cardAllDay').innerHTML = generateCardHTML('Myanmar', 'တစ်နေ့လုံး (All Day)', allDayData);
 
-        return;
+    document.getElementById('auditLunch').innerHTML = generateAuditTableHTML('รอบเที่ยง (Lunch)', auditLunch);
+    document.getElementById('auditEvening').innerHTML = generateAuditTableHTML('รอบเย็น (Evening)', auditEvening);
+    document.getElementById('auditAllDay').innerHTML = generateAuditTableHTML('ชุดทั้งวัน (All Day)', auditAllDay);
+
+    document.getElementById('accuracySummary').innerHTML = generateAccuracySummaryHTML(records, auditLunch, auditEvening, auditAllDay);
+    document.getElementById('accuracySummary').style.display = 'block';
+    document.getElementById('resultContainer').style.display = 'block';
+    setEngineProgress(100, 'ประมวลผลเสร็จสมบูรณ์', `ใช้ข้อมูล ${sourceDays} วัน / ${sourceRounds} รอบ`);
+    if (button) { button.disabled = false; button.textContent = 'ประมวลผลและตรวจสถิติย้อนหลัง'; }
+    } catch (err) {
+        console.error(err);
+        setEngineProgress(0, 'เกิดข้อผิดพลาดในการประมวลผล', 'ตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง');
+        alert('เกิดข้อผิดพลาดระหว่างประมวลผล กรุณาลองใหม่อีกครั้ง');
+        if (button) { button.disabled = false; button.textContent = 'ประมวลผลและตรวจสถิติย้อนหลัง'; }
     }
-
-
-    /*
-       =============================
-       CURRENT PREDICTION
-       =============================
-    */
-
-    const lunchData =
-        analyzePrecisionEngineInternal(
-            records,
-            'lunch'
-        );
-
-
-    const eveningData =
-        analyzePrecisionEngineInternal(
-            records,
-            'evening'
-        );
-
-
-    const allDayData =
-        analyzePrecisionEngineInternal(
-            records,
-            'allday'
-        );
-
-
-    /*
-       =============================
-       CARD
-       =============================
-    */
-
-    document.getElementById(
-        'cardLunch'
-    ).innerHTML =
-
-        generateCardHTML(
-            "Myanmar",
-            "နေ့လည် (12:01 PM)",
-            lunchData
-        );
-
-
-    document.getElementById(
-        'cardEvening'
-    ).innerHTML =
-
-        generateCardHTML(
-            "Myanmar",
-            "ညနေ (4:30 PM)",
-            eveningData
-        );
-
-
-    document.getElementById(
-        'cardAllDay'
-    ).innerHTML =
-
-        generateCardHTML(
-            "Myanmar",
-            "တစ်နေ့လုံး (All Day)",
-            allDayData
-        );
-
-
-    /*
-       =============================
-       REAL BACKTEST
-       =============================
-    */
-
-    const auditLunch =
-        runBacktestAudit(
-            records,
-            'lunch'
-        );
-
-
-    const auditEvening =
-        runBacktestAudit(
-            records,
-            'evening'
-        );
-
-
-    const auditAllDay =
-        runBacktestAudit(
-            records,
-            'allday'
-        );
-
-
-    document.getElementById(
-        'auditLunch'
-    ).innerHTML =
-
-        generateAuditTableHTML(
-            "รอบเที่ยง (Lunch)",
-            auditLunch
-        );
-
-
-    document.getElementById(
-        'auditEvening'
-    ).innerHTML =
-
-        generateAuditTableHTML(
-            "รอบเย็น (Evening)",
-            auditEvening
-        );
-
-
-    document.getElementById(
-        'auditAllDay'
-    ).innerHTML =
-
-        generateAuditTableHTML(
-            "ชุดทั้งวัน (All Day)",
-            auditAllDay
-        );
-
-
-    document.getElementById(
-        'resultContainer'
-    ).style.display =
-        'block';
 }
 
 
