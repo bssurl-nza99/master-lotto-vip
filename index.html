@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myanmar 2D Luxury VIP Pro - Max Precision Engine v2.2</title>
+<title>Myanmar 2D Luxury VIP Pro - Max Precision Engine v2.9 Deep Adaptive Stability Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>body {
@@ -84,6 +84,8 @@
         }
         .audit-table th { background: #f4eee1; color: #555; font-weight: 600; }
         .audit-table tr:last-child td { border-bottom: none; }
+        .audit-table td:first-child { text-align: left; }
+        .audit-table td:nth-child(2) { font-variant-numeric: tabular-nums; }
         .card-wrapper { position: relative; margin-top: 30px; }
         .btn-capture {
             position: absolute; top: -25px; right: 0; background: #1b5e20; color: #ffffff;
@@ -176,7 +178,7 @@
 
 
 /* ============================================================
-   MYANMAR 2D REAL STATISTICAL ENGINE v2.2 ACCURACY + PROGRESS UPGRADE
+   MYANMAR 2D REAL STATISTICAL ENGINE v2.7 DEEP ADAPTIVE + 50% PAIR ACCEPTANCE GATE
    ============================================================
 
    DATA MODEL
@@ -457,13 +459,24 @@ function parseRecords(rawText) {
         }
     });
 
+    const duplicateDates = [...dateCounts.entries()].filter(([,n]) => n > 1).length;
+    const duplicateRows = [...dateCounts.values()].filter(n => n > 1).reduce((a,n)=>a+n,0);
+
     const records = parsed.filter(r => {
         if (!r._dateObj) return true;
         const key = r._dateObj.toISOString().slice(0, 10);
         return dateCounts.get(key) === 1;
     });
 
-    return records.map(({_lineIndex, _dateObj, ...r}) => r);
+    const clean = records.map(({_lineIndex, _dateObj, ...r}) => r);
+    parseRecords.lastMeta = {
+        parsedRows: parsed.length,
+        uniqueDays: clean.length,
+        duplicateDates,
+        duplicateRows,
+        invalidOrIgnoredLines: lines.length - parsed.length
+    };
+    return clean;
 }
 
 
@@ -882,187 +895,91 @@ function getRecencyPairDistribution(values, decay = 0.965, alpha = 0.25) {
 function getPositionalPairDistribution(values, alpha = 0.5) {
     const tens = Array(10).fill(alpha);
     const units = Array(10).fill(alpha);
-
     values.forEach(v => {
         if (!isValid2D(v)) return;
         tens[Number(v[0])]++;
         units[Number(v[1])]++;
     });
-
     const tTotal = tens.reduce((a,b) => a+b, 0);
     const uTotal = units.reduce((a,b) => a+b, 0);
     const out = Array(100).fill(0);
-
     for (let p = 0; p < 100; p++) {
-        const t = Math.floor(p / 10);
-        const u = p % 10;
+        const t = Math.floor(p / 10), u = p % 10;
         out[p] = (tens[t] / tTotal) * (units[u] / uTotal);
     }
-
     const total = out.reduce((a,b) => a+b, 0);
     return out.map(x => x / total);
 }
 
-function getTransitionDistribution(records, mode) {
-    const counts = Array(100).fill(0.25);
-    if (records.length < 2) {
-        const total = counts.reduce((a,b) => a+b, 0);
-        return counts.map(x => x / total);
+/* ความสัมพันธ์ของ "คู่ก่อนหน้า -> คู่ถัดไป" โดยใช้เฉพาะประวัติ */
+function getPairTransitionDistribution(records, mode) {
+    const out = Array(100).fill(0.25);
+    if (records.length < 3) {
+        const total = out.reduce((a,b)=>a+b,0); return out.map(x=>x/total);
     }
-
-    const context = mode === 'lunch'
-        ? records[records.length - 1].evening
-        : records[records.length - 1].lunch;
-
+    let context;
+    if (mode === 'lunch') context = records[records.length - 1].evening;
+    else context = records[records.length - 1].lunch;
     if (!isValid2D(context)) {
-        const total = counts.reduce((a,b) => a+b, 0);
-        return counts.map(x => x / total);
+        const total = out.reduce((a,b)=>a+b,0); return out.map(x=>x/total);
     }
-
-    if (mode === 'lunch') {
-        for (let i = 1; i < records.length; i++) {
-            if (records[i - 1].evening === context && isValid2D(records[i].lunch)) {
-                counts[parseInt(records[i].lunch, 10)]++;
-            }
-        }
-    } else {
-        for (let i = 0; i < records.length; i++) {
-            if (records[i].lunch === context && isValid2D(records[i].evening)) {
-                counts[parseInt(records[i].evening, 10)]++;
-            }
-        }
+    for (let i = 1; i < records.length; i++) {
+        const prev = mode === 'lunch' ? records[i-1].evening : records[i].lunch;
+        const next = mode === 'lunch' ? records[i].lunch : records[i].evening;
+        if (prev === context && isValid2D(next)) out[parseInt(next,10)]++;
     }
+    const total = out.reduce((a,b)=>a+b,0);
+    return out.map(x=>x/total);
+}
 
-    const total = counts.reduce((a,b) => a+b, 0);
-    return counts.map(x => x / total);
+/* คู่กลับ/คู่สมมาตร เช่น 36 <-> 63 */
+function getReversePairDistribution(values, alpha = 0.25) {
+    const out = Array(100).fill(alpha);
+    values.forEach(v => {
+        if (!isValid2D(v)) return;
+        const rev = `${v[1]}${v[0]}`;
+        out[parseInt(rev,10)]++;
+    });
+    const total = out.reduce((a,b)=>a+b,0);
+    return out.map(x=>x/total);
 }
 
 function buildPairProbability(records, mode) {
-
-    /*
-       All Day:
-       สร้าง model ของ Lunch + Evening
-       แล้วเฉลี่ย
-    */
-
     if (mode === 'allday') {
-
-        const lunch =
-            buildPairProbability(
-                records,
-                'lunch'
-            );
-
-        const evening =
-            buildPairProbability(
-                records,
-                'evening'
-            );
-
-
-        return lunch.map(
-            (x, i) =>
-                (x + evening[i]) / 2
-        );
+        const lunch = buildPairProbability(records, 'lunch');
+        const evening = buildPairProbability(records, 'evening');
+        return lunch.map((x,i)=>(x+evening[i])/2);
     }
 
+    const allValues = getValues(records, mode);
+    const mediumValues = getValues(records, mode, 120);
+    const recentValues = getValues(records, mode, 30);
 
-    const allValues =
-        getValues(
-            records,
-            mode
-        );
+    const longDist = normalizedPairDistribution(allValues, 1);
+    const mediumDist = normalizedPairDistribution(mediumValues, 1);
+    const recentDist = normalizedPairDistribution(recentValues, 1);
+    const recencyDist = getRecencyPairDistribution(allValues, 0.965, 0.20);
+    const positionalDist = getPositionalPairDistribution(allValues, 0.5);
+    const contextDist = getContextDistribution(records, mode);
+    const contextDigitDist = getContextDigitDistribution(records, mode);
+    const transitionDist = getPairTransitionDistribution(records, mode);
+    const reverseDist = getReversePairDistribution(allValues, 0.20);
 
-
-    const mediumValues =
-        getValues(
-            records,
-            mode,
-            120
-        );
-
-
-    const recentValues =
-        getValues(
-            records,
-            mode,
-            30
-        );
-
-
-    const longDist =
-        normalizedPairDistribution(
-            allValues,
-            1
-        );
-
-
-    const mediumDist =
-        normalizedPairDistribution(
-            mediumValues,
-            1
-        );
-
-
-    const recentDist =
-        normalizedPairDistribution(
-            recentValues,
-            1
-        );
-
-
-    const contextDist =
-        getContextDistribution(
-            records,
-            mode
-        );
-
-
-    const contextDigitDist =
-        getContextDigitDistribution(
-            records,
-            mode
-        );
-
-
-    const result =
-        Array(100).fill(0);
-
-
-    for (
-        let p = 0;
-        p < 100;
-        p++
-    ) {
-
+    const result = Array(100).fill(0);
+    for (let p=0; p<100; p++) {
         result[p] =
-
-            longDist[p] * 0.25 +
-
-            mediumDist[p] * 0.25 +
-
-            recentDist[p] * 0.25 +
-
-            contextDist[p] * 0.15 +
-
-            contextDigitDist[p] * 0.10;
+            longDist[p]       * 0.16 +
+            mediumDist[p]     * 0.14 +
+            recentDist[p]     * 0.13 +
+            recencyDist[p]    * 0.12 +
+            positionalDist[p] * 0.10 +
+            contextDist[p]    * 0.10 +
+            contextDigitDist[p]*0.08 +
+            transitionDist[p] * 0.12 +
+            reverseDist[p]    * 0.05;
     }
-
-
-    /*
-       Normalize อีกครั้ง
-    */
-
-    const total =
-        result.reduce(
-            (a, b) => a + b,
-            0
-        );
-
-
-    return result.map(
-        x => x / total
-    );
+    const total = result.reduce((a,b)=>a+b,0);
+    return result.map(x=>x/total);
 }
 
 
@@ -1079,326 +996,631 @@ function buildPairProbability(records, mode) {
    ============================================================ */
 
 function getTopThreeDigits(pairProbability) {
+    // Top 3 ยังคงวัดจาก "ตัวเลข" ทั้งหลักสิบและหลักหน่วย
+    // เพื่อรักษานิยามเดิมของ Top 3 และให้ค่า backtest เปรียบเทียบกันได้
+    // แต่ตอนสร้างชุดเลขเจาะ เราจะบังคับให้ Top digit เป็นหลักสิบ
+    const digitProbability = Array(10).fill(0);
 
-    const digitProbability =
-        Array(10).fill(0);
+    for (let p = 0; p < 100; p++) {
+        const probability = pairProbability[p];
+        const tens = Math.floor(p / 10);
+        const units = p % 10;
 
-
-    for (
-        let p = 0;
-        p < 100;
-        p++
-    ) {
-
-        const probability =
-            pairProbability[p];
-
-
-        const tens =
-            Math.floor(p / 10);
-
-        const units =
-            p % 10;
-
-
-        digitProbability[tens] +=
-            probability;
-
-
-        /*
-           ถ้าเบิ้ล
-           อย่านับซ้ำ probability
-        */
-
-        if (units !== tens) {
-
-            digitProbability[units] +=
-                probability;
-        }
-
+        digitProbability[tens] += probability;
+        if (units !== tens) digitProbability[units] += probability;
     }
 
-
     return {
-
-        digits:
-            digitProbability
-                .map(
-                    (score, digit) => ({
-                        digit,
-                        score
-                    })
-                )
-                .sort(
-                    (a, b) => {
-
-                        if (
-                            b.score !==
-                            a.score
-                        ) {
-                            return (
-                                b.score -
-                                a.score
-                            );
-                        }
-
-                        return (
-                            a.digit -
-                            b.digit
-                        );
-                    }
-                )
-                .slice(0, 3)
-                .map(
-                    x =>
-                        String(x.digit)
-                ),
-
-        probabilities:
-            digitProbability
+        digits: digitProbability
+            .map((score, digit) => ({ digit, score }))
+            .sort((a, b) => b.score - a.score || a.digit - b.digit)
+            .slice(0, 3)
+            .map(x => String(x.digit)),
+        probabilities: digitProbability
     };
 }
 
 
 /* ============================================================
-   PAIR SELECTION
+   SMART PAIR SELECTION
    ============================================================
 
-   Top 1 = 5 pairs
-   Top 2 = 5 pairs
-   Top 3 = 5 pairs
+   เลือก 5 คู่ต่อเลขเด่น โดยเลขเด่นต้องอยู่ "หลักสิบ"
 
-   รวม 15 คู่
+   คะแนนของแต่ละคู่ยังมาจากข้อมูลจริงเท่านั้น:
+   - probability ของคู่จาก model หลัก
+   - ความแข็งแรงของหลักสิบ
+   - ความสัมพันธ์กับหลักหน่วย
+   - recency ของคู่
+   - ความสม่ำเสมอของคู่ในหลายช่วงเวลา
 
-   คู่ต้องมี Top digit อยู่ในหลักสิบหรือหลักหน่วย
+   ไม่มีการปรับเปอร์เซ็นต์ให้สวย และไม่มีการใช้ผลอนาคต
    ============================================================ */
 
-function getPairsForDigit(
-    digit,
-    pairProbability,
-    usedPairs
-) {
-
-    const d =
-        Number(digit);
-
-
-    const candidates = [];
-
-
-    for (
-        let p = 0;
-        p < 100;
-        p++
-    ) {
-
-        const tens =
-            Math.floor(p / 10);
-
-        const units =
-            p % 10;
-
-
-        if (
-            tens !== d &&
-            units !== d
-        ) {
-            continue;
-        }
-
-
-        const pair =
-            String(p).padStart(
-                2,
-                '0'
-            );
-
-
-        if (
-            usedPairs.has(pair)
-        ) {
-            continue;
-        }
-
-
-        candidates.push({
-
-            pair,
-
-            probability:
-                pairProbability[p]
-        });
-
+function v25TopThreeDigits(records, mode, pairProbability) {
+    if (mode !== 'lunch') return getTopThreeDigits(pairProbability);
+    const values=getValues(records,mode), medium=getValues(records,mode,60), recent=getValues(records,mode,20);
+    const freq=Array(10).fill(1), med=Array(10).fill(1), rec=Array(10).fill(1), tens=Array(10).fill(1), units=Array(10).fill(1);
+    const decay=Array(10).fill(0.5), contextPair=getContextDistribution(records,mode);
+    values.forEach((v,i)=>{if(!isValid2D(v))return; const a=Number(v[0]),b=Number(v[1]);freq[a]++;freq[b]++;tens[a]++;units[b]++;decay[a]+=Math.pow(.94,values.length-1-i);decay[b]+=Math.pow(.94,values.length-1-i);});
+    medium.forEach(v=>{if(!isValid2D(v))return;med[Number(v[0])]++;med[Number(v[1])]++;});
+    recent.forEach(v=>{if(!isValid2D(v))return;rec[Number(v[0])]++;rec[Number(v[1])]++;});
+    const norm=a=>{const z=a.reduce((x,y)=>x+y,0);return a.map(x=>x/z);};
+    const f=norm(freq),m=norm(med),r=norm(rec),d=norm(decay),t=norm(tens),u=norm(units);
+    const cd=Array(10).fill(0.1);
+    for(let p=0;p<100;p++){cd[Math.floor(p/10)]+=contextPair[p];cd[p%10]+=contextPair[p];}
+    const c=norm(cd), scores=Array(10).fill(0);
+    for(let digit=0;digit<10;digit++){
+        let marginal=0; for(let p=0;p<100;p++) if(Math.floor(p/10)===digit||p%10===digit)marginal+=pairProbability[p];
+        scores[digit]=.22*f[digit]+.14*m[digit]+.14*r[digit]+.16*d[digit]+.12*t[digit]+.10*u[digit]+.08*marginal+.04*c[digit];
     }
+    return {digits:scores.map((score,digit)=>({digit,score})).sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,3).map(x=>String(x.digit)),probabilities:scores};
+}
 
+/* ============================================================
+   v2.6 ADAPTIVE PAIR RANKING
+   ============================================================
 
-    candidates.sort(
-        (a, b) => {
+   หลักคิด:
+   1) Top 3 ยังหาได้จากทั้งหลักสิบ+หลักหน่วยตามเดิม
+   2) ตอนจัดคู่เท่านั้นที่บังคับ Top digit อยู่หลักสิบ
+   3) ไม่ใช้ ranker เดียวตลอดเวลา แต่ผสม 3 มุมมอง:
+      A = conditional partner
+      B = context / transition
+      C = robust global + lift
+   4) น้ำหนักของ A/B/C ถูกเรียนรู้จาก validation ย้อนหลังภายใน
+      training set เท่านั้น (ไม่มีผลอนาคต)
+   5) มี shrinkage กลับหา equal-weight เพื่อกัน overfit จาก sample น้อย
+   ============================================================ */
 
-            if (
-                b.probability !==
-                a.probability
-            ) {
-                return (
-                    b.probability -
-                    a.probability
-                );
-            }
+function v26Norm10(arr) {
+    const s = arr.reduce((a,b)=>a+b,0);
+    return s > 0 ? arr.map(x=>x/s) : arr.map(()=>0.1);
+}
 
-            return (
-                parseInt(a.pair) -
-                parseInt(b.pair)
-            );
-        }
-    );
+function v26PairRecency(values, decay=0.94) {
+    const out=Array(100).fill(0.2);
+    for(let i=0;i<values.length;i++){
+        const v=values[i];
+        if(!isValid2D(v)) continue;
+        out[parseInt(v,10)] += Math.pow(decay, values.length-1-i);
+    }
+    return v26Norm100(out);
+}
 
+function v26Norm100(arr) {
+    const s=arr.reduce((a,b)=>a+b,0);
+    return s > 0 ? arr.map(x=>x/s) : arr.map(()=>0.01);
+}
 
-    return candidates
-        .slice(0, 5)
-        .map(x => x.pair);
+function v26UnitFromPairDist(pairDist) {
+    const out=Array(10).fill(0.1);
+    for(let p=0;p<100;p++) out[p%10] += pairDist[p];
+    return v26Norm10(out);
+}
+
+function v26ConditionalUnit(records, mode, digit) {
+    const d=Number(digit);
+    const direct=Array(10).fill(1.5);
+    const recent=Array(10).fill(1.5);
+    const symmetric=Array(10).fill(1.5);
+    const values=getValues(records,mode);
+    const recentValues=values.slice(-30);
+    let n=0;
+    values.forEach(v=>{
+        if(!isValid2D(v)) return;
+        const a=Number(v[0]), b=Number(v[1]);
+        if(a===d){ direct[b]++; symmetric[b]++; n++; }
+        if(b===d){ symmetric[a]++; }
+    });
+    recentValues.forEach(v=>{
+        if(!isValid2D(v)) return;
+        if(Number(v[0])===d) recent[Number(v[1])]++;
+    });
+    return {direct:v26Norm10(direct),recent:v26Norm10(recent),symmetric:v26Norm10(symmetric),n};
+}
+
+function v26ContextUnit(records, mode) {
+    if(mode==='allday') return Array(10).fill(0.1);
+    const pair=getContextDistribution(records,mode);
+    return v26UnitFromPairDist(pair);
+}
+
+function v26TransitionUnit(records, mode) {
+    if(mode==='allday') return Array(10).fill(0.1);
+    const pair=getPairTransitionDistribution(records,mode);
+    return v26UnitFromPairDist(pair);
+}
+
+function v26PairFeatures(records, mode, digit, unit, pairProbability) {
+    const d=Number(digit), u=Number(unit), p=d*10+u;
+    const cond=v26ConditionalUnit(records,mode,d);
+    const recentPair=v26PairRecency(getValues(records,mode),0.94);
+    const contextPair = mode==='allday'
+        ? v26UnitFromPairDist(buildPairProbability(records,'allday'))
+        : v26ContextUnit(records,mode);
+    const transition = mode==='allday'
+        ? Array(10).fill(0.1)
+        : v26TransitionUnit(records,mode);
+    const unitMarg=v26Norm10(getValues(records,mode).reduce((a,v)=>{
+        if(isValid2D(v)) { a[Number(v[0])]++; a[Number(v[1])]++; }
+        return a;
+    },Array(10).fill(1)));
+    const pairP=pairProbability[p];
+    const lift=pairP/Math.max(unitMarg[u],1e-9);
+    const condStrength=Math.min(1,cond.n/12);
+
+    return {
+        // A: ความสัมพันธ์ Top digit -> unit โดยตรง
+        A: 0.58*cond.direct[u] + 0.22*cond.recent[u] + 0.20*cond.symmetric[u],
+        // B: context + transition เน้นสถานการณ์ปัจจุบัน
+        B: 0.50*contextPair[u] + 0.30*transition[u] + 0.20*cond.recent[u],
+        // C: robust global probability + lift + recency + conditional evidence
+        C: 0.42*pairP + 0.24*Math.min(lift/2,1) + 0.18*recentPair[p] + 0.16*cond.direct[u],
+        support:condStrength
+    };
+}
+
+function v26LegacyScore(records,mode,digit,unit,pairProbability) {
+    const d=Number(digit), u=Number(unit), p=d*10+u;
+    const cond=v26ConditionalUnit(records,mode,d);
+    const globalPair=pairProbability[p];
+    const values=getValues(records,mode);
+    const recentPair=v26PairRecency(values,0.94);
+    const unitMarg=v26Norm10(values.reduce((a,v)=>{if(isValid2D(v)){a[Number(v[0])]++;a[Number(v[1])]++;}return a;},Array(10).fill(1)));
+    const lift=Math.min(1, (globalPair/Math.max(unitMarg[u],1e-9))/2);
+    if(mode==='allday') return 0.62*cond.symmetric[u]+0.18*globalPair+0.20*recentPair[p];
+    return 0.46*(0.58*cond.direct[u]+0.22*cond.recent[u]+0.20*cond.symmetric[u])
+        +0.20*lift+0.16*globalPair+0.10*Math.min(1,cond.n/8)+0.08*recentPair[p];
+}
+
+function v26RankLegacy(records,mode,digit,pairProbability,usedPairs=new Set()) {
+    const c=[];
+    for(let u=0;u<10;u++){
+        const pair=`${Number(digit)}${u}`;
+        if(usedPairs.has(pair)) continue;
+        c.push({pair,score:v26LegacyScore(records,mode,digit,u,pairProbability)});
+    }
+    c.sort((a,b)=>b.score-a.score||Number(a.pair)-Number(b.pair));
+    return c.slice(0,5).map(x=>x.pair);
+}
+
+function v26LegacyPrediction(records,mode,precomputed=null) {
+    const pairProbability=precomputed?.pairProbability || buildPairProbability(records,mode);
+    const top=precomputed?.top || v25TopThreeDigits(records,mode,pairProbability);
+    const used=new Set();
+    const p1=v26RankLegacy(records,mode,top.digits[0],pairProbability,used);p1.forEach(x=>used.add(x));
+    const p2=v26RankLegacy(records,mode,top.digits[1],pairProbability,used);p2.forEach(x=>used.add(x));
+    const p3=v26RankLegacy(records,mode,top.digits[2],pairProbability,used);
+    return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:p1,pairsT2:p2,pairsT3:p3};
+}
+
+function v26ScorePair(records,mode,digit,unit,pairProbability,weights) {
+    const f=v26PairFeatures(records,mode,digit,unit,pairProbability);
+    // small support term prevents a tiny conditional sample from dominating
+    const base=weights[0]*f.A + weights[1]*f.B + weights[2]*f.C;
+    return base*(0.82+0.18*f.support);
+}
+
+function v26RankPairsForDigit(records,mode,digit,pairProbability,weights,usedPairs=new Set()) {
+    const rows=[];
+    for(let u=0;u<10;u++){
+        const pair=`${Number(digit)}${u}`;
+        if(usedPairs.has(pair)) continue;
+        const f=v26PairFeatures(records,mode,digit,u,pairProbability);
+        rows.push({pair,u,A:f.A,B:f.B,C:f.C,support:f.support});
+    }
+    // Rank-normalize each signal before blending: A/B/C มี scale ต่างกัน
+    // จึงไม่ควรนำ raw score มาบวกกันตรง ๆ
+    ['A','B','C'].forEach(k=>{
+        [...rows].sort((a,b)=>b[k]-a[k] || a.u-b.u).forEach((r,i)=>{ r[k+'Rank']=1-(i/Math.max(1,rows.length-1)); });
+    });
+    rows.forEach(r=>{
+        r.score=(weights[0]*r.ARank + weights[1]*r.BRank + weights[2]*r.CRank)*(0.86+0.14*r.support);
+    });
+    rows.sort((a,b)=>b.score-a.score||a.u-b.u);
+    return rows.slice(0,5).map(x=>x.pair);
+}
+
+function v26PredictionWithWeights(records,mode,weights,precomputed=null) {
+    const pairProbability=precomputed?.pairProbability || buildPairProbability(records,mode);
+    const top=precomputed?.top || v25TopThreeDigits(records,mode,pairProbability);
+    const used=new Set();
+    const p1=v26RankPairsForDigit(records,mode,top.digits[0],pairProbability,weights,used); p1.forEach(x=>used.add(x));
+    const p2=v26RankPairsForDigit(records,mode,top.digits[1],pairProbability,weights,used); p2.forEach(x=>used.add(x));
+    const p3=v26RankPairsForDigit(records,mode,top.digits[2],pairProbability,weights,used);
+    return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:p1,pairsT2:p2,pairsT3:p3,pairProbability,topDigitProbability:top.probabilities};
+}
+
+function v26ValidationHit(pred, actuals) {
+    return actuals.some(a=>isValid2D(a) && getAllPredictionPairs(pred).includes(a));
+}
+
+function v26AdaptiveWeights(records,mode) {
+    // fixed candidates, learned only from prior observations
+    const candidates=[
+        [0.55,0.25,0.20], // conditional-heavy
+        [0.25,0.50,0.25], // context-heavy
+        [0.30,0.25,0.45]  // robust/global-heavy
+    ];
+    if(records.length<34) return {weights:[1/3,1/3,1/3], useLegacy:false};
+    const start=Math.max(22,records.length-12);
+    const hits=[0,0,0], legacyHits=[0];
+    const n=records.length-start;
+    for(let i=start;i<records.length;i++){
+        const prefix=records.slice(0,i);
+        const actualRecord=records[i];
+        const actuals=mode==='allday'
+            ? [actualRecord.lunch,actualRecord.evening]
+            : [mode==='lunch'?actualRecord.lunch:actualRecord.evening];
+        // คำนวณ pair probability/top เพียงครั้งเดียว แล้วใช้ร่วมกับ 3 candidate weights
+        const pairProbability=buildPairProbability(prefix,mode);
+        const top=v25TopThreeDigits(prefix,mode,pairProbability);
+        candidates.forEach((w,k)=>{
+            const pred=v26PredictionWithWeights(prefix,mode,w,{pairProbability,top});
+            if(v26ValidationHit(pred,actuals)) hits[k]++;
+        });
+        const legacy=v26LegacyPrediction(prefix,mode,{pairProbability,top});
+        if(v26ValidationHit(legacy,actuals)) legacyHits[0]++;
+    }
+    // Bayesian shrinkage: validation signal + 2 pseudo-hits / 8 pseudo-trials
+    const raw=hits.map(h=>(h+2)/(n+8));
+    const s=raw.reduce((a,b)=>a+b,0);
+    const weights=raw.map(x=>x/s);
+    const legacyRate=(legacyHits[0]+2)/(n+8);
+    const blendRate=hits.reduce((a,h)=>a+h,0)/Math.max(1,n*3);
+    return {weights,useLegacy:legacyRate > blendRate + 0.04};
 }
 
 
 /* ============================================================
-   MAIN PREDICTION
+   v2.7 DEEP ADAPTIVE ENGINE
+   ------------------------------------------------------------
+   เป้าหมาย:
+   - Top 3 = หาได้จากทั้งหลักสิบ + หลักหน่วย + context
+   - การจัดวาง = Top digit อยู่หลักสิบเสมอ
+   - เลขเจาะ = 5 คู่ต่อ Top digit รวม 15 คู่
+   - ใช้หลาย expert แล้วเรียนรู้น้ำหนักจากอดีตเท่านั้น
+   - ไม่รับประกัน 50%; ถ้า OOS ไม่ถึง 50% ต้องแสดงตามจริง
    ============================================================ */
 
-function analyzePrecisionEngineInternal(
-    records,
-    mode
-) {
-
-    if (
-        !records ||
-        records.length === 0
-    ) {
-
-        return {
-
-            t1: '0',
-            t2: '1',
-            t3: '2',
-
-            pairsT1: [],
-            pairsT2: [],
-            pairsT3: [],
-
-            targetDate:
-                "Next Date"
-        };
+function v27Normalize(arr){
+    const s=arr.reduce((a,b)=>a+b,0);
+    return s>0 ? arr.map(x=>x/s) : arr.map(()=>1/arr.length);
+}
+function v27Rank10(arr){
+    const out=Array(arr.length);
+    [...arr].map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i).forEach((x,k)=>out[x.i]=1-k/Math.max(1,arr.length-1));
+    return out;
+}
+function v27RankUnits(scores){
+    const rows=scores.map((v,u)=>({u,v}));
+    rows.sort((a,b)=>b.v-a.v||a.u-b.u);
+    const rank=Array(10).fill(0);
+    rows.forEach((r,i)=>rank[r.u]=1-i/9);
+    return rank;
+}
+function v27PairRecency(values,decay=.94){
+    const a=Array(100).fill(.35);
+    for(let i=0;i<values.length;i++) if(isValid2D(values[i])) a[parseInt(values[i],10)]+=Math.pow(decay,values.length-1-i);
+    return v27Normalize(a);
+}
+function v27DigitRecency(values,decay=.94){
+    const a=Array(10).fill(.5);
+    for(let i=0;i<values.length;i++) if(isValid2D(values[i])){
+        const w=Math.pow(decay,values.length-1-i); a[Number(values[i][0])]+=w; a[Number(values[i][1])]+=w;
     }
-
-
-    const pairProbability =
-        buildPairProbability(
-            records,
-            mode
-        );
-
-
-    const top =
-        getTopThreeDigits(
-            pairProbability
-        );
-
-
-    const topDigits =
-        top.digits;
-
-
-    const usedPairs =
-        new Set();
-
-
-    const pairsT1 =
-        getPairsForDigit(
-            topDigits[0],
-            pairProbability,
-            usedPairs
-        );
-
-
-    pairsT1.forEach(
-        p => usedPairs.add(p)
+    return v27Normalize(a);
+}
+function v27UnitConditional(values,digit,limit=null){
+    const source=limit?values.slice(-limit):values;
+    const c=Array(10).fill(1.2), recent=Array(10).fill(.8), n={n:0};
+    source.forEach(v=>{
+        if(!isValid2D(v)) return;
+        if(Number(v[0])===Number(digit)){ c[Number(v[1])]++; n.n++; }
+    });
+    const recentSource=values.slice(-Math.min(20,values.length));
+    recentSource.forEach(v=>{ if(isValid2D(v)&&Number(v[0])===Number(digit)) recent[Number(v[1])]++; });
+    return {all:v27Normalize(c),recent:v27Normalize(recent),n:n.n};
+}
+function v27ContextUnitSimilarity(records,mode,digit){
+    if(mode==='allday') return Array(10).fill(.1);
+    const current=records[records.length-1];
+    const context=mode==='lunch'?current?.evening:current?.lunch;
+    if(!isValid2D(context)) return Array(10).fill(.1);
+    const ct=[Number(context[0]),Number(context[1])];
+    const score=Array(10).fill(1.0);
+    let denom=10;
+    for(let i=1;i<records.length;i++){
+        const src=mode==='lunch'?records[i-1].evening:records[i-1].lunch;
+        const tgt=mode==='lunch'?records[i].lunch:records[i].evening;
+        if(!isValid2D(src)||!isValid2D(tgt)) continue;
+        const sd=[Number(src[0]),Number(src[1])];
+        let w=0;
+        if(src===context) w=1.0;
+        else if(sd[0]===ct[0]&&sd[1]===ct[1]) w=1.0;
+        else if(sd[0]===ct[0]&&sd[1]!==ct[1]) w=.52;
+        else if(sd[1]===ct[1]&&sd[0]!==ct[0]) w=.52;
+        else if(sd.includes(ct[0])||sd.includes(ct[1])) w=.30;
+        if(w>0){ score[Number(tgt[1])] += w; denom += w; }
+    }
+    return v27Normalize(score);
+}
+function v27TransitionUnitSimilarity(records,mode,digit){
+    if(mode==='allday') return Array(10).fill(.1);
+    const current=records[records.length-1];
+    const context=mode==='lunch'?current?.evening:current?.lunch;
+    if(!isValid2D(context)) return Array(10).fill(.1);
+    const ct=[Number(context[0]),Number(context[1])];
+    const score=Array(10).fill(1.0);
+    for(let i=1;i<records.length;i++){
+        const src=mode==='lunch'?records[i-1].evening:records[i-1].lunch;
+        const tgt=mode==='lunch'?records[i].lunch:records[i].evening;
+        if(!isValid2D(src)||!isValid2D(tgt)) continue;
+        const sd=[Number(src[0]),Number(src[1])];
+        let w=0;
+        if(sd[0]===ct[0]&&sd[1]===ct[1]) w=1;
+        else if(sd[0]===ct[0]) w=.42;
+        else if(sd[1]===ct[1]) w=.42;
+        else if(sd.includes(ct[0])||sd.includes(ct[1])) w=.20;
+        if(w>0) score[Number(tgt[1])]+=w;
+    }
+    return v27Normalize(score);
+}
+function v27StabilityUnit(values,digit){
+    const windows=[values,values.slice(-60),values.slice(-30)];
+    const ranks=windows.map(win=>{
+        const c=Array(10).fill(1);
+        win.forEach(v=>{if(isValid2D(v)&&Number(v[0])===Number(digit))c[Number(v[1])]++;});
+        return v27RankUnits(c);
+    });
+    return Array(10).fill(0).map((_,u)=>.4*ranks[0][u]+.35*ranks[1][u]+.25*ranks[2][u]);
+}
+function v27FeatureBundle(records,mode,digit,pairProbability){
+    const values=getValues(records,mode);
+    const cond=v27UnitConditional(values,digit);
+    const recentCond=v27UnitConditional(values,digit,30);
+    const ctx=v27ContextUnitSimilarity(records,mode,digit);
+    const trans=v27TransitionUnitSimilarity(records,mode,digit);
+    const recPair=v27PairRecency(values,.94);
+    const unitGlobal=Array(10).fill(.5);
+    values.forEach(v=>{if(isValid2D(v))unitGlobal[Number(v[1])]++;});
+    const global=v27Normalize(unitGlobal);
+    const stability=v27StabilityUnit(values,digit);
+    return {cond,recentCond,ctx,trans,recPair,global,stability,pairProbability,digit:Number(digit)};
+}
+function v27ExpertUnitsFromBundle(bundle,expert){
+    const {cond,recentCond,ctx,trans,recPair,global,stability,pairProbability,digit}=bundle;
+    const scores=Array(10).fill(0);
+    for(let u=0;u<10;u++){
+        const p=digit*10+u;
+        if(expert==='conditional') scores[u]=.62*cond.all[u]+.24*recentCond.recent[u]+.14*stability[u];
+        else if(expert==='context') scores[u]=.62*ctx[u]+.23*trans[u]+.15*recentCond.recent[u];
+        else if(expert==='global') scores[u]=.42*pairProbability[p]+.28*recPair[p]+.18*global[u]+.12*stability[u];
+        else if(expert==='stable') scores[u]=.45*stability[u]+.30*cond.all[u]+.15*global[u]+.10*recPair[p];
+        else if(expert==='hybrid') scores[u]=.30*cond.all[u]+.22*ctx[u]+.18*trans[u]+.15*pairProbability[p]+.10*recPair[p]+.05*stability[u];
+        else if(expert==='recent') scores[u]=.55*recentCond.recent[u]+.20*recPair[p]+.15*ctx[u]+.10*pairProbability[p];
+        else if(expert==='reverse'){
+            const rev=u*10+digit;
+            scores[u]=.45*pairProbability[rev]+.25*recPair[rev]+.20*cond.all[u]+.10*stability[u];
+        }
+        else scores[u]=.5*cond.all[u]+.3*ctx[u]+.2*pairProbability[p];
+    }
+    return scores;
+}
+function v27ExpertUnits(records,mode,digit,expert,pairProbability){
+    return v27ExpertUnitsFromBundle(v27FeatureBundle(records,mode,digit,pairProbability),expert);
+}
+function v27BuildPredictionWithExpert(records,mode,expert,pre=null,bundles=null){
+    const pp=pre?.pairProbability||buildPairProbability(records,mode);
+    const top=pre?.top||v27TopThree(records,mode,pp);
+    const groups=[];
+    for(const d of top.digits){
+        const bundle=bundles?.[d]||v27FeatureBundle(records,mode,d,pp);
+        const s=v27ExpertUnitsFromBundle(bundle,expert);
+        const rank=v27RankUnits(s);
+        const units=rank.map((r,u)=>({u,r})).sort((a,b)=>b.r-a.r||a.u-b.u).slice(0,5).map(x=>String(d)+x.u);
+        groups.push(units);
+    }
+    return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:groups[0],pairsT2:groups[1],pairsT3:groups[2]};
+}
+function v29TopThree(records,mode,pairProbability){
+    // Top 3 ยังวิเคราะห์จากทั้งหลักสิบและหลักหน่วยได้เต็มที่
+    // แต่เพิ่ม "pairability" เป็นตัวกรองเล็กน้อย เพื่อไม่เลือก digit ที่เด่นแต่แตกเป็น 5 คู่แล้วอ่อน
+    const base=v25TopThreeDigits(records,mode,pairProbability);
+    const values=getValues(records,mode);
+    const recent=values.slice(-30);
+    const marginal=Array(10).fill(0.5);
+    const pairable=Array(10).fill(0);
+    for(let p=0;p<100;p++){
+        const a=Math.floor(p/10),b=p%10;
+        marginal[a]+=pairProbability[p]; marginal[b]+=pairProbability[p];
+    }
+    for(let d=0;d<10;d++){
+        const units=[];
+        for(let u=0;u<10;u++) units.push(pairProbability[d*10+u]);
+        units.sort((a,b)=>b-a);
+        pairable[d]=units.slice(0,5).reduce((a,b)=>a+b,0);
+    }
+    const nm=v29Norm10(marginal), np=v29Norm10(pairable);
+    const baseScore=Array(10).fill(0);
+    base.digits.forEach((d,i)=>{baseScore[Number(d)]=1-(i*.10);});
+    const scores=Array(10).fill(0).map((_,d)=>
+        .58*nm[d] + .22*np[d] + .12*baseScore[d] + .08*v29RecentDigitSupport(values,recent,d)
     );
+    return {digits:scores.map((score,digit)=>({digit,score})).sort((a,b)=>b.score-a.score||a.digit-b.digit).slice(0,3).map(x=>String(x.digit)),probabilities:scores};
+}
+function v29Norm10(a){const s=a.reduce((x,y)=>x+y,0);return s>0?a.map(x=>x/s):a.map(()=>.1);}
+function v29RecentDigitSupport(values,recent,d){
+    let all=0,rec=0;
+    values.forEach(v=>{if(!isValid2D(v))return; if(Number(v[0])===d||Number(v[1])===d)all++;});
+    recent.forEach(v=>{if(!isValid2D(v))return; if(Number(v[0])===d||Number(v[1])===d)rec++;});
+    const ar=(all+2)/(values.length*2+20), rr=(rec+2)/(recent.length*2+20);
+    return Math.min(1,rr/(ar+1e-9));
+}
+function v27TopThree(records,mode,pairProbability){ return v29TopThree(records,mode,pairProbability); }
 
-
-    const pairsT2 =
-        getPairsForDigit(
-            topDigits[1],
-            pairProbability,
-            usedPairs
-        );
-
-
-    pairsT2.forEach(
-        p => usedPairs.add(p)
-    );
-
-
-    const pairsT3 =
-        getPairsForDigit(
-            topDigits[2],
-            pairProbability,
-            usedPairs
-        );
-
-
-    pairsT3.forEach(
-        p => usedPairs.add(p)
-    );
-
-
-    /*
-       กันกรณี pair ไม่ครบ
-    */
-
-    const allPairs =
-        [
-            ...pairsT1,
-            ...pairsT2,
-            ...pairsT3
-        ];
-
-
-    return {
-
-        t1:
-            topDigits[0],
-
-        t2:
-            topDigits[1],
-
-        t3:
-            topDigits[2],
-
-
-        pairsT1,
-
-        pairsT2,
-
-        pairsT3,
-
-
-        targetDate:
-            getNextTargetDate(
-                records[
-                    records.length - 1
-                ].date
-            ),
-
-
-        /*
-           เก็บไว้ใช้ Audit
-        */
-
-        pairProbability,
-
-        topDigitProbability:
-            top.probabilities
-    };
+function v27AdaptiveExperts(records,mode,pre){
+    const experts=['conditional','context','global','stable','hybrid','recent','reverse'];
+    if(records.length<42) return {experts,weights:experts.map(()=>1/experts.length),hits:Array(7).fill(0),n:0};
+    // ใช้หลายช่วง validation แบบ blocked เพื่อให้ weight ไม่ถูกครอบงำโดยช่วงสั้นช่วงเดียว
+    const windows=[Math.min(12,records.length-30),Math.min(18,records.length-30),Math.min(24,records.length-30)];
+    const hits=experts.map(()=>0), totalW=experts.map(()=>0);
+    let n=0;
+    for(let wi=0;wi<windows.length;wi++){
+        const hold=windows[wi];
+        const start=Math.max(30,records.length-hold);
+        const blockWeight=wi===0?0.35:wi===1?0.35:0.30;
+        for(let i=start;i<records.length;i++){
+            const prefix=records.slice(0,i);
+            const pp=buildPairProbability(prefix,mode);
+            const top=v27TopThree(prefix,mode,pp);
+            const bundles={}; top.digits.forEach(d=>bundles[d]=v27FeatureBundle(prefix,mode,d,pp));
+            const actuals=mode==='allday'?[records[i].lunch,records[i].evening]:[mode==='lunch'?records[i].lunch:records[i].evening];
+            experts.forEach((e,k)=>{
+                const pr=v27BuildPredictionWithExpert(prefix,mode,e,{pairProbability:pp,top},bundles);
+                if(actuals.some(a=>isValid2D(a)&&getAllPredictionPairs(pr).includes(a))) hits[k]+=blockWeight;
+                totalW[k]+=blockWeight;
+            });
+            n+=blockWeight;
+        }
+    }
+    const rates=experts.map((_,k)=> (hits[k]+2)/(totalW[k]+8));
+    const mean=rates.reduce((a,b)=>a+b,0)/rates.length;
+    // shrink toward equal weights to reduce overfit; stronger only when evidence is weak
+    const strength=Math.min(0.72,Math.max(0.25,(n-10)/(n+25)));
+    const raw=rates.map(x=>Math.pow(Math.max(x,1e-6)/Math.max(mean,1e-6),1.15));
+    const sum=raw.reduce((a,b)=>a+b,0);
+    const learned=raw.map(x=>x/sum);
+    const uniform=experts.map(()=>1/experts.length);
+    const weights=learned.map((x,k)=>strength*x+(1-strength)*uniform[k]);
+    return {experts,weights,hits,n,rates};
+}
+function v27FinalPrediction(records,mode){
+    const pp=buildPairProbability(records,mode);
+    const top=v29TopThree(records,mode,pp);
+    const meta=v27AdaptiveExperts(records,mode,{pairProbability:pp,top});
+    const bundles={};
+    top.digits.forEach(d=>bundles[d]=v27FeatureBundle(records,mode,d,pp));
+    const groups=[];
+    for(const d of top.digits){
+        const rows=Array(10).fill(0).map((_,u)=>({u,score:0}));
+        meta.experts.forEach((e,k)=>{
+            const s=v27ExpertUnitsFromBundle(bundles[d],e), r=v27RankUnits(s);
+            rows.forEach(x=>x.score+=meta.weights[k]*r[x.u]);
+        });
+        rows.sort((a,b)=>b.score-a.score||a.u-b.u);
+        groups.push(rows.slice(0,5).map(x=>String(d)+x.u));
+    }
+    return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:groups[0],pairsT2:groups[1],pairsT3:groups[2],pairProbability:pp,topDigitProbability:top.probabilities,expertWeights:meta.weights,expertHits:meta.hits,expertN:meta.n};
 }
 
+
+/* ============================================================
+   v3.0 DEEP CONSENSUS LAYER
+   - Top 3: adaptive digit experts, learned only from past data
+   - 15 pairs: stability-consensus + conditional/context evidence
+   - No target-day information is used during scoring
+   ============================================================ */
+function v30DigitExpertScores(records,mode){
+    const vals=getValues(records,mode);
+    const n=vals.length;
+    const make=(kind)=>{
+        const a=Array(10).fill(1);
+        if(kind==='freq') vals.forEach(v=>{if(isValid2D(v)){a[+v[0]]++;a[+v[1]]++;}});
+        if(kind==='recent') vals.slice(-30).forEach(v=>{if(isValid2D(v)){a[+v[0]]+=1.35;a[+v[1]]+=1.35;}});
+        if(kind==='recency') vals.forEach((v,i)=>{if(isValid2D(v)){const w=Math.pow(.95,n-1-i);a[+v[0]]+=w;a[+v[1]]+=w;}});
+        if(kind==='tens') vals.forEach(v=>{if(isValid2D(v))a[+v[0]]+=1.8;});
+        if(kind==='units') vals.forEach(v=>{if(isValid2D(v))a[+v[1]]+=1.8;});
+        if(kind==='pairMarginal'){
+            const pp=buildPairProbability(records,mode);
+            for(let p=0;p<100;p++){a[Math.floor(p/10)]+=pp[p]*4;a[p%10]+=pp[p]*4;}
+        }
+        if(kind==='context'){
+            if(mode!=='allday' && n>2){
+                const cur=vals[n-1];
+                for(let i=1;i<records.length;i++){
+                    const src=mode==='lunch'?records[i-1].evening:records[i].lunch;
+                    const tgt=mode==='lunch'?records[i].lunch:records[i].evening;
+                    if(isValid2D(src)&&isValid2D(tgt)&&isValid2D(cur)){
+                        const exact=src===cur, overlap=src[0]===cur[0]||src[1]===cur[1];
+                        const w=exact?1:overlap?.32:0;
+                        if(w){a[+tgt[0]]+=w;a[+tgt[1]]+=w;}
+                    }
+                }
+            }
+        }
+        return v27Normalize(a);
+    };
+    return ['freq','recent','recency','tens','units','pairMarginal','context'].map(make);
+}
+function v30TopDigits(records,mode){
+    const ex=v30DigitExpertScores(records,mode);
+    const weights=Array(ex.length).fill(1/ex.length);
+    if(records.length<50) return {digits:v30BlendTop(ex,weights),weights};
+    const blocks=[12,18,24];
+    const hits=Array(ex.length).fill(0), den=Array(ex.length).fill(0);
+    blocks.forEach((hold,bi)=>{
+        const start=Math.max(30,records.length-hold), bw=bi===0?.30:bi===1?.35:.35;
+        for(let i=start;i<records.length;i++){
+            const prefix=records.slice(0,i), a=v30DigitExpertScores(prefix,mode);
+            const actuals=mode==='allday'?[records[i].lunch,records[i].evening]:[mode==='lunch'?records[i].lunch:records[i].evening];
+            a.forEach((score,k)=>{
+                const top=score.map((v,d)=>({v,d})).sort((x,y)=>y.v-x.v||x.d-y.d).slice(0,3).map(x=>x.d);
+                if(actuals.some(v=>isValid2D(v)&&top.some(d=>d===+v[0]||d===+v[1]))) hits[k]+=bw;
+                den[k]+=bw;
+            });
+        }
+    });
+    const rates=hits.map((h,k)=>(h+2)/(den[k]+8));
+    const mean=rates.reduce((a,b)=>a+b,0)/rates.length;
+    const raw=rates.map(r=>Math.pow(Math.max(r,1e-6)/Math.max(mean,1e-6),1.05));
+    const sum=raw.reduce((a,b)=>a+b,0);
+    const learned=raw.map(x=>x/sum), shrink=Math.min(.65,Math.max(.25,(records.length-40)/(records.length+20)));
+    const w=learned.map((x,k)=>shrink*x+(1-shrink)/learned.length);
+    return {digits:v30BlendTop(ex,w),weights:w,rates};
+}
+function v30BlendTop(ex,w){
+    const score=Array(10).fill(0);
+    ex.forEach((a,k)=>a.forEach((v,d)=>score[d]+=w[k]*v));
+    return score.map((v,d)=>({v,d})).sort((a,b)=>b.v-a.v||a.d-b.d).slice(0,3).map(x=>String(x.d));
+}
+function v30PairConsensus(records,mode,digit,pp){
+    const vals=getValues(records,mode), windows=[vals,vals.slice(-60),vals.slice(-30)];
+    const scores=Array(10).fill(0);
+    for(let u=0;u<10;u++){
+        const p=digit*10+u;
+        const ranks=[];
+        windows.forEach(win=>{
+            const c=Array(10).fill(1);
+            win.forEach(v=>{if(isValid2D(v)&&+v[0]===+digit)c[+v[1]]++;});
+            ranks.push(v27RankUnits(c)[u]);
+        });
+        const cond=v27UnitConditional(vals,digit);
+        const ctx=v27ContextUnitSimilarity(records,mode,digit)[u];
+        const trans=v27TransitionUnitSimilarity(records,mode,digit)[u];
+        const global=pp[p], rec=v27PairRecency(vals,.96)[p];
+        scores[u]=.28*(.45*ranks[0]+.35*ranks[1]+.20*ranks[2])+.22*v27RankUnits(cond.all)[u]+.16*ctx+.10*trans+.14*v27Rank10(pp)[p]+.10*global+.08*rec;
+    }
+    return scores;
+}
+function v30FinalPrediction(records,mode){
+    const pp=buildPairProbability(records,mode), top=v30TopDigits(records,mode);
+    const groups=top.digits.map(d=>{
+        const s=v30PairConsensus(records,mode,+d,pp);
+        return s.map((v,u)=>({u,v})).sort((a,b)=>b.v-a.v||a.u-b.u).slice(0,5).map(x=>String(d)+x.u);
+    });
+    return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:groups[0],pairsT2:groups[1],pairsT3:groups[2],pairProbability:pp,topDigitProbability:top,engine:'v3.0-deep-consensus'};
+}
+
+/* v2.9: multi-block OOS expert weighting + pairability-aware Top3 + conservative shrinkage */
+function analyzePrecisionEngineInternal(records, mode) {
+    if(!records || records.length===0){
+        return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date',pairRanker:'v3.0-deep-consensus'};
+    }
+    const pred=v30FinalPrediction(records,mode);
+    return {...pred,pairRanker:'v3.0-deep-consensus',targetDate:getNextTargetDate(records[records.length-1].date)};
+}
 
 /* ============================================================
    REAL HIT TEST
@@ -1576,44 +1798,117 @@ function getWilson95(
 
    ============================================================ */
 
+function getPairRank(prediction, actual) {
+    const pairs = getAllPredictionPairs(prediction);
+    const idx = pairs.indexOf(actual);
+    return idx >= 0 ? idx + 1 : null;
+}
+
+function getBestTopRank(prediction, actual) {
+    if (!isValid2D(actual)) return null;
+    const ds = getDigits(actual).map(String);
+    const top = [prediction.t1, prediction.t2, prediction.t3];
+    const ranks = ds.map(d => top.indexOf(d)).filter(x => x >= 0).map(x => x + 1);
+    return ranks.length ? Math.min(...ranks) : null;
+}
+
+function getRecentRate(flags, n) {
+    const a = flags.slice(-n);
+    if (!a.length) return null;
+    return 100 * a.filter(Boolean).length / a.length;
+}
+
+function getBucketRate(flags, start, end) {
+    const a = flags.slice(start, end);
+    if (!a.length) return null;
+    return 100 * a.filter(Boolean).length / a.length;
+}
+
+function modelStrategyLabel(mode) {
+    if (mode === 'allday') return 'Top3 Pairability-Aware + 7-Expert Multi-Block OOS Ranker + All-Day objective';
+    if (mode === 'lunch') return 'Top3 Multi-Scale + 7-Expert Adaptive Conditional/Context Pair Ranker';
+    return 'Top3 Pairability-Aware + 7-Expert Multi-Block OOS Ranker';
+}
+
 async function runBacktestAudit(records, mode, onProgress) {
     const MIN_HISTORY = 60;
     const totalPossible = Math.max(0, records.length - MIN_HISTORY);
     if (totalPossible <= 0) {
-        return { total: 0, hits: 0, misses: 0, topHits: 0, topMisses: 0, pairHitAcc: null, topHitAcc: null, pairCI: null, topCI: null, maxWinStreak: 0, maxLoseStreak: 0, baselinePair: mode === 'allday' ? 27.75 : 15, baselineTop: mode === 'allday' ? 75.99 : 51 };
+        return {
+            total: 0, hits: 0, misses: 0, topHits: 0, topMisses: 0,
+            pairHitAcc: null, topHitAcc: null, pairCI: null, topCI: null,
+            maxWinStreak: 0, maxLoseStreak: 0,
+            baselinePair: mode === 'allday' ? 27.75 : 15,
+            baselineTop: mode === 'allday' ? 75.99 : 51,
+            recentPair20: null, recentTop20: null,
+            pairWhenTopHit: null, topOnlyHits: 0,
+            avgHitRank: null, medianHitRank: null,
+            top1Hits: 0, top2Hits: 0, top3Hits: 0,
+            pairGroupHits: [0,0,0], bothRoundPairHits: 0,
+            earlyPair: null, midPair: null, latePair: null,
+            strategy: modelStrategyLabel(mode)
+        };
     }
 
     let total = 0, pairHits = 0, topHits = 0;
     let currentWin = 0, currentLose = 0, maxWin = 0, maxLose = 0;
+    let top1Hits = 0, top2Hits = 0, top3Hits = 0;
+    let topOnlyHits = 0;
+    let bothRoundPairHits = 0;
+    const pairFlags = [], topFlags = [], hitRanks = [];
+    const groupHits = [0,0,0];
+    const weightSums=Array(7).fill(0);
+    let legacyCount=0, rankTop5Hits=0, rankTop10Hits=0;
 
     for (let i = MIN_HISTORY; i < records.length; i++) {
         const training = records.slice(0, i);
         const prediction = analyzePrecisionEngineInternal(training, mode);
+        if (prediction.adaptiveWeights) prediction.adaptiveWeights.forEach((w,k)=>weightSums[k]+=w);
+        if (prediction.pairRanker === 'legacy-champion') legacyCount++;
         const actualRecord = records[i];
+        const actuals = mode === 'allday'
+            ? [actualRecord.lunch, actualRecord.evening]
+            : [mode === 'lunch' ? actualRecord.lunch : actualRecord.evening];
 
-        if (mode === 'allday') {
-            const actuals = [actualRecord.lunch, actualRecord.evening];
-            const isPair = actuals.some(a => pairHit(prediction, a));
-            const isTop = actuals.some(a => topDigitHit(prediction, a));
-            total++;
-            if (isPair) {
-                pairHits++; currentWin++; currentLose = 0; maxWin = Math.max(maxWin, currentWin);
-            } else {
-                currentLose++; currentWin = 0; maxLose = Math.max(maxLose, currentLose);
-            }
-            if (isTop) topHits++;
-        } else {
-            const actual = mode === 'lunch' ? actualRecord.lunch : actualRecord.evening;
-            total++;
-            const isPair = pairHit(prediction, actual);
-            const isTop = topDigitHit(prediction, actual);
-            if (isPair) {
-                pairHits++; currentWin++; currentLose = 0; maxWin = Math.max(maxWin, currentWin);
-            } else {
-                currentLose++; currentWin = 0; maxLose = Math.max(maxLose, currentLose);
-            }
-            if (isTop) topHits++;
+        let isPair = false;
+        let isTop = false;
+        let bestRank = null;
+        let localGroup = [false,false,false];
+
+        for (const actual of actuals) {
+            if (!isValid2D(actual)) continue;
+            const ph = pairHit(prediction, actual);
+            const th = topDigitHit(prediction, actual);
+            isPair = isPair || ph;
+            isTop = isTop || th;
+            const r = getPairRank(prediction, actual);
+            if (r !== null) bestRank = bestRank === null ? r : Math.min(bestRank, r);
+            const groupPairs = [prediction.pairsT1, prediction.pairsT2, prediction.pairsT3];
+            groupPairs.forEach((arr,g) => { if (arr.includes(actual)) localGroup[g] = true; });
+            const ds = getDigits(actual).map(String);
+            if (ds.includes(prediction.t1)) top1Hits++;
+            if (ds.includes(prediction.t2)) top2Hits++;
+            if (ds.includes(prediction.t3)) top3Hits++;
         }
+
+        total++;
+        pairFlags.push(isPair);
+        topFlags.push(isTop);
+        if (bestRank !== null) {
+            hitRanks.push(bestRank);
+            if (bestRank <= 5) rankTop5Hits++;
+            if (bestRank <= 10) rankTop10Hits++;
+        }
+        localGroup.forEach((v,g)=>{ if(v) groupHits[g]++; });
+        if (mode === 'allday' && actuals.every(a => pairHit(prediction,a))) bothRoundPairHits++;
+
+        if (isPair) {
+            pairHits++; currentWin++; currentLose = 0; maxWin = Math.max(maxWin, currentWin);
+        } else {
+            currentLose++; currentWin = 0; maxLose = Math.max(maxLose, currentLose);
+        }
+        if (isTop) topHits++;
+        if (isTop && !isPair) topOnlyHits++;
 
         if (onProgress && ((i - MIN_HISTORY) % 3 === 0 || i === records.length - 1)) {
             onProgress(((i - MIN_HISTORY + 1) / totalPossible) * 100);
@@ -1623,6 +1918,11 @@ async function runBacktestAudit(records, mode, onProgress) {
 
     const pairCI = getWilson95(pairHits, total);
     const topCI = getWilson95(topHits, total);
+    const split = Math.max(1, Math.floor(total / 3));
+    const earlyPair = getBucketRate(pairFlags, 0, split);
+    const midPair = getBucketRate(pairFlags, split, split*2);
+    const latePair = getBucketRate(pairFlags, split*2, total);
+
     return {
         total, hits: pairHits, misses: total - pairHits, topHits, topMisses: total - topHits,
         pairHitAcc: pairCI.rate === null ? null : pairCI.rate.toFixed(2),
@@ -1631,7 +1931,24 @@ async function runBacktestAudit(records, mode, onProgress) {
         topCI: { low: topCI.low.toFixed(2), high: topCI.high.toFixed(2) },
         maxWinStreak: maxWin, maxLoseStreak: maxLose,
         baselinePair: mode === 'allday' ? 27.75 : 15,
-        baselineTop: mode === 'allday' ? 75.99 : 51
+        baselineTop: mode === 'allday' ? 75.99 : 51,
+        recentPair20: getRecentRate(pairFlags,20),
+        recentTop20: getRecentRate(topFlags,20),
+        pairWhenTopHit: topHits ? (100 * pairHits / topHits) : null,
+        topOnlyHits,
+        avgHitRank: hitRanks.length ? hitRanks.reduce((a,b)=>a+b,0)/hitRanks.length : null,
+        medianHitRank: hitRanks.length ? [...hitRanks].sort((a,b)=>a-b)[Math.floor(hitRanks.length/2)] : null,
+        top1Hits, top2Hits, top3Hits,
+        pairGroupHits: groupHits,
+        bothRoundPairHits,
+        rankTop5Hits,
+        rankTop10Hits,
+        rankTop5Rate: pairHits ? 100*rankTop5Hits/pairHits : null,
+        rankTop10Rate: pairHits ? 100*rankTop10Hits/pairHits : null,
+        avgAdaptiveWeights: total ? weightSums.map(x=>x/total) : [null,null,null],
+        legacyChampionRate: total ? 100*legacyCount/total : 0,
+        earlyPair, midPair, latePair,
+        strategy: modelStrategyLabel(mode)
     };
 }
 
@@ -1642,15 +1959,20 @@ function generateAccuracySummaryHTML(records, lunch, evening, allDay) {
     const draws = usable * 2;
     const tested = (lunch.total || 0) + (evening.total || 0);
     const testedDays = allDay.total || 0;
+    const meta = parseRecords.lastMeta || {};
     return `
         <div class="accuracy-summary-title">📈 สรุปความแม่นย้อนหลังของระบบ — แยกจากการ์ดผลลัพธ์</div>
         <div class="accuracy-grid">
             <div class="accuracy-box"><div class="accuracy-box-title">ข้อมูลที่นำมาประมวลผล</div><div class="accuracy-box-value">${usable} วัน</div><div class="accuracy-box-sub">${draws} รอบจริง (เที่ยง ${usable} + เย็น ${usable})</div></div>
+            <div class="accuracy-box"><div class="accuracy-box-title">คุณภาพข้อมูล</div><div class="accuracy-box-value">${meta.duplicateDates || 0} วันซ้ำ</div><div class="accuracy-box-sub">ตัดทิ้งทั้งวันเพื่อไม่ให้ข้อมูลซ้ำปนโมเดล</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">Walk-forward ที่ทดสอบ</div><div class="accuracy-box-value">${testedDays} วัน</div><div class="accuracy-box-sub">อุ่นเครื่อง 60 วันก่อนเริ่มทดสอบ / เที่ยง+เย็นรวม ${tested} observations</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">ความแม่น 15 คู่ — เที่ยง</div><div class="accuracy-box-value">${fmtPct(lunch.pairHitAcc)}</div><div class="accuracy-box-sub">${lunch.hits || 0} เข้า / ${lunch.misses || 0} หลุด จาก ${lunch.total || 0} รอบ</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">ความแม่น 15 คู่ — เย็น</div><div class="accuracy-box-value">${fmtPct(evening.pairHitAcc)}</div><div class="accuracy-box-sub">${evening.hits || 0} เข้า / ${evening.misses || 0} หลุด จาก ${evening.total || 0} รอบ</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">ความแม่น 15 คู่ — ทั้งวัน</div><div class="accuracy-box-value">${fmtPct(allDay.pairHitAcc)}</div><div class="accuracy-box-sub">1 วัน = เช็กว่าจับได้อย่างน้อย 1 จาก 2 รอบ (${allDay.hits || 0}/${allDay.total || 0} วัน)</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">Top 3 Hit — ทั้งวัน</div><div class="accuracy-box-value">${fmtPct(allDay.topHitAcc)}</div><div class="accuracy-box-sub">อย่างน้อย 1 รอบของวันมีเลขอยู่ใน Top 3</div></div>
+        </div>
+        <div style="margin-top:10px;background:#fff;padding:10px;border:1px solid #eae2d0;border-radius:10px;font-size:9px;color:#666;line-height:1.6;">
+            <b>🔬 มิติใหม่ของ Audit:</b> ดูทั้ง Accuracy, Lift เทียบ Random, คุณภาพการเปลี่ยน Top 3 → 15 คู่, อันดับของคู่ที่เข้า, ผลช่วงต้น/กลาง/ท้าย และ 20 Observation ล่าสุด เพื่อแยกให้ออกว่า Engine แม่นจริงหรือเพียงมีช่วงที่ดีชั่วคราว
         </div>`;
 }
 
@@ -1667,46 +1989,36 @@ function generateAuditTableHTML(roundName, audit) {
                 <div class="audit-card"><div class="audit-card-title">Pair Hit Accuracy</div><div class="audit-card-value">—</div></div>
                 <div class="audit-card"><div class="audit-card-title">Top 3 Hit Accuracy</div><div class="audit-card-value neutral">—</div></div>
                 <div class="audit-card"><div class="audit-card-title">รอบที่ทดสอบ</div><div class="audit-card-value">0</div></div>
-            </div>
-            <table class="audit-table">
-                <tr><th>ตัวชี้วัดเชิงสถิติ</th><th>ค่าสถิติ</th><th>รายละเอียด</th></tr>
-                <tr><td>ข้อมูลสำหรับ Walk-forward</td><td><b>ยังไม่พอ</b></td><td>ต้องมีมากกว่า 60 วัน</td></tr>
-                <tr><td>เปอร์เซ็นต์</td><td><b>—</b></td><td>ไม่สร้างตัวเลขแทนข้อมูลจริง</td></tr>
-            </table>
-        `;
+            </div>`;
     }
 
     const pairRate = parseFloat(audit.pairHitAcc);
     const topRate = parseFloat(audit.topHitAcc);
     const pairDelta = (pairRate - audit.baselinePair).toFixed(2);
     const topDelta = (topRate - audit.baselineTop).toFixed(2);
-
+    const lift = audit.baselinePair ? (pairRate / audit.baselinePair).toFixed(2) + '×' : '—';
+    const topLift = audit.baselineTop ? (topRate / audit.baselineTop).toFixed(2) + '×' : '—';
     const statusByCI = (low, high) => {
         const width = parseFloat(high) - parseFloat(low);
-        if (width > 20) return "ความไม่แน่นอนสูง";
-        if (width > 12) return "ความไม่แน่นอนปานกลาง";
-        return "ช่วงประมาณการแคบลง";
+        if (width > 20) return 'ความไม่แน่นอนสูง';
+        if (width > 12) return 'ความไม่แน่นอนปานกลาง';
+        return 'ช่วงประมาณการแคบลง';
     };
-
-    const testUnit = roundName.includes("ทั้งวัน")
-        ? "1 วัน = ตรวจว่าจับได้อย่างน้อย 1 จาก 2 รอบ"
-        : "1 รอบ = 1 ผล 2D";
+    const testUnit = roundName.includes('ทั้งวัน')
+        ? '1 วัน = จับได้อย่างน้อย 1 จาก 2 รอบ'
+        : '1 รอบ = 1 ผล 2D';
+    const fmt = v => v === null || v === undefined ? '—' : Number(v).toFixed(2) + '%';
+    const rank = v => v === null || v === undefined ? '—' : Number(v).toFixed(1);
+    const group = (audit.pairGroupHits || [0,0,0]).join(' / ');
+    const stable = [audit.earlyPair,audit.midPair,audit.latePair].filter(v=>v!==null);
+    const stability = stable.length ? (Math.max(...stable)-Math.min(...stable)).toFixed(2)+' จุด' : '—';
 
     return `
         <div class="audit-title">📊 ตารางตรวจสอบประสิทธิภาพสูงสุด: ${roundName}</div>
         <div class="audit-grid">
-            <div class="audit-card">
-                <div class="audit-card-title">ความแม่นยำเลขเจาะ 15 คู่</div>
-                <div class="audit-card-value">${audit.pairHitAcc}%</div>
-            </div>
-            <div class="audit-card">
-                <div class="audit-card-title">Top 3 Hit Accuracy</div>
-                <div class="audit-card-value neutral">${audit.topHitAcc}%</div>
-            </div>
-            <div class="audit-card">
-                <div class="audit-card-title">เข้า / หลุด</div>
-                <div class="audit-card-value">${audit.hits} / ${audit.misses}</div>
-            </div>
+            <div class="audit-card"><div class="audit-card-title">ความแม่นยำเลขเจาะ 15 คู่</div><div class="audit-card-value">${audit.pairHitAcc}%</div></div>
+            <div class="audit-card"><div class="audit-card-title">Top 3 Hit Accuracy</div><div class="audit-card-value neutral">${audit.topHitAcc}%</div></div>
+            <div class="audit-card"><div class="audit-card-title">เข้า / หลุด</div><div class="audit-card-value">${audit.hits} / ${audit.misses}</div></div>
         </div>
         <table class="audit-table">
             <tr><th>ตัวชี้วัดเชิงสถิติ</th><th>ค่าสถิติที่ตรวจพบ</th><th>สถานะ</th></tr>
@@ -1718,15 +2030,30 @@ function generateAuditTableHTML(roundName, audit) {
             <tr><td>Top 3 95% Confidence Interval</td><td><b>${audit.topCI.low}% – ${audit.topCI.high}%</b></td><td>${statusByCI(audit.topCI.low, audit.topCI.high)}</td></tr>
             <tr><td>Random reference: 15 คู่</td><td><b>${audit.baselinePair.toFixed(2)}%</b></td><td>baseline เชิงทฤษฎี</td></tr>
             <tr><td>ส่วนต่างจาก Random</td><td><b>${pairDelta >= 0 ? '+' : ''}${pairDelta}%</b></td><td>เปรียบเทียบกับ baseline</td></tr>
+            <tr><td>Pair Lift vs Random</td><td><b>${lift}</b></td><td>1.00× = เท่าทฤษฎี</td></tr>
             <tr><td>Top 3 Random reference</td><td><b>${audit.baselineTop.toFixed(2)}%</b></td><td>3 digits / 10</td></tr>
             <tr><td>Top 3 ส่วนต่างจาก Random</td><td><b>${topDelta >= 0 ? '+' : ''}${topDelta}%</b></td><td>เปรียบเทียบกับ baseline</td></tr>
+            <tr><td>Top 3 Lift vs Random</td><td><b>${topLift}</b></td><td>1.00× = เท่าทฤษฎี</td></tr>
+            <tr><td>เมื่อ Top 3 จับถูก → คู่เจาะจับถูก</td><td><b>${fmt(audit.pairWhenTopHit)}</b></td><td>วัดคุณภาพขั้น Top → Pair</td></tr>
+            <tr><td>Top 3 จับถูกแต่เลขเจาะหลุด</td><td><b>${audit.topOnlyHits}</b></td><td>จุดที่ Engine ต้องปรับ</td></tr>
+            <tr><td>อันดับเฉลี่ยของคู่ที่เข้า</td><td><b>${rank(audit.avgHitRank)} / 15</b></td><td>ยิ่งต่ำยิ่งคัดคู่ได้คม</td></tr>
+            <tr><td>อันดับมัธยฐานของคู่ที่เข้า</td><td><b>${rank(audit.medianHitRank)} / 15</b></td><td>จาก Hit จริง</td></tr>
+            <tr><td>Hit อยู่ Top 5 ของชุด 15 คู่</td><td><b>${fmt(audit.rankTop5Rate)}</b></td><td>ยิ่งสูงยิ่งจัดอันดับได้คม</td></tr>
+            <tr><td>Hit อยู่ Top 10 ของชุด 15 คู่</td><td><b>${fmt(audit.rankTop10Rate)}</b></td><td>ตรวจคุณภาพ Ranking</td></tr>
+            <tr><td>น้ำหนัก Expert เฉลี่ย (Cond / Context / Global / Stable / Hybrid / Recent / Reverse)</td><td><b>${(audit.avgAdaptiveWeights||Array(7).fill(null)).map(x=>x===null?'—':Number(x).toFixed(2)).join(' / ')}</b></td><td>เรียนรู้จากข้อมูลก่อนหน้า</td></tr>
+            <tr><td>เกณฑ์รับเลขเจาะที่ตั้งไว้</td><td><b>50.00%</b></td><td>${Number(audit.pairHitAcc||0)>=50?'ผ่านเกณฑ์':'ยังไม่ผ่าน — แสดงค่าจริง ไม่แต่งเปอร์เซ็นต์'}</td></tr>
+            <tr><td>Hit แยกตามกลุ่ม Top 1 / 2 / 3</td><td><b>${group}</b></td><td>จำนวน Hit จริง</td></tr>
+            ${roundName.includes('ทั้งวัน') ? `<tr><td>จับได้ทั้งเที่ยงและเย็นในวันเดียว</td><td><b>${audit.bothRoundPairHits}</b> วัน</td><td>ความแข็งแรงของชุดทั้งวัน</td></tr>` : ''}
+            <tr><td>ความแม่น 20 Observation ล่าสุด</td><td><b>${fmt(audit.recentPair20)}</b></td><td>ตรวจ momentum</td></tr>
+            <tr><td>Top 3 20 Observation ล่าสุด</td><td><b>${fmt(audit.recentTop20)}</b></td><td>ตรวจ momentum</td></tr>
+            <tr><td>Pair ช่วงต้น / กลาง / ท้าย</td><td><b>${fmt(audit.earlyPair)} / ${fmt(audit.midPair)} / ${fmt(audit.latePair)}</b></td><td>เสถียรภาพต่างกัน ${stability}</td></tr>
             <tr><td>Max Win Streak</td><td><b>${audit.maxWinStreak}</b></td><td>จากผลจริง</td></tr>
             <tr><td>Max Lose Streak</td><td><b>${audit.maxLoseStreak}</b></td><td>จากผลจริง</td></tr>
+            <tr><td>วิธีเลือกเลข</td><td><b>${audit.strategy}</b></td><td>แยก Top 3 / Pair</td></tr>
             <tr><td>วิธี Backtest</td><td><b>Walk-forward</b></td><td>ไม่มี Future Leakage</td></tr>
         </table>
     `;
 }
-
 
 /* ============================================================
    CARD
@@ -2041,6 +2368,240 @@ async function processAllCards() {
     }
 }
 
+
+
+/* ============================================================
+   v2.8 CLEAN-RANK ENGINE
+   ------------------------------------------------------------
+   เป้าหมายของรุ่นนี้:
+   - เพิ่มความเสถียรของ Top 3 โดยไม่บังคับให้ Top 3 มาจากหลักสิบ
+   - เพิ่ม Pairability: เลือก Top digit ที่มีโอกาสแตกเป็น 5 คู่ได้ดี
+   - เลือกเลขหน่วยด้วยหลาย expert + rank consensus
+   - ใช้ validation ย้อนหลังหลายช่วงแทนการดู 18 จุดล่าสุดอย่างเดียว
+   - ลงโทษ pair ที่มีหลักฐานน้อย / แกว่งมาก / พึ่งพา window เดียว
+   - All-day ประเมินเป็น 1 วัน = hit อย่างน้อย 1 จาก 2 รอบ
+   - ไม่มีการรับประกัน 30/50%; แสดง OOS จริงเท่านั้น
+   ============================================================ */
+
+function v28Norm(a){
+    const s=a.reduce((x,y)=>x+y,0); return s>0?a.map(x=>x/s):a.map(()=>1/a.length);
+}
+function v28Rank(a){
+    const r=Array(a.length).fill(0);
+    [...a].map((v,i)=>({v,i})).sort((x,y)=>y.v-x.v||x.i-y.i).forEach((x,k)=>r[x.i]=1-k/Math.max(1,a.length-1));
+    return r;
+}
+function v28WindowDigit(values,digit,limit){
+    const src=limit?values.slice(-limit):values, c=Array(10).fill(1);
+    src.forEach(v=>{if(isValid2D(v)){if(Number(v[0])===digit)c[Number(v[1])]++; if(Number(v[1])===digit)c[Number(v[0])]++;}});
+    return v28Norm(c);
+}
+function v28DirectUnit(values,digit,limit){
+    const src=limit?values.slice(-limit):values, c=Array(10).fill(1.5), n=src.filter(v=>isValid2D(v)&&Number(v[0])===digit).length;
+    src.forEach(v=>{if(isValid2D(v)&&Number(v[0])===digit)c[Number(v[1])]++;});
+    return {p:v28Norm(c),n};
+}
+function v28Pairability(values,digit){
+    const wins=[null,90,60,30,15];
+    const ranks=wins.map(w=>v28Rank(v28DirectUnit(values,digit,w).p));
+    const consensus=Array(10).fill(0);
+    for(let u=0;u<10;u++) consensus[u]=.18*ranks[0][u]+.22*ranks[1][u]+.25*ranks[2][u]+.20*ranks[3][u]+.15*ranks[4][u];
+    const top=consensus.map((v,u)=>({u,v})).sort((a,b)=>b.v-a.v||a.u-b.u).slice(0,5);
+    return {score:top.reduce((a,x)=>a+x.v,0)/5, units:top.map(x=>x.u), consensus};
+}
+function v28DigitCandidates(records,mode,pp){
+    const values=getValues(records,mode), dScore=Array(10).fill(0), pairScore=Array(10).fill(0);
+    const allDigit=Array(10).fill(1), recent=Array(10).fill(1), med=Array(10).fill(1);
+    values.forEach(v=>{if(isValid2D(v)){allDigit[+v[0]]++;allDigit[+v[1]]++;}});
+    values.slice(-30).forEach(v=>{if(isValid2D(v)){recent[+v[0]]++;recent[+v[1]]++;}});
+    values.slice(-60).forEach(v=>{if(isValid2D(v)){med[+v[0]]++;med[+v[1]]++;}});
+    const a=v28Norm(allDigit), b=v28Norm(med), c=v28Norm(recent);
+    for(let d=0;d<10;d++){
+        let marginal=0; for(let p=0;p<100;p++) if(Math.floor(p/10)===d||p%10===d)marginal+=pp[p];
+        const pb=v28Pairability(values,d);
+        pairScore[d]=pb.score;
+        dScore[d]=.32*a[d]+.22*b[d]+.16*c[d]+.12*pp[d*10]+.08*marginal+.10*pb.score;
+    }
+    return {digit:dScore,pairability:pairScore};
+}
+function v28TopSelector(records,mode,pp,profile){
+    const base=getTopThreeDigits(pp), cand=v28DigitCandidates(records,mode,pp);
+    const br=v28Rank(base.probabilities), cr=v28Rank(cand.digit), pr=v28Rank(cand.pairability);
+    const score=Array(10).fill(0);
+    for(let d=0;d<10;d++){
+        if(profile==='digit') score[d]=.58*br[d]+.30*cr[d]+.12*pr[d];
+        else if(profile==='pair') score[d]=.25*br[d]+.35*cr[d]+.40*pr[d];
+        else score[d]=.38*br[d]+.32*cr[d]+.30*pr[d];
+    }
+    return {digits:score.map((v,d)=>({d,v})).sort((x,y)=>y.v-x.v||x.d-y.d).slice(0,3).map(x=>String(x.d)),probabilities:score,pairability:cand.pairability};
+}
+function v28ContextUnits(records,mode){
+    if(mode==='allday')return Array(10).fill(.1);
+    const pair=getContextDistribution(records,mode); const out=Array(10).fill(.1);
+    for(let p=0;p<100;p++)out[p%10]+=pair[p];
+    return v28Norm(out);
+}
+function v28TransitionUnits(records,mode){
+    if(mode==='allday')return Array(10).fill(.1);
+    const pair=getPairTransitionDistribution(records,mode); const out=Array(10).fill(.1);
+    for(let p=0;p<100;p++)out[p%10]+=pair[p];
+    return v28Norm(out);
+}
+function v28BuildBundles(records,mode,pp){
+    const values=getValues(records,mode), ctx=v28ContextUnits(records,mode), tr=v28TransitionUnits(records,mode), rec=v27PairRecency(values,.945);
+    const bundles={};
+    for(let digit=0;digit<10;digit++){
+        const wins=[null,60,30,15], ds=wins.map(w=>v28DirectUnit(values,digit,w));
+        const ranks=ds.map(x=>v28Rank(x.p));
+        const unit=[];
+        for(let u=0;u<10;u++){
+            const p=digit*10+u, vals=ds.map(x=>x.p[u]), mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+            const variance=vals.reduce((a,b)=>a+(b-mean)*(b-mean),0)/vals.length;
+            const stability=1/(1+Math.sqrt(variance)*35), support=Math.min(1,ds[0].n/10);
+            const consensus=.20*ranks[0][u]+.25*ranks[1][u]+.30*ranks[2][u]+.25*ranks[3][u];
+            const rev=mode==='allday'?pp[u*10+digit]:rec[u*10+digit];
+            unit.push({
+                conditional:.42*ds[0].p[u]+.25*ds[1].p[u]+.20*ds[2].p[u]+.13*ds[3].p[u],
+                context:.58*ctx[u]+.42*tr[u],
+                global:.45*pp[p]+.25*rec[p]+.15*pp[u*10+digit]+.15*rev,
+                consensus:.72*consensus+.28*stability,
+                support,stability
+            });
+        }
+        bundles[digit]={unit, pairability:unit.map(x=>x.consensus).reduce((a,b)=>a+b,0)/10};
+    }
+    return bundles;
+}
+function v28DigitCandidates(records,mode,pp,bundles){
+    const values=getValues(records,mode), dScore=Array(10).fill(0), pairScore=Array(10).fill(0);
+    const allDigit=Array(10).fill(1), recent=Array(10).fill(1), med=Array(10).fill(1);
+    values.forEach(v=>{if(isValid2D(v)){allDigit[+v[0]]++;allDigit[+v[1]]++;}});
+    values.slice(-30).forEach(v=>{if(isValid2D(v)){recent[+v[0]]++;recent[+v[1]]++;}});
+    values.slice(-60).forEach(v=>{if(isValid2D(v)){med[+v[0]]++;med[+v[1]]++;}});
+    const a=v28Norm(allDigit), b=v28Norm(med), c=v28Norm(recent);
+    for(let d=0;d<10;d++){
+        let marginal=0; for(let p=0;p<100;p++) if(Math.floor(p/10)===d||p%10===d)marginal+=pp[p];
+        const pb=bundles[d]?.pairability||v28Pairability(values,d).score;
+        pairScore[d]=pb;
+        dScore[d]=.32*a[d]+.22*b[d]+.16*c[d]+.12*pp[d*10]+.08*marginal+.10*pb;
+    }
+    return {digit:dScore,pairability:pairScore};
+}
+function v28TopSelector(records,mode,pp,profile,bundles){
+    const base=getTopThreeDigits(pp), cand=v28DigitCandidates(records,mode,pp,bundles);
+    const br=v28Rank(base.probabilities), cr=v28Rank(cand.digit), pr=v28Rank(cand.pairability), score=Array(10).fill(0);
+    for(let d=0;d<10;d++){
+        if(profile==='digit') score[d]=.58*br[d]+.30*cr[d]+.12*pr[d];
+        else if(profile==='pair') score[d]=.25*br[d]+.35*cr[d]+.40*pr[d];
+        else score[d]=.38*br[d]+.32*cr[d]+.30*pr[d];
+    }
+    return {digits:score.map((v,d)=>({d,v})).sort((x,y)=>y.v-x.v||x.d-y.d).slice(0,3).map(x=>String(x.d)),probabilities:score,pairability:cand.pairability};
+}
+function v28RankPairsFromBundle(digit,bundle,pp,profile){
+    const rows=bundle.unit.map((e,u)=>({u,e}));
+    const keys=['conditional','context','global','consensus'], ranks={}; keys.forEach(k=>ranks[k]=v28Rank(rows.map(r=>r.e[k])));
+    const weights=profile==='context'?[.25,.42,.13,.20]:profile==='global'?[.25,.18,.37,.20]:[.36,.24,.18,.22];
+    rows.forEach((r,i)=>{
+        const raw=weights[0]*ranks.conditional[i]+weights[1]*ranks.context[i]+weights[2]*ranks.global[i]+weights[3]*ranks.consensus[i];
+        r.score=raw*(.82+.18*r.e.support)*(.88+.12*r.e.stability);
+    });
+    rows.sort((a,b)=>b.score-a.score||a.u-b.u);
+    return rows.slice(0,5).map(r=>String(digit)+r.u);
+}
+function v28Prediction(records,mode,topProfile='hybrid',pairProfile='hybrid',pre=null){
+    const pp=pre?.pairProbability||buildPairProbability(records,mode), bundles=pre?.bundles||v28BuildBundles(records,mode,pp), top=pre?.top||v28TopSelector(records,mode,pp,topProfile,bundles);
+    const groups=top.digits.map(d=>v28RankPairsFromBundle(+d,bundles[+d],pp,pairProfile));
+    return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:groups[0],pairsT2:groups[1],pairsT3:groups[2],pairProbability:pp,topDigitProbability:top.probabilities,engineProfile:`v2.8-${topProfile}-${pairProfile}`};
+}
+function v28Hit(pred,actuals){return actuals.some(a=>isValid2D(a)&&getAllPredictionPairs(pred).includes(a));}
+function v28TopHit(pred,actuals){return actuals.some(a=>isValid2D(a)&&getDigits(a).some(d=>[pred.t1,pred.t2,pred.t3].includes(String(d))));}
+function v28LearnProfile(records,mode){
+    const topProfiles=['digit','hybrid','pair'], pairProfiles=['conditional','context','global'];
+    if(records.length<75)return {top:'hybrid',pair:'conditional',matrix:[]};
+    const start=Math.max(60,records.length-18), score=[];
+    for(let i=start;i<records.length;i++){
+        const tr=records.slice(0,i), pp=buildPairProbability(tr,mode), bundles=v28BuildBundles(tr,mode,pp);
+        const rec=records[i], acts=mode==='allday'?[rec.lunch,rec.evening]:[mode==='lunch'?rec.lunch:rec.evening];
+        for(const tp of topProfiles)for(const pr of pairProfiles){
+            const pred=v28Prediction(tr,mode,tp,pr,{pairProbability:pp,bundles});
+            const key=tp+'|'+pr; let row=score.find(x=>x.key===key); if(!row){row={key,tp,pp:pr,pair:0,top:0,n:0};score.push(row);}
+            if(v28Hit(pred,acts))row.pair++; if(v28TopHit(pred,acts))row.top++; row.n++;
+        }
+    }
+    score.forEach(x=>x.value=.72*((x.pair+2)/(x.n+8))+.28*((x.top+2)/(x.n+8)));
+    score.sort((a,b)=>b.value-a.value||b.pair-a.pair);
+    return {top:score[0].tp,pair:score[0].pp,matrix:score};
+}
+
+// Override prediction: เลือก profile จาก validation ก่อนหน้าเท่านั้น
+function analyzePrecisionEngineInternal(records,mode){
+    if(!records||!records.length)return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date',pairRanker:'v3.0-deep-consensus'};
+    const pred=v30FinalPrediction(records,mode);
+    return {...pred,targetDate:getNextTargetDate(records[records.length-1].date),pairRanker:'v3.0-deep-consensus'};
+}
+
+// Override audit: เพิ่ม profile stability และ top->pair conversion แบบไม่เปลี่ยนนิยามหลัก
+async function runBacktestAudit(records,mode,onProgress){
+    const MIN_HISTORY=60,totalPossible=Math.max(0,records.length-MIN_HISTORY);
+    if(!totalPossible)return {total:0,hits:0,misses:0,topHits:0,topMisses:0,pairHitAcc:null,topHitAcc:null,pairCI:null,topCI:null,maxWinStreak:0,maxLoseStreak:0,baselinePair:mode==='allday'?27.75:15,baselineTop:mode==='allday'?75.99:51,recentPair20:null,recentTop20:null,pairWhenTopHit:null,topOnlyHits:0,avgHitRank:null,medianHitRank:null,top1Hits:0,top2Hits:0,top3Hits:0,pairGroupHits:[0,0,0],bothRoundPairHits:0,earlyPair:null,midPair:null,latePair:null,strategy:'v2.8'};
+    let total=0,pairHits=0,topHits=0,win=0,lose=0,maxWin=0,maxLose=0,bothRound=0,topOnly=0,top1=0,top2=0,top3=0;
+    const pf=[],tf=[],ranks=[],groups=[0,0,0],profileCounts={};
+    for(let i=MIN_HISTORY;i<records.length;i++){
+        const tr=records.slice(0,i),pred=analyzePrecisionEngineInternal(tr,mode),rec=records[i];
+        const acts=mode==='allday'?[rec.lunch,rec.evening]:[mode==='lunch'?rec.lunch:rec.evening];
+        const ph=v28Hit(pred,acts), th=v28TopHit(pred,acts); let best=null; const local=[false,false,false];
+        acts.forEach(a=>{if(!isValid2D(a))return; const r=getPairRank(pred,a);if(r!==null)best=best===null?r:Math.min(best,r); [pred.pairsT1,pred.pairsT2,pred.pairsT3].forEach((g,k)=>{if(g.includes(a))local[k]=true;}); const ds=getDigits(a).map(String);if(ds.includes(pred.t1))top1++;if(ds.includes(pred.t2))top2++;if(ds.includes(pred.t3))top3++;});
+        total++;pf.push(ph);tf.push(th);local.forEach((v,k)=>{if(v)groups[k]++;});if(ph&&best!==null)ranks.push(best);if(mode==='allday'&&acts.every(a=>pairHit(pred,a)))bothRound++;
+        if(th&&!ph)topOnly++; if(ph){pairHits++;win++;lose=0;maxWin=Math.max(maxWin,win);}else{lose++;win=0;maxLose=Math.max(maxLose,lose);} if(th)topHits++;
+        const lp=pred.learnedProfile?.top+'+'+pred.learnedProfile?.pair;profileCounts[lp]=(profileCounts[lp]||0)+1;
+        if(onProgress&&(i-MIN_HISTORY)%2===0){onProgress((i-MIN_HISTORY+1)/totalPossible*100);await nextTick();}
+    }
+    const pci=getWilson95(pairHits,total),tci=getWilson95(topHits,total),split=Math.max(1,Math.floor(total/3));
+    const early=100*pf.slice(0,split).filter(Boolean).length/Math.max(1,pf.slice(0,split).length),mid=100*pf.slice(split,split*2).filter(Boolean).length/Math.max(1,pf.slice(split,split*2).length),late=100*pf.slice(split*2).filter(Boolean).length/Math.max(1,pf.slice(split*2).length);
+    const recent=pf.slice(-20),rt=tf.slice(-20);
+    return {total,hits:pairHits,misses:total-pairHits,topHits,topMisses:total-topHits,pairHitAcc:pci.rate.toFixed(2),topHitAcc:tci.rate.toFixed(2),pairCI:{low:pci.low.toFixed(2),high:pci.high.toFixed(2)},topCI:{low:tci.low.toFixed(2),high:tci.high.toFixed(2)},maxWinStreak:maxWin,maxLoseStreak:maxLose,baselinePair:mode==='allday'?27.75:15,baselineTop:mode==='allday'?75.99:51,recentPair20:100*recent.filter(Boolean).length/Math.max(1,recent.length),recentTop20:100*rt.filter(Boolean).length/Math.max(1,rt.length),pairWhenTopHit:topHits?100*pairHits/topHits:null,topOnlyHits:topOnly,avgHitRank:ranks.length?ranks.reduce((a,b)=>a+b,0)/ranks.length:null,medianHitRank:ranks.length?[...ranks].sort((a,b)=>a-b)[Math.floor(ranks.length/2)]:null,top1Hits:top1,top2Hits:top2,top3Hits:top3,pairGroupHits:groups,bothRoundPairHits:bothRound,rankTop5Hits:ranks.filter(x=>x<=5).length,rankTop10Hits:ranks.filter(x=>x<=10).length,rankTop5Rate:ranks.length?100*ranks.filter(x=>x<=5).length/ranks.length:null,rankTop10Rate:ranks.length?100*ranks.filter(x=>x<=10).length/ranks.length:null,avgAdaptiveWeights:[null],legacyChampionRate:0,earlyPair:early,midPair:mid,latePair:late,profileCounts,goal30:pairHits/total*100>=30,goal50:pairHits/total*100>=50,strategy:'v2.8 Clean Rank + Joint Top3/Pair Validation'};
+}
+
+
+function generateAuditTableHTML(roundName,audit){
+    if(!audit||!audit.total) return `<div class="audit-title">📊 ตารางตรวจสอบประสิทธิภาพสูงสุด: ${roundName}</div><div class="audit-grid"><div class="audit-card"><div class="audit-card-title">Pair Hit Accuracy</div><div class="audit-card-value">—</div></div><div class="audit-card"><div class="audit-card-title">Top 3 Hit Accuracy</div><div class="audit-card-value neutral">—</div></div><div class="audit-card"><div class="audit-card-title">รอบที่ทดสอบ</div><div class="audit-card-value">0</div></div></div>`;
+    const pr=Number(audit.pairHitAcc), tr=Number(audit.topHitAcc), delta=(pr-audit.baselinePair).toFixed(2), lift=(pr/audit.baselinePair).toFixed(2)+'×';
+    const goal=pr>=50?'ผ่านเป้าหมายสูงสุด 50%':pr>=30?'ผ่านขั้นต่ำ 30%':'ยังไม่ถึงขั้นต่ำ 30%';
+    const spread=[audit.earlyPair,audit.midPair,audit.latePair].filter(v=>v!=null); const stability=spread.length?Math.max(...spread)-Math.min(...spread):null;
+    const prof=Object.entries(audit.profileCounts||{}).sort((a,b)=>b[1]-a[1]).map(x=>`${x[0]} ${x[1]}`).join(' | ')||'—';
+    const fmt=v=>v==null?'—':Number(v).toFixed(2)+'%';
+    const rank=v=>v==null?'—':Number(v).toFixed(2);
+    return `<div class="audit-title">📊 Deep Audit: ${roundName}</div>
+    <div class="audit-grid">
+      <div class="audit-card"><div class="audit-card-title">เลขเจาะ 15 คู่</div><div class="audit-card-value">${pr.toFixed(2)}%</div></div>
+      <div class="audit-card"><div class="audit-card-title">Top 3</div><div class="audit-card-value neutral">${tr.toFixed(2)}%</div></div>
+      <div class="audit-card"><div class="audit-card-title">เป้าหมาย</div><div class="audit-card-value ${pr>=30?'':'neutral'}">${goal}</div></div>
+    </div>
+    <table class="audit-table">
+      <tr><th>ตัวชี้วัด</th><th>ผลจริง</th><th>ความหมาย</th></tr>
+      <tr><td>Observation</td><td><b>${audit.total}</b></td><td>Walk-forward OOS</td></tr>
+      <tr><td>Pair Hit</td><td><b>${pr.toFixed(2)}%</b></td><td>${audit.hits} / ${audit.total}</td></tr>
+      <tr><td>Pair 95% CI</td><td><b>${audit.pairCI.low}% – ${audit.pairCI.high}%</b></td><td>ความไม่แน่นอนของข้อมูล</td></tr>
+      <tr><td>Top 3 Hit</td><td><b>${tr.toFixed(2)}%</b></td><td>จากผลจริง</td></tr>
+      <tr><td>Top 3 95% CI</td><td><b>${audit.topCI.low}% – ${audit.topCI.high}%</b></td><td>จากผลจริง</td></tr>
+      <tr><td>Random 15 คู่</td><td><b>${audit.baselinePair.toFixed(2)}%</b></td><td>baseline</td></tr>
+      <tr><td>ส่วนต่างจาก Random</td><td><b>${delta>=0?'+':''}${delta}%</b></td><td>ค่าบวก = เหนือ baseline</td></tr>
+      <tr><td>Pair Lift</td><td><b>${lift}</b></td><td>1.00× = เท่า Random</td></tr>
+      <tr><td>Top 3 → Pair conversion</td><td><b>${fmt(audit.pairWhenTopHit)}</b></td><td>เมื่อ Top 3 ถูก เลขเจาะตามทันแค่ไหน</td></tr>
+      <tr><td>Top 3 ถูก แต่ Pair พลาด</td><td><b>${audit.topOnlyHits}</b></td><td>จุดอ่อนหลักของ Pair Ranker</td></tr>
+      <tr><td>Hit Rank เฉลี่ย / มัธยฐาน</td><td><b>${rank(audit.avgHitRank)} / ${rank(audit.medianHitRank)}</b></td><td>ยิ่งต่ำยิ่งคม</td></tr>
+      <tr><td>Hit อยู่ Top 5 / Top 10</td><td><b>${fmt(audit.rankTop5Rate)} / ${fmt(audit.rankTop10Rate)}</b></td><td>คุณภาพการจัดอันดับคู่</td></tr>
+      <tr><td>Top1 / Top2 / Top3 group hits</td><td><b>${(audit.pairGroupHits||[0,0,0]).join(' / ')}</b></td><td>ดูว่า Top ตัวใดแบกผล</td></tr>
+      <tr><td>20 Observation ล่าสุด</td><td><b>${fmt(audit.recentPair20)}</b></td><td>Momentum ไม่ใช่ Accuracy หลัก</td></tr>
+      <tr><td>ต้น / กลาง / ท้าย</td><td><b>${fmt(audit.earlyPair)} / ${fmt(audit.midPair)} / ${fmt(audit.latePair)}</b></td><td>แกว่ง ${stability==null?'—':stability.toFixed(2)+' จุด'}</td></tr>
+      <tr><td>Max Win / Lose Streak</td><td><b>${audit.maxWinStreak} / ${audit.maxLoseStreak}</b></td><td>จากผลจริง</td></tr>
+      <tr><td>Profile ที่ระบบเลือก</td><td colspan="2"><b>${prof}</b></td></tr>
+      <tr><td>เกณฑ์ขั้นต่ำ 30%</td><td><b>${pr>=30?'ผ่าน':'ไม่ผ่าน'}</b></td><td>ไม่แต่งเปอร์เซ็นต์</td></tr>
+      <tr><td>เป้าหมายสูงสุด 50%</td><td><b>${pr>=50?'ผ่าน':'ยังไม่ถึง'}</b></td><td>เป็นเป้าหมาย ไม่ใช่ค่าที่บังคับให้เกิด</td></tr>
+      ${roundName.includes('ทั้งวัน')?`<tr><td>จับทั้งเที่ยงและเย็นในวันเดียว</td><td><b>${audit.bothRoundPairHits}</b></td><td>ความแข็งแรงแบบ 2-round</td></tr>`:''}
+      <tr><td>วิธีทดสอบ</td><td><b>Walk-forward</b></td><td>ห้ามใช้อนาคต</td></tr>
+    </table>`;
+}
 
 </script>
 </body>
