@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myanmar 2D Luxury VIP Pro - Max Precision Engine v2.9 Deep Adaptive Stability Engine</title>
+<title>Myanmar 2D Luxury VIP Pro - Max Precision Engine v3.2 Robust PDF Parser & Deep Adaptive Stability Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>body {
@@ -178,7 +178,7 @@
 
 
 /* ============================================================
-   MYANMAR 2D REAL STATISTICAL ENGINE v2.7 DEEP ADAPTIVE + 50% PAIR ACCEPTANCE GATE
+   MYANMAR 2D REAL STATISTICAL ENGINE v3.2 ROBUST PDF PARSER + DEEP ADAPTIVE ENGINE
    ============================================================
 
    DATA MODEL
@@ -262,116 +262,73 @@ function getDigits(value) {
    ============================================================ */
 
 function parseDate(dateText) {
-
     if (!dateText) return null;
 
     const monthMap = {
-
-        'มค': 1,
-        'มกราคม': 1,
-
-        'กพ': 2,
-        'กุมภาพันธ์': 2,
-
-        'มีค': 3,
-        'มีนาคม': 3,
-
-        'เมย': 4,
-        'เมษายน': 4,
-
-        'พค': 5,
-        'พฤษภาคม': 5,
-
-        'มิย': 6,
-        'มิถุนายน': 6,
-
-        'กค': 7,
-        'กรกฎาคม': 7,
-
-        'สค': 8,
-        'สิงหาคม': 8,
-
-        'กย': 9,
-        'กันยายน': 9,
-
-        'ตค': 10,
-        'ตุลาคม': 10,
-
-        'พย': 11,
-        'พฤศจิกายน': 11,
-
-        'ธค': 12,
-        'ธันวาคม': 12
+        'มค':1,'มกราคม':1,'มกรา':1,
+        'กพ':2,'กุมภาพันธ์':2,'กุมภา':2,
+        'มีค':3,'มีนาคม':3,'มีนา':3,
+        'เมย':4,'เมษายน':4,'เมษา':4,
+        'พค':5,'พฤษภาคม':5,'พฤษภา':5,
+        'มิย':6,'มิถุนายน':6,'มิถุนา':6,
+        'กค':7,'กรกฎาคม':7,'กรกฎา':7,
+        'สค':8,'สิงหาคม':8,'สิงหา':8,
+        'กย':9,'กันยายน':9,'กันยา':9,
+        'ตค':10,'ตุลาคม':10,'ตุลา':10,
+        'พย':11,'พฤศจิกายน':11,'พฤศจิกา':11,
+        'ธค':12,'ธันวาคม':12,'ธันวา':12
     };
 
-
     let s = String(dateText)
-        .replace(/🗓/g, '')
-        .replace(/\./g, '')
-        .replace(/,/g, '')
-        .replace(/\s+/g, ' ')
+        .replace(/[🗓📅]/g,'')
+        .replace(/[.]/g,'')
+        .replace(/,/g,' ')
+        .replace(/[\u00A0\u2000-\u200B]/g,' ')
+        .replace(/\s+/g,' ')
         .trim();
 
+    const m = s.match(/(?:^|\s)(\d{1,2})\s*([ก-๙A-Za-z]+)\s*(\d{2}|\d{4})(?:\s|$)/i);
+    if (!m) return null;
 
-    const parts = s.split(' ');
+    const day = Number(m[1]);
+    const monthText = m[2].replace(/[^ก-๙A-Za-z]/g,'');
+    const month = monthMap[monthText];
+    let year = Number(m[3]);
 
-    if (parts.length < 3) {
-        return null;
-    }
+    if (!Number.isInteger(day) || !month || !Number.isInteger(year)) return null;
+    if (year < 100) year = 2500 + year - 543;
+    else if (year > 2400) year -= 543;
 
-
-    const day = parseInt(parts[0], 10);
-
-    let monthText = parts[1];
-
-    const month =
-        monthMap[monthText] ||
-        monthMap[monthText.replace(/\./g, '')];
-
-
-    let year = parseInt(parts[2], 10);
-
-
-    if (
-        !Number.isInteger(day) ||
-        !month ||
-        !Number.isInteger(year)
-    ) {
-        return null;
-    }
-
-
-    /*
-       68 = พ.ศ. 2568
-       69 = พ.ศ. 2569
-    */
-
-    if (year < 100) {
-        year = 2500 + year - 543;
-    }
-    else if (year > 2400) {
-        year -= 543;
-    }
-
-
-    const d =
-        new Date(
-            year,
-            month - 1,
-            day
-        );
-
-
-    if (
-        d.getFullYear() !== year ||
-        d.getMonth() !== month - 1 ||
-        d.getDate() !== day
-    ) {
-        return null;
-    }
-
-
+    const d = new Date(year, month - 1, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
     return d;
+}
+
+function extractDateFromLine(line) {
+    const raw = String(line || '');
+    const normalized = raw
+        .replace(/[🗓📅]/g,' ')
+        .replace(/[\u00A0\u2000-\u200B]/g,' ')
+        .replace(/[：]/g, ':')
+        .replace(/[‐‑‒–—―−]/g, '-')
+        .replace(/\s+/g,' ')
+        .trim();
+
+    // Deliberately accept 1 or 01 for day and 2/4-digit year.
+    // Month punctuation may be attached to the month token.
+    const m = normalized.match(/(?:^|\s)(\d{1,2})\s*([ก-๙A-Za-z](?:[ก-๙A-Za-z.]*[ก-๙A-Za-z])?)\s*[\.\-]?\s*(\d{2}|\d{4})(?=\s|:|-|$)/i);
+    if (!m) return null;
+
+    const day = String(Number(m[1]));
+    const month = m[2].replace(/[^ก-๙A-Za-z]/g,'');
+    const year = m[3];
+    const text = `${day} ${month} ${year}`;
+
+    // Locate the actual matched date in the original line, not in the normalized copy.
+    const originalMatch = raw.match(new RegExp(`${m[1]}\\s*[ก-๙A-Za-z.]+\\s*[.\\-]?\\s*${m[3]}`,'i'));
+    const matchText = originalMatch ? originalMatch[0] : text;
+    const index = originalMatch ? originalMatch.index : 0;
+    return { text, match: matchText, index: index == null ? 0 : index };
 }
 
 
@@ -416,68 +373,113 @@ function parseRecords(rawText) {
         .filter(Boolean);
 
     const parsed = [];
+    const audit = [];
+
+    // Flexible parser: tolerates 1/01 day, punctuation/spacing drift,
+    // em-dash/en-dash/ASCII hyphen, and small column shifts in copied PDF text.
+    const pairToken = /(?<!\d)(\d{2})(?!\d)/g;
+    const separator = /(?:--+|—+|–+|−+|\|)/;
 
     lines.forEach((line, lineIndex) => {
-        if (!line.includes('--')) return;
+        const dateInfo = extractDateFromLine(line);
+        if (!dateInfo) {
+            audit.push({lineIndex:lineIndex+1,line,status:'ignored',reason:'ไม่พบวันที่ที่อ่านได้'});
+            return;
+        }
 
-        const colon = line.indexOf(':');
-        if (colon < 0) return;
+        const dateObj = parseDate(dateInfo.text);
+        if (!dateObj) {
+            audit.push({lineIndex:lineIndex+1,line,status:'ignored',reason:'วันที่ไม่ถูกต้อง'});
+            return;
+        }
 
-        const dateText = line.substring(0, colon).replace('🗓', '').trim();
-        const parts = line.substring(colon + 1)
-            .split('--')
-            .map(x => x.trim());
+        // Remove the date so year/day digits can never be mistaken for 2D values.
+        const afterDate = line.slice(dateInfo.index + dateInfo.match.length)
+            .replace(/^\s*[:：]?\s*/, ' ')
+            .trim();
 
-        const lunch = normalize2D(parts[0]);
-        const evening = normalize2D(parts[1]);
+        let leftText = afterDate;
+        let rightText = '';
+        const sep = afterDate.match(separator);
+        if (sep && sep.index != null) {
+            leftText = afterDate.slice(0, sep.index);
+            rightText = afterDate.slice(sep.index + sep[0].length);
+        }
 
-        if (!lunch || !evening) return;
+        const takePairs = txt => {
+            const out=[]; let m;
+            pairToken.lastIndex=0;
+            while ((m=pairToken.exec(txt)) !== null) out.push(m[1]);
+            return out;
+        };
+
+        let lunchCandidates = takePairs(leftText);
+        let eveningCandidates = takePairs(rightText);
+
+        // If the separator is absent or PDF extraction broke the separator,
+        // use the first two clean 2D tokens after the date.
+        if (!sep || lunchCandidates.length === 0 || eveningCandidates.length === 0) {
+            const allCandidates = takePairs(afterDate);
+            lunchCandidates = allCandidates.slice(0,1);
+            eveningCandidates = allCandidates.slice(1,2);
+        }
+
+        const lunch = normalize2D(lunchCandidates[0]);
+        const evening = normalize2D(eveningCandidates[0]);
+
+        if (!lunch || !evening) {
+            audit.push({lineIndex:lineIndex+1,line,status:'ignored',reason:'ไม่พบผล 2D ครบ 2 ค่า'});
+            return;
+        }
 
         parsed.push({
-            date: dateText,
+            date: dateInfo.text,
             lunch,
             evening,
             _lineIndex: lineIndex,
-            _dateObj: parseDate(dateText)
+            _dateObj: dateObj,
+            _sourceLine: line
         });
+        audit.push({lineIndex:lineIndex+1,line,status:'accepted',date:dateInfo.text,lunch,evening});
     });
 
-    // Sort only when both dates are parseable; otherwise retain input order.
-    parsed.sort((a, b) => {
-        if (a._dateObj && b._dateObj) return a._dateObj - b._dateObj;
+    parsed.sort((a,b) => {
+        if (a._dateObj && b._dateObj) return a._dateObj - b._dateObj || a._lineIndex - b._lineIndex;
         return a._lineIndex - b._lineIndex;
     });
 
-    // A day must contain exactly one noon + one evening result in this data model.
-    // If the source contains the same parsed date more than once, exclude the entire
-    // date rather than silently choosing one row and contaminating the model.
     const dateCounts = new Map();
     parsed.forEach(r => {
-        if (r._dateObj) {
-            const key = r._dateObj.toISOString().slice(0, 10);
-            dateCounts.set(key, (dateCounts.get(key) || 0) + 1);
-        }
+        const key = r._dateObj.toISOString().slice(0,10);
+        dateCounts.set(key, (dateCounts.get(key)||0)+1);
     });
 
-    const duplicateDates = [...dateCounts.entries()].filter(([,n]) => n > 1).length;
-    const duplicateRows = [...dateCounts.values()].filter(n => n > 1).reduce((a,n)=>a+n,0);
+    const duplicateDateKeys = [...dateCounts.entries()].filter(([,n])=>n>1).map(([k])=>k);
+    const duplicateRows = [...dateCounts.values()].filter(n=>n>1).reduce((a,n)=>a+n,0);
 
     const records = parsed.filter(r => {
-        if (!r._dateObj) return true;
-        const key = r._dateObj.toISOString().slice(0, 10);
-        return dateCounts.get(key) === 1;
+        const key=r._dateObj.toISOString().slice(0,10);
+        return dateCounts.get(key)===1;
     });
 
-    const clean = records.map(({_lineIndex, _dateObj, ...r}) => r);
+    const clean = records.map(({_lineIndex,_dateObj,_sourceLine,...r})=>r);
     parseRecords.lastMeta = {
+        totalLines: lines.length,
         parsedRows: parsed.length,
         uniqueDays: clean.length,
-        duplicateDates,
+        duplicateDates: duplicateDateKeys.length,
         duplicateRows,
-        invalidOrIgnoredLines: lines.length - parsed.length
+        duplicateDateKeys,
+        invalidOrIgnoredLines: lines.length - parsed.length,
+        acceptedRows: parsed.length,
+        rejectedRows: lines.length - parsed.length,
+        acceptedLineNumbers: audit.filter(x=>x.status==='accepted').map(x=>x.lineIndex),
+        rejectedLineNumbers: audit.filter(x=>x.status!=='accepted').map(x=>x.lineIndex),
+        audit
     };
     return clean;
 }
+
 
 
 /* ============================================================
@@ -1613,13 +1615,42 @@ function v30FinalPrediction(records,mode){
     return {t1:top.digits[0],t2:top.digits[1],t3:top.digits[2],pairsT1:groups[0],pairsT2:groups[1],pairsT3:groups[2],pairProbability:pp,topDigitProbability:top,engine:'v3.0-deep-consensus'};
 }
 
+
+/* v3.1 META SELECTOR: choose between v2.9 and v3.0 only from blocked past validation. */
+function v31MetaPrediction(records,mode){
+    if(records.length<48){
+        const p=v30FinalPrediction(records,mode);
+        return {...p, learnedProfile:{top:'v3.0-consensus',pair:'consensus',selector:'cold-start'}};
+    }
+    const engines=[v27FinalPrediction,v30FinalPrediction], blocks=[12,18,24];
+    const score=engines.map(()=>({pair:0,top:0,n:0}));
+    blocks.forEach((hold,bi)=>{
+        const start=Math.max(30,records.length-hold), bw=bi===0?.30:bi===1?.35:.35;
+        for(let i=start;i<records.length;i++){
+            const prefix=records.slice(0,i);
+            const actuals=mode==='allday'?[records[i].lunch,records[i].evening]:[mode==='lunch'?records[i].lunch:records[i].evening];
+            engines.forEach((fn,k)=>{
+                const pr=fn(prefix,mode);
+                if(actuals.some(a=>isValid2D(a)&&getAllPredictionPairs(pr).includes(a))) score[k].pair+=bw;
+                if(actuals.some(a=>isValid2D(a)&&getDigits(a).some(d=>[pr.t1,pr.t2,pr.t3].includes(String(d))))) score[k].top+=bw;
+                score[k].n+=bw;
+            });
+        }
+    });
+    const rates=score.map(x=>.72*((x.pair+2)/(x.n+8))+.28*((x.top+2)/(x.n+8)));
+    const total=rates[0]+rates[1], w0=total?rates[0]/total:.5;
+    const shrink=Math.min(.70,Math.max(.25,(records.length-48)/(records.length+30)));
+    const w=shrink*w0+(1-shrink)*.5;
+    const chosen=w>=.5?0:1;
+    const p=engines[chosen](records,mode);
+    return {...p, learnedProfile:{top:chosen===0?'v2.9-adaptive':'v3.0-consensus',pair:chosen===0?'adaptive-rank':'consensus-rank',selector:'v3.1-multi-block-meta',weights:[w,1-w],validationRates:rates}};
+}
+
 /* v2.9: multi-block OOS expert weighting + pairability-aware Top3 + conservative shrinkage */
 function analyzePrecisionEngineInternal(records, mode) {
-    if(!records || records.length===0){
-        return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date',pairRanker:'v3.0-deep-consensus'};
-    }
-    const pred=v30FinalPrediction(records,mode);
-    return {...pred,pairRanker:'v3.0-deep-consensus',targetDate:getNextTargetDate(records[records.length-1].date)};
+    if(!records || records.length===0){ return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date',pairRanker:'v3.1-meta-selector'}; }
+    const pred=v31MetaPrediction(records,mode);
+    return {...pred,pairRanker:'v3.1-meta-selector',targetDate:getNextTargetDate(records[records.length-1].date)};
 }
 
 /* ============================================================
@@ -1960,9 +1991,15 @@ function generateAccuracySummaryHTML(records, lunch, evening, allDay) {
     const tested = (lunch.total || 0) + (evening.total || 0);
     const testedDays = allDay.total || 0;
     const meta = parseRecords.lastMeta || {};
+    const accepted = meta.acceptedRows ?? usable;
+    const rejected = meta.rejectedRows ?? 0;
+    const dup = meta.duplicateDates ?? 0;
+    const parserRate = meta.totalLines ? (100 * accepted / meta.totalLines) : 0;
+    const qualityText = `อ่านได้ ${accepted}/${meta.totalLines || accepted} บรรทัด (${parserRate.toFixed(2)}%)${rejected ? ` · ข้าม ${rejected} บรรทัด` : ''}`;
     return `
         <div class="accuracy-summary-title">📈 สรุปความแม่นย้อนหลังของระบบ — แยกจากการ์ดผลลัพธ์</div>
         <div class="accuracy-grid">
+            <div class="accuracy-box"><div class="accuracy-box-title">คุณภาพ Parser</div><div class="accuracy-box-value">${parserRate.toFixed(2)}%</div><div class="accuracy-box-sub">${qualityText} · วันที่ซ้ำ ${dup} วัน</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">ข้อมูลที่นำมาประมวลผล</div><div class="accuracy-box-value">${usable} วัน</div><div class="accuracy-box-sub">${draws} รอบจริง (เที่ยง ${usable} + เย็น ${usable})</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">คุณภาพข้อมูล</div><div class="accuracy-box-value">${meta.duplicateDates || 0} วันซ้ำ</div><div class="accuracy-box-sub">ตัดทิ้งทั้งวันเพื่อไม่ให้ข้อมูลซ้ำปนโมเดล</div></div>
             <div class="accuracy-box"><div class="accuracy-box-title">Walk-forward ที่ทดสอบ</div><div class="accuracy-box-value">${testedDays} วัน</div><div class="accuracy-box-sub">อุ่นเครื่อง 60 วันก่อนเริ่มทดสอบ / เที่ยง+เย็นรวม ${tested} observations</div></div>
@@ -1973,6 +2010,9 @@ function generateAccuracySummaryHTML(records, lunch, evening, allDay) {
         </div>
         <div style="margin-top:10px;background:#fff;padding:10px;border:1px solid #eae2d0;border-radius:10px;font-size:9px;color:#666;line-height:1.6;">
             <b>🔬 มิติใหม่ของ Audit:</b> ดูทั้ง Accuracy, Lift เทียบ Random, คุณภาพการเปลี่ยน Top 3 → 15 คู่, อันดับของคู่ที่เข้า, ผลช่วงต้น/กลาง/ท้าย และ 20 Observation ล่าสุด เพื่อแยกให้ออกว่า Engine แม่นจริงหรือเพียงมีช่วงที่ดีชั่วคราว
+        </div>
+        <div style="margin-top:10px;background:#fff;padding:10px;border:1px solid #eae2d0;border-radius:10px;font-size:9px;color:#666;line-height:1.6;">
+            <b>🧾 Parser Integrity:</b> ระบบ normalize วันที่ 1/01 ให้เป็นวันเดียวกัน, ยอมรับ spacing/เครื่องหมายคั่นที่เบี้ยวเล็กน้อย และไม่ใช้เลขจากปีเป็นเลข 2D หากไม่อยู่หลังวันที่ หากพบวันที่ซ้ำจะตัดทั้งวันออกแทนการเลือกแถวใดแถวหนึ่ง
         </div>`;
 }
 
@@ -2535,9 +2575,9 @@ function v28LearnProfile(records,mode){
 
 // Override prediction: เลือก profile จาก validation ก่อนหน้าเท่านั้น
 function analyzePrecisionEngineInternal(records,mode){
-    if(!records||!records.length)return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date',pairRanker:'v3.0-deep-consensus'};
-    const pred=v30FinalPrediction(records,mode);
-    return {...pred,targetDate:getNextTargetDate(records[records.length-1].date),pairRanker:'v3.0-deep-consensus'};
+    if(!records||!records.length)return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date',pairRanker:'v3.1-meta-selector'};
+    const pred=v31MetaPrediction(records,mode);
+    return {...pred,targetDate:getNextTargetDate(records[records.length-1].date),pairRanker:'v3.1-meta-selector'};
 }
 
 // Override audit: เพิ่ม profile stability และ top->pair conversion แบบไม่เปลี่ยนนิยามหลัก
@@ -2553,13 +2593,14 @@ async function runBacktestAudit(records,mode,onProgress){
         acts.forEach(a=>{if(!isValid2D(a))return; const r=getPairRank(pred,a);if(r!==null)best=best===null?r:Math.min(best,r); [pred.pairsT1,pred.pairsT2,pred.pairsT3].forEach((g,k)=>{if(g.includes(a))local[k]=true;}); const ds=getDigits(a).map(String);if(ds.includes(pred.t1))top1++;if(ds.includes(pred.t2))top2++;if(ds.includes(pred.t3))top3++;});
         total++;pf.push(ph);tf.push(th);local.forEach((v,k)=>{if(v)groups[k]++;});if(ph&&best!==null)ranks.push(best);if(mode==='allday'&&acts.every(a=>pairHit(pred,a)))bothRound++;
         if(th&&!ph)topOnly++; if(ph){pairHits++;win++;lose=0;maxWin=Math.max(maxWin,win);}else{lose++;win=0;maxLose=Math.max(maxLose,lose);} if(th)topHits++;
-        const lp=pred.learnedProfile?.top+'+'+pred.learnedProfile?.pair;profileCounts[lp]=(profileCounts[lp]||0)+1;
+        const lp=pred.learnedProfile ? `${pred.learnedProfile.top}+${pred.learnedProfile.pair}` : (pred.engineProfile || pred.pairRanker || 'unknown');
+        profileCounts[lp]=(profileCounts[lp]||0)+1;
         if(onProgress&&(i-MIN_HISTORY)%2===0){onProgress((i-MIN_HISTORY+1)/totalPossible*100);await nextTick();}
     }
     const pci=getWilson95(pairHits,total),tci=getWilson95(topHits,total),split=Math.max(1,Math.floor(total/3));
     const early=100*pf.slice(0,split).filter(Boolean).length/Math.max(1,pf.slice(0,split).length),mid=100*pf.slice(split,split*2).filter(Boolean).length/Math.max(1,pf.slice(split,split*2).length),late=100*pf.slice(split*2).filter(Boolean).length/Math.max(1,pf.slice(split*2).length);
     const recent=pf.slice(-20),rt=tf.slice(-20);
-    return {total,hits:pairHits,misses:total-pairHits,topHits,topMisses:total-topHits,pairHitAcc:pci.rate.toFixed(2),topHitAcc:tci.rate.toFixed(2),pairCI:{low:pci.low.toFixed(2),high:pci.high.toFixed(2)},topCI:{low:tci.low.toFixed(2),high:tci.high.toFixed(2)},maxWinStreak:maxWin,maxLoseStreak:maxLose,baselinePair:mode==='allday'?27.75:15,baselineTop:mode==='allday'?75.99:51,recentPair20:100*recent.filter(Boolean).length/Math.max(1,recent.length),recentTop20:100*rt.filter(Boolean).length/Math.max(1,rt.length),pairWhenTopHit:topHits?100*pairHits/topHits:null,topOnlyHits:topOnly,avgHitRank:ranks.length?ranks.reduce((a,b)=>a+b,0)/ranks.length:null,medianHitRank:ranks.length?[...ranks].sort((a,b)=>a-b)[Math.floor(ranks.length/2)]:null,top1Hits:top1,top2Hits:top2,top3Hits:top3,pairGroupHits:groups,bothRoundPairHits:bothRound,rankTop5Hits:ranks.filter(x=>x<=5).length,rankTop10Hits:ranks.filter(x=>x<=10).length,rankTop5Rate:ranks.length?100*ranks.filter(x=>x<=5).length/ranks.length:null,rankTop10Rate:ranks.length?100*ranks.filter(x=>x<=10).length/ranks.length:null,avgAdaptiveWeights:[null],legacyChampionRate:0,earlyPair:early,midPair:mid,latePair:late,profileCounts,goal30:pairHits/total*100>=30,goal50:pairHits/total*100>=50,strategy:'v2.8 Clean Rank + Joint Top3/Pair Validation'};
+    return {total,hits:pairHits,misses:total-pairHits,topHits,topMisses:total-topHits,pairHitAcc:pci.rate.toFixed(2),topHitAcc:tci.rate.toFixed(2),pairCI:{low:pci.low.toFixed(2),high:pci.high.toFixed(2)},topCI:{low:tci.low.toFixed(2),high:tci.high.toFixed(2)},maxWinStreak:maxWin,maxLoseStreak:maxLose,baselinePair:mode==='allday'?27.75:15,baselineTop:mode==='allday'?75.99:51,recentPair20:100*recent.filter(Boolean).length/Math.max(1,recent.length),recentTop20:100*rt.filter(Boolean).length/Math.max(1,rt.length),pairWhenTopHit:topHits?100*pairHits/topHits:null,topOnlyHits:topOnly,avgHitRank:ranks.length?ranks.reduce((a,b)=>a+b,0)/ranks.length:null,medianHitRank:ranks.length?[...ranks].sort((a,b)=>a-b)[Math.floor(ranks.length/2)]:null,top1Hits:top1,top2Hits:top2,top3Hits:top3,pairGroupHits:groups,bothRoundPairHits:bothRound,rankTop5Hits:ranks.filter(x=>x<=5).length,rankTop10Hits:ranks.filter(x=>x<=10).length,rankTop5Rate:ranks.length?100*ranks.filter(x=>x<=5).length/ranks.length:null,rankTop10Rate:ranks.length?100*ranks.filter(x=>x<=10).length/ranks.length:null,avgAdaptiveWeights:[null],legacyChampionRate:0,earlyPair:early,midPair:mid,latePair:late,profileCounts,goal30:pairHits/total*100>=30,goal50:pairHits/total*100>=50,strategy:'v3.1 Multi-Block Meta Selector + Robust Pair Consensus'};
 }
 
 
