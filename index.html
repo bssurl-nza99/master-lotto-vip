@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY ANALYSIS SYSTEM · V3.23.0 DECISION MEMORY + CARD · CALENDAR DATE ENGINE</title>
+<title>ทรัพย์นำโชค · AI LOTTERY ANALYSIS SYSTEM · V3.24.0 REAL OOS PERCENTAGES · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1502,7 +1502,7 @@ html{scroll-behavior:auto!important}
 .prediction-card .card-brand-tag,.prediction-card .card-action-btn{border-radius:0 !important;box-shadow:none !important}
 </style>
 <style id="v323-professional-card">
-/* V3.23.0 UI-only: compact professional prediction card. No selector/formula changes. */
+/* V3.24.0 UI-only: compact professional prediction card + real OOS percentages. No selector/formula changes. */
 .prediction-card{
   padding:16px 18px!important;
   margin-bottom:16px!important;
@@ -1565,7 +1565,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.23.0 — DECISION MEMORY + CARD</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.24.0 — REAL OOS PERCENTAGES</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -3317,30 +3317,51 @@ function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=
 function decisionStats(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionStats"); try {const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}} finally { window.__PERFTRACE__.end("decisionStats",__pt0); }}
 function decisionMemorySummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>decisionMemory(rs)),n=xs.reduce((s,x)=>s+x.tests,0),h=xs.reduce((s,x)=>s+x.hits,0);return{n,h,r:pct(h,n)}}
 function selectionDashboard(rs,routeCtx=null){const sx=selectionStats(rs,routeCtx),dx=decisionStats(rs,routeCtx),mem=decisionMemory(rs,routeCtx),routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name):null,c=candidateBoard(rs,audit(rs),rs,routeProfile,routeCtx),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).map(q=>`${q.digit} ${q.r}% (${q.h}/${q.n})`).join(' · '),cand=c.map(q=>`${q.digit} ${Number(q.score||0).toFixed(2)} · ${q.count||0} สูตร · ${q.gate?'ผ่านเกณฑ์':'พัก'}`).join('  |  ');return`<div class="summary-table-container"><h3 style="color:#78590f;font-size:.78rem;margin:12px 0 8px">🧠 ตัวคัดเลือกเลขเด่น · OOS + Memory + Digit History + กระดานตัวเลือก</h3><table class="audit-table"><thead><tr><th>ส่วน</th><th>รายการ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด/ความเสี่ยง</th><th>อัตรา/Final</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>สูงสุด/สถานะ</th><th>รายละเอียด</th></tr></thead><tbody><tr><td><b>ตัวคัดเลือก</b></td><td>Walk-Forward OOS</td><td>${sx.total}</td><td>${sx.hits}</td><td>${sx.misses}</td><td><span class="score-chip">${sx.rate}%</span></td>${sx.displayHorizon.map(h=>`<td>${h.rate==null?'—':h.rate+'%'}</td>`).join('')}<td>เข้า ${sx.maxHit} · หลุด ${sx.maxMiss} · ปัจจุบัน ${sx.curMiss}</td><td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td></tr><tr><td><b>Decision Memory</b></td><td>บทเรียนสะสม</td><td>${mem.tests}</td><td>${mem.hits}</td><td>${mem.misses}</td><td><span class="score-chip">${mem.rate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>context ≥ 6</td><td>ใช้ความจำเฉพาะรูปแบบที่เคยเกิดจริง</td></tr><tr><td><b>ประวัติเลข</b></td><td>ถูก/ผิดแยกตัว</td><td>${dx.digitTotal}</td><td>${dx.digitHits}</td><td>${dx.digitTotal-dx.digitHits}</td><td><span class="score-chip">${dx.digitRate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>คู่ 2 ตัว ${dx.pairRate}</td><td>${digits||'ยังไม่มีข้อมูล'}</td></tr><tr><td><b>กระดานตัวเลือก</b></td><td>Final Score</td><td>—</td><td>—</td><td>—</td><td>—</td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td><td>${cand}</td></tr></tbody></table></div>`}
-function __v323DigitConfidence(q,rank,total){const s=Number(q?.score||0),is=Number(q?.independentSupport||0),mr=q?.memoryRate==null?null:Number(q.memoryRate);if(Number.isFinite(mr)&&mr>=0)return Math.max(1,Math.min(99,Math.round(mr)));const raw=50+s*12+is*7-(Math.max(0,rank-1)*1.8);return Math.max(5,Math.min(95,Math.round(raw)))}
-function pairPill(x){const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';const rate=x.hitRate==null?null:Number(x.hitRate);return`<div class="floating-pill ${cls}" title="อันดับ ${x.rank||'-'} · OOS ${x.tests||0} ครั้ง · ${rate==null?'ยังไม่มี OOS rate':rate+'%'}"><div class="v323-pair-number">${x.pair}</div><div class="v323-pair-rate ${rate==null?'no-data':''}">${rate==null?'—':rate+'%'}</div></div>`}
-function card(c,index=0){const id=`v1_card_${index}_${Math.random().toString(36).slice(2,7)}`,title=formatDisplayTitle(c.lotteryName),sel=c.selection||{},board=Array.isArray(c.consensus)?c.consensus:[],byDigit=new Map(board.map(q=>[Number(q.digit),q])),d1q=byDigit.get(Number(c.d1))||sel.d1||{},d2q=byDigit.get(Number(c.d2))||sel.d2||{},ordered=board.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)),r1=Math.max(1,ordered.findIndex(q=>Number(q.digit)===Number(c.d1))+1),r2=Math.max(1,ordered.findIndex(q=>Number(q.digit)===Number(c.d2))+1),p1=__v323DigitConfidence(d1q,r1,ordered.length),p2=__v323DigitConfidence(d2q,r2,ordered.length);return`<div class="prediction-card" id="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">${flag(title)}</div><div class="card-info"><small>${esc(c.nextDate)}</small><b>${esc(title)}</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ ทรัพย์นำโชค ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','${esc(title)}')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div><div class="hero-circle">${c.d1}</div></div><div><span class="hero-label">เด่น</span><div class="v323-confidence"><b>${p1}%</b><small>มั่นใจระบบ</small></div></div></div><div class="hero-digit-badge hero-silver"><div><div class="hero-circle">${c.d2}</div></div><div><span class="hero-label">รอง</span><div class="v323-confidence"><b>${p2}%</b><small>มั่นใจระบบ</small></div></div></div></div><div class="pairs-grid-container"><div class="pair-row-inline" data-owner="${c.d1}">${(c.d1Pairs||[]).slice(0,5).map(pairPill).join('')}</div><div class="pair-row-inline" data-owner="${c.d2}">${(c.d2Pairs||[]).slice(0,5).map(pairPill).join('')}</div></div></div>`}
-function board(ad,s){const c=(s?.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),top=new Set([s?.d1,s?.d2]);return`<div class="summary-table-container"><div class="consensus-head"><b>🧠 กระดานตัวเลือก · Final Score</b><span style="font-size:.48rem;color:#827768">เด่น ${s?.d1??'-'} · รอง ${s?.d2??'-'}</span></div><div class="digit-board">${c.map(q=>`<div class="digit-cell ${top.has(q.digit)?'hot':''}"><b>${q.digit}</b><small>Final ${Number(q.score||0).toFixed(2)} · Base ${Number(q.scoreBreakdown?.formulaSupport||0).toFixed(2)}</small><span>${q.count||0} สูตร · ${q.gate?'ผ่านเกณฑ์':'พัก'}</span></div>`).join('')}</div></div>`}
-function table(lottery,rs,ad){let rows=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0)).map((f,i)=>{const x=ad[f],s=execFormula(f,rs.at(-1),rs.at(-2))||[],status=x.curMiss>=2?`🔴 หลุด ${x.curMiss} งวด`:x.latest?.hit?'🟢 เข้า':x.latest?.hundredsOnly?'⚠️ หลุด (หลักร้อย)':'🟡 หลุด 1 งวด';return`<tr><td><span class="badge-rank-${i<3?i+1:'other'}">อันดับ ${i+1}</span></td><td class="formula-cell">${esc(f)}</td><td><b style="color:#78590f">${s.length?s.join('-'):'-'}</b></td><td>${x.total}</td><td><span style="color:#2e7d32;font-weight:bold">${x.hits}</span> / <span style="color:#c62828;font-weight:bold">${x.misses}</span></td><td><span class="score-chip">${x.rate}%</span></td>${x.displayHorizon.map(h=>`<td>${h.rate==null?'—':`${h.rate}%`}</td>`).join('')}<td>${x.recency==null?'—':x.recency+'%'}</td><td>${x.stability==null?'—':x.stability+'%'}</td><td>${x.trend}</td><td>${x.maxHit}</td><td>${x.maxMiss}</td><td>${x.curMiss}</td><td>${status}</td><td><button class="add-card-btn" onclick="addFormulaCard('${encodeURIComponent(lottery)}','${encodeURIComponent(f)}')">＋ เพิ่มการ์ด</button></td></tr>`}).join('');return`<div class="summary-table-container"><h3 class="lottery-audit-title">🧾 ${esc(formatDisplayTitle(lottery))}</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>ชื่อสูตร</th><th>เลขล่าสุด</th><th>ทดสอบ</th><th>เข้า / หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>ความใหม่</th><th>สม่ำเสมอ</th><th>แนวโน้ม</th><th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th><th>หลุดล่าสุด</th><th>สถานะ</th><th>การ์ด</th></tr></thead><tbody>${rows}</tbody></table></div>`}
-function globalSelectionSummary(groups){
-  const entries=Object.entries(groups)
-    .filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v))
-    .map(([name,rs])=>({name,rs,sx:selectionStats(rs,{name,groups})}))
-    .filter(x=>x.sx.total>0);
-  const totalTests=entries.reduce((n,x)=>n+x.sx.total,0);
-  const totalHits=entries.reduce((n,x)=>n+x.sx.hits,0);
-  const totalMisses=totalTests-totalHits;
-  const pooledRate=pct(totalHits,totalTests);
-  const rates=entries.map(x=>x.sx.rate).filter(v=>Number.isFinite(v));
-  const sorted=rates.slice().sort((a,b)=>a-b);
-  const avgRate=sorted.length?Math.round(avg(sorted)*100)/100:null;
-  const medianRate=sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:Math.round(((sorted[sorted.length/2-1]+sorted[sorted.length/2])/2)*100)/100):null;
-  const pass70=entries.filter(x=>x.sx.rate>=70).length;
-  const pass60=entries.filter(x=>x.sx.rate>=60).length;
-  const best=entries.slice().sort((a,b)=>b.sx.rate-a.sx.rate||b.sx.total-a.sx.total)[0]||null;
-  const worst=entries.slice().sort((a,b)=>a.sx.rate-b.sx.rate||b.sx.total-a.sx.total)[0]||null;
-  return `<div class="global-selection-panel"><div class="global-selection-head"><b>🎯 Selection Hit Rate รวมทุกหวย · OOS จริง</b><span>อ่านจากข้อมูลทุกหวยในช่องเดียว<br>ไม่นับ __THAI_ALLDAY__ เป็นหวยแยก</span></div><div class="global-selection-grid"><div class="global-selection-item primary"><small>อัตราเลือกถูกแบบ Digit Hit รวมทุก OOS</small><b>${totalHits}/${totalTests} · ${pooledRate}%</b><span>เข้า ${totalHits} · หลุด ${totalMisses}</span></div><div class="global-selection-item"><small>หวยที่มี OOS</small><b>${entries.length} หวย</b><span>จากข้อมูลที่มีผลเพียงพอ</span></div><div class="global-selection-item"><small>ผ่านมาตรฐาน ≥70%</small><b>${pass70}/${entries.length||0} หวย</b><span>คิดจาก Digit Hit Rate รายหวย</span></div><div class="global-selection-item"><small>ผ่านมาตรฐาน ≥60%</small><b>${pass60}/${entries.length||0} หวย</b><span>คิดจาก Digit Hit Rate รายหวย</span></div><div class="global-selection-item"><small>ค่าเฉลี่ย Digit Hit Rate ต่อหวย</small><b>${avgRate==null?'—':avgRate+'%'}</b><span>ให้น้ำหนักแต่ละหวยเท่ากัน</span></div><div class="global-selection-item"><small>Median Digit Hit Rate ต่อหวย</small><b>${medianRate==null?'—':medianRate+'%'}</b><span>ค่ากลางของหวยทั้งหมด</span></div><div class="global-selection-item"><small>ดีที่สุด</small><b>${best?esc(formatDisplayTitle(best.name)):'—'}</b><span>${best?best.sx.rate+'% · '+best.sx.hits+'/'+best.sx.total:'—'}</span></div><div class="global-selection-item"><small>ต่ำสุด</small><b>${worst?esc(formatDisplayTitle(worst.name)):'—'}</b><span>${worst?worst.sx.rate+'% · '+worst.sx.hits+'/'+worst.sx.total:'—'}</span></div></div><div class="global-selection-foot">เกณฑ์หลักของระบบยังแยกชัดเจน: <b>Selection Hit Rate รวม</b> = ทุก OOS decision รวมกัน; ส่วน <b>ผ่าน ≥70% / ≥60%</b> = นับเป็นรายหวย เพื่อดูว่าความแม่นครอบคลุมหลายหวยจริงหรือไม่</div></div>`
+/* V3.24.0 REAL OOS CARD METRICS
+   Display percentages are empirical OOS/history rates already produced by the system.
+   No heuristic score->percentage conversion is allowed in the prediction card.
+   D1/D2: exact digit hit-rate from the same chronological cooperative OOS decision log.
+   Pair: contextual OOS hit-rate when available; otherwise exact historical pair hit-rate
+         over completed rows only. The current unknown target is never included.
+*/
+const __REAL_PAIR_RATE_CACHE__=new WeakMap();
+function __realPairRateMap(rs){
+  if(!Array.isArray(rs))return new Map();
+  const cached=__REAL_PAIR_RATE_CACHE__.get(rs);if(cached)return cached;
+  const map=new Map();
+  for(let a=0;a<10;a++)for(let b=0;b<10;b++)if(a!==b){
+    const p=`${a}${b}`;let n=0,h=0;
+    for(const r of rs){if(!r||r.breakBefore)continue;n++;if(pairHit(p,r))h++;}
+    map.set(p,{hits:h,tests:n,rate:n?pct(h,n):0,source:'historical-completed-rows'});
+  }
+  __REAL_PAIR_RATE_CACHE__.set(rs,map);return map;
 }
+function __realDigitRate(dx,digit){
+  const q=(dx?.by||[]).find(x=>Number(x.digit)===Number(digit));
+  return q&&Number(q.n)>0?{rate:Number(q.r),hits:Number(q.h),tests:Number(q.n),source:'cooperative-OOS-digit'}:null;
+}
+function __realDigitHistoryRate(rs,digit){
+  if(!Array.isArray(rs)||!rs.length)return null;
+  let tests=0,hits=0;
+  for(const r of rs){if(!r||r.breakBefore)continue;tests++;const target=[...String(r.n3||'').slice(1),...String(r.n2||'')].map(Number);if(target.includes(Number(digit)))hits++;}
+  return tests?{rate:pct(hits,tests),hits,tests,source:'historical-completed-draws'}:null;
+}
+function __realPairDisplay(x,rs){
+  const contextual=x&&Number(x.tests)>0&&Number.isFinite(Number(x.hitRate));
+  if(contextual)return{rate:Number(x.hitRate),hits:Number(x.hits||0),tests:Number(x.tests||0),source:'contextual-OOS'};
+  const m=__realPairRateMap(rs).get(String(x?.pair||''));
+  return m||{rate:0,hits:0,tests:0,source:'historical-completed-rows'};
+}
+function pairPill(x,rs){
+  const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';
+  const z=__realPairDisplay(x,rs),rate=Number(z.rate);
+  return`<div class="floating-pill ${cls}" title="อันดับ ${x.rank||'-'} · ${z.source} · ${z.tests} ครั้ง · ${rate}%"><div class="v323-pair-number">${x.pair}</div><div class="v323-pair-rate">${rate}%</div></div>`;
+}
+function card(c,index=0){
+  const id=`v1_card_${index}_${Math.random().toString(36).slice(2,7)}`,title=formatDisplayTitle(c.lotteryName),real=c.__realCardMetrics||null,records=Array.isArray(c.__pairEvidenceRecords)?c.__pairEvidenceRecords:[],d1Real=__realDigitRate(real,Number(c.d1))||__realDigitHistoryRate(records,Number(c.d1)),d2Real=__realDigitRate(real,Number(c.d2))||__realDigitHistoryRate(records,Number(c.d2)),p1=d1Real?d1Real.rate:0,p2=d2Real?d2Real.rate:0;
+  return`<div class="prediction-card" id="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">${flag(title)}</div><div class="card-info"><small>${esc(c.nextDate)}</small><b>${esc(title)}</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ ทรัพย์นำโชค ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','${esc(title)}')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div><div class="hero-circle">${c.d1}</div></div><div><span class="hero-label">เด่น</span><div class="v323-confidence"><b>${p1}%</b></div></div></div><div class="hero-digit-badge hero-silver"><div><div class="hero-circle">${c.d2}</div></div><div><span class="hero-label">รอง</span><div class="v323-confidence"><b>${p2}%</b></div></div></div></div><div class="pairs-grid-container"><div class="pair-row-inline" data-owner="${c.d1}">${(c.d1Pairs||[]).slice(0,5).map(x=>pairPill(x,records)).join('')}</div><div class="pair-row-inline" data-owner="${c.d2}">${(c.d2Pairs||[]).slice(0,5).map(x=>pairPill(x,records)).join('')}</div></div></div>`;
+}
+
 
 
 
@@ -5625,7 +5646,7 @@ function __V3114BoardOrder(board,d1,d2,rs){
   (Array.isArray(board)?board:[]).forEach(q=>add(q?.digit));
   return out.slice(0,__V3114_PAIR_POLICY.boardSize);
 }
-/* V3.23.0 DECISION MEMORY + CARD
+/* V3.24.0 REAL OOS PERCENTAGES + DECISION MEMORY + CARD
    Research-only challenger. It never mutates Production Selector, F1-F9, or the board.
    For each completed target, the challenger is learned only from prefixes strictly
    before that target. It tests one narrow hypothesis: close-margin D2 correction from
@@ -6125,6 +6146,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     const sorted=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0)),bestFormula=sorted[0],bestRate=bestFormula?(ad[bestFormula]?.rate??0):0,bestConfidence=esc(s.selection?.confidence||'ไม่ระบุ');
     await yieldFrame();
     const dx=await decisionStatsCooperative(rs,routeCtx);await yieldFrame();
+    p.__realCardMetrics=dx;p.__pairEvidenceRecords=hist;
     const mem={rate:0,hits:0,tests:0},topDigits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r||b.n-a.n).slice(0,5),board=(s.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support).slice(0,3),delta=Number.isFinite(pen.adaptiveRate)&&Number.isFinite(pen.rate)?(pen.adaptiveRate-pen.rate):0;
     globalStats.push({name,ad,sx,dx,mem,pen,bestFormula,bestRate});
     snapshotGrid.insertAdjacentHTML('beforeend',card(p,1000+ni));
@@ -6179,7 +6201,7 @@ function __dnaExecutivePanel(){
 function __productionCorePanel(){const rows=__SELECTOR_DIAGNOSTIC__?.rows||[];const n=rows.length;const hit=k=>rows.filter(r=>r?.[k]).length;const pct=x=>n?((x/n)*100).toFixed(2):'-';return `<section class="selector-diag-panel production-core"><div class="selector-diag-head"><div><b>PRODUCTION CORE · F1–F9 + CHAMPION</b><small>ส่วนใช้งานจริง · ไม่มี Optimizer/Challenger รันอัตโนมัติ</small></div><span>LOCKED</span></div><div class="dna-core-grid"><div class="dna-core-card"><strong>OOS</strong><span>${n}</span></div><div class="dna-core-card"><strong>Board Top2</strong><span>${pct(hit('boardTop2Hit'))}%</span></div><div class="dna-core-card"><strong>InBoard</strong><span>${pct(hit('targetInBoard'))}%</span></div><div class="dna-core-card"><strong>Selection</strong><span>${pct(hit('selectionHit'))}%</span></div></div><div class="forensic-data-note">Champion และ F1–F9 ยังคงสูตร/โครงสร้างเดิม · DNA V2.0 ทำงานเป็น Production Weight แบบ Walk-Forward ที่จำกัดการปรับและใช้ข้อมูลอดีตเท่านั้น</div></section>`}
 function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
-window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
+window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs),__realCardMetrics:decisionStats(rs,base.routeCtx||null),__pairEvidenceRecords:base.historicalRecords||rs};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
 function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};window.showToast=showToast;
 function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
 let html2canvasLoader=null;function ensureHtml2Canvas(){if(typeof html2canvas==='function')return Promise.resolve();if(html2canvasLoader)return html2canvasLoader;html2canvasLoader=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.crossOrigin='anonymous';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('html2canvas load failed'));document.head.appendChild(sc)});return html2canvasLoader}
@@ -6216,7 +6238,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.11.5';
+const APP_BUILD_VERSION='V3.24.0';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
