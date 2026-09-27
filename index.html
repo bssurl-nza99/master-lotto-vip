@@ -1,7 +1,7 @@
 <script>
 
 /* ============================================================
-   MYANMAR 2D REAL STATISTICAL ENGINE
+   MYANMAR 2D REAL STATISTICAL ENGINE v8.1
    ============================================================
 
    DATA MODEL
@@ -720,132 +720,112 @@ function getDigitMarginalDistribution(values) {
    จึงไม่เกิด future leakage
    ============================================================ */
 
+function _normalize100(arr) {
+    const total = arr.reduce((a,b)=>a+b,0) || 1;
+    return arr.map(x=>x/total);
+}
+
+function _pairFreq(values, windowSize, alpha=0.5) {
+    const vals = values.slice(-windowSize);
+    const c = Array(100).fill(alpha);
+    vals.forEach(v=>{
+        if(isValid2D(v)) c[parseInt(v,10)]++;
+    });
+    return _normalize100(c);
+}
+
+function _transitionPair(records, mode, sourceType, alpha=0.5) {
+    const c=Array(100).fill(alpha);
+    let source = null;
+    if(mode==='lunch') source=records.at(-1)?.evening;
+    else source=records.at(-1)?.lunch;
+    if(!isValid2D(source)) return _normalize100(c);
+    for(let i=1;i<records.length;i++){
+        let src,tgt;
+        if(sourceType==='cross'){
+            src=mode==='lunch'?records[i-1].evening:records[i-1].lunch;
+        }else{
+            src=mode==='lunch'?records[i-1].lunch:records[i-1].evening;
+        }
+        tgt=mode==='lunch'?records[i].lunch:records[i].evening;
+        if(src===source && isValid2D(tgt)) c[parseInt(tgt,10)]++;
+    }
+    return _normalize100(c);
+}
+
+function _orbitSupport(records, mode) {
+    const out=Array(100).fill(0);
+    const last=mode==='lunch'?records.at(-1)?.lunch:records.at(-1)?.evening;
+    const cross=mode==='lunch'?records.at(-1)?.evening:records.at(-1)?.lunch;
+    const seeds=[...getDigits(last),...getDigits(cross)];
+    for(let p=0;p<100;p++){
+        const t=Math.floor(p/10), u=p%10;
+        let score=0;
+        seeds.forEach(d=>{
+            const dt=(t-d+10)%10, du=(u-d+10)%10;
+            if([1,2,8,9].includes(dt)) score+=1;
+            if([1,2,8,9].includes(du)) score+=0.7;
+            if(dt===0) score+=0.45;
+            if(du===0) score+=0.30;
+        });
+        out[p]=score;
+    }
+    return _normalize100(out.map(x=>x+0.05));
+}
+
+function _arithmeticSupport(records, mode) {
+    const out=Array(100).fill(0);
+    const a=mode==='lunch'?records.at(-1)?.evening:records.at(-1)?.lunch;
+    const b=mode==='lunch'?records.at(-1)?.lunch:records.at(-1)?.evening;
+    const seeds=[...getDigits(a),...getDigits(b)];
+    for(let p=0;p<100;p++){
+        const t=Math.floor(p/10),u=p%10;
+        let z=0;
+        seeds.forEach(d=>{
+            const transforms=[d+1,d-1,d+2,d-2,10-d, d*2, d+3,d-3].map(x=>((x%10)+10)%10);
+            if(transforms.includes(t)) z+=0.6;
+            if(transforms.includes(u)) z+=0.4;
+        });
+        const sum=(t+u)%10, diff=(t-u+10)%10;
+        if(seeds.includes(sum)) z+=0.5;
+        if(seeds.includes(diff)) z+=0.35;
+        out[p]=z;
+    }
+    return _normalize100(out.map(x=>x+0.05));
+}
+
 function buildPairProbability(records, mode) {
-
-    /*
-       All Day:
-       สร้าง model ของ Lunch + Evening
-       แล้วเฉลี่ย
-    */
-
-    if (mode === 'allday') {
-
-        const lunch =
-            buildPairProbability(
-                records,
-                'lunch'
-            );
-
-        const evening =
-            buildPairProbability(
-                records,
-                'evening'
-            );
-
-
-        return lunch.map(
-            (x, i) =>
-                (x + evening[i]) / 2
-        );
+    if(mode==='allday'){
+        const l=buildPairProbability(records,'lunch');
+        const e=buildPairProbability(records,'evening');
+        const joint=l.map((x,i)=>1-(1-x)*(1-e[i]));
+        return _normalize100(joint);
     }
+    const values=getValues(records,mode);
+    const recent=_pairFreq(values,20,0.5);
+    const medium=_pairFreq(values,60,0.5);
+    const long=_pairFreq(values,Math.max(90,values.length),0.5);
+    const cross=_transitionPair(records,mode,'cross',0.5);
+    const same=_transitionPair(records,mode,'same',0.5);
+    const orbit=_orbitSupport(records,mode);
+    const arithmetic=_arithmeticSupport(records,mode);
 
-
-    const allValues =
-        getValues(
-            records,
-            mode
-        );
-
-
-    const mediumValues =
-        getValues(
-            records,
-            mode,
-            120
-        );
-
-
-    const recentValues =
-        getValues(
-            records,
-            mode,
-            30
-        );
-
-
-    const longDist =
-        normalizedPairDistribution(
-            allValues,
-            1
-        );
-
-
-    const mediumDist =
-        normalizedPairDistribution(
-            mediumValues,
-            1
-        );
-
-
-    const recentDist =
-        normalizedPairDistribution(
-            recentValues,
-            1
-        );
-
-
-    const contextDist =
-        getContextDistribution(
-            records,
-            mode
-        );
-
-
-    const contextDigitDist =
-        getContextDigitDistribution(
-            records,
-            mode
-        );
-
-
-    const result =
-        Array(100).fill(0);
-
-
-    for (
-        let p = 0;
-        p < 100;
-        p++
-    ) {
-
-        result[p] =
-
-            longDist[p] * 0.25 +
-
-            mediumDist[p] * 0.25 +
-
-            recentDist[p] * 0.25 +
-
-            contextDist[p] * 0.15 +
-
-            contextDigitDist[p] * 0.10;
+    const score=Array(100).fill(0);
+    for(let p=0;p<100;p++){
+        const t=Math.floor(p/10),u=p%10;
+        /* pair evidence is primary; support networks are secondary */
+        score[p]=
+            recent[p]*0.25 +
+            medium[p]*0.16 +
+            long[p]*0.14 +
+            cross[p]*0.18 +
+            same[p]*0.10 +
+            orbit[p]*0.10 +
+            arithmetic[p]*0.07;
+        /* keep exact-pair evidence ahead of raw digit frequency */
+        score[p]+= (t===u ? 0.002 : 0);
     }
-
-
-    /*
-       Normalize อีกครั้ง
-    */
-
-    const total =
-        result.reduce(
-            (a, b) => a + b,
-            0
-        );
-
-
-    return result.map(
-        x => x / total
-    );
+    return _normalize100(score);
 }
 
 
@@ -862,83 +842,14 @@ function buildPairProbability(records, mode) {
    ============================================================ */
 
 function getTopThreeDigits(pairProbability) {
-
-    const digitProbability =
-        Array(10).fill(0);
-
-
-    for (
-        let p = 0;
-        p < 100;
-        p++
-    ) {
-
-        const probability =
-            pairProbability[p];
-
-
-        const tens =
-            Math.floor(p / 10);
-
-        const units =
-            p % 10;
-
-
-        digitProbability[tens] +=
-            probability;
-
-
-        /*
-           ถ้าเบิ้ล
-           อย่านับซ้ำ probability
-        */
-
-        if (units !== tens) {
-
-            digitProbability[units] +=
-                probability;
-        }
-
-    }
-
-
+    /* Top digits are ALWAYS tens digits. */
+    const digitProbability=Array(10).fill(0);
+    for(let p=0;p<100;p++) digitProbability[Math.floor(p/10)] += pairProbability[p];
     return {
-
-        digits:
-            digitProbability
-                .map(
-                    (score, digit) => ({
-                        digit,
-                        score
-                    })
-                )
-                .sort(
-                    (a, b) => {
-
-                        if (
-                            b.score !==
-                            a.score
-                        ) {
-                            return (
-                                b.score -
-                                a.score
-                            );
-                        }
-
-                        return (
-                            a.digit -
-                            b.digit
-                        );
-                    }
-                )
-                .slice(0, 3)
-                .map(
-                    x =>
-                        String(x.digit)
-                ),
-
-        probabilities:
-            digitProbability
+        digits: digitProbability.map((score,digit)=>({digit,score}))
+            .sort((a,b)=>b.score-a.score || a.digit-b.digit)
+            .slice(0,3).map(x=>String(x.digit)),
+        probabilities: digitProbability
     };
 }
 
@@ -956,89 +867,17 @@ function getTopThreeDigits(pairProbability) {
    คู่ต้องมี Top digit อยู่ในหลักสิบหรือหลักหน่วย
    ============================================================ */
 
-function getPairsForDigit(
-    digit,
-    pairProbability,
-    usedPairs
-) {
-
-    const d =
-        Number(digit);
-
-
-    const candidates = [];
-
-
-    for (
-        let p = 0;
-        p < 100;
-        p++
-    ) {
-
-        const tens =
-            Math.floor(p / 10);
-
-        const units =
-            p % 10;
-
-
-        if (
-            tens !== d &&
-            units !== d
-        ) {
-            continue;
-        }
-
-
-        const pair =
-            String(p).padStart(
-                2,
-                '0'
-            );
-
-
-        if (
-            usedPairs.has(pair)
-        ) {
-            continue;
-        }
-
-
-        candidates.push({
-
-            pair,
-
-            probability:
-                pairProbability[p]
-        });
-
+function getPairsForDigit(digit,pairProbability,usedPairs) {
+    const d=Number(digit);
+    const candidates=[];
+    /* Every displayed pair is dX: Top digit is the tens digit. */
+    for(let u=0;u<10;u++){
+        const p=d*10+u;
+        const pair=String(p).padStart(2,'0');
+        if(!usedPairs.has(pair)) candidates.push({pair,probability:pairProbability[p]});
     }
-
-
-    candidates.sort(
-        (a, b) => {
-
-            if (
-                b.probability !==
-                a.probability
-            ) {
-                return (
-                    b.probability -
-                    a.probability
-                );
-            }
-
-            return (
-                parseInt(a.pair) -
-                parseInt(b.pair)
-            );
-        }
-    );
-
-
-    return candidates
-        .slice(0, 5)
-        .map(x => x.pair);
+    candidates.sort((a,b)=>b.probability-a.probability || parseInt(a.pair)-parseInt(b.pair));
+    return candidates.slice(0,5).map(x=>x.pair);
 }
 
 
@@ -1453,96 +1292,92 @@ function runBacktestAudit(
             records[i];
 
 
-        let actuals = [];
-
+        let isPair = false;
+        let isTop = false;
 
         if (mode === 'lunch') {
 
-            actuals = [
+            isPair = pairHit(
+                prediction,
                 actualRecord.lunch
-            ];
+            );
 
-        }
+            isTop = topDigitHit(
+                prediction,
+                actualRecord.lunch
+            );
 
-        else if (
-            mode === 'evening'
-        ) {
+        } else if (mode === 'evening') {
 
-            actuals = [
+            isPair = pairHit(
+                prediction,
                 actualRecord.evening
-            ];
+            );
 
-        }
-
-        else {
-
-            actuals = [
-
-                actualRecord.lunch,
-
+            isTop = topDigitHit(
+                prediction,
                 actualRecord.evening
+            );
 
-            ];
+        } else {
+
+            /* All Day = exactly one test per day.
+               A hit occurs if either Lunch or Evening hits. */
+
+            isPair =
+                pairHit(
+                    prediction,
+                    actualRecord.lunch
+                ) ||
+                pairHit(
+                    prediction,
+                    actualRecord.evening
+                );
+
+            isTop =
+                topDigitHit(
+                    prediction,
+                    actualRecord.lunch
+                ) ||
+                topDigitHit(
+                    prediction,
+                    actualRecord.evening
+                );
         }
 
+        total++;
 
-        actuals.forEach(
-            actual => {
+        if (isPair) {
 
-                total++;
+            pairHits++;
 
+            currentWin++;
 
-                const isPair =
-                    pairHit(
-                        prediction,
-                        actual
-                    );
+            currentLose = 0;
 
+            maxWin =
+                Math.max(
+                    maxWin,
+                    currentWin
+                );
 
-                const isTop =
-                    topDigitHit(
-                        prediction,
-                        actual
-                    );
+        } else {
 
+            currentLose++;
 
-                if (isPair) {
+            currentWin = 0;
 
-                    pairHits++;
+            maxLose =
+                Math.max(
+                    maxLose,
+                    currentLose
+                );
+        }
 
-                    currentWin++;
+        if (isTop) {
 
-                    currentLose = 0;
-
-                    maxWin =
-                        Math.max(
-                            maxWin,
-                            currentWin
-                        );
-
-                }
-
-                else {
-
-                    currentLose++;
-
-                    currentWin = 0;
-
-                    maxLose =
-                        Math.max(
-                            maxLose,
-                            currentLose
-                        );
-                }
-
-
-                if (isTop) {
-
-                    topHits++;
-                }
-
-            }
-        );
+            topHits++;
+        }
     }
 
 
@@ -2499,133 +2334,4 @@ function processAllCards() {
         'block';
 }
 
-</script>
-<script>
-/* ============================================================
-   v7.0 — MYANMAR 2D CORE + SUPPORT NETWORK
-   - Core logic is Myanmar-2D specific
-   - Orbit / arithmetic are SUPPORT features only
-   - Tens are the only Top-3 digits
-   - Exact pair score is independent from tens score
-   - All Day is a dedicated day-level model
-   - Walk-forward audit: 1 test = 1 day
-   ============================================================ */
-(function(){
-
-function _v7norm(v){ v=String(v??'').trim(); if(/^\d$/.test(v))v='0'+v; return /^\d{2}$/.test(v)?v:null; }
-function _v7digits(v){v=_v7norm(v);return v?[+v[0],+v[1]]:[];}
-function _v7count100(vals){const c=Array(100).fill(1);for(const v of vals){const n=_v7norm(v);if(n)c[+n]++;}return c;}
-function _v7normArr(c){let s=c.reduce((a,b)=>a+b,0);return c.map(x=>x/s);}
-function _v7add(scores,c,w){const n=_v7normArr(c);for(let i=0;i<100;i++)scores[i]+=w*n[i];}
-
-/* duplicate dates are not silently merged: a repeated date is excluded */
-parseRecords = function(rawText){
-  const lines=String(rawText||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  const tmp=[];
-  for(const line of lines){
-    if(!line.includes('--'))continue;
-    const colon=line.indexOf(':'); if(colon<0)continue;
-    const date=line.substring(0,colon).replace('🗓','').trim();
-    const p=line.substring(colon+1).split('--').map(x=>_v7norm(x));
-    if(p.length!==2||!p[0]||!p[1])continue;
-    tmp.push({date,lunch:p[0],evening:p[1],_d:parseDate(date)});
-  }
-  tmp.sort((a,b)=>a._d&&b._d?a._d-b._d:0);
-  const seen=new Map(), dup=new Set();
-  for(const r of tmp){const k=r._d?r._d.getTime():r.date;if(seen.has(k))dup.add(k);else seen.set(k,r);}
-  return tmp.filter(r=>{const k=r._d?r._d.getTime():r.date;return !dup.has(k);}).map(({_d,...r})=>r);
-};
-
-function _v7core(records,mode){
-  const n=records.length, last=records[n-1], scores=Array(100).fill(0), digit=Array(10).fill(0);
-  const mi=mode==='lunch'?0:1;
-  let sources=[];
-
-  if(mode==='allday'){
-    let c=Array(100).fill(1);
-    for(const r of records){c[+r.lunch]++;c[+r.evening]++;}
-    _v7add(scores,c,1.0);
-    for(const [w,wt] of [[15,4],[30,2],[60,1]]){
-      c=Array(100).fill(1); for(const r of records.slice(-w)){c[+r.lunch]++;c[+r.evening]++;} _v7add(scores,c,wt);
-    }
-    c=Array(100).fill(1); const prev=new Set([last.lunch,last.evening]);
-    for(let i=1;i<n;i++) if(prev.has(records[i-1].lunch)||prev.has(records[i-1].evening)){c[+records[i].lunch]++;c[+records[i].evening]++;}
-    _v7add(scores,c,3.5);
-    sources=[last.lunch,last.evening];
-  }else{
-    const srcLast=mi===0?last.evening:last.lunch;
-    let c=Array(100).fill(1);
-    for(let i=1;i<n;i++){const src=mi===0?records[i-1].evening:records[i-1].lunch;const tgt=records[i][mi?'evening':'lunch'];if(src===srcLast)c[+tgt]++;}
-    _v7add(scores,c,4);
-    c=Array(100).fill(1);
-    for(let i=1;i<n;i++){const src=records[i-1][mi?'evening':'lunch'];const tgt=records[i][mi?'evening':'lunch'];if(src===srcLast)c[+tgt]++;}
-    _v7add(scores,c,2);
-    for(const [w,wt] of [[15,3],[30,2],[60,1]]){
-      c=Array(100).fill(1);for(const r of records.slice(-w))c[+(mi===0?r.lunch:r.evening)]++;_v7add(scores,c,wt);
-    }
-    const tc=Array(10).fill(1),uc=Array(10).fill(1);
-    for(let i=1;i<n;i++){const src=mi===0?records[i-1].evening:records[i-1].lunch;const tgt=mi===0?records[i].lunch:records[i].evening;if(src===srcLast){tc[+tgt[0]]++;uc[+tgt[1]]++;}}
-    for(let p=0;p<100;p++)scores[p]+=2*tc[Math.floor(p/10)]/tc.reduce((a,b)=>a+b,0)+1.5*uc[p%10]/uc.reduce((a,b)=>a+b,0);
-    sources=[srcLast,mi===0?last.lunch:last.evening,mi===0?last.evening:last.lunch];
-  }
-
-  /* support network: orbit, direction, drift, complement, arithmetic */
-  for(const src of [...new Set(sources)]){
-    const [a,b]=_v7digits(src); if(a==null)continue;
-    for(const x of [a,b]){
-      for(let d=-3;d<=3;d++)digit[(x+d+10)%10]+=0.25;
-      digit[(10-x)%10]+=0.18; digit[(x+5)%10]+=0.10;
-    }
-    for(const x of [a,b])for(const y of [a,b])for(const z of [(x+y)%10,(x-y+10)%10,(x*y)%10])digit[z]+=0.08;
-    for(const d of [-2,-1,0,1,2])scores[((a+d+10)%10)*10+(b+d+10)%10]+=0.45;
-    scores[((10-a)%10)*10+((10-b)%10)]+=0.30;
-    scores[b*10+a]+=0.25;
-  }
-  for(let p=0;p<100;p++)scores[p]+=0.55*digit[Math.floor(p/10)]+0.20*digit[p%10];
-  /* tens-only digit score */
-  const tens=Array(10).fill(0);
-  for(let p=0;p<100;p++)tens[Math.floor(p/10)]+=scores[p];
-  for(let d=0;d<10;d++)tens[d]+=digit[d]*0.35;
-  const top=[...Array(10).keys()].sort((a,b)=>tens[b]-tens[a]||a-b).slice(0,3);
-  const pairGroups=[];
-  for(const t of top){
-    const cand=[...Array(10).keys()].map(u=>({u,s:scores[t*10+u]+0.35*tens[t]})).sort((a,b)=>b.s-a.s||a.u-b.u).slice(0,5);
-    pairGroups.push(cand.map(x=>String(t)+String(x.u)));
-  }
-  return {t1:String(top[0]),t2:String(top[1]),t3:String(top[2]),pairsT1:pairGroups[0],pairsT2:pairGroups[1],pairsT3:pairGroups[2],pairProbability:scores,topDigitProbability:tens,targetDate:getNextTargetDate(records[n-1].date)};
-}
-
-analyzePrecisionEngineInternal = function(records,mode){
-  if(!records||!records.length)return {t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],targetDate:'Next Date'};
-  return _v7core(records,mode);
-};
-
-/* Top hit = tens only, by definition */
-topDigitHit = function(pred,actual){
-  const v=_v7norm(actual); if(!v)return false;
-  const s=new Set([pred.t1,pred.t2,pred.t3]); return s.has(v[0]);
-};
-
-runBacktestAudit = function(records,mode){
-  const MIN_HISTORY=60;
-  if(!records||records.length<=MIN_HISTORY)return {total:0,hits:0,misses:0,topHits:0,topMisses:0,pairHitAcc:null,topHitAcc:null,pairCI:null,topCI:null,maxWinStreak:0,maxLoseStreak:0};
-  let total=0,pairHits=0,topHits=0,win=0,lose=0,maxWin=0,maxLose=0;
-  for(let i=MIN_HISTORY;i<records.length;i++){
-    const pred=analyzePrecisionEngineInternal(records.slice(0,i),mode), r=records[i];
-    let pair=false,top=false;
-    if(mode==='lunch'){pair=pairHit(pred,r.lunch);top=topDigitHit(pred,r.lunch);}
-    else if(mode==='evening'){pair=pairHit(pred,r.evening);top=topDigitHit(pred,r.evening);}
-    else{
-      pair=pairHit(pred,r.lunch)||pairHit(pred,r.evening);
-      top=topDigitHit(pred,r.lunch)||topDigitHit(pred,r.evening);
-    }
-    total++;
-    if(pair){pairHits++;win++;lose=0;maxWin=Math.max(maxWin,win);}else{lose++;win=0;maxLose=Math.max(maxLose,lose);}
-    if(top)topHits++;
-  }
-  const pc=getWilson95(pairHits,total),tc=getWilson95(topHits,total);
-  return {total,hits:pairHits,misses:total-pairHits,topHits,topMisses:total-topHits,pairHitAcc:pc.rate==null?null:pc.rate.toFixed(2),topHitAcc:tc.rate==null?null:tc.rate.toFixed(2),pairCI:{low:pc.low.toFixed(2),high:pc.high.toFixed(2)},topCI:{low:tc.low.toFixed(2),high:tc.high.toFixed(2)},maxWinStreak:maxWin,maxLoseStreak:maxLose};
-};
-
-})();
 </script>
