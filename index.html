@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY ANALYSIS SYSTEM · V3.30.0 SELECTOR ARBITRATION V3 SHADOW · CALENDAR DATE ENGINE</title>
+<title>ทรัพย์นำโชค · AI LOTTERY ANALYSIS SYSTEM · V3.38.0 SELECTOR ARBITRATION V4 · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1506,7 +1506,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.28.1 — DECISION ARBITRATION SHIELD SHADOW</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.38.0 — SELECTOR ARBITRATION V4</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5565,6 +5565,81 @@ function __V3114BoardOrder(board,d1,d2,rs){
   (Array.isArray(board)?board:[]).forEach(q=>add(q?.digit));
   return out.slice(0,__V3114_PAIR_POLICY.boardSize);
 }
+/* V3.38.0 FINAL MODEL ARBITRATION
+   Leakage-safe last-mile model selection. F1-F9 and Board generation remain locked.
+*/
+function __fmEnsure(mem){if(!mem)return null;if(!mem.finalModelArb)mem.finalModelArb={route:new Map(),family:new Map(),base:new Map(),switches:0,updates:0};return mem.finalModelArb}
+function __fmStore(st,id,hit){if(!st)return;const z=st.get(id)||{tests:0,hits:0};z.tests++;if(hit)z.hits++;st.set(id,z)}
+function __fmRate(z){return z?((z.hits+4)/(z.tests+8)):.5}
+function __fmPick(mem,routeCtx,id){const fm=__fmEnsure(mem);if(!fm)return null;const route=routeCtx?.name||'__none__',family=routingFamily(route),pick=(st,min,source)=>{const z=st?.get(id);return z&&z.tests>=min?{...z,rate:__fmRate(z),source}:null};return pick(fm.route.get(route),16,'route')||pick(fm.family.get(family),24,'family')||pick(fm.base,40,'global')}
+function __fmUpdate(mem,routeCtx,meta,targetSet){const fm=__fmEnsure(mem);if(!fm||!meta)return;const route=routeCtx?.name||'__none__',family=routingFamily(route),rs=fm.route.get(route)||new Map(),fs=fm.family.get(family)||new Map(),models=meta.models||{};for(const id of ['static','pipeline','raw']){const pair=models[id];if(!Array.isArray(pair)||pair.length<2)continue;const hit=targetSet.has(Number(pair[0]))||targetSet.has(Number(pair[1]));__fmStore(rs,id,hit);__fmStore(fs,id,hit);__fmStore(fm.base,id,hit)}fm.route.set(route,rs);fm.family.set(family,fs);fm.updates++}
+function __fmApply(c,mem,routeCtx,models){const fm=__fmEnsure(mem);if(!fm||!models)return{applied:false,reason:'no-memory'};const staticPair=models.static,pipelinePair=models.pipeline,rawPair=models.raw;if(!Array.isArray(staticPair)||staticPair.length<2)return{applied:false,reason:'no-static-pair'};const staticStat=__fmPick(mem,routeCtx,'static');if(!staticStat)return{applied:false,reason:'static-history-low',staticTests:0};let best=null;for(const [id,pair] of [['pipeline',pipelinePair],['raw',rawPair]]){if(!Array.isArray(pair)||pair.length<2||pair[0]===pair[1])continue;if(pair[0]===staticPair[0]&&pair[1]===staticPair[1])continue;const st=__fmPick(mem,routeCtx,id);if(!st||st.tests<16)continue;const edge=st.rate-staticStat.rate,stable=Math.min(1,Math.min(st.tests,staticStat.tests)/40),score=edge*(.75+.25*stable);if(st.rate<.62||edge<.055)continue;const q0=c.find(q=>Number(q.digit)===Number(pair[0])),q1=c.find(q=>Number(q.digit)===Number(pair[1]));if(!q0||!q1||q0.gate===false||q1.gate===false)continue;if(!best||score>best.score)best={id,pair,stat:st,edge,score}}if(!best)return{applied:false,reason:'no-qualified-challenger',staticRate:staticStat.rate,staticTests:staticStat.tests};const d1=c.find(q=>Number(q.digit)===Number(best.pair[0])),d2=c.find(q=>Number(q.digit)===Number(best.pair[1]));if(!d1||!d2)return{applied:false,reason:'candidate-not-in-board'};const ordered=c.slice().sort((a,b)=>{const ia=Number(a.digit)===Number(d1.digit)?0:Number(a.digit)===Number(d2.digit)?1:2,ib=Number(b.digit)===Number(d1.digit)?0:Number(b.digit)===Number(d2.digit)?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)});c.splice(0,c.length,...ordered);fm.switches++;return{applied:true,from:[Number(staticPair[0]),Number(staticPair[1])],to:[Number(best.pair[0]),Number(best.pair[1])],model:best.id,staticRate:staticStat.rate,staticTests:staticStat.tests,challengerRate:best.stat.rate,challengerTests:best.stat.tests,edge:best.edge,source:best.stat.source}}
+
+/* V3.38.0 ACTUAL SELECTOR ARBITRATION V4
+   Integrated into the real selectCooperative path. Candidate board is locked.
+   Exact-type/context prior only. Memory is updated after target reveal in OOS.
+*/
+function __v31ArbEnsure(routeCtx){
+  if(!routeCtx)return null;
+  if(!routeCtx.__selectorArbV31)routeCtx.__selectorArbV31={byKey:new Map(),total:0,changes:0};
+  return routeCtx.__selectorArbV31;
+}
+function __v31Band(x){const n=Number(x);if(!Number.isFinite(n))return 'x';if(n<=1)return '1';if(n<=2)return '2';if(n<=4)return '34';if(n<=6)return '56';return '7+';}
+function __v31CtxKey(rs,top,second){
+  const name=String(routeCtxName(rs)||'__none__');
+  const margin=Number(top?.score||0)-Number(second?.score||0);
+  const mb=margin<.08?'0':margin<.16?'1':margin<.28?'2':'3';
+  const conf=String(top?.confidence||'x');
+  const r=Array.isArray(rs)?rs:[]; const last=r.at(-1)||{};
+  const a=Number(last?.n3?.[0]);
+  const hb=Number.isFinite(a)?(a%2?'O':'E'):'x';
+  return `${name}|m${mb}|c${conf}|h${hb}`;
+}
+function routeCtxName(rs){const a=Array.isArray(rs)?rs:[];return String(a.at(-1)?.name||'__none__');}
+function __v31ArbApply(c,rs,routeCtx){
+  const mem=__v31ArbEnsure(routeCtx); if(!mem||!Array.isArray(c)||c.length<2)return {applied:false,reason:'no-memory'};
+  const ordered=c.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit));
+  const valid=ordered.filter(x=>x.gate), ranked=valid.length?valid:ordered;
+  const top=ranked[0], second=ranked.find(x=>Number(x.digit)!==Number(top?.digit))||ranked[1];
+  if(!top||!second)return {applied:false,reason:'no-pair'};
+  const baseRank=ranked.findIndex(x=>Number(x.digit)===Number(top.digit))+1;
+  if(baseRank<1||baseRank>3)return {applied:false,reason:'base-rank-not-boundary',baseRank};
+  const key=__v31CtxKey(rs,top,second), store=mem.byKey.get(key); if(!store)return {applied:false,reason:'no-context-history',context:key};
+  const rate=z=>(z&&z.tests)?(z.hits+3)/(z.tests+6):.5;
+  const base=store.get(Number(top.digit));
+  if(!base||base.tests<10)return {applied:false,reason:'base-evidence-low',tests:base?.tests||0,context:key};
+  const baseRate=rate(base); let best=null;
+  for(const q of ranked.slice(0,7)){
+    const d=Number(q.digit); if(!Number.isInteger(d)||d===Number(top.digit)||d===Number(second.digit))continue;
+    const z=store.get(d); if(!z||z.tests<10)continue;
+    const rr=rate(z),edge=rr-baseRate,rank=ranked.findIndex(x=>Number(x.digit)===d)+1;
+    if((baseRank>1&&rank>=baseRank)||edge<.07)continue;
+    const stability=Math.min(1,z.tests/24),score=edge*(.75+.25*stability);
+    if(!best||score>best.score)best={q,tests:z.tests,rate:rr,edge,rank,score};
+  }
+  if(!best)return {applied:false,reason:'no-qualified-challenger',baseRate,baseTests:base.tests,context:key};
+  const newTop=best.q;
+  // Reorder only; do not add/remove board candidates and keep current D2.
+  c.sort((a,b)=>{
+    const ia=Number(a.digit)===Number(newTop.digit)?0:Number(a.digit)===Number(second.digit)?1:2;
+    const ib=Number(b.digit)===Number(newTop.digit)?0:Number(b.digit)===Number(second.digit)?1:2;
+    return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit);
+  });
+  newTop.v31ArbitrationApplied=true; newTop.v31ArbitrationFrom=Number(top.digit); newTop.v31ArbitrationEdge=best.edge; newTop.v31ArbitrationTests=best.tests; newTop.v31ArbitrationContext=key;
+  mem.changes++;
+  return {applied:true,from:Number(top.digit),to:Number(newTop.digit),d2:Number(second.digit),edge:best.edge,tests:best.tests,baseRate,candidateRate:best.rate,context:key,source:'exact-type-context-prior'};
+}
+function __v31ArbUpdate(routeCtx,row,target){
+  const mem=__v31ArbEnsure(routeCtx); if(!mem||!row)return;
+  const key=row.__v31ArbitrationContext; if(!key)return;
+  let store=mem.byKey.get(key); if(!store){store=new Map();mem.byKey.set(key,store)}
+  const td=target instanceof Set?target:new Set(Array.isArray(target)?target.map(Number):[]);
+  for(const q of (row.optimizerCandidates||[])){
+    const d=Number(q?.digit); if(!Number.isInteger(d))continue;
+    const z=store.get(d)||{tests:0,hits:0}; z.tests++; if(td.has(d))z.hits++; store.set(d,z);
+  }
+  mem.total++;
+}
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
@@ -5832,6 +5907,8 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     }catch(__v26PlusErr){
       __v26PlusFinal={applied:false,reason:'safe-fallback:'+String(__v26PlusErr?.message||__v26PlusErr),candidate:null,from:null,to:null,rate:null,lift:null,tests:0,source:'error-safe-fallback'};
     }
+    const __fmPreStaticPair=[Number(top?.digit),Number(second?.digit)];
+    const __fmRawTop2=(__forensicStages.raw||[]).slice(0,2).map(q=>Number(q.digit));
     /* V3.11.5 VERIFIED FINAL CHALLENGER — applied only after all legacy mutations.
        The replayed policy is causal and exact-type: no target row is visible here. */
     try{
@@ -5847,12 +5924,31 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
         c.sort((a,b)=>{const ia=Number(a.digit)===__v3114.d1?0:Number(a.digit)===__v3114.d2?1:2;const ib=Number(b.digit)===__v3114.d1?0:Number(b.digit)===__v3114.d2?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)});
       }
     }catch(__v3114Err){console.warn('V3.11.5 challenger safe fallback',__v3114Err)}
+    /* V3.38.0 REAL SELECTOR ARBITRATION — final D1 gate on the production path. */
+    let __v31ArbMeta={applied:false,reason:'not-run'};
+    try{
+      __v31ArbMeta=__v31ArbApply(c,rs,routeCtx);
+      if(__v31ArbMeta.applied){
+        const __nv=c.find(q=>Number(q.digit)===Number(__v31ArbMeta.to));
+        const __d2c=c.find(q=>Number(q.digit)===Number(__v31ArbMeta.d2));
+        if(__nv&&__d2c){top=__nv;second=__d2c;}
+      }
+    }catch(__v31e){__v31ArbMeta={applied:false,reason:'safe-fallback:'+String(__v31e?.message||__v31e)}}
+    /* V3.38 FINAL MODEL ARBITRATION — last-mile model choice after all legacy final mutations. */
+    let __finalModelArbMeta={applied:false,reason:'not-run'};
+    try{
+      const __fmStatic=__V3114StaticPair(rs);
+      const __fmModels={static:__fmStatic?[Number(__fmStatic.d1),Number(__fmStatic.d2)]:[Number(top.digit),Number(second.digit)],pipeline:__fmPreStaticPair,raw:__fmRawTop2};
+      __finalModelArbMeta=__fmApply(c,routeCtx?.__stageAwareMemory||null,routeCtx,__fmModels);
+      if(__finalModelArbMeta.applied){const __a=__finalModelArbMeta.to?.[0],__b=__finalModelArbMeta.to?.[1],__q1=c.find(q=>Number(q.digit)===Number(__a)),__q2=c.find(q=>Number(q.digit)===Number(__b));if(__q1&&__q2){top=__q1;second=__q2;}}
+      __finalModelArbMeta.models=__fmModels;
+    }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -5900,9 +5996,10 @@ async function __coopOosBundle(rs,routeCtx=null){
     const __finalTopRank=__targetRanks.afterCandidateOutcome||__targetRanks.afterMidrankAware||__targetRanks.afterMidRankRecovery||null;
     const __diagBoardForRow=Array.isArray(__diag.board)?__diag.board:[];
     const __diagRow={name:routeCtx?.name||train[0]?.name||train.at(-1)?.name||'',source:rs[i].date,target:target.join(' · '),targetDigits:target,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,selectionHit:pairHit,unionHit:__unionHit,best2:__boardTop2Hit,boardTop2Hit:__boardTop2Hit,targetInBoard:__targetInBoard,targetRank:__targetRank,top3:__boardDigits.slice(0,3),formulaHits:__formulaHits,formulaAudit:__formulaAudit,bestFormulaHit:__unionHit,rawBoardHasTarget:__rawBoardHasTarget,rawBoardSize:__rawBoardDigits.length,boardSize:__boardDigits.length,stageRanks:__targetRanks,targetRanksAll:__targetRanksAll,stagePrevRanks:__stagePrevRanks,stageTop:__stageTop5,optimizerCandidates:(()=>{const src=__diagBoardForRow.slice(0,10),st=__st,arr=k=>(Array.isArray(st[k])?st[k]:[]),mp=k=>new Map(arr(k).map(x=>[Number(x.digit),Number(x.score||0)])),maps={raw:mp('raw'),signal:mp('afterSignal'),context:mp('afterContext'),calibration:mp('afterCalibration'),guardrail:mp('afterGuardrail'),midRank:mp('afterMidRankRecovery'),rolePair:mp('afterRolePair'),selfCorrection:mp('afterSelfCorrection')};return src.map(q=>{const d=Number(q.digit),overlap={};for(const z of src){if(Number(z.digit)!==d){const a=new Set(q.formulas||[]),b=new Set(z.formulas||[]),u=new Set([...a,...b]);overlap[String(z.digit)]=u.size?([...a].filter(f=>b.has(f)).length/u.size):0}}return{digit:d,gate:!!q.gate,formulas:Array.isArray(q.formulas)?q.formulas.slice():[],independentSupport:Number(q.independentSupport||0),support:Number(q.support||0),geminiScore:Number(q.geminiScore??.5),radarSupport:Number(q.radarSupport||0),baselineRank:__baselineRankMap.get(d)||10,overlap,stages:Object.fromEntries(Object.entries(maps).map(([k,m])=>[k,m.get(d)??Number(q.score||0)]))}})})(),rankDropsByTarget:__rankDropsByTarget,rankDropRawToMeta:__rankDrop(__rawRank,__metaRank),rankDropMetaToGemini:__rankDrop(__metaRank,__stageRankMap((__st.afterGemini||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit))),rankDropGeminiToSignal:__rankDrop(__stageRankMap((__st.afterGemini||[]).slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit)),__signalRank),rankDropMetaToSignal:__rankDrop(__metaRank,__signalRank),rankDropSignalToContext:__rankDrop(__signalRank,__contextRank),rankDropContextToCalibration:__rankDrop(__contextRank,__calRank),rankDropCalibrationToGuardrail:__rankDrop(__calRank,__guardRank),rankDropGuardrailToMidRank:__rankDrop(__guardRank,__targetRanks.afterMidRankRecovery||null),rankDropMidRankToTrajectory:__rankDrop(__targetRanks.afterMidRankRecovery||null,__targetRanks.afterTrajectory||null),rankDropTrajectoryToRankOutcome:__rankDrop(__targetRanks.afterTrajectory||null,__targetRanks.afterRankOutcome||null),rankDropRankOutcomeToCandidateOutcome:__rankDrop(__targetRanks.afterRankOutcome||null,__targetRanks.afterCandidateOutcome||null),rankDropSelfLearningToRolePair:__rankDrop(__targetRanks.afterSelfLearning||null,__targetRanks.afterRolePair||null),rankDropRolePairToSelfCorrection:__rankDrop(__targetRanks.afterRolePair||null,__targetRanks.afterSelfCorrection||null),selectorDamage:__boardTop2Hit&&!pairHit,selectorRescued:!__boardTop2Hit&&pairHit,gateTop:Array.isArray(__st.afterCandidateOutcome)?!!__st.afterCandidateOutcome[0]?.gate:false,selectedTopScore:sel.selection?.d1?.score??null,selectedSecondScore:sel.selection?.d2?.score??null,selectedMargin:sel.selection?.margin??null,selectedConfidence:sel.selection?.confidence??null,v2IntelligenceMeta:__diag.v2IntelligenceMeta||null,v22DigitFlowMeta:__diag.v22DigitFlowMeta||null,v21RankCalibrationMeta:__diag.v21RankCalibrationMeta||null,guardrailApplied:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.guardrailApplied),midRankRecoveryApplied:Array.isArray(__st.afterMidRankRecovery)&&__st.afterMidRankRecovery.some(x=>x.midRankRecoveryApplied),trajectoryApplied:Array.isArray(__st.afterTrajectory)&&__st.afterTrajectory.some(x=>x.trajectoryArbitrationApplied),rankOutcomeApplied:Array.isArray(__st.afterRankOutcome)&&__st.afterRankOutcome.some(x=>x.rankOutcomeApplied),candidateOutcomeApplied:Array.isArray(__st.afterCandidateOutcome)&&__st.afterCandidateOutcome.some(x=>x.candidateOutcomeApplied),selectorCoachMeta:__diag.selectorCoachMeta||null,selectorCoachApplied:Array.isArray(__st.afterSelectorCoach)&&__st.afterSelectorCoach.some(x=>x.__selectorCoachApplied),geminiApplied:!!__diag.geminiMeta?.applied,geminiWeight:__diag.geminiMeta?.weight??null,geminiLift:__diag.geminiMeta?.lift??null,geminiTests:__diag.geminiMeta?.tests??0,geminiSource:__diag.geminiMeta?.source||null,geminiTop:__diag.geminiMeta?.top||[],transitionPairApplied:!!__diag.transitionPairMeta?.applied,transitionPairWeight:__diag.transitionPairMeta?.weight??null,transitionPairLift:__diag.transitionPairMeta?.lift??null,transitionPairTests:__diag.transitionPairMeta?.tests??0,transitionPairSource:__diag.transitionPairMeta?.source||null,transitionPairTop:__diag.transitionPairMeta?.top||[],rolePairMeta:__diag.rolePairMeta||null,conditionalMeta:__diag.conditionalMeta||null,swapShieldApplied:!!__diag.swapShieldMeta?.applied,swapShieldMeta:__diag.swapShieldMeta||null,selfLearningApplied:!!__diag.selfLearningMeta?.selected&&__diag.selfLearningMeta.selected.id!=='P00',selfLearningPolicy:__diag.selfLearningMeta?.selected?.id||'P00',selfLearningRate:__diag.selfLearningMeta?.selected?.rate??null,selfLearningTests:__diag.selfLearningMeta?.selected?.tests??0,selfLearningBaseRate:__diag.selfLearningMeta?.baseRate??null,selfLearningPolicies:__diag.selfLearningMeta?.policies?.map(x=>({id:x.id,tests:x.tests,rate:x.rate,d1:x.d1,d2:x.d2}))||[],rescueApplied:!!__st.afterRescue?.rescueApplied,rescueDigit:__st.afterRescue?.rescueDigit??null,rescueGuardApproved:Array.isArray(__st.afterGuardrail)&&__st.afterGuardrail.some(x=>x.rescueGuardApproved),mistakeType:null,mistakeLabel:null,repairHint:null,dominantDamageStage:null};
+    __diagRow.__v31ArbitrationContext=sel?.__selectorDiag?.v31ArbitrationMeta?.context||__v31CtxKey(train,sel.selection?.d1,sel.selection?.d2);
     diagnostic.push(__diagRow);
     
-    if(routeCtx){ if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
+    if(routeCtx){ __v31ArbUpdate(routeCtx,__diagRow,new Set(target)); if(__diagRow.finalModelArbitrationMeta&&routeCtx.__stageAwareMemory){ __fmUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.finalModelArbitrationMeta,new Set(target)); } if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
@@ -6100,7 +6197,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.30.0';
+const APP_BUILD_VERSION='V3.38.0';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
@@ -6479,7 +6576,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
 })();
 
 /* V3.30.0 SELECTOR ARBITRATION V3 SHADOW
-   Research-only causal challenger.
+   V3.38.0 integrated selector arbitration research gate.
    - Production selector/F1-F9/board population are untouched.
    - Uses only already-recorded OOS rows and only PRIOR rows within the exact lottery type.
    - Candidate pool is restricted to the existing optimizerCandidates (top existing board only).
@@ -6489,7 +6586,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
    - Promotion is blocked unless the same Runtime OOS snapshot beats the Champion and passes exact-type gates.
 */
 (function installV327DecisionArbitrationShadow(){
-  const VERSION='V3.28.1';
+  const VERSION='V3.38.0';
   const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const clean=(x)=>String(x??'').trim();
@@ -6645,10 +6742,10 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
 
 </script>
 <script>
-/* V3.30.0 SELECTOR ARBITRATION V3 — RESEARCH ONLY */
+/* V3.38.0 SELECTOR ARBITRATION V4 — INTEGRATED SAFETY-GATED */
 (function(){
 'use strict';
-const VERSION='V3.30.0-FINAL-ARBITRATOR-V2-SHADOW';
+const VERSION='V3.38.0-FINAL-ARBITRATOR-V4';
 const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
 const digit=x=>{const n=num(x);return n!=null&&n>=0&&n<=9?Math.trunc(n):null};
@@ -6675,7 +6772,7 @@ window.__V329_FINAL_ARBITRATOR_V2__={version:VERSION,last:null,run,runFromDiagno
 })();
 </script>
 <script>
-/* V3.30.0 — SELECTOR ARBITRATION V3 SHADOW
+/* V3.38.0 — SELECTOR ARBITRATION V4
    Research-only. No F1-F9 mutation, no board expansion, no production promotion.
    Prior-only memory: exact-type + stage + rank-transition + pair context.
 */
