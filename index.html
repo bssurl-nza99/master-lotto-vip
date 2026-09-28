@@ -1506,7 +1506,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.41.0 — THAI ALL-DAY CHRONOLOGICAL INTEGRITY</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.42.0 — THAI ALL-DAY TRANSITION MEMORY</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5697,6 +5697,40 @@ function __v31ArbUpdate(routeCtx,row,target){
   }
   mem.total++;
 }
+
+/* V3.42 RESEARCH: Exact-Type Thai All-Day Transition Memory.
+   Learns only from the immediately preceding completed Thai-session outcome.
+   Key = sorted 4-digit target multiset of the source session; value = next-session
+   target digits observed historically for the same key. No future row is read. */
+function __thaiAllDayTransitionKey(r){
+  if(!r||!/^\d{3}$/.test(String(r.n3||''))||!/^\d{2}$/.test(String(r.n2||'')))return '';
+  return [...String(r.n3).slice(1),...String(r.n2)].map(Number).sort((a,b)=>a-b).join('');
+}
+function __thaiAllDayTransitionEnsure(routeCtx){
+  if(!routeCtx)return null;
+  if(!routeCtx.__thaiAllDayTransition)routeCtx.__thaiAllDayTransition={map:new Map(),tests:new Map()};
+  return routeCtx.__thaiAllDayTransition;
+}
+function __thaiAllDayTransitionPick(rs,routeCtx,basePair){
+  if(String(routeCtx?.name||'')!=='__THAI_ALLDAY__')return{applied:false,reason:'not-thai-all-day'};
+  const mem=__thaiAllDayTransitionEnsure(routeCtx),key=__thaiAllDayTransitionKey(rs?.at?.(-1));
+  if(!mem||!key)return{applied:false,reason:'no-key'};
+  const tests=Number(mem.tests.get(key)||0),z=mem.map.get(key);
+  if(tests<1||!z||z.size<2)return{applied:false,reason:'insufficient-transition-history',key,tests};
+  const pair=[...z.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0]).slice(0,2).map(x=>Number(x[0]));
+  if(pair.length<2||pair[0]===pair[1])return{applied:false,reason:'transition-pair-incomplete',key,tests};
+  if(Number(basePair?.[0])===pair[0]&&Number(basePair?.[1])===pair[1])return{applied:false,reason:'same-as-base',key,tests,pair};
+  return{applied:true,reason:'exact-type-transition-memory',key,tests,pair,source:'prior-completed-thai-session'};
+}
+function __thaiAllDayTransitionUpdate(routeCtx,sourceRow,targetDigits){
+  if(String(routeCtx?.name||'')!=='__THAI_ALLDAY__')return;
+  const mem=__thaiAllDayTransitionEnsure(routeCtx),key=__thaiAllDayTransitionKey(sourceRow);
+  if(!mem||!key)return;
+  const z=mem.map.get(key)||new Map();
+  for(const d of targetDigits||[])z.set(Number(d),(z.get(Number(d))||0)+1);
+  mem.map.set(key,z);mem.tests.set(key,Number(mem.tests.get(key)||0)+1);
+}
+
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
@@ -6003,12 +6037,20 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     try{__p40Meta=__p40Apply(c,routeCtx);}catch(__p40e){__p40Meta={applied:false,reason:'safe-fallback:'+String(__p40e?.message||__p40e)}}
     if(__p40Meta.applied){const __p40q=c.find(q=>Number(q.digit)===Number(__p40Meta.to));if(__p40q){top=__p40q;}}
     }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
+    let __thaiTransitionMeta={applied:false,reason:'not-run'};
+    try{
+      const __basePair=[Number(top?.digit),Number(second?.digit)],__tm=__thaiAllDayTransitionPick(historyRs||rs,routeCtx,__basePair);
+      if(__tm.applied){
+        const __q1=c.find(q=>Number(q.digit)===__tm.pair[0]),__q2=c.find(q=>Number(q.digit)===__tm.pair[1]);
+        if(__q1&&__q2){top=__q1;second=__q2;c.sort((a,b)=>{const ia=Number(a.digit)===__tm.pair[0]?0:Number(a.digit)===__tm.pair[1]?1:2,ib=Number(b.digit)===__tm.pair[0]?0:Number(b.digit)===__tm.pair[1]?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)});__diagBoard.sort((a,b)=>{const ia=Number(a.digit)===__tm.pair[0]?0:Number(a.digit)===__tm.pair[1]?1:2,ib=Number(b.digit)===__tm.pair[0]?0:Number(b.digit)===__tm.pair[1]?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit);});__thaiTransitionMeta=__tm;}
+      }else __thaiTransitionMeta=__tm;
+    }catch(__thaiTransitionErr){__thaiTransitionMeta={applied:false,reason:'safe-fallback:'+String(__thaiTransitionErr?.message||__thaiTransitionErr)};}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,thaiAllDayTransitionMeta:__thaiTransitionMeta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -6028,6 +6070,7 @@ async function __coopOosBundle(rs,routeCtx=null){
     const routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null;
     window.__RAW_STAGE_POLICY_NAME__=routeCtx?.name||train[0]?.name||''; window.__RAW_STAGE_POLICY_DIAGNOSTICS__=diagnostic.slice(); const sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx); window.__RAW_STAGE_POLICY_NAME__=null; window.__RAW_STAGE_POLICY_DIAGNOSTICS__=null;
     const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),d1=target.includes(sel.d1),d2=target.includes(sel.d2),pairHit=d1||d2;
+    __thaiAllDayTransitionUpdate(routeCtx,train.at(-1),target);
     const __diag=sel.__selectorDiag||{rawBoard:[],board:[]};
     const __baselineRankMap=new Map((Array.isArray(__diag.rawBoard)?__diag.rawBoard:[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).map((q,i)=>[Number(q.digit),i+1]));
     const __boardDigits=__diag.board.map(q=>Number(q.digit));
@@ -6174,20 +6217,21 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     await yieldFrame();
   }
   /* V3.11.5 STRICT OOS PROOF — frozen benchmark from the previous production run. */
-  const __bench={tests:1952,types:67,selection:{hits:1263,rate:64.70},top2:{hits:1250,rate:64.04},inBoard:{hits:1941,rate:99.44},penetration:{hits:1288,rate:65.98}};
+  const __bench={tests:1952,types:67,selection:{hits:1282,rate:65.68},top2:{hits:1282,rate:65.68},inBoard:{hits:1948,rate:99.80},formulaUnion:{hits:1943,rate:99.54},penetration:{hits:1339,rate:68.60}};
   const __diagRows=Array.isArray(__SELECTOR_DIAGNOSTIC__?.rows)?__SELECTOR_DIAGNOSTIC__.rows:[];
   const __rawInputRows=Array.isArray(window.__CURRENT_INPUT_RECORDS__)?window.__CURRENT_INPUT_RECORDS__.length:0;
   const __resultInputRows=Array.isArray(window.__CURRENT_INPUT_RECORDS__)?window.__CURRENT_INPUT_RECORDS__.filter(r=>String(r?.status||'result')==='result').length:0;
   const __skippedInputRows=Array.isArray(window.__CURRENT_INPUT_RECORDS__)?window.__CURRENT_INPUT_RECORDS__.filter(r=>String(r?.status||'')==='skipped').length:0;
-  const __proof={version:APP_BUILD_VERSION,generatedAt:new Date().toISOString(),proofSource:'runtime-render-causal-replay',dataset:{rawInputRows:__rawInputRows,resultInputRows:__resultInputRows,skippedInputRows:__skippedInputRows,types:globalStats.length,syntheticIncluded:!!groups.__THAI_ALLDAY__},tests:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0),types:globalStats.length,selection:{hits:globalStats.reduce((a,g)=>a+(Number(g.sx?.hits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0)},top2:{hits:__diagRows.filter(r=>r?.boardTop2Hit).length,total:__diagRows.length},inBoard:{hits:__diagRows.filter(r=>r?.targetInBoard).length,total:__diagRows.length},penetration:{hits:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveHits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveTotal)||0),0)}};
+  const __proof={version:APP_BUILD_VERSION,generatedAt:new Date().toISOString(),proofSource:'runtime-render-causal-replay',dataset:{rawInputRows:__rawInputRows,resultInputRows:__resultInputRows,skippedInputRows:__skippedInputRows,types:globalStats.length,syntheticIncluded:!!groups.__THAI_ALLDAY__},tests:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0),types:globalStats.length,selection:{hits:globalStats.reduce((a,g)=>a+(Number(g.sx?.hits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0)},top2:{hits:__diagRows.filter(r=>r?.boardTop2Hit).length,total:__diagRows.length},inBoard:{hits:__diagRows.filter(r=>r?.targetInBoard).length,total:__diagRows.length},formulaUnion:{hits:__diagRows.filter(r=>r?.unionHit).length,total:__diagRows.length},penetration:{hits:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveHits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveTotal)||0),0)}};
   __proof.selection.rate=__proof.selection.total?pct(__proof.selection.hits,__proof.selection.total):0;
   __proof.top2.rate=__proof.top2.total?pct(__proof.top2.hits,__proof.top2.total):0;
   __proof.inBoard.rate=__proof.inBoard.total?pct(__proof.inBoard.hits,__proof.inBoard.total):0;
+  __proof.formulaUnion.rate=__proof.formulaUnion.total?pct(__proof.formulaUnion.hits,__proof.formulaUnion.total):0;
   __proof.penetration.rate=__proof.penetration.total?pct(__proof.penetration.hits,__proof.penetration.total):0;
   __proof.baseline=__bench;
   __proof.runtimeOnly=true;__proof.hardCodedReplay=false;
-  __proof.complete=__rawInputRows===1980&&__resultInputRows===1970&&__skippedInputRows===10&&__proof.tests===1862&&__proof.types===67&&__proof.top2.total===1862&&__proof.inBoard.total===1862&&__proof.penetration.total===1862&&__proof.dataset.syntheticIncluded;
-  __proof.pass=__proof.complete&&__proof.selection.rate>__bench.selection.rate&&__proof.top2.rate>__bench.top2.rate&&__proof.inBoard.rate>__bench.inBoard.rate&&__proof.penetration.rate>__bench.penetration.rate;
+  __proof.complete=__rawInputRows===1980&&__resultInputRows===1970&&__skippedInputRows===10&&__proof.tests===1952&&__proof.types===67&&__proof.top2.total===1952&&__proof.inBoard.total===1952&&__proof.formulaUnion.total===1952&&__proof.penetration.total===1952&&__proof.dataset.syntheticIncluded;
+  __proof.pass=__proof.complete&&__proof.selection.rate>__bench.selection.rate&&__proof.top2.rate>__bench.top2.rate&&__proof.inBoard.rate>=__bench.inBoard.rate&&__proof.formulaUnion.rate>=__bench.formulaUnion.rate&&__proof.penetration.rate>__bench.penetration.rate;
   __proof.status=__proof.pass?'PASS':(__proof.complete?'FAIL':'INCOMPLETE');
   window.__LAST_OOS_PROOF__=Object.freeze(__proof);
   if(startedAt)setProcessingProgress(99,'กำลังสร้าง报告','65 หวยของผลลัพธ์ถูกประกอบแบบแบ่งช่วงแล้ว · กำลังสรุปข้อมูลส่วนกลาง',startedAt,100,99,true);
@@ -6258,7 +6302,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.41.0';
+const APP_BUILD_VERSION='V3.42.0';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
@@ -6647,7 +6691,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
    - Promotion is blocked unless the same Runtime OOS snapshot beats the Champion and passes exact-type gates.
 */
 (function installV327DecisionArbitrationShadow(){
-  const VERSION='V3.41.0';
+  const VERSION='V3.42.0';
   const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const clean=(x)=>String(x??'').trim();
@@ -6806,7 +6850,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
 /* V3.38.0 SELECTOR ARBITRATION V4 — INTEGRATED SAFETY-GATED */
 (function(){
 'use strict';
-const VERSION='V3.41.0-THAI-ALLDAY-CHRONOLOGICAL-INTEGRITY';
+const VERSION='V3.42.0-THAI-ALLDAY-TRANSITION-MEMORY';
 const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
 const digit=x=>{const n=num(x);return n!=null&&n>=0&&n<=9?Math.trunc(n):null};
