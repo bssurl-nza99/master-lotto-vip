@@ -6003,62 +6003,12 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     try{__p40Meta=__p40Apply(c,routeCtx);}catch(__p40e){__p40Meta={applied:false,reason:'safe-fallback:'+String(__p40e?.message||__p40e)}}
     if(__p40Meta.applied){const __p40q=c.find(q=>Number(q.digit)===Number(__p40Meta.to));if(__p40q){top=__p40q;}}
     }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
-    /* V3.44.0 EXACT-TYPE RANK RECOVERY RESEARCH
-       Final gate for the production pair: Adaptive/Penetration evidence may assist
-       only when it does not have a demonstrated exact-type historical disadvantage
-       against the current selector pair.  Prior-only, exact-type, no board expansion.
-       This is intentionally conservative: it can preserve the current pair, or recover
-       a prior raw-board candidate only when >=12 prior tests and >=8pp causal edge exist. */
-    let __v43Shield={applied:false,reason:'hold',from:[Number(top?.digit),Number(second?.digit)],to:null,tests:0,edge:null,source:'exact-type-prior'};
-    try{
-      const __v43name=String(routeCtx?.name||rs.at(-1)?.name||'');
-      const __v43targetMem=routeCtx?.__selectorDecisionMemory;
-      const __v43mem=__v43targetMem?.get?.(__v43name)||null;
-      const __v43raw=Array.isArray(__diagRawBoard)?__diagRawBoard.slice().sort((a,b)=>Number(a.baselineRank||99)-Number(b.baselineRank||99)):[];
-      const __v43final=[Number(top?.digit),Number(second?.digit)];
-      const __v43stat=(d)=>{const z=__v43mem?.get?.(Number(d));return z&&z.n>=12?{n:z.n,rate:(z.h+2)/(z.n+4)}:null};
-      const __v43base=__v43stat(__v43final[0]);
-      const __v43raw1=__v43raw.find(q=>Number(q.digit)!==__v43final[1]&&Number(q.digit)!==__v43final[0]);
-      const __v43cand=__v43raw1?__v43stat(__v43raw1.digit):null;
-      if(__v43base&&__v43cand){
-        const edge=__v43cand.rate-__v43base.rate;
-        if(edge>=.08 && Number(__v43raw1?.baselineRank||99)<=3){
-          top= c.find(q=>Number(q.digit)===Number(__v43raw1.digit))||top;
-          __v43Shield={applied:true,reason:'recover-strong-prior-raw-candidate',from:__v43final,to:[Number(top.digit),Number(second.digit)],tests:__v43cand.n,edge:+(edge*100).toFixed(2),source:'exact-type-prior'};
-        } else { __v43Shield={...__v43Shield,reason:'hold-no-material-edge',tests:__v43cand.n,edge:+(edge*100).toFixed(2)}; }
-      }
-    }catch(__v43e){__v43Shield={...__v43Shield,reason:'safe-fallback:'+String(__v43e?.message||__v43e)}}
-    /* V3.44 EXACT-TYPE RANK RECOVERY
-       Research-only D1 challenger: recover a current raw R3-R6 candidate when
-       its prior exact-type hit rate materially beats the current D1. No board
-       expansion, no target access at decision time, minimum 20 prior observations. */
-    let __v44RankRecovery={applied:false,from:Number(top?.digit),to:null,fromRate:null,toRate:null,tests:0,edge:null,rank:null,source:'exact-type-r1-r6-prior'};
-    try{
-      const __v44name=String(routeCtx?.name||rs.at(-1)?.name||'');
-      const __v44m=routeCtx?.__selectorRankDecisionMemory?.get?.(__v44name)||null;
-      const __v44raw=(__diagRawBoard||[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit));
-      const __v44cur=__v44m?.get?.(Number(top?.digit));
-      const __v44curRate=__v44cur&&__v44cur.n>=20?((__v44cur.h+4)/(__v44cur.n+8)):.5;
-      const __v44Pool=[];
-      for(let __j=2;__j<Math.min(6,__v44raw.length);__j++){
-        const __q=__v44raw[__j],__d=Number(__q?.digit),__z=__v44m?.get?.(__d); if(!__z||__z.n<20||!Number.isInteger(__d)||__d===Number(top?.digit)||__d===Number(second?.digit))continue;
-        const __rate=(__z.h+4)/(__z.n+8),__edge=__rate-__v44curRate;
-        if(__rate<.60||__edge<.10)continue;
-        __v44Pool.push({q:__q,rate:__rate,edge:__edge,tests:__z.n,rank:__j+1});
-      }
-      __v44Pool.sort((a,b)=>b.edge*Math.min(1,b.tests/40)-a.edge*Math.min(1,a.tests/40)||a.rank-b.rank);
-      const __win44=__v44Pool[0];
-      if(__win44){
-        const __cq=c.find(q=>Number(q.digit)===Number(__win44.q.digit));
-        if(__cq){ top=__cq; __v44RankRecovery={applied:true,from:Number(__v44RankRecovery.from),to:Number(__cq.digit),fromRate:+(__v44curRate*100).toFixed(2),toRate:+(__win44.rate*100).toFixed(2),tests:__win44.tests,edge:+(__win44.edge*100).toFixed(2),rank:__win44.rank,source:'exact-type-r1-r6-prior'}; }
-      }
-    }catch(__v44e){__v44RankRecovery.reason='safe-fallback:'+String(__v44e?.message||__v44e)}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,selectionFirstShield:__v43Shield,exactTypeRankRecovery:__v44RankRecovery,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -6078,21 +6028,6 @@ async function __coopOosBundle(rs,routeCtx=null){
     const routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null;
     window.__RAW_STAGE_POLICY_NAME__=routeCtx?.name||train[0]?.name||''; window.__RAW_STAGE_POLICY_DIAGNOSTICS__=diagnostic.slice(); const sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx); window.__RAW_STAGE_POLICY_NAME__=null; window.__RAW_STAGE_POLICY_DIAGNOSTICS__=null;
     const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),d1=target.includes(sel.d1),d2=target.includes(sel.d2),pairHit=d1||d2;
-    // V3.43 causal memory update: current target is revealed only after selection.
-    if(routeCtx){if(!routeCtx.__selectorDecisionMemory)routeCtx.__selectorDecisionMemory=new Map();const __sm=routeCtx.__selectorDecisionMemory;const __sn=routeCtx.name||rs[i]?.name||'';if(!__sm.has(__sn))__sm.set(__sn,new Map());const __mm=__sm.get(__sn);for(const __d of new Set([Number(sel.d1),Number(sel.d2)])){if(!Number.isInteger(__d))continue;const __z=__mm.get(__d)||{n:0,h:0};__z.n++;if(target.includes(__d))__z.h++;__mm.set(__d,__z);}}
-    /* V3.44 RESEARCH MEMORY: record the realized outcome of raw-board ranks 1-6.
-       This is updated only AFTER target reveal, so it is strictly walk-forward. */
-    if(routeCtx){
-      if(!routeCtx.__selectorRankDecisionMemory)routeCtx.__selectorRankDecisionMemory=new Map();
-      const __rm=routeCtx.__selectorRankDecisionMemory,__rn=routeCtx.name||rs[i]?.name||'';
-      if(!__rm.has(__rn))__rm.set(__rn,new Map());
-      const __rmm=__rm.get(__rn);
-      const __raw6=(sel.__selectorDiag?.rawBoard||[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit)).slice(0,6);
-      for(let __ri=0;__ri<__raw6.length;__ri++){
-        const __d=Number(__raw6[__ri]?.digit); if(!Number.isInteger(__d))continue;
-        const __z=__rmm.get(__d)||{n:0,h:0,rankN:0,rankSum:0}; __z.n++; if(target.includes(__d))__z.h++; __z.rankN++; __z.rankSum+=__ri+1; __z.rate=pct(__z.h,__z.n); __rmm.set(__d,__z);
-      }
-    }
     const __diag=sel.__selectorDiag||{rawBoard:[],board:[]};
     const __baselineRankMap=new Map((Array.isArray(__diag.rawBoard)?__diag.rawBoard:[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).map((q,i)=>[Number(q.digit),i+1]));
     const __boardDigits=__diag.board.map(q=>Number(q.digit));
