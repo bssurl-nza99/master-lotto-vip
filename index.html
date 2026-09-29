@@ -668,11 +668,11 @@ table.audit-table th:nth-child(3),table.audit-table td:nth-child(3){min-width:82
 .hero-digit-badge{border-radius:0!important}
 .hero-circle{border-radius:0!important}
 .floating-pill{border-radius:0!important}
-/* V3.40.4 CARD PERCENT AUDIT: compact presentation-only layer. */
+/* V3.40.6 CARD PERCENT AUDIT: compact presentation-only layer. */
 .prediction-card{padding:18px 20px;margin-bottom:18px}
 .card-top-bar{margin-bottom:11px;padding-bottom:9px;gap:11px}
 .card-title-group{gap:8px}.card-flag{font-size:1.35rem}.card-info small{font-size:.54rem}.card-info b{font-size:.92rem}.card-right-group{gap:9px}.card-brand-tag{top:15px;right:20px;font-size:.48rem;padding:3px 6px}.card-action-btn{padding:4px 9px;font-size:.43rem}.hero-digits-wrap{gap:16px;margin:7px 0 14px}.hero-digit-badge{gap:8px;padding:5px 14px 5px 7px}.hero-circle{width:34px;height:34px;font-size:1.12rem}.hero-label{font-size:.52rem}.hero-percent{display:block;margin-top:2px;font:600 .38rem/1.1 "IBM Plex Mono",monospace;color:#95866f;letter-spacing:-.05px}.pairs-grid-container{gap:8px;padding:12px 14px;border-radius:16px}.pair-row-inline{gap:8px}
-/* V3.40.4 — PERCENT DISPLAY POLISH: presentation only; engine values remain untouched. */
+/* V3.40.6 — PERCENT DISPLAY POLISH: presentation only; engine values remain untouched. */
 .hero-digits-wrap{gap:12px;margin:6px 0 11px}
 .hero-digit-badge{gap:6px;padding:4px 10px 4px 5px}
 .hero-circle{width:31px;height:31px;font-size:1rem}
@@ -690,7 +690,7 @@ table.audit-table th:nth-child(3),table.audit-table td:nth-child(3){min-width:82
 .card-brand-tag{top:12px;right:16px;font-size:.44rem;padding:2px 5px}
 .card-action-btn{padding:3px 8px;font-size:.40rem}
 
-/* V3.40.4 — HERO PERCENT ALIGNMENT + CAPTURE SHARPNESS: presentation/capture only. */
+/* V3.40.6 — HERO PERCENT ALIGNMENT + CAPTURE SHARPNESS: presentation/capture only. */
 .hero-digit-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:5px 12px 6px;min-width:58px}
 .hero-digit-badge>div{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
 .hero-percent{display:block;width:100%;margin-top:5px!important;text-align:center;white-space:nowrap;font-size:.30rem!important;line-height:1.15!important;letter-spacing:-.04px}
@@ -1547,7 +1547,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.4 — PERCENT DISPLAY AUDIT</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.6 — NO-DRAW / HOLIDAY AWARE</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -1750,11 +1750,25 @@ function v95ThaiSelectNeedles(history,anchor){return v95ThaiNeedleCandidates(anc
 function v95ThaiPairStats(history,tens,unit){const pair=`${tens}${unit}`;let hits=0,breadth=0;const vals=[];history.forEach(t=>{const hit=v95ThaiExactPair(t.target,pair);if(hit)hits++;const cnt=['บ่าย','เย็น'].filter(r=>String(t.target.rounds?.[r]?.n3||'').padStart(3,'0').slice(-2)===pair).length;breadth+=cnt/2;vals.push(hit?1:0)});const n=history.length,recent=history.slice(-5),rh=recent.filter(t=>v95ThaiExactPair(t.target,pair)).length,mean=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:.5,variance=vals.length?vals.reduce((a,b)=>a+(b-mean)*(b-mean),0)/vals.length:.25;return{coverage:v95ThaiBeta(hits,n,4),recent:v95ThaiBeta(rh,recent.length,2),breadth:n?breadth/n*100:50,stability:Math.max(0,100-Math.sqrt(variance)*100)}}
 function v95ThaiRankPairs(history,tens,needles){return needles.map(u=>{const st=v95ThaiPairStats(history,tens,u),score=st.coverage*.46+st.recent*.20+st.breadth*.14+st.stability*.20;return{pair:`${tens}${u}`,score}}).sort((a,b)=>b.score-a.score||a.pair.localeCompare(b.pair))}
 function v95ThaiBuildSpecialTop(records){const raw=(records||[]).slice().sort((a,b)=>(a.timestamp||parseThaiDate(a.date)||0)-(b.timestamp||parseThaiDate(b.date)||0)||(a.sequence||0)-(b.sequence||0));const data=v95ThaiRecords(raw),days=v95ThaiDayMap(data);if(!days.length)return null;const latest=days.at(-1),mor=latest.rounds?.เช้า,noon=latest.rounds?.เที่ยง;if(!mor||!noon)return null;const trans=[];for(let i=1;i<days.length;i++){const src=days[i-1],tar=days[i],m=src.rounds?.เช้า,n=src.rounds?.เที่ยง;if(!m||!n)continue;const srcTs=parseThaiDate(src.date)||0,tarTs=parseThaiDate(tar.date)||0;if(raw.some(r=>r.status==='skipped'&&v95ThaiRound(r.name)&&((parseThaiDate(r.date)||0)>=srcTs)&&((parseThaiDate(r.date)||0)<=tarTs)))continue;const n3=String(m.n3).padStart(3,'0'),n2=String(n.n2).padStart(2,'0');trans.push({source:src,target:tar,anchorTens:Number(n3[1]),anchorUnit:Number(n2[1]),tensCandidates:v95ThaiTensCandidates(Number(n3[1])),needleCandidates:v95ThaiNeedleCandidates(Number(n2[1])),actualTens:v95ThaiTopTens(tar),actualUnits:v95ThaiTopUnits(tar)})}const anchorTens=Number(String(mor.n3).padStart(3,'0')[1]),anchorUnit=Number(String(noon.n2).padStart(2,'0')[1]),selT=v95ThaiSelectTens(trans,anchorTens),selU=v95ThaiSelectNeedles(trans,anchorUnit),d1=selT[0]?.digit??v95ThaiNorm10(anchorTens-2),d2=selT[1]?.digit??v95ThaiNorm10(anchorTens-1),mk=d=>v95ThaiRankPairs(trans,d,selU.map(x=>x.digit)).slice(0,5).sort((a,b)=>Number(a.pair[1])-Number(b.pair[1])).map(x=>({pair:x.pair,score:x.score})),bt=trans.length?trans.filter(t=>selT.some(x=>t.actualTens.includes(x.digit))).length/trans.length*100:50;return{lotteryName:'__THAI_TOP__',nextDate:getNextValidDrawDateStr(latest.date,'หุ้นไทย'),d1,d2,d1Pairs:mk(d1),d2Pairs:mk(d2),records:data,recordCount:data.length,thaiV95:{version:'V95 Thai Direct-Top',anchorTens,anchorUnit,selectedTens:selT,selectedNeedles:selU,backtestTests:trans.length,tensDailyCoverage:Math.round(bt*100)/100}}}
-function parseInput(text){const raw=String(text||'').replace(/\r/g,'').trim();if(!raw)return{records:[],errors:[]};const blocks=raw.split(/\n\s*\n+/).map(x=>x.trim()).filter(Boolean),records=[],errors=[];blocks.forEach((block,bi)=>{const lines=block.split('\n').map(x=>x.trim()).filter(Boolean);for(let i=0;i<lines.length;){const h=lines[i].match(/^(.+?)\s*\|\s*(.+?)$/);if(!h){errors.push(`ชุดข้อมูล ${bi+1}: หัวข้อไม่ถูกต้อง`);i++;continue}const name=canonicalLotteryName(h[1]),date=h[2].trim(),n3=lines[i+1],n2=lines[i+2];if(n3==='งดออกผล'||n3==='งดออก'||n3==='ไม่มีผล'||n3==='หยุด'){records.push({name,date,n3:'',n2:'',status:'skipped',timestamp:parseThaiDate(date),sequence:records.length});i+=3;continue}if(!/^\d{3}$/.test(n3||'')||!/^\d{2}$/.test(n2||'')){errors.push(`${name} | ${date}: ผลรางวัลไม่ถูกต้อง`);i+=Math.min(3,lines.length-i);continue}records.push({name,date,n3,n2,status:'result',timestamp:parseThaiDate(date),sequence:records.length});i+=3}});return{records,errors}}
+/* V3.40.6 NO-DRAW AWARENESS
+   - Explicitly recognizes no-draw / holiday / rescheduled markers.
+   - No-draw rows are metadata only: they NEVER become a draw and NEVER enter OOS.
+   - A result immediately after one or more skipped rows gets breakBefore=true, so
+     formulas/Walk-Forward do not silently learn across an explicitly declared gap.
+   - Windows are selected by actual result count, while preserving skipped rows at
+     the left boundary so a holiday immediately before the window is not forgotten.
+   - Unmarked calendar gaps are NOT guessed as holidays: missing data and confirmed
+     no-draw events remain separate states.
+*/
+function normalizeNoDrawText(v){return String(v??'').normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\s+/g,' ').trim().toLowerCase()}
+function noDrawReason(marker){const s=normalizeNoDrawText(marker);if(!s)return null;if(/เลื่อน/.test(s))return'RESCHEDULED';if(/วันหยุด|holiday|หยุดเทศกาล|เทศกาล/.test(s))return'HOLIDAY';if(/งด|ไม่มีผล|ไม่มีการออก|หยุดออก|หยุด$|no draw|no-draw/.test(s))return'NO_DRAW';return null}
+function isNoDrawMarker(v){return !!noDrawReason(v)}
+function parseInput(text){const raw=String(text||'').replace(/\r/g,'').trim();if(!raw)return{records:[],errors:[]};const blocks=raw.split(/\n\s*\n+/).map(x=>x.trim()).filter(Boolean),records=[],errors=[];blocks.forEach((block,bi)=>{const lines=block.split('\n').map(x=>x.trim()).filter(Boolean);for(let i=0;i<lines.length;){const h=lines[i].match(/^(.+?)\s*\|\s*(.+?)$/);if(!h){errors.push(`ชุดข้อมูล ${bi+1}: หัวข้อไม่ถูกต้อง`);i++;continue}const name=canonicalLotteryName(h[1]),date=h[2].trim(),n3=lines[i+1],n2=lines[i+2],marker=isNoDrawMarker(n3)?n3:(isNoDrawMarker(n2)?n2:'');if(marker){records.push({name,date,n3:'',n2:'',status:'skipped',skipReason:noDrawReason(marker),skipMarker:String(marker).trim(),timestamp:parseThaiDate(date),sequence:records.length});i+=Math.min(3,lines.length-i);continue}if(!/^\d{3}$/.test(n3||'')||!/^\d{2}$/.test(n2||'')){errors.push(`${name} | ${date}: ผลรางวัลไม่ถูกต้อง`);i+=Math.min(3,lines.length-i);continue}records.push({name,date,n3,n2,status:'result',timestamp:parseThaiDate(date),sequence:records.length});i+=3}});return{records,errors}}
 function sortRecords(a){return(a||[]).slice().sort((a,b)=>(a.timestamp||parseThaiDate(a.date)||0)-(b.timestamp||parseThaiDate(b.date)||0)||(a.sequence||0)-(b.sequence||0))}
-function results(a){const sorted=sortRecords(a),out=[];let blocked=false;for(const r of sorted){if(r.status==='skipped'){blocked=true;continue}if(r.status==='result'&&/^\d{3}$/.test(r.n3)&&/^\d{2}$/.test(r.n2)){out.push({...r,breakBefore:blocked});blocked=false}}return out}
-function processingWindow(a,max=30){const sorted=sortRecords(a);return sorted.length>max?sorted.slice(-max):sorted}
+function results(a){const sorted=sortRecords(a),out=[];let blocked=false,breakReasons=[];for(const r of sorted){if(r.status==='skipped'){blocked=true;breakReasons.push({date:r.date,reason:r.skipReason||'NO_DRAW',marker:r.skipMarker||''});continue}if(r.status==='result'&&/^\d{3}$/.test(r.n3)&&/^\d{2}$/.test(r.n2)){const prev=out.at(-1)||null,gapDays=prev?.timestamp&&r.timestamp?Math.max(0,Math.round((r.timestamp-prev.timestamp)/86400000)):null;out.push({...r,breakBefore:blocked,breakReasons:blocked?breakReasons.slice():[],skippedBetween:blocked?breakReasons.length:0,drawGapDays:gapDays});blocked=false;breakReasons=[]}}return out}
+function processingWindow(a,max=30){const sorted=sortRecords(a);if(!sorted.length)return[];const resultIndexes=[];for(let i=0;i<sorted.length;i++)if(sorted[i]?.status==='result'&&/^\d{3}$/.test(sorted[i]?.n3||'')&&/^\d{2}$/.test(sorted[i]?.n2||''))resultIndexes.push(i);if(resultIndexes.length<=max)return sorted;let start=resultIndexes[resultIndexes.length-max];while(start>0&&sorted[start-1]?.status==='skipped')start--;return sorted.slice(start)}
 function historicalIntelligenceWindow(a,max=HIST_MAX){return processingWindow(a,max)}
+function drawStateSummary(raw,processed){const rr=sortRecords(raw||[]),pp=Array.isArray(processed)?processed:results(rr),skipped=rr.filter(r=>r?.status==='skipped'),last=rr.at(-1)||null,lastResult=[...pp].at(-1)||null;return{rawRows:rr.length,resultRows:rr.filter(r=>r?.status==='result').length,skippedRows:skipped.length,latestStatus:last?.status||null,latestDate:last?.date||null,latestResultDate:lastResult?.date||null,latestSkipReason:last?.status==='skipped'?(last.skipReason||'NO_DRAW'):null,latestSkipMarker:last?.status==='skipped'?(last.skipMarker||''):null,boundaryBreaks:pp.filter(r=>r?.breakBefore).length}}
 function canonicalDateKey(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function execFormula(name,r,prev){const fn=formulas[name];if(!fn||!r||r.status!=='result')return null;const safePrev=r.breakBefore?null:prev,t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),p=safePrev?.n2?Number(safePrev.n2[1]):NaN;return fn(t[0],t[1],t[2],b[0],b[1],p)}
 function hit(pred,r){if(!pred)return{hit:false,hundredsOnly:false};const t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),target=[t[1],t[2],b[0],b[1]],ok=pred.some(d=>target.includes(d)),ho=!ok&&pred.some(d=>d===t[0]);return{hit:ok,hundredsOnly:ho}}
@@ -1777,7 +1791,7 @@ function decisionKey(q){return `${q.digit}|c${Math.min(3,q.count)}|r${Math.min(4
 const decisionMemoryCache=new WeakMap();
 function selectRaw(rs,ad,routeProfile=null){const __pt0=window.__PERFTRACE__.begin("selectRaw"); try {const c=candidateBoardRaw(rs,ad,rs,routeProfile),valid=c.filter(x=>x.gate),ordered=valid.length?valid:c,top=ordered[0]||c[0]||{digit:0,score:0,confidence:'ต่ำ',gate:false},second=ordered.find(x=>x.digit!==top.digit)||c.find(x=>x.digit!==top.digit)||{digit:norm(top.digit+1),score:0,confidence:'ต่ำ',gate:false};return{d1:top.digit,d2:second.digit,c,top,second}} finally { window.__PERFTRACE__.end("selectRaw",__pt0); }}
 function decisionMemory(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionMemory"); try {const key=routeCtx?.name||'__none__';let cache=decisionMemoryCache.get(rs);if(!cache){cache=new Map();decisionMemoryCache.set(rs,cache)}if(cache.has(key))return cache.get(key);const mem=new Map(),all=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(0,i+1),ad=audit(train),cutoffTs=train.at(-1)?.timestamp||parseThaiDate(train.at(-1)?.date)||0,routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null,sel=selectRaw(train,ad,routeProfile),target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number);for(const q of [sel.top,sel.second]){const key=decisionKey(q),ok=target.includes(q.digit),m=mem.get(key)||{key,digit:q.digit,tests:0,hits:0,misses:0,rate:null};m.tests++;ok?m.hits++:m.misses++;m.rate=pct(m.hits,m.tests);mem.set(key,m);all.push({source:train.at(-1).date,digit:q.digit,hit:ok,key})}}const out={map:mem,tests:all.length,hits:all.filter(x=>x.hit).length,misses:all.filter(x=>!x.hit).length,rate:pct(all.filter(x=>x.hit).length,all.length)};cache.set(key,out);return out} finally { window.__PERFTRACE__.end("decisionMemory",__pt0); }}
-function multiWindowDigitHistory(historyRs){const raw=sortRecords(historyRs).slice(-HIST_MAX),all=results(raw),w30=results(raw.slice(-RECENT_MAX)),w50=results(raw.slice(-MEDIUM_MAX)),w100=all,h30=digitHistory(w30),h50=digitHistory(w50),h100=digitHistory(w100),ha=h100,blend=d=>{const xs=[[h30[d],.55],[h50[d],.25],[h100[d],.15],[ha[d],.05]].filter(([x])=>x&&x.tests>0),weight=xs.reduce((s,x)=>s+x[1],0);if(!weight)return{tests:0,hits:0,last:null,miss:0,maxMiss:0,rate:null,score:50};const rate=xs.reduce((s,[x,w])=>s+x.rate*w,0)/weight,score=xs.reduce((s,[x,w])=>s+x.score*w,0)/weight;return{...h30[d],rate,score,window30:h30[d],window50:h50[d],window100:h100[d],all:ha[d]}};return Array.from({length:10},(_,d)=>blend(d))} 
+function multiWindowDigitHistory(historyRs){const raw=processingWindow(historyRs,HIST_MAX),all=results(raw),w30=results(processingWindow(raw,RECENT_MAX)),w50=results(processingWindow(raw,MEDIUM_MAX)),w100=all,h30=digitHistory(w30),h50=digitHistory(w50),h100=digitHistory(w100),ha=h100,blend=d=>{const xs=[[h30[d],.55],[h50[d],.25],[h100[d],.15],[ha[d],.05]].filter(([x])=>x&&x.tests>0),weight=xs.reduce((s,x)=>s+x[1],0);if(!weight)return{tests:0,hits:0,last:null,miss:0,maxMiss:0,rate:null,score:50};const rate=xs.reduce((s,[x,w])=>s+x.rate*w,0)/weight,score=xs.reduce((s,[x,w])=>s+x.score*w,0)/weight;return{...h30[d],rate,score,window30:h30[d],window50:h50[d],window100:h100[d],all:ha[d]}};return Array.from({length:10},(_,d)=>blend(d))} 
 /* V1.7.1.15 FORMULA ROUTING — type-family routing over locked formulas 1-9. No formula body changes. */
 function routingFamily(name){
   const n=String(name||'').toLowerCase().replace(/\s+/g,'');
@@ -6199,7 +6213,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     await yieldFrame();
     const s=await selectCooperative(rs,ad,rawHist,null,routeProfile,routeCtx);await yieldFrame();
     const pen=penetrationStats(rs,name);
-    const __top2Status=top2DNAStatus(rs);const p={lotteryName:name,nextDate:meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(rs.at(-1).date,name),top2DNA:__top2Status,...s};
+    const __top2Status=top2DNAStatus(rs);const p={lotteryName:name,nextDate:meta.lastRound?.date?getNextValidDrawDateStr(meta.lastRound.date,name):getNextValidDrawDateStr(rs.at(-1).date,name),top2DNA:__top2Status,drawState:meta.drawState||null,...s};
     currentAuditDataMap[name]=ad;currentPredictionDataMap[name]={...p,routeCtx,records:rs,historicalRecords:hist,rawRoundCount:meta.rawCount||rs.length,historyRoundCount:meta.histRawCount||hist.length,latestRawRound:meta.lastRound};
     const sorted=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0)),bestFormula=sorted[0],bestRate=bestFormula?(ad[bestFormula]?.rate??0):0,bestConfidence=esc(s.selection?.confidence||'ไม่ระบุ');
     await yieldFrame();
@@ -6217,7 +6231,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   const __rawInputRows=Array.isArray(window.__CURRENT_INPUT_RECORDS__)?window.__CURRENT_INPUT_RECORDS__.length:0;
   const __resultInputRows=Array.isArray(window.__CURRENT_INPUT_RECORDS__)?window.__CURRENT_INPUT_RECORDS__.filter(r=>String(r?.status||'result')==='result').length:0;
   const __skippedInputRows=Array.isArray(window.__CURRENT_INPUT_RECORDS__)?window.__CURRENT_INPUT_RECORDS__.filter(r=>String(r?.status||'')==='skipped').length:0;
-  const __proof={version:APP_BUILD_VERSION,generatedAt:new Date().toISOString(),proofSource:'runtime-render-causal-replay',dataset:{rawInputRows:__rawInputRows,resultInputRows:__resultInputRows,skippedInputRows:__skippedInputRows,types:globalStats.length,syntheticIncluded:!!groups.__THAI_ALLDAY__},tests:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0),types:globalStats.length,selection:{hits:globalStats.reduce((a,g)=>a+(Number(g.sx?.hits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0)},top2:{hits:__diagRows.filter(r=>r?.boardTop2Hit).length,total:__diagRows.length},inBoard:{hits:__diagRows.filter(r=>r?.targetInBoard).length,total:__diagRows.length},penetration:{hits:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveHits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveTotal)||0),0)}};
+  const __proof={version:APP_BUILD_VERSION,generatedAt:new Date().toISOString(),proofSource:'runtime-render-causal-replay',dataset:{rawInputRows:__rawInputRows,resultInputRows:__resultInputRows,skippedInputRows:__skippedInputRows,types:globalStats.length,syntheticIncluded:!!groups.__THAI_ALLDAY__,skipAware:true,explicitNoDrawRows:__skippedInputRows},tests:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0),types:globalStats.length,selection:{hits:globalStats.reduce((a,g)=>a+(Number(g.sx?.hits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.sx?.total)||0),0)},top2:{hits:__diagRows.filter(r=>r?.boardTop2Hit).length,total:__diagRows.length},inBoard:{hits:__diagRows.filter(r=>r?.targetInBoard).length,total:__diagRows.length},penetration:{hits:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveHits)||0),0),total:globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveTotal)||0),0)}};
   __proof.selection.rate=__proof.selection.total?pct(__proof.selection.hits,__proof.selection.total):0;
   __proof.top2.rate=__proof.top2.total?pct(__proof.top2.hits,__proof.top2.total):0;
   __proof.inBoard.rate=__proof.inBoard.total?pct(__proof.inBoard.hits,__proof.inBoard.total):0;
@@ -6265,10 +6279,12 @@ function updateIndicator(){try{$('recordCountIndicator').textContent=`สะส�
 let html2canvasLoader=null;function ensureHtml2Canvas(){if(typeof html2canvas==='function')return Promise.resolve();if(html2canvasLoader)return html2canvasLoader;html2canvasLoader=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.crossOrigin='anonymous';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('html2canvas load failed'));document.head.appendChild(sc)});return html2canvasLoader}
 window.captureSnapshotImage=async()=>{const el=document.querySelector('.ai-snapshot');if(!el)return;const btn=el.querySelector('.ai-snapshot-capture');try{await ensureHtml2Canvas();if(btn)btn.style.visibility='hidden';await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const c=await html2canvas(el,{backgroundColor:'#06101e',scale:2,useCORS:true,allowTaint:false,imageTimeout:15000,logging:false});const a=document.createElement('a');a.download='BAN-NGERN-KONG-AI-SNAPSHOT.png';a.href=c.toDataURL('image/png');a.click();showToast('✓ แคปภาพรวมแล้ว')}catch(e){showToast('⚠️ แคปภาพรวมไม่สำเร็จ')}finally{if(btn)btn.style.visibility=''}};
 window.captureCardImage=async(id,title)=>{const el=$(id);if(!el)return;const actions=el.querySelector('.card-btn-group');try{await ensureHtml2Canvas();if(document.fonts?.ready)await document.fonts.ready;if(actions)actions.style.visibility='hidden';await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const captureScale=Math.max(3,Math.min(4,(window.devicePixelRatio||1)*2));const c=await html2canvas(el,{backgroundColor:null,scale:captureScale,useCORS:true,allowTaint:false,imageTimeout:15000,logging:false,removeContainer:true});const a=document.createElement('a');a.download=`${title||'card'}.png`;a.href=c.toDataURL('image/png');a.click();showToast('✓ แคปภาพการ์ดแล้ว')}catch(e){showToast('⚠️ แคปภาพไม่สำเร็จ')}finally{if(actions)actions.style.visibility=''}};
-/* V3.11.1 DATA IDENTITY FIX — one lottery/date/status is one logical draw.
-   Result digits are payload, never part of identity, so corrected imports replace old values. */
+/* V3.40.6 DATA IDENTITY HARDENING — one lottery/date is one logical draw.
+   Result digits are payload, and status is mutable metadata: a later real result
+   for a date previously marked NO_DRAW/HOLIDAY replaces that skip marker instead
+   of creating two logical rows for the same lottery/date. */
 function canonicalLotteryName(name){return String(name??'').replace(/\s+/g,' ').trim()}
-function recordKey(r){const name=canonicalLotteryName(r?.name),date=String(r?.date||'').trim(),ts=parseThaiDate(date),status=String(r?.status||'result').trim()||'result';return `${name}|${ts?canonicalDateKey(ts):date.replace(/\s+/g,' ')}|${status}`}
+function recordKey(r){const name=canonicalLotteryName(r?.name),date=String(r?.date||'').trim(),ts=parseThaiDate(date);return `${name}|${ts?canonicalDateKey(ts):date.replace(/\s+/g,' ')}`}
 function mergeStoredRecords(existing,incoming){
   const map=new Map();
   const put=(r,sourceRank,index)=>{
@@ -6296,7 +6312,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.40.4';
+const APP_BUILD_VERSION='V3.40.6';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
@@ -6311,12 +6327,15 @@ function runSystemHealth(){
   if(!/__SUPPORT_META_BUILD__/.test(s))issues.push('support recursion guard missing');
   if(!/breakBefore/.test(s))warnings.push('breakBefore handling not detected');
   if(!/status==='skipped'/.test(s)&&!/status===.skipped./.test(s))warnings.push('skip-state logic not easily statically verified');
+  if(!/function\s+isNoDrawMarker\(/.test(s))warnings.push('no-draw marker parser missing');
+  if(!/function\s+drawStateSummary\(/.test(s))warnings.push('draw-state summary missing');
+  if(!/while\(start>0&&sorted\[start-1\]\?\.status==='skipped'\)/.test(s))warnings.push('window boundary preservation missing');
   if(!/SMART-2D OOS CHAMPION/.test(s))issues.push('smart selector missing');
   const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes(APP_BUILD_VERSION)&&!document.getElementById('__smart_v23_badge'))issues.push('visible version mismatch');
   if(!/function\s+__rolePairApply\(/.test(s)||!/__rolePairMeta=/.test(s))issues.push('role-pair layer not wired into cooperative selector');
   if(!/function\s+__scApply\(/.test(s)||!/__selfCorrectionMeta=__scApply\(/.test(s))issues.push('self-correction digit layer not wired into cooperative selector');
   if(!/afterSelfCorrection/.test(s))issues.push('self-correction forensic stage missing');
-  const health={version:APP_BUILD_VERSION,status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),recordIdentityCorrected:/function recordKey\(r\).*return `\$\{name\}\|\$\{ts\?canonicalDateKey\(ts\):date\.replace/.test(s),recordIdentityNoPayload:!(/recordKey\(r\).*n3.*n2/.test(s))}};
+  const health={version:APP_BUILD_VERSION,status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s)&&/isNoDrawMarker/.test(s)&&/drawStateSummary/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),recordIdentityCorrected:/function recordKey\(r\).*return `\$\{name\}\|\$\{ts\?canonicalDateKey\(ts\):date\.replace/.test(s),recordIdentityNoPayload:!(/recordKey\(r\).*n3.*n2/.test(s))}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 /* V2.0 RESEARCH HARVEST — shadow-only forensic archive.
@@ -6485,9 +6504,9 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     setProcessingProgress(doneUnits/totalUnits*95,'ขั้นที่ 2/4 · แบ่งข้อมูลรายหวย',`เลือกประมวลผล ${names.length} หวยจากข้อมูลที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด`,startedAt,totalUnits,doneUnits,true);
     await new Promise(r=>setTimeout(r,0));
     for(let ni=0;ni<names.length;ni++){
-      const name=names[ni],rawAll=sortRecords(allByName[name]),rawWin=processingWindow(rawAll,RECENT_MAX),histRaw=historicalIntelligenceWindow(rawAll,HIST_MAX),hist=results(histRaw),proc=results(rawWin);
+      const name=names[ni],rawAll=sortRecords(allByName[name]),rawWin=processingWindow(rawAll,RECENT_MAX),histRaw=historicalIntelligenceWindow(rawAll,HIST_MAX),hist=results(histRaw),proc=results(rawWin),state=drawStateSummary(rawAll,proc);
       if(!hist.length&&!proc.length)continue;
-      groups[name]=proc;historyGroups[name]=hist;historyRawGroups[name]=histRaw;rawMeta[name]={rawCount:rawWin.length,histRawCount:histRaw.length,lastRound:rawWin.at(-1)||rawAll.at(-1)||null,totalRaw:rawAll.length};
+      groups[name]=proc;historyGroups[name]=hist;historyRawGroups[name]=histRaw;rawMeta[name]={rawCount:proc.length,histRawCount:hist.length,rawWindowRows:rawWin.length,histRawWindowRows:histRaw.length,lastRound:rawWin.at(-1)||rawAll.at(-1)||null,totalRaw:rawAll.length,drawState:state};
       doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 2/4 · ประมวลผลรายหวย',`กำลังเตรียม ${formatDisplayTitle(name)} · ${ni+1}/${names.length} หวย`,startedAt,totalUnits,doneUnits,true);
       await new Promise(r=>setTimeout(r,0));
       audit(proc);doneUnits++;setProcessingProgress(5+(doneUnits/totalUnits*85),'ขั้นที่ 3/4 · ออดิตสูตร + Selection','กำลังคำนวณคะแนนสูตรของ '+formatDisplayTitle(name),startedAt,totalUnits,doneUnits,true);
@@ -6503,7 +6522,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    showToast(`✓ V3.5 · ประมวลผลเฉพาะ ${names.length} หวยที่กรอกล่าสุด · ใช้ 30 งวดล่าสุด + Historical สูงสุด 100 งวด · เก็บประวัติทั้งหมดไว้โดยไม่คำนวณหวยอื่น`);
+    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V3.40.6 · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
   }catch(e){
     __SELECTOR_ERROR_BUS__.set({source:'Engine',phase:'runEngine',stage:'engine-catch',message:String(e?.message||e),stack:String(e?.stack||'')});
     console.error('V2.0 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
@@ -6685,7 +6704,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
    - Promotion is blocked unless the same Runtime OOS snapshot beats the Champion and passes exact-type gates.
 */
 (function installV327DecisionArbitrationShadow(){
-  const VERSION='V3.40.4';
+  const VERSION='V3.40.6';
   const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const clean=(x)=>String(x??'').trim();
@@ -6844,7 +6863,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
 /* V3.38.0 SELECTOR ARBITRATION V4 — INTEGRATED SAFETY-GATED */
 (function(){
 'use strict';
-const VERSION='V3.40.4-PERCENT-DISPLAY-AUDIT';
+const VERSION='V3.40.6-NO-DRAW-AWARE';
 const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
 const digit=x=>{const n=num(x);return n!=null&&n>=0&&n<=9?Math.trunc(n):null};
