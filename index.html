@@ -979,6 +979,20 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
 .dna-core-card span{color:#433a30}.dna-table-wrap{overflow-x:auto;border:1px solid #e4dac8;border-radius:10px;background:#fff;margin-top:6px}.dna-table{width:100%;min-width:720px;border-collapse:collapse;font-size:.43rem;color:#302920}.dna-table th,.dna-table td{padding:6px 7px;border-bottom:1px solid #eee7dc;text-align:left;white-space:nowrap}.dna-table th{background:#faf4e8;color:#5b461e;font-weight:900}.dna-table tr:last-child td{border-bottom:0}.dna-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.dna-kpi{padding:8px;border:1px solid #e4dac8;border-radius:10px;background:#fff}.dna-kpi b{display:block!important;color:#5b461e!important;font-size:.43rem!important;margin-bottom:3px}.dna-kpi span{display:block;color:#302920!important;font-size:.45rem!important;line-height:1.45}.dna-box-stack{display:grid;grid-template-columns:1fr;gap:9px}.dna-box-block{padding:8px;border:1px solid #e4dac8;border-radius:11px;background:#fffdf9}.dna-box-title{margin-bottom:5px;color:#5b461e}.dna-box-title b{color:#5b461e!important;font-size:.48rem!important}.dna-box-text{color:#302920;font-size:.45rem;line-height:1.55}.dna-type-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.dna-type-summary>div{padding:8px;border:1px solid #e4dac8;border-radius:10px;background:#faf7ef}.dna-type-summary b{display:block!important;color:#5b461e!important;font-size:.43rem!important}.dna-type-summary span{display:block;color:#302920;font-size:.45rem;margin-top:3px}.dna-empty{padding:9px;border:1px dashed #d9cdb8;border-radius:10px;color:#6b5b45;font-size:.45rem}.dna-global-box{margin-bottom:14px}.dna-global-box .forensic-box-head{margin-bottom:0}@media(max-width:700px){.dna-kpi-grid{grid-template-columns:1fr 1fr}.dna-type-summary{grid-template-columns:1fr}.dna-table{min-width:680px}}
 .production-core{margin-bottom:14px}
 @media(max-width:700px){.dna-type-grid,.dna-core-grid{grid-template-columns:1fr}}
+
+/* PRESENTATION ONLY — lottery-name strikethrough. No calculation/data/selection changes. */
+.lottery-name-struck{
+  text-decoration-line:line-through;
+  text-decoration-thickness:1.25px;
+  text-decoration-style:solid;
+  text-decoration-color:currentColor;
+  text-decoration-skip-ink:auto;
+  -webkit-text-decoration-line:line-through;
+  -webkit-text-decoration-thickness:1.25px;
+  -webkit-text-decoration-style:solid;
+  -webkit-text-decoration-color:currentColor;
+}
+
 </style>
 <style id="v191-unified-audit">
 /* V1.9.1 UI ONLY: unified per-lottery audit + mobile-first compact layout. Prediction/calculation logic untouched. */
@@ -3259,7 +3273,7 @@ function decisionStats(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin(
 function decisionMemorySummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>decisionMemory(rs)),n=xs.reduce((s,x)=>s+x.tests,0),h=xs.reduce((s,x)=>s+x.hits,0);return{n,h,r:pct(h,n)}}
 function selectionDashboard(rs,routeCtx=null){const sx=selectionStats(rs,routeCtx),dx=decisionStats(rs,routeCtx),mem=decisionMemory(rs,routeCtx),routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name):null,c=candidateBoard(rs,audit(rs),rs,routeProfile,routeCtx),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).map(q=>`${q.digit} ${q.r}% (${q.h}/${q.n})`).join(' · '),cand=c.map(q=>`${q.digit} ${Number(q.score||0).toFixed(2)} · ${q.count||0} สูตร · ${q.gate?'ผ่านเกณฑ์':'พัก'}`).join('  |  ');return`<div class="summary-table-container"><h3 style="color:#78590f;font-size:.78rem;margin:12px 0 8px">🧠 ตัวคัดเลือกเลขเด่น · OOS + Memory + Digit History + กระดานตัวเลือก</h3><table class="audit-table"><thead><tr><th>ส่วน</th><th>รายการ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด/ความเสี่ยง</th><th>อัตรา/Final</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>สูงสุด/สถานะ</th><th>รายละเอียด</th></tr></thead><tbody><tr><td><b>ตัวคัดเลือก</b></td><td>Walk-Forward OOS</td><td>${sx.total}</td><td>${sx.hits}</td><td>${sx.misses}</td><td><span class="score-chip">${sx.rate}%</span></td>${sx.displayHorizon.map(h=>`<td>${h.rate==null?'—':h.rate+'%'}</td>`).join('')}<td>เข้า ${sx.maxHit} · หลุด ${sx.maxMiss} · ปัจจุบัน ${sx.curMiss}</td><td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td></tr><tr><td><b>Decision Memory</b></td><td>บทเรียนสะสม</td><td>${mem.tests}</td><td>${mem.hits}</td><td>${mem.misses}</td><td><span class="score-chip">${mem.rate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>context ≥ 6</td><td>ใช้ความจำเฉพาะรูปแบบที่เคยเกิดจริง</td></tr><tr><td><b>ประวัติเลข</b></td><td>ถูก/ผิดแยกตัว</td><td>${dx.digitTotal}</td><td>${dx.digitHits}</td><td>${dx.digitTotal-dx.digitHits}</td><td><span class="score-chip">${dx.digitRate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>คู่ 2 ตัว ${dx.pairRate}</td><td>${digits||'ยังไม่มีข้อมูล'}</td></tr><tr><td><b>กระดานตัวเลือก</b></td><td>Final Score</td><td>—</td><td>—</td><td>—</td><td>—</td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td><td>${cand}</td></tr></tbody></table></div>`}
 function pairPill(x){const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';return`<div class="floating-pill ${cls}" title="Rank ${x.rank||'-'} · OOS ${x.tests||0} ครั้ง · ${x.hitRate==null?'ยังไม่มีข้อมูล':x.hitRate+'%'}"><b>${x.pair}</b></div>`}
-function card(c,index=0){const id=`v1_card_${index}_${Math.random().toString(36).slice(2,7)}`,title=formatDisplayTitle(c.lotteryName);return`<div class="prediction-card" id="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">${flag(title)}</div><div class="card-info"><small>${esc(c.nextDate)}</small><b>${esc(title)}</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ ทรัพย์นำโชค ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','${esc(title)}')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div class="hero-circle">${c.d1}</div><span class="hero-label">เด่น</span></div><div class="hero-digit-badge hero-silver"><div class="hero-circle">${c.d2}</div><span class="hero-label">รอง</span></div></div><div class="pairs-grid-container"><div class="pair-row-inline" data-owner="${c.d1}">${(c.d1Pairs||[]).slice(0,5).map(pairPill).join('')}</div><div class="pair-row-inline" data-owner="${c.d2}">${(c.d2Pairs||[]).slice(0,5).map(pairPill).join('')}</div></div></div>`}
+function card(c,index=0){const id=`v1_card_${index}_${Math.random().toString(36).slice(2,7)}`,title=formatDisplayTitle(c.lotteryName);return`<div class="prediction-card" id="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">${flag(title)}</div><div class="card-info"><small>${esc(c.nextDate)}</small><b class="lottery-name-struck">${esc(title)}</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ ทรัพย์นำโชค ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','${esc(title)}')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div class="hero-circle">${c.d1}</div><span class="hero-label">เด่น</span></div><div class="hero-digit-badge hero-silver"><div class="hero-circle">${c.d2}</div><span class="hero-label">รอง</span></div></div><div class="pairs-grid-container"><div class="pair-row-inline" data-owner="${c.d1}">${(c.d1Pairs||[]).slice(0,5).map(pairPill).join('')}</div><div class="pair-row-inline" data-owner="${c.d2}">${(c.d2Pairs||[]).slice(0,5).map(pairPill).join('')}</div></div></div>`}
 function board(ad,s){const c=(s?.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support),top=new Set([s?.d1,s?.d2]);return`<div class="summary-table-container"><div class="consensus-head"><b>🧠 กระดานตัวเลือก · Final Score</b><span style="font-size:.48rem;color:#827768">เด่น ${s?.d1??'-'} · รอง ${s?.d2??'-'}</span></div><div class="digit-board">${c.map(q=>`<div class="digit-cell ${top.has(q.digit)?'hot':''}"><b>${q.digit}</b><small>Final ${Number(q.score||0).toFixed(2)} · Base ${Number(q.scoreBreakdown?.formulaSupport||0).toFixed(2)}</small><span>${q.count||0} สูตร · ${q.gate?'ผ่านเกณฑ์':'พัก'}</span></div>`).join('')}</div></div>`}
 function table(lottery,rs,ad){let rows=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0)).map((f,i)=>{const x=ad[f],s=execFormula(f,rs.at(-1),rs.at(-2))||[],status=x.curMiss>=2?`🔴 หลุด ${x.curMiss} งวด`:x.latest?.hit?'🟢 เข้า':x.latest?.hundredsOnly?'⚠️ หลุด (หลักร้อย)':'🟡 หลุด 1 งวด';return`<tr><td><span class="badge-rank-${i<3?i+1:'other'}">อันดับ ${i+1}</span></td><td class="formula-cell">${esc(f)}</td><td><b style="color:#78590f">${s.length?s.join('-'):'-'}</b></td><td>${x.total}</td><td><span style="color:#2e7d32;font-weight:bold">${x.hits}</span> / <span style="color:#c62828;font-weight:bold">${x.misses}</span></td><td><span class="score-chip">${x.rate}%</span></td>${x.displayHorizon.map(h=>`<td>${h.rate==null?'—':`${h.rate}%`}</td>`).join('')}<td>${x.recency==null?'—':x.recency+'%'}</td><td>${x.stability==null?'—':x.stability+'%'}</td><td>${x.trend}</td><td>${x.maxHit}</td><td>${x.maxMiss}</td><td>${x.curMiss}</td><td>${status}</td><td><button class="add-card-btn" onclick="addFormulaCard('${encodeURIComponent(lottery)}','${encodeURIComponent(f)}')">＋ เพิ่มการ์ด</button></td></tr>`}).join('');return`<div class="summary-table-container"><h3 class="lottery-audit-title">🧾 ${esc(formatDisplayTitle(lottery))}</h3><table class="audit-table"><thead><tr><th>อันดับ</th><th>ชื่อสูตร</th><th>เลขล่าสุด</th><th>ทดสอบ</th><th>เข้า / หลุด</th><th>อัตราเข้า</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>ความใหม่</th><th>สม่ำเสมอ</th><th>แนวโน้ม</th><th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th><th>หลุดล่าสุด</th><th>สถานะ</th><th>การ์ด</th></tr></thead><tbody>${rows}</tbody></table></div>`}
 function globalSelectionSummary(groups){
@@ -6138,8 +6152,8 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     const formulaCells=sorted.map((f,i)=>{const x=ad[f],cur=execFormula(f,rs.at(-1),rs.at(-2))||[],status=x.curMiss>=2?'🔴':x.latest?.hit?'🟢':'🟡';const rate=Math.max(0,Math.min(100,Number(x.rate)||0));return `<div class="ai-formula ${rateClass(rate)}"><div class="ai-formula-top"><span class="ai-rank">${i+1}</span><b>${esc(String(f).match(/\d+/)?.[0] ? `F${String(f).match(/\d+/)[0]}` : f)}</b><span class="ai-status">${status}</span><strong>F${String(f).match(/\d+/)?.[0]||''}</strong></div><div class="ai-progress"><i style="width:${rate}%"></i></div><div class="ai-formula-bottom"><span>เข้า ${x.hits}</span><span>หลุด ${Math.max(0,x.total-x.hits)}</span><span>ล่าสุด ${cur.length?cur.join('-'):'-'}</span></div></div>`}).join('');
     const digitCards=topDigits.map(q=>`<div class="ai-digit"><b>${q.digit}</b><div><strong>${q.h}/${q.n}</strong><span>ครั้ง</span></div><i style="width:0%"></i></div>`).join('')||`<div class="ai-empty">ยังไม่มีข้อมูลประวัติเลขเพียงพอ</div>`;
     const boardCards=board.map((q,i)=>`<div class="ai-board"><span>#${i+1}</span><b>${q.digit??'-'}</b></div>`).join('')||`<div class="ai-empty">ยังไม่มี Board</div>`;
-    detailsMount.insertAdjacentHTML('beforeend',`<details class="lottery-detail-lazy" data-lottery-detail="${encodeURIComponent(name)}"><summary><span><b>${esc(formatDisplayTitle(name))}</b><small>${meta.rawCount||rs.length} รอบ · ถัดไป ${esc(p.nextDate||'-')}</small></span><em>กดเพื่ออ่านรายละเอียด</em></summary><template> <section class="vip-lottery ai-lottery">
-      <div class="ai-lottery-head"><div><div class="ai-eyebrow">โปรไฟล์หวย AI</div><div class="vip-name">${esc(formatDisplayTitle(name))}</div></div><div class="ai-head-right"><span>${meta.rawCount||rs.length} รอบ</span><span>ถัดไป ${esc(p.nextDate||'-')}</span></div></div>
+    detailsMount.insertAdjacentHTML('beforeend',`<details class="lottery-detail-lazy" data-lottery-detail="${encodeURIComponent(name)}"><summary><span><b class="lottery-name-struck">${esc(formatDisplayTitle(name))}</b><small>${meta.rawCount||rs.length} รอบ · ถัดไป ${esc(p.nextDate||'-')}</small></span><em>กดเพื่ออ่านรายละเอียด</em></summary><template> <section class="vip-lottery ai-lottery">
+      <div class="ai-lottery-head"><div><div class="ai-eyebrow">โปรไฟล์หวย AI</div><div class="vip-name lottery-name-struck">${esc(formatDisplayTitle(name))}</div></div><div class="ai-head-right"><span>${meta.rawCount||rs.length} รอบ</span><span>ถัดไป ${esc(p.nextDate||'-')}</span></div></div>
       <div class="ai-hero"><div class="ai-decision"><div class="ai-eyebrow">ผลตัดสินใจ</div><div class="ai-number">${s.d1??'-'} <span>·</span> ${s.d2??'-'}</div><div class="ai-decision-line"><span>Consensus ${s.consensus[0]?.count||0} สูตร</span><span>นำโดย ${esc(bestFormula||'-')}</span></div></div><div class="ai-confidence"><strong>FINAL ARBITRATOR</strong><small>เลือกจากหลักฐานหลายชั้น</small></div></div>
       <div class="ai-section ai-section-formulas"><div class="ai-section-head"><div><b>สูตรหลัก F1–F9</b><small>เรียงตาม OOS · สูตรหลักคงเดิม</small></div><span class="ai-section-tag">9 สูตร</span></div><div class="ai-formula-grid">${formulaCells}</div></div>
       <div class="ai-section"><div class="ai-section-head"><div><b>เลขเจาะ</b><small>ผล OOS แบบนับครั้ง</small></div><span class="ai-section-tag">OOS</span></div><div class="ai-target-grid"><div class="ai-target-card"><div><span>เดิม</span><b>${pen.rate==null?'รอคำนวณ':pen.hits+'/'+pen.total}</b></div><div class="ai-target-line"><i style="width:0%"></i></div><small>${pen.total==null?'ยังไม่ได้คำนวณในรอบหลัก':`WIN ${pen.hits} · LOSE ${Math.max(0,pen.total-pen.hits)}`}</small></div><div class="ai-target-card adaptive"><div><span>ADAPTIVE</span><b>${pen.adaptiveRate==null?'รอคำนวณ':pen.adaptiveHits+'/'+pen.adaptiveTotal}</b></div><div class="ai-target-line"><i style="width:0%"></i></div><small>${pen.adaptiveTotal==null?'ยังไม่ได้คำนวณในรอบหลัก':`WIN ${pen.adaptiveHits} · LOSE ${Math.max(0,pen.adaptiveTotal-pen.adaptiveHits)} · หลุดล่าสุด ${pen.adaptiveCurMiss}`}</small></div></div></div>
@@ -6909,54 +6923,5 @@ window.__V330_SELECTOR_ARBITRATION_V3__=(()=>{
   }
   return {version:VERSION,run};
 })();
-</script>\n<script id="challenger-v67-shadow">
-/* V67 SHADOW CHALLENGER
-   Production/F1-F9/calendar are untouched. This layer exposes a prior-only
-   challenger for manual/OOS comparison; it does NOT auto-promote itself.
-*/
-(function(){
-  'use strict';
-  const MOD='V67-SHADOW-CHALLENGER';
-  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  function targetSet(next){return new Set([...(next?.n3||[]).slice(1),...(next?.n2||[])].map(Number));}
-  function digits(r){return {n3:(r?.n3||[]).map(Number),n2:(r?.n2||[]).map(Number)};}
-  function pairStatic(r){
-    const x=digits(r), a=x.n3,b=x.n2;
-    if(a.length<3||b.length<2)return null;
-    return [((-(a[1])-a[2]+b[0]-b[1]+a[0]+1)%10+10)%10,
-            (((a[1])-a[2]-b[0]+b[1]-a[0]+2)%10+10)%10];
-  }
-  function priorStats(rs){
-    const st=Array.from({length:10},()=>({n:0,h:0}));
-    for(const r of rs||[]){
-      const p=pairStatic(r); if(!p)continue;
-      for(const d of p) if(Number.isInteger(d)) st[d].n++;
-    }
-    return st;
-  }
-  /* Conservative challenger: starts from the locked static pair and only
-     replaces a digit when prior exact evidence clears a strict posterior edge. */
-  function choose(rs,history){
-    const base=pairStatic(rs?.at?.(-1));
-    if(!base)return null;
-    const hs=(history||[]).slice();
-    const st=priorStats(hs);
-    const total=st.reduce((a,z)=>a+z.n,0)||1;
-    const score=d=>{
-      const z=st[d];
-      return (z.h+1)/(z.n+2) + Math.log1p(z.n)/100;
-    };
-    const ranked=[0,1,2,3,4,5,6,7,8,9].sort((a,b)=>score(b)-score(a)||a-b);
-    const out=base.slice();
-    for(let k=0;k<2;k++){
-      const d=base[k], alt=ranked.find(x=>x!==out[1-k]&&x!==out[k]);
-      const z=st[d], za=st[alt];
-      if(za.n>=24 && za.n-z.n>=8 && score(alt)>score(d)+0.08) out[k]=alt;
-    }
-    return {d1:out[0],d2:out[1],base,source:MOD};
-  }
-  window.__CHALLENGER_V67={version:MOD,locked:{f1f9:true,calendar:true,production:true},pairStatic,choose,targetSet};
-})();
-</script>
-</body>
+</script>\n</body>
 </html>
