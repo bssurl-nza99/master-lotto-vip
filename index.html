@@ -1571,7 +1571,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.8 — NO-DRAW / HOLIDAY AWARE</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.10 — NO-DRAW / HOLIDAY AWARE</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -6305,7 +6305,16 @@ window.captureCardImage=async(id,title)=>{const el=$(id);if(!el)return;const act
    Result digits are payload, and status is mutable metadata: a later real result
    for a date previously marked NO_DRAW/HOLIDAY replaces that skip marker instead
    of creating two logical rows for the same lottery/date. */
-function canonicalLotteryName(name){return String(name??'').replace(/\s+/g,' ').trim()}
+function canonicalLotteryName(name){
+  /* V3.40.10 DATA-CANONICALIZATION LOCK
+     Normalize OCR/copy-paste spacing around Thai combining marks so the same
+     lottery cannot silently split into multiple exact-name groups. This is
+     identity-only: it does not alter digits, dates, formulas, OOS targets or UI. */
+  let s=String(name??'').normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\s+/g,' ').trim();
+  s=s.replace(/\s+(?=[\u0E31-\u0E3A\u0E47-\u0E4E])/g,'');
+  s=s.replace(/(?<=[\u0E31-\u0E3A\u0E47-\u0E4E])\s+(?=[\u0E00-\u0E7F])/g,'');
+  return s.replace(/นคิเคอิ/g,'นิคเคอิ').replace(/นคิเคอิ/g,'นิคเคอิ').replace(/ไตหวัน/g,'ไต้หวัน');
+}
 function recordKey(r){const name=canonicalLotteryName(r?.name),date=String(r?.date||'').trim(),ts=parseThaiDate(date);return `${name}|${ts?canonicalDateKey(ts):date.replace(/\s+/g,' ')}`}
 function mergeStoredRecords(existing,incoming){
   const map=new Map();
@@ -6334,7 +6343,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.40.9';
+const APP_BUILD_VERSION='V3.40.10';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
@@ -6544,7 +6553,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V3.40.8 · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
+    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V3.40.10 · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
   }catch(e){
     __SELECTOR_ERROR_BUS__.set({source:'Engine',phase:'runEngine',stage:'engine-catch',message:String(e?.message||e),stack:String(e?.stack||'')});
     console.error('V2.0 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
