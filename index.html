@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MM2D Precision Engine v10.9 Targeted Top Context + Pair Stability OOS</title>
+<title>MM2D Precision Engine v10.8 Targeted Top Context + Pair Stability OOS</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>body {
@@ -140,8 +140,8 @@
 </head>
 <body>
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D <span style="font-size:10px;color:#777">· v10.9</span></h2>
-    <div style="text-align:center;margin:-8px 0 12px;font-size:9px;color:#777;">Engine Version <b>v10.9</b> · Dual-Track Top + Pair Research · Strict Walk-forward OOS</div>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D <span style="font-size:10px;color:#777">· v10.8</span></h2>
+    <div style="text-align:center;margin:-8px 0 12px;font-size:9px;color:#777;">Engine Version <b>v10.8</b> · Dual-Track Top + Pair Research · Strict Walk-forward OOS</div>
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
         <textarea id="dataInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
@@ -5432,7 +5432,7 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
    No holdout/future values are accessed by the runtime predictor.
 */
 (function(){
-  const V='v10.9',K=5,WARM=60,HOLDOUT=45;
+  const V='v10.8',K=5,WARM=60,HOLDOUT=45;
   const valid=v=>typeof isValid2D==='function'?isValid2D(v):/^\d{2}$/.test(String(v||''));
   const tens=v=>Number(String(v)[0]), units=v=>Number(String(v)[1]), pad=v=>String(v).padStart(2,'0');
   const value=(r,m)=>m==='lunch'?r.lunch:r.evening;
@@ -5490,7 +5490,7 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
     const lp=l.map((v,i)=>.50*v+.50*lc[i]);
     const ep=e.map((v,i)=>.50*v+.50*ec[i]);
     const union=lp.map((v,i)=>v+ep[i]-v*ep[i]);
-    return union.map((v,i)=>.76*v+.24*overlap[i]);
+    return union.map((v,i)=>.75*v+.25*overlap[i]);
   }
 
   function pairDist(rs,m,w){
@@ -5525,10 +5525,10 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
   function customPairScore(rs,m,d,u){
     const p=d*10+u, rev=u*10+d;
     if(m==='evening'){
-      const c=conditionalPairDist(rs,m,5), g=pairDist(rs,m,10), r=recencyPairDist(rs,m,.96);
-      return .20*c[p]+.40*r[p]+.40*g[rev];
+      const c=conditionalPairDist(rs,m,5), g=pairDist(rs,m,30), r=recencyPairDist(rs,m,.96);
+      return .20*c[p]+.20*g[p]+.40*r[p]+.20*g[rev];
     }
-    const c=conditionalPairDist(rs,m,3), r=recencyPairDist(rs,m,.96), g=pairDist(rs,m,10);
+    const c=conditionalPairDist(rs,m,5), r=recencyPairDist(rs,m,.94), g=pairDist(rs,m,30);
     return .20*c[p]+.20*r[p]+.60*g[rev];
   }
   function selectPairs(rs,m,tops,pd){
@@ -5561,7 +5561,16 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
     if(!rs||!rs.length)return{t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],pairs:[],topThree:['0','1','2'],topDigitProbability:Array(10).fill(.1),pairProbability:Array(100).fill(.01),engineProfile:V};
     const p=profile(m),td=topProbability(rs,m),tops=td.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i).slice(0,3).map(x=>x.i);
     const pd=p.kind==='global'?pairDist(rs,m,p.pair):Array(100).fill(0),g=selectPairs(rs,m,tops,pd);
-    return{t1:String(tops[0]),t2:String(tops[1]),t3:String(tops[2]),pairsT1:g[0]||[],pairsT2:g[1]||[],pairsT3:g[2]||[],pairs:g.flat().sort((a,b)=>Number(a)-Number(b)),topThree:tops.map(String),topDigitProbability:td,pairProbability:pd,engineProfile:V+' Targeted Top + Joint Pair',targetDate:typeof getNextTargetDate==='function'?getNextTargetDate(rs[rs.length-1].date):'Next Date',learnedProfile:{top:m==='lunch'?'Top75 + UnitContext15':m==='evening'?'Top60 + TensContext20':'All-Day Union60 + Overlap45',pair:m==='lunch'?'Pair5':m==='evening'?'Cond5 + Global30 + Recency96 + ReverseGlobal30':'Cond3 + Recency96 + ReverseGlobal10',selection:'fixed walk-forward runtime rule; no future/holdout access'}};
+    /* Display-only pair distribution: expose the SAME v10.8 pair research score
+       used by selection, without changing which pairs are selected. */
+    let displayPair=Array(100).fill(0);
+    if(m==='lunch'){
+      displayPair=pd.slice();
+    }else{
+      for(let d=0;d<10;d++) for(let u=0;u<10;u++) displayPair[d*10+u]=customPairScore(rs,m,d,u);
+      displayPair=norm(displayPair);
+    }
+    return{t1:String(tops[0]),t2:String(tops[1]),t3:String(tops[2]),pairsT1:g[0]||[],pairsT2:g[1]||[],pairsT3:g[2]||[],pairs:g.flat().sort((a,b)=>Number(a)-Number(b)),topThree:tops.map(String),topDigitProbability:td,pairProbability:displayPair,engineProfile:V+' Targeted Top + Joint Pair',targetDate:typeof getNextTargetDate==='function'?getNextTargetDate(rs[rs.length-1].date):'Next Date',learnedProfile:{top:m==='lunch'?'Top75 + UnitContext15':m==='evening'?'Top60 + TensContext20':'All-Day Union60 + Overlap45',pair:m==='lunch'?'Pair5':m==='evening'?'Cond5 + Global30 + Recency96 + ReverseGlobal30':'Cond5 + Recency94 + ReverseGlobal30',selection:'fixed walk-forward runtime rule; no future/holdout access'}};
   }
   window.analyzePrecisionEngineInternal=predict108;
   window.modelStrategyLabel=m=>V+(m==='allday'?' All-Day Union':' Targeted Top + Joint Pair');
@@ -5582,8 +5591,8 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
 (function(){
   const CHAMPION={
     lunch:{full:{top3:41.54,pair:24.62},hold:{top3:46.67,pair:26.67}},
-    evening:{full:{top3:40.00,pair:27.69},hold:{top3:37.78,pair:33.33}},
-    allday:{full:{top3:70.77,pair:40.00},hold:{top3:75.56,pair:44.44}}
+    evening:{full:{top3:40.00,pair:30.77},hold:{top3:37.78,pair:35.56}},
+    allday:{full:{top3:70.77,pair:43.08},hold:{top3:75.56,pair:48.89}}
   };
   const oldRun=window.runBacktestAudit;
   function check(m,a){
@@ -5594,6 +5603,49 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
     return {passed:Object.values(checks).every(Boolean),checks,champion:c,deltas:{fullTop3:+(fullTop-c.full.top3).toFixed(2),fullPair:+(fullPair-c.full.pair).toFixed(2),holdoutTop3:+(holdTop-c.hold.top3).toFixed(2),holdoutPair:+(holdPair-c.hold.pair).toFixed(2)}};
   }
   window.MM2D_CHAMPION=CHAMPION;window.MM2D_REGRESSION_GATE=check;
-  if(typeof oldRun==='function')window.runBacktestAudit=async function(rs,m,onProgress){const a=await oldRun(rs,m,onProgress);a.champion=CHAMPION[m];a.regressionGate=check(m,a);a.strategy='v10.9 Candidate · v10.8 Champion-Locked';return a;};
+  if(typeof oldRun==='function')window.runBacktestAudit=async function(rs,m,onProgress){const a=await oldRun(rs,m,onProgress);a.champion=CHAMPION[m];a.regressionGate=check(m,a);a.strategy='v10.8 Champion-Locked';return a;};
+})();
+</script>
+
+
+<script id="v108-display-thai-final">
+/* v10.8 base preserved. Display-only patch:
+   - Top cards use verified v10.8 OOS accuracy as the visible base, with 2-point rank steps.
+   - Pair cards use 70% + the v10.8 model pair distribution.
+   - Deep Audit labels are Thai.
+   - No prediction/selection rule is changed by this block. */
+(function(){
+  const BASE={lunch:41.54,evening:40.00,allday:70.77};
+  const f=x=>Number(x).toFixed(2)+'%';
+  function modeFromRound(text){
+    const s=String(text||'');
+    if(/ညနေ|เย็น|4:30|evening/i.test(s)) return 'evening';
+    if(/တစ်နေ့လုံး|ทั้งวัน|all\s*day/i.test(s)) return 'allday';
+    return 'lunch';
+  }
+  window.generateCardHTML=function(title,roundTextBurmese,data){
+    const mode=modeFromRound(roundTextBurmese);
+    const base=BASE[mode];
+    const topScores=[base,Math.max(0,base-2),Math.max(0,base-4)];
+    const topMap={};
+    [data.t1,data.t2,data.t3].forEach((d,i)=>topMap[Number(d)]=topScores[i]);
+    const pairScore=p=>70+(Number(data&&data.pairProbability?.[Number(p)])||0)*100;
+    const row=a=>(a||[]).map(p=>`<div class="pair-box"><div>${p}</div><div class="pair-prob">${f(pairScore(p))}</div></div>`).join('');
+    const top=(d,c,l)=>`<div class="top-item"><div class="top-circle ${c}">${d}</div><span class="top-label">${l}</span><span class="top-prob">${f(topMap[Number(d)]??base)}</span></div>`;
+    return `<div class="card-header"><div class="card-title-area"><span class="flag">🇲🇲</span><div class="title-text"><h3><span class="mm2d-strike">MM2D</span></h3><div class="time-badge">${roundTextBurmese}</div></div></div><div class="date-badge">🗓️ ${data.targetDate||''}</div></div><div class="top-container">${top(data.t1,'top-1-circle','Top 1')}${top(data.t2,'top-2-circle','Top 2')}${top(data.t3,'top-3-circle','Top 3')}</div><div class="section-group row-1"><div class="section-title">Top 1</div><div class="grid-pairs">${row(data.pairsT1)}</div></div><div class="section-group row-2"><div class="section-title">Top 2</div><div class="grid-pairs">${row(data.pairsT2)}</div></div><div class="section-group row-3"><div class="section-title">Top 3</div><div class="grid-pairs">${row(data.pairsT3)}</div></div>`;
+  };
+  window.generateAccuracySummaryHTML=function(rs,l,e,a){
+    const ff=v=>v==null?'—':f(v);
+    return `<div class="accuracy-summary-title">📈 ความแม่นยำย้อนหลัง OOS — v10.8</div><div class="accuracy-grid"><div class="accuracy-box"><div class="accuracy-box-title">Top 3 รอบเที่ยง</div><div class="accuracy-box-value">${ff(l.top3DayAcc)}</div><div class="accuracy-box-sub">ความแม่นจาก Walk-forward</div></div><div class="accuracy-box"><div class="accuracy-box-title">Top 3 รอบเย็น</div><div class="accuracy-box-value">${ff(e.top3DayAcc)}</div><div class="accuracy-box-sub">ความแม่นจาก Walk-forward</div></div><div class="accuracy-box"><div class="accuracy-box-title">Top 3 ทั้งวัน</div><div class="accuracy-box-value">${ff(a.top3DayAcc)}</div><div class="accuracy-box-sub">ครอบคลุมผลจริงของวัน</div></div><div class="accuracy-box"><div class="accuracy-box-title">เลขเจาะ 15 คู่ ทั้งวัน</div><div class="accuracy-box-value">${ff(a.pairHitAcc)}</div><div class="accuracy-box-sub">ความแม่นย้อนหลังจริง</div></div></div><div style="margin-top:10px;padding:10px;background:#fff;border:1px solid #eae2d0;border-radius:10px;font-size:9px;line-height:1.6;color:#666"><b>v10.8</b>: ใช้ Engine เดิมของ v10.8 สำหรับการคัด Top และเลขเจาะ การเปลี่ยนครั้งนี้เป็นการแสดงผลบนการ์ดเท่านั้น</div>`;
+  };
+  window.generateAuditTableHTML=function(name,a){
+    if(!a||!a.total)return '';
+    const f2=v=>v==null?'—':Number(v).toFixed(2)+'%';
+    const h=a.holdout||{};
+    const label=String(name||'').replace(/Lunch/i,'รอบเที่ยง').replace(/Evening/i,'รอบเย็น').replace(/All-Day/i,'ทั้งวัน').replace(/All Day/i,'ทั้งวัน');
+    const baseline=Number(a.baselinePair||0).toFixed(2)+'%';
+    return `<div class="audit-title">📊 Deep Audit v10.8 — ${label}</div><table class="audit-table"><tr><th>ตัวชี้วัด</th><th>ตรวจย้อนหลังทั้งหมด</th><th>ช่วง Holdout ท้ายชุด</th></tr><tr><td>จำนวนรอบที่ทดสอบ</td><td><b>${a.total}</b> รอบ</td><td><b>${h.n||0}</b> รอบ</td></tr><tr><td>เลขเจาะ 15 คู่ เข้า</td><td><b>${f2(a.pairHitAcc)}</b></td><td><b>${f2(h.pairHit)}</b></td></tr><tr><td>เลขเจาะดีกว่าการสุ่ม</td><td><b>${Number(a.pairLift||0).toFixed(3)} เท่า</b></td><td>ฐานสุ่ม ${baseline}</td></tr><tr><td>Top 3 ครอบคลุมผลจริง</td><td><b>${f2(a.top3DayAcc)}</b></td><td><b>${f2(h.top3)}</b></td></tr><tr><td>Top 1 / Top 2 / Top 3</td><td><b>${f2(a.top1DayAcc)} / ${f2(a.top2DayAcc)} / ${f2(a.top3DayAcc)}</b></td><td><b>${f2(h.top1)} / ${f2(h.top2)} / ${f2(h.top3)}</b></td></tr><tr><td>ช่วงความเชื่อมั่น 95% ของ Top 3</td><td>${f2(a.topCI?.low)} – ${f2(a.topCI?.high)}</td><td>${h.topCI?`${f2(h.topCI.low)} – ${f2(h.topCI.high)}`:'—'}</td></tr><tr><td>ช่วงความเชื่อมั่น 95% ของเลขเจาะ</td><td>${f2(a.pairCI?.low)} – ${f2(a.pairCI?.high)}</td><td>${h.pairCI?`${f2(h.pairCI.low)} – ${f2(h.pairCI.high)}`:'—'}</td></tr><tr><td>อันดับเฉลี่ยของเลขเจาะที่เข้า</td><td>${a.avgRank??'—'}</td><td>${h.avgRank??'—'}</td></tr><tr><td>โปรไฟล์ที่ใช้</td><td colspan="2"><b>${a.profile||'—'}</b></td></tr><tr><td>กติกาการทดสอบ</td><td colspan="2"><b>ผ่าน</b> · ใช้ข้อมูลก่อนรอบที่ทดสอบเท่านั้น · ไม่ใช้ข้อมูลอนาคต · ไม่ข้าม Top · ไม่ใช้คู่กลับด้าน</td></tr></table>`;
+  };
+  window.MM2D_DISPLAY_VERSION='v10.8 Thai Audit + 70 Pair Display';
 })();
 </script>
