@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MM2D Precision Engine v9.7 Conditional-Pair OOS Winner + Deep Audit</title>
+<title>MM2D Precision Engine v9.8 Targeted Top Context + Conditional Pair OOS</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>body {
@@ -140,8 +140,8 @@
 </head>
 <body>
 <div class="container">
-    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D <span style="font-size:10px;color:#777">· v9.7</span></h2>
-    <div style="text-align:center;margin:-8px 0 12px;font-size:9px;color:#777;">Engine Version <b>v9.7</b> · Conditional Pair Calibration · Strict Walk-forward OOS</div>
+    <h2>🇲🇲 ระบบประมวลผลหวยพม่า 2D <span style="font-size:10px;color:#777">· v9.8</span></h2>
+    <div style="text-align:center;margin:-8px 0 12px;font-size:9px;color:#777;">Engine Version <b>v9.8</b> · Targeted Top Context · Strict Walk-forward OOS</div>
     <div class="form-group">
         <label for="dataInput">วางข้อมูลสถิติ (ข้อมูลประวัติทั้งหมด):</label>
         <textarea id="dataInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
@@ -5408,5 +5408,118 @@ window.generateResearchPanelHTML=function(rs){const q=['lunch','evening','allday
   };
 
   /* Keep existing card renderer but feed it v9.7 probabilities. */
+})();
+</script>
+
+
+<script id="v98-targeted-top-engine">
+/* v9.8
+   Targeted Top-digit upgrade from v9.7.
+
+   Selection principle:
+   - Top is the primary KPI.
+   - Lunch: baseline Top90 + previous-round unit-context model, 30/70 blend.
+   - Evening: baseline Top15 + previous-round tens-context model, 20/80 blend.
+   - All-Day: baseline Top60 + prior-day overlap-context model, 70/30 blend.
+   - Pair engine remains v9.7 Conditional Pair Calibration.
+
+   No future values are used. Context is computed only from records before the
+   prediction point. Final 45-observation holdout is never referenced here.
+*/
+(function(){
+  const V='v9.8',K=5,WARM=60,HOLDOUT=45;
+  const valid=v=>typeof isValid2D==='function'?isValid2D(v):/^\d{2}$/.test(String(v||''));
+  const tens=v=>Number(String(v)[0]), units=v=>Number(String(v)[1]), pad=v=>String(v).padStart(2,'0');
+  const value=(r,m)=>m==='lunch'?r.lunch:r.evening;
+  const norm=a=>{const s=a.reduce((x,y)=>x+y,0);return s>0?a.map(x=>x/s):a.map(()=>1/a.length)};
+
+  function topWindow(rs,m,w){
+    const c=Array(10).fill(1), a=rs.slice(-Math.min(w,rs.length));
+    a.forEach(r=>{
+      const vs=m==='allday'?[r.lunch,r.evening]:[value(r,m)];
+      vs.forEach(v=>{if(valid(v))c[tens(v)]++;});
+    });
+    return norm(c);
+  }
+
+  /* Previous-round context for a target round.
+     Lunch target uses the immediately previous Evening result.
+     Evening target uses the immediately previous Lunch result.
+     Only the UNIT of that prior result is used as the context signal. */
+  function contextTopRound(rs,m,w){
+    const c=Array(10).fill(1);
+    if(!rs.length) return c.map(()=>.1);
+    const current=value(rs[rs.length-1],m==='lunch'?'evening':'lunch');
+    if(!valid(current)) return c.map(()=>.1);
+    const targetDigit=current, a=rs.slice(-Math.min(w,rs.length));
+    for(let i=1;i<a.length;i++){
+      const source=m==='lunch'?a[i-1].evening:a[i-1].lunch;
+      const target=m==='lunch'?a[i].lunch:a[i].evening;
+      if(valid(source)&&valid(target)&&((m==='lunch'?units(source):tens(source))===(m==='lunch'?units(targetDigit):tens(targetDigit))))c[tens(target)]++;
+    }
+    return norm(c);
+  }
+
+  /* Prior-day overlap context for All-Day.
+     Context = digits in the latest known Lunch result.
+     Historical day-pairs are counted when either result shares one of those
+     context digits; the target is the next day's Lunch or Evening. */
+  function contextTopAllDay(rs,w){
+    const c=Array(10).fill(1);
+    if(!rs.length||!valid(rs[rs.length-1].lunch)) return c.map(()=>.1);
+    const ctx=new Set(String(rs[rs.length-1].lunch).split('').map(Number));
+    const a=rs.slice(-Math.min(w,rs.length));
+    for(let i=1;i<a.length;i++){
+      const src=[a[i-1].lunch,a[i-1].evening].filter(valid);
+      const targets=[a[i].lunch,a[i].evening].filter(valid);
+      const overlap=src.some(v=>String(v).split('').some(ch=>ctx.has(Number(ch))));
+      if(!overlap)continue;
+      targets.forEach(v=>c[tens(v)]++);
+    }
+    return norm(c);
+  }
+
+  function topProbability(rs,m){
+    if(m==='lunch'){
+      const b=topWindow(rs,m,90), x=contextTopRound(rs,m,15);
+      return b.map((v,i)=>0.20*v+0.80*x[i]);
+    }
+    if(m==='evening'){
+      const b=topWindow(rs,m,15), x=contextTopRound(rs,m,12);
+      return b.map((v,i)=>0.20*v+0.80*x[i]);
+    }
+    const b=topWindow(rs,m,60), x=contextTopAllDay(rs,45);
+    return b.map((v,i)=>0.70*v+0.30*x[i]);
+  }
+
+  function pairDist(rs,m,w){
+    const c=Array(100).fill(1),a=rs.slice(-Math.min(w,rs.length));
+    a.forEach(r=>{const vs=m==='allday'?[r.lunch,r.evening]:[value(r,m)];vs.forEach(v=>{if(valid(v))c[Number(v)]++;});});
+    return norm(c);
+  }
+  function conditionalPairDist(rs,m,w){
+    const c=Array.from({length:10},()=>Array(10).fill(1)),a=rs.slice(-Math.min(w,rs.length));
+    a.forEach(r=>{const vs=m==='allday'?[r.lunch,r.evening]:[value(r,m)];vs.forEach(v=>{if(valid(v))c[tens(v)][units(v)]++;});});
+    const out=Array(100).fill(0);
+    for(let d=0;d<10;d++){const z=c[d].reduce((x,y)=>x+y,0);for(let u=0;u<10;u++)out[d*10+u]=c[d][u]/z;}
+    return out;
+  }
+  function profile(m){if(m==='lunch')return{top:90,pair:10,kind:'joint'};if(m==='evening')return{top:15,pair:60,kind:'conditional'};return{top:60,pair:60,kind:'conditional'};}
+  function doubleGate(rs,m,d){const a=rs.slice(-Math.min(45,rs.length));let den=0,num=0;a.forEach(r=>{const vs=m==='allday'?[r.lunch,r.evening]:[value(r,m)];vs.forEach(v=>{if(valid(v)&&tens(v)===d){den++;if(units(v)===d)num++;}});});return num>=2&&den>0&&num/den>=.08;}
+  function selectPairs(rs,m,tops,pd){const used=new Set(),groups=[];tops.forEach(d=>{const cand=[];for(let u=0;u<10;u++){if(u!==d&&tops.includes(u))continue;if(u===d&&!doubleGate(rs,m,d))continue;const x=d*10+u,rev=u*10+d;if(used.has(x)||used.has(rev))continue;cand.push({x,score:Number(pd[x])||0});}cand.sort((a,b)=>b.score-a.score||a.x-b.x);const g=cand.slice(0,K).map(x=>pad(x.x));for(let u=0;g.length<K&&u<10;u++){if(u!==d&&tops.includes(u))continue;const x=d*10+u,rev=u*10+d;if(used.has(x)||used.has(rev)||g.includes(pad(x)))continue;g.push(pad(x));}g.sort((a,b)=>Number(a)-Number(b));g.forEach(z=>{const x=Number(z);used.add(x);used.add(Number(z[1]+z[0]));});groups.push(g);});return groups;}
+  function predict98(rs,m){
+    if(!rs||!rs.length)return{t1:'0',t2:'1',t3:'2',pairsT1:[],pairsT2:[],pairsT3:[],pairs:[],topThree:['0','1','2'],topDigitProbability:Array(10).fill(.1),pairProbability:Array(100).fill(.01),engineProfile:V};
+    const p=profile(m),td=topProbability(rs,m),tops=td.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i).slice(0,3).map(x=>x.i);
+    const pd=p.kind==='conditional'?conditionalPairDist(rs,m,p.pair):pairDist(rs,m,p.pair),g=selectPairs(rs,m,tops,pd);
+    return{t1:String(tops[0]),t2:String(tops[1]),t3:String(tops[2]),pairsT1:g[0]||[],pairsT2:g[1]||[],pairsT3:g[2]||[],pairs:g.flat().sort((a,b)=>Number(a)-Number(b)),topThree:tops.map(String),topDigitProbability:td,pairProbability:pd,engineProfile:V+' Targeted Top Context + v9.7 Conditional Pair',targetDate:typeof getNextTargetDate==='function'?getNextTargetDate(rs[rs.length-1].date):'Next Date',learnedProfile:{top:m==='lunch'?'Top90 + UnitContext15':m==='evening'?'Top15 + TensContext12':'Top60 + AllDayOverlap45',pair:p.kind==='conditional'?`P(unit|top)${p.pair}`:`Pair${p.pair}`,selection:'fixed walk-forward rule; no final holdout access'}};
+  }
+  window.analyzePrecisionEngineInternal=predict98;
+  window.modelStrategyLabel=m=>V+(m==='allday'?' All-Day Targeted Top':' Targeted Top Context');
+  window.V91_ENGINE_VERSION=V;
+
+  function wilson(h,n){if(!n)return{low:0,high:0};const z=1.95996398454,p=h/n,den=1+z*z/n,ctr=p+z*z/(2*n),rad=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n));return{low:100*(ctr-rad)/den,high:100*(ctr+rad)/den};}
+  function auditSegment(rs,m,start,end){let pairHits=0,topHits=0,top1=0,top2=0,top3=0,ranks=[];for(let i=start;i<end;i++){const p=predict98(rs.slice(0,i),m),rec=rs[i],acts=m==='allday'?[rec.lunch,rec.evening]:[value(rec,m)],tops=p.topThree.map(Number),flat=p.pairs.map(Number);let dayTop=false,dayPair=false,best=null,dayTop1=false,dayTop2=false;acts.forEach(v=>{if(!valid(v))return;const d=tens(v),n=Number(v);if(tops.includes(d))dayTop=true;if(d===tops[0])dayTop1=true;if(tops.slice(0,2).includes(d))dayTop2=true;const ix=flat.indexOf(n);if(ix>=0){dayPair=true;best=best===null?ix+1:Math.min(best,ix+1);}});if(dayTop1)top1++;if(dayTop2)top2++;if(dayTop)top3++;if(dayTop)topHits++;if(dayPair){pairHits++;if(best!=null)ranks.push(best);}}
+    const n=end-start,pc=wilson(pairHits,n),tc=wilson(topHits,n);return{n,hits:pairHits,pairHit:+(100*pairHits/n).toFixed(2),top3:+(100*topHits/n).toFixed(2),top1:+(100*top1/n).toFixed(2),top2:+(100*top2/n).toFixed(2),pairCI:{low:+pc.low.toFixed(2),high:+pc.high.toFixed(2)},topCI:{low:+tc.low.toFixed(2),high:+tc.high.toFixed(2)},avgRank:ranks.length?+(ranks.reduce((a,b)=>a+b,0)/ranks.length).toFixed(2):null};}
+  window.runBacktestAudit=async function(rs,m,onProgress){const clean=rs.filter(Boolean),end=clean.length,full=auditSegment(clean,m,WARM,end),holdStart=Math.max(WARM,end-HOLDOUT),hold=auditSegment(clean,m,holdStart,end);if(onProgress)onProgress(100);return{total:full.n,hits:full.hits,pairHitAcc:full.pairHit,top3DayAcc:full.top3,top1DayAcc:full.top1,top2DayAcc:full.top2,pairCI:full.pairCI,topCI:full.topCI,baselinePair:m==='allday'?27.75:15,pairLift:+(full.pairHit/(m==='allday'?27.75:15)).toFixed(3),holdout:hold,strategy:V,targetTop3:m==='allday'?65:35,profile:profile(m).name};};
 })();
 </script>
