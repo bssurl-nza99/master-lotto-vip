@@ -6078,12 +6078,96 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     try{__p40Meta=__p40Apply(c,routeCtx);}catch(__p40e){__p40Meta={applied:false,reason:'safe-fallback:'+String(__p40e?.message||__p40e)}}
     if(__p40Meta.applied){const __p40q=c.find(q=>Number(q.digit)===Number(__p40Meta.to));if(__p40q){top=__p40q;}}
     }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
+    /* V4.0 TYPE-SPECIFIC AUX FORMULA LAB
+       Shadow challenger: learns only from completed rows of the exact type.
+       It never expands the board; it can only reorder/select two digits already in the board.
+       Small-sample and weak-edge gates keep it from disturbing established winners. */
+    let __auxTypeMeta={applied:false,reason:'not-run',tests:0,rate:0,baseRate:0,edge:0,formula:null};
+    try{
+      const __auxName=String(routeCtx?.name||'');
+      const __auxPriorityBlock=/^(รัฐบาลไทย|ลาวพัฒนา|ฮานอยพิเศษ|ฮานอยปกติ|ฮานอยVIP|หุ้นดาวโจนส์|ดาวโจนส์|__THAI_ALLDAY__)$/i.test(__auxName);
+      const __auxBoard=(Array.isArray(__diagBoard)?__diagBoard:[]).map(q=>Number(q?.digit)).filter(d=>Number.isInteger(d));
+      const __auxTargetRows=Array.isArray(rs)?rs:[];
+      const __auxForms=[];
+      const __pushF=(a,b,c,d,e,bias,tag)=>__auxForms.push({a,b,c,d,e,bias,tag});
+      // Compact causal family: all {-1,0,1} transforms plus sum/difference templates.
+      const __vals=[-1,0,1];
+      for(const a of __vals)for(const b of __vals)for(const c0 of __vals)for(const d0 of __vals)for(const e of __vals){
+        if(a===0&&b===0&&c0===0&&d0===0&&e===0)continue;
+        for(let bias=0;bias<10;bias++)__pushF(a,b,c0,d0,e,bias,'L1');
+      }
+      const __formulaPred=(f,r)=>{const A=Number(r.n3?.[0]),B=Number(r.n3?.[1]),C=Number(r.n3?.[2]),D=Number(r.n2?.[0]),E=Number(r.n2?.[1]);return ((f.a*A+f.b*B+f.c*C+f.d*D+f.e*E+f.bias)%10+10)%10};
+      const __auxRows=[];
+      for(let j=1;j<__auxTargetRows.length;j++){
+        const prev=__auxTargetRows[j-1],tar=__auxTargetRows[j];
+        if(!prev||!tar||!/^[0-9]{3}$/.test(String(prev.n3||''))||!/^[0-9]{2}$/.test(String(prev.n2||'')))continue;
+        __auxRows.push({prev,targets:new Set([...String(tar.n3).slice(1),...String(tar.n2)].map(Number))});
+      }
+      if(__auxRows.length>=16&&!__auxPriorityBlock&&__auxBoard.length>=2){
+        const __stats=__auxForms.map(f=>{let n=0,h=0;for(const z of __auxRows){const d=__formulaPred(f,z.prev);if(__auxBoard.includes(d)){n++;if(z.targets.has(d))h++;}}return {f,n,h,rate:n?(h+3)/(n+6):.5}}).filter(x=>x.n>=12);
+        __stats.sort((x,y)=>y.rate-x.rate||y.h-x.h); const __top=__stats.slice(0,40);
+        const __pairScores=[];
+        for(let ii=0;ii<__top.length;ii++)for(let jj=ii+1;jj<__top.length;jj++){
+          const fa=__top[ii],fb=__top[jj];let n=0,h=0;
+          for(const z of __auxRows){const da=__formulaPred(fa.f,z.prev),db=__formulaPred(fb.f,z.prev);const pick=new Set([da,db]);const usable=[...pick].filter(d=>__auxBoard.includes(d));if(usable.length){n++;if(usable.some(d=>z.targets.has(d)))h++;}}
+          if(n>=12)__pairScores.push({fa,fb,n,h,rate:(h+4)/(n+8)});
+        }
+        __pairScores.sort((x,y)=>y.rate-x.rate||y.h-x.h); const __win=__pairScores[0];
+        if(__win){
+          const __baseHit=__auxRows.reduce((z,q)=>z+([Number(__v3114?.d1),Number(__v3114?.d2)].some(d=>q.targets.has(d))?1:0),0);
+          const __baseRate=(__baseHit+4)/(__auxRows.length+8), __edge=__win.rate-__baseRate;
+          const __da=__formulaPred(__win.fa.f,__auxTargetRows.at(-1)), __db=__formulaPred(__win.fb.f,__auxTargetRows.at(-1));
+          const __aa=__auxBoard.includes(__da)?__da:null, __bb=__auxBoard.includes(__db)?__db:null;
+          if(__aa!=null&&__bb!=null&&__aa!==__bb&&__win.rate>=.64&&__edge>=.045&&__win.n>=18&&__auxRows.length>=20){
+            top=c.find(q=>Number(q.digit)===__aa)||top; second=c.find(q=>Number(q.digit)===__bb)||second;
+            __auxTypeMeta={applied:true,reason:'exact-type-aux-formula',tests:__win.n,rate:+(__win.rate*100).toFixed(2),baseRate:+(__baseRate*100).toFixed(2),edge:+(__edge*100).toFixed(2),formula:[__win.fa.f,__win.fb.f].map(f=>`${f.a},${f.b},${f.c},${f.d},${f.e},${f.bias}`)};
+          }else __auxTypeMeta={applied:false,reason:'gate',tests:__win.n,rate:+(__win.rate*100).toFixed(2),baseRate:+(__baseRate*100).toFixed(2),edge:+(__edge*100).toFixed(2)};
+        }
+      }else __auxTypeMeta={applied:false,reason:'insufficient-or-protected',tests:__auxRows.length};
+    }catch(__auxErr){__auxTypeMeta={applied:false,reason:'safe-fallback:'+String(__auxErr?.message||__auxErr)}}
+    // expose diagnostics in the result metadata below
+    /* V4.1 EXACT-TYPE MODEL ROUTER
+       Every stage is scored independently against the same completed targets.
+       A weak type may switch model; a type already >=70% on prior OOS is protected. */
+    let __typeModelMeta={applied:false,reason:'not-run',model:'V3115',tests:0,rate:0,baseRate:0,edge:0};
+    try{
+      const __tmName=String(routeCtx?.name||'');
+      if(!routeCtx.__typeModelStats)routeCtx.__typeModelStats=new Map();
+      const __tmPair=(arr)=>Array.isArray(arr)?arr.slice().sort((a,b)=>Number(a.rank||99)-Number(b.rank||99)||Number(b.score||0)-Number(a.score||0)).slice(0,2).map(q=>Number(q.digit)).filter(Number.isInteger):[];
+      const __tm={
+        raw:__tmPair(__forensicStages.raw),
+        gemini:__tmPair(__afterGemini),
+        transition:__tmPair(__afterTransitionPair),
+        context:__tmPair(__afterContext),
+        calibration:__tmPair(__afterCalibration),
+        guardrail:__tmPair(__afterGuardrail),
+        rankOutcome:__tmPair(__afterRankOutcome),
+        candidateOutcome:__tmPair(__afterCandidateOutcome),
+        static:__V3114StaticPair(rs)?[Number(__V3114StaticPair(rs).d1),Number(__V3114StaticPair(rs).d2)]:[Number(top.digit),Number(second.digit)],
+        current:[Number(top.digit),Number(second.digit)]
+      };
+      routeCtx.__typeModelCurrent=__tm;
+      const __tmRate=z=>((Number(z?.hits||0)+4)/(Number(z?.tests||0)+8));
+      const __base=routeCtx.__typeModelStats.get('static')||{tests:0,hits:0};
+      const __baseRate=__tmRate(__base);
+      const __protected=__base.tests>=12&&__baseRate>=.70;
+      if(!__protected){
+        const cand=[];
+        for(const [id,pair] of Object.entries(__tm)){if(id==='current'||pair.length<2||pair[0]===pair[1])continue;const z=routeCtx.__typeModelStats.get(id);if(!z||z.tests<12)continue;cand.push({id,pair,tests:z.tests,rate:__tmRate(z),edge:__tmRate(z)-__baseRate})}
+        cand.sort((a,b)=>b.rate-a.rate||b.tests-a.tests);
+        const win=cand[0];
+        if(win&&win.rate>=.62&&win.edge>=.025){
+          const q1=c.find(q=>Number(q.digit)===win.pair[0]),q2=c.find(q=>Number(q.digit)===win.pair[1]);
+          if(q1&&q2){top=q1;second=q2;__typeModelMeta={applied:true,reason:'exact-type-model-switch',model:win.id,tests:win.tests,rate:+(win.rate*100).toFixed(2),baseRate:+(__baseRate*100).toFixed(2),edge:+(win.edge*100).toFixed(2)};}
+        }else __typeModelMeta={applied:false,reason:'no-qualified-model',model:'V3115',tests:__base.tests,rate:+(__baseRate*100).toFixed(2),baseRate:+(__baseRate*100).toFixed(2),edge:0};
+      }else __typeModelMeta={applied:false,reason:'70-lock',model:'V3115',tests:__base.tests,rate:+(__baseRate*100).toFixed(2),baseRate:+(__baseRate*100).toFixed(2),edge:0};
+    }catch(__tmErr){__typeModelMeta={applied:false,reason:'safe-fallback:'+String(__tmErr?.message||__tmErr),model:'V3115'}}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,typeModelMeta:__typeModelMeta,typeModelCandidates:routeCtx?.__typeModelCurrent||null,auxTypeMeta:__auxTypeMeta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -6135,7 +6219,11 @@ async function __coopOosBundle(rs,routeCtx=null){
     __diagRow.p40Meta=sel?.__selectorDiag?.p40Meta||null;
     diagnostic.push(__diagRow);
     
-    if(routeCtx){ __p40Update(routeCtx,__diagRow,new Set(target)); __v31ArbUpdate(routeCtx,__diagRow,new Set(target)); if(__diagRow.finalModelArbitrationMeta&&routeCtx.__stageAwareMemory){ __fmUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.finalModelArbitrationMeta,new Set(target)); } if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
+    if(routeCtx){
+      const __tmc=sel?.__selectorDiag?.typeModelCandidates||routeCtx.__typeModelCurrent||{};
+      const __td=new Set(target);
+      for(const [__id,__pair] of Object.entries(__tmc)){if(!Array.isArray(__pair)||__pair.length<2||__id==='current')continue;let __z=routeCtx.__typeModelStats.get(__id);if(!__z){__z={tests:0,hits:0};routeCtx.__typeModelStats.set(__id,__z)}__z.tests++;if(__pair.some(d=>__td.has(Number(d))))__z.hits++;}
+      __p40Update(routeCtx,__diagRow,new Set(target)); __v31ArbUpdate(routeCtx,__diagRow,new Set(target)); if(__diagRow.finalModelArbitrationMeta&&routeCtx.__stageAwareMemory){ __fmUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.finalModelArbitrationMeta,new Set(target)); } if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
