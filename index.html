@@ -6078,12 +6078,61 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     try{__p40Meta=__p40Apply(c,routeCtx);}catch(__p40e){__p40Meta={applied:false,reason:'safe-fallback:'+String(__p40e?.message||__p40e)}}
     if(__p40Meta.applied){const __p40q=c.find(q=>Number(q.digit)===Number(__p40Meta.to));if(__p40q){top=__p40q;}}
     }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
+    /* V6.4 SELECTION-CONNECTED CHALLENGER
+       Research only. This hook is intentionally AFTER legacy final arbitration,
+       so the challenger can actually change Selection during browser OOS.
+       It never sees the target row. It uses only the current prefix (rs) and
+       exact-type prior formula history. Production is unchanged when disabled. */
+    let __v64Meta={enabled:false,applied:false,reason:'disabled'};
+    try{
+      if(window.__V64_SELECTION_CONNECTED_ENABLED__===true){
+        const __v64Type=String(routeCtx?.name||rs?.[0]?.name||'');
+        const __v64Rows=Array.isArray(rs)?rs.filter(x=>x?.status==='result'):[];
+        const __v64FormulaStats=[];
+        for(const __f of FORMULAS){
+          const __h=formulaHistory(__v64Rows,__f);
+          const __n=__h.length;
+          if(__n<8)continue;
+          const __w8=__h.slice(-8),__w16=__h.slice(-16),__w24=__h.slice(-24);
+          const __r8=__w8.filter(x=>x.hit).length/Math.max(1,__w8.length);
+          const __r16=__w16.filter(x=>x.hit).length/Math.max(1,__w16.length);
+          const __r24=__w24.filter(x=>x.hit).length/Math.max(1,__w24.length);
+          const __long=(__h.filter(x=>x.hit).length+6*.5)/(__n+6);
+          const __score=.45*__r8+.30*__r16+.15*__r24+.10*__long;
+          __v64FormulaStats.push({f:__f,score:__score,n:__n,r8:__r8,r16:__r16,r24:__r24});
+        }
+        __v64FormulaStats.sort((a,b)=>b.score-a.score||b.n-a.n||a.f.localeCompare(b.f));
+        const __v64Top=__v64FormulaStats.slice(0,4);
+        const __v64Votes=new Map();
+        const __v64Last=__v64Rows.at(-1),__v64Prev=__v64Rows.at(-2)||null;
+        for(const __z of __v64Top){
+          const __p=execFormula(__z.f,__v64Last,__v64Prev);
+          if(!Array.isArray(__p))continue;
+          __p.slice(0,2).forEach((__d,__k)=>{
+            const __key=Number(__d);
+            __v64Votes.set(__key,(__v64Votes.get(__key)||0)+Math.max(0,__z.score-.45)*(1-__k*.20));
+          });
+        }
+        const __v64Rank=[...__v64Votes.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0]).map(x=>x[0]);
+        const __v64Cand=__v64Rank.map(__d=>c.find(q=>Number(q.digit)===__d)).filter(Boolean);
+        /* Conservative: only act when formula consensus is strong and both
+           proposed digits already exist on the board. */
+        const __v64Spread=__v64Top.length>=2?(__v64Top[0].score-__v64Top[1].score):0;
+        const __v64Consensus=__v64Top.length>=3?(__v64Top.slice(0,3).reduce((s,x)=>s+x.score,0)/3):0;
+        const __v64A=__v64Cand[0],__v64B=__v64Cand[1];
+        const __v64CanApply=!!(__v64A&&__v64B&&__v64Consensus>=.61&&__v64Spread>=.015&&__v64Top[0].n>=12);
+        if(__v64CanApply){
+          top=__v64A; second=__v64B;
+          __v64Meta={enabled:true,applied:true,type:__v64Type,route:'FORMULA_CONSENSUS_ON_BOARD',topFormula:__v64Top[0].f,formulas:__v64Top.map(x=>({f:x.f,score:+x.score.toFixed(4),n:x.n,r8:+x.r8.toFixed(3),r16:+x.r16.toFixed(3),r24:+x.r24.toFixed(3)})),digits:__v64Rank.slice(0,4),consensus:+__v64Consensus.toFixed(4),spread:+__v64Spread.toFixed(4)};
+        }else __v64Meta={enabled:true,applied:false,type:__v64Type,reason:'evidence_gate',topFormula:__v64Top[0]?.f||null,consensus:+__v64Consensus.toFixed(4),spread:+__v64Spread.toFixed(4),tests:__v64Top[0]?.n||0};
+      }
+    }catch(__v64e){__v64Meta={enabled:true,applied:false,reason:'safe-fallback:'+String(__v64e?.message||__v64e)}}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,v64SelectionConnectedMeta:__v64Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -6996,55 +7045,260 @@ window.__V330_SELECTOR_ARBITRATION_V3__=(()=>{
 </script>
 
 <script>
-/* V6.1 FORMULA EVOLUTION — READY CANDIDATE / SHADOW BY DEFAULT
-   F1-F9 remain immutable Mother Formulas. This module is causal and does not
-   alter names, dates, flags, cards, source data, or the Production selector.
-   Challenger enable flag is deliberately false until full Production replay passes.
-*/
-window.__V61_CHALLENGER_ENABLED__ = false;
-/* V6.1 FORMULA EVOLUTION — RESEARCH ONLY
-   F1-F9 Mother Formulas remain immutable.
-   This module evolves input coefficients, not UI or Production state.
-   Causal use only: candidate selection must use completed rows before target.
-*/
-const FORMULA_V61_MUTATION = Object.freeze({
-  version:'V6.1-COEFFICIENT-MUTATION',
-  motherLocked:true,
-  productionMutation:false,
-  maxCoeffDelta:1,
-  maxBiasDelta:2,
-  maxGapDelta:2,
-  complexityPenalty:0.002,
-  trainBlock:8,
-  testBlock:8
-});
-
-function v61CandidateSet(base){
-  const out=[], seen=new Set();
-  const add=(coef,bias,gap,kind)=>{
-    const c=coef.map(Number); const key=c.join(',')+'|'+bias+'|'+gap;
-    if(!seen.has(key)){seen.add(key);out.push({coef:c,bias,gap,kind});}
-  };
-  add(base.coef,base.bias,base.gap,'BASE');
-  for(let j=0;j<6;j++) for(const z of [-1,1]){
-    const c=base.coef.slice(); c[j]+=z; add(c,base.bias,base.gap,'COEF±1');
-  }
-  for(const z of [-2,-1,1,2]) add(base.coef,base.bias+z,base.gap,'BIAS');
-  for(const z of [-2,-1,1,2]) add(base.coef,base.bias,Math.max(0,base.gap+z),'GAP');
-  for(let j=0;j<6;j++) for(let k=j+1;k<6;k++) for(const z of [-1,1]){
-    const c=base.coef.slice(); c[j]+=z; c[k]-=z; add(c,base.bias,base.gap,'BALANCED');
-  }
-  add(base.coef.map(x=>-x),-base.bias,base.gap,'SIGN_FLIP');
-  return out;
-}
-
-window.__V61_READY_CANDIDATE__ = Object.freeze({
-  version:'V6.1-COEFFICIENT-MUTATION',
-  enabled:false,
-  motherLocked:true,
-  productionMutation:false,
-  status:'READY_FOR_FULL_PRODUCTION_OOS_VALIDATION'
-});
+/* V6.4 switch: TRUE means this challenger is allowed to change final Selection.
+   Set FALSE to restore exact Production behavior. */
+window.__V64_SELECTION_CONNECTED_ENABLED__=true;
+window.__V64_SELECTION_CONNECTED_VERSION__='V6.4-SELECTION-CONNECTED';
 </script>
+
+<section id="handoff-transfer-prompt" style="margin:24px;padding:20px;border:2px solid #444;border-radius:12px;background:#f7f7f7;font-family:system-ui,sans-serif;line-height:1.5">
+<h2>TRANSFER PROMPT — NEXT CHAT</h2>
+<p><strong>Use the code above as the latest Challenger source. Production remains Champion until causal OOS certification.</strong></p>
+<details open><summary style="cursor:pointer;font-weight:700">Show complete transfer instructions</summary>
+<pre style="white-space:pre-wrap;overflow:auto;margin-top:16px"># TRANSFER PROMPT — LOTTERY SELECTION / THAI INTELLIGENCE CONTINUATION
+
+บทบาทของแชตถัดไป
+คุณกำลังรับช่วงงานพัฒนา Lottery Selection Engine ต่อจากแชตก่อนหน้า เป้าหมายคือพัฒนาและพิสูจน์ระบบแบบ causal / walk-forward / out-of-sample (OOS) โดยห้ามใช้ข้อมูลอนาคต และห้ามประกาศ Challenger เป็น Champion จนกว่าจะผ่านเกณฑ์จริง
+
+## 1) เป้าหมายหลัก
+- มี lottery types ทั้งหมด 67 display types ใน engine เดียว
+- ต้องประเมินแต่ละ type แยกกัน ไม่ให้ aggregate percentage กลบ type ที่อ่อน
+- เป้าหมายการพัฒนาคือให้แต่ละ type เข้าใกล้/ถึง Selection Hit1 &gt;= 70% และ Miss &lt;= 30% บน validation ที่กำหนด โดยต้องรายงาน denominator ชัดเจน
+- Hit2 เป็น metric รอง
+- ห้ามเปลี่ยนชื่อ type, จำนวน type, ปฏิทิน, flag, หรือหน้าตา card โดยไม่มีเหตุผลและการอนุมัติ
+- สามารถเปลี่ยน internal architecture ได้
+
+## 2) กฎเหล็กด้าน causal/OOS
+1. ณ เวลาทำนาย target t ใช้ได้เฉพาะข้อมูลก่อน t เท่านั้น
+2. Predict -&gt; freeze prediction -&gt; reveal actual -&gt; evaluate -&gt; update memory
+3. ห้ามใช้ target-day actual เลือกสูตร/น้ำหนัก/threshold ของ target เดียวกัน
+4. ห้ามเลือกสูตรจาก full history แล้วเรียกว่า OOS
+5. Discovery และ OOS ต้องแยกกันชัดเจน
+6. ถ้าไม่แน่ใจให้ fallback ไป Champion เดิม
+7. ต้องรักษา Champion เดิมไว้เสมอและเทียบ Champion vs Challenger แบบ exact same rows
+8. ถ้า Challenger มี damage มากกว่าหรือมีหลักฐานไม่พอ ห้าม promote
+9. การเลือก hyperparameter / formula / threshold ต้องทำภายใน training หรือ nested walk-forward เท่านั้น
+10. ทุกผลทดสอบต้องระบุช่วงเวลา, จำนวน tests, Hit1, Hit2, Rescue, Damage, Net และสถานะ
+
+## 3) Production baseline ที่ห้ามทำลาย
+Production handoff baseline:
+/mnt/data/production_audit/LOTTERY_RND_HANDOFF_PRODUCTION_EXACT.html
+SHA-256: 0fd164b5053c3fcea2ad7c19e9ceb6b30e6c0ec925f41bbf7a535b420f0af575
+Size: 711,923 bytes
+
+Latest connected Challenger source:
+/mnt/data/production_audit/LOTTERY_SELECTION_V6.4_SELECTION_CONNECTED_CHALLENGER.html
+SHA-256: 4cbcd76da3f85c1f50e778fd9304434b4627796ed2cfa04597c90e112941ede4
+Size: 715,635 bytes
+
+ไฟล์นี้ที่แนบมากับ prompt คือ handoff package ที่รวม source ของ Challenger ล่าสุดไว้แล้ว ห้ามถือว่าเป็น Champion เพียงเพราะเป็น version ล่าสุด
+
+## 4) Current Production architecture ที่ต้องเข้าใจ
+Selection pipeline โดยสรุป:
+Raw -&gt; Meta -&gt; Gemini -&gt; Transition -&gt; Role-Pair -&gt; Signal -&gt; Board-Rank -&gt; Context -&gt; Calibration -&gt; Guardrail -&gt; Mid-Rank -&gt; Trajectory -&gt; Rank-Outcome -&gt; Candidate-Outcome -&gt; Swap-Shield -&gt; Self-Learning -&gt; Margin -&gt; Rescue
+
+Final arbitration มี fixed pair V3.11.5, exact digit reliability, final model arbitration, P40 และมีจุด final pair assignment ก่อนกำหนด d1/d2
+
+Fixed pair policy:
+const __V3114_PAIR_POLICY=Object.freeze({
+  d1:{coef:[-1,-1,1,-1,1],bias:1},
+  d2:{coef:[1,-1,-1,1,-1],bias:2},
+  boardSize:8,
+  label:'V3.11.5-CAUSAL-LINEAR-PAIR-8'
+});
+
+Selector coach config:
+const __SELECTOR_COACH_CONFIG=Object.freeze({
+  priorRate:.60,
+  minTests:16,
+  strongTests:28,
+  positiveEdge:.045,
+  strongEdge:.075,
+  maxLift:.035,
+  maxMoves:1,
+  eligibleRanks:[3,4,5],
+  recentWindow:24
+});
+
+## 5) Known baseline audit
+Latest browser audit of Production aggregate:
+- Selection 64.99% = 1268/1951
+- Top2 64.99% = 1268/1951
+- InBoard 99.85% = 1948/1951
+- Adaptive 68.53% = 1337/1951
+- 67 display types
+
+Aggregate is NOT the objective.
+
+Current recent per-type baseline has 22/67 &gt;=70%, 45/67 &lt;70%, 16/67 &lt;60%, and 3/67 &lt;50% in the cited recent window. Use the actual current dataset/audit rather than assuming these figures are permanent.
+
+## 6) Existing research facts
+- V3.11.5 fixed pair on current PDF chronology: 1870/2935 = 63.7138%
+- On a 70/30 chronological per-type holdout, fixed pair was 572/915 = 62.5137%, while Smart-2D was 636/915 = 69.5082%; therefore do not assume the fixed pair is globally optimal.
+- Rolling recent-30: fixed pair 1176/1841 = 63.8783%, Smart-2D 1247/1841 = 67.7349%
+- V4 exact-type hierarchical expert router was a no-op in browser and matched Production baseline; not Champion
+- V5.1/V5.2 formula evolution experiments did not establish a safe Champion
+- Lightweight direct formula vote policies were weak and should not be promoted without new evidence
+- V6.4 is the latest Selection-connected Challenger hook; JS syntax was checked, but it remains research-only until causal OOS proves otherwise
+
+## 7) Thai Stock Intelligence Layer — specification
+The Thai layer is intended to improve the quality/ranking of the two highlighted digits BEFORE the existing Selection machinery, not to replace the whole Selection engine.
+
+Input record:
+- TOP 3 digits
+- LOWER 2 digits
+- eligible digits = TOP tens, TOP units, LOWER tens, LOWER units
+- TOP hundreds may be a feature but never counts as Hit
+- prediction = 2 digits; order irrelevant
+- Hit1 = at least one predicted digit in eligible set
+- Hit2 = both predicted digits in eligible set
+
+Context:
+- Morning: previous-day Evening
+- Noon: same-day Morning
+- Afternoon: same-day Noon
+- Evening: same-day Afternoon
+
+Feature families to consider:
+- SUM
+- pair / offset
+- difference
+- weighted transforms modulo 10
+- frequency windows 3/5/10/15/20/30
+- position-specific frequency
+- momentum
+- gap since last appearance
+- transition matrix across rounds
+- previous round / previous day context
+- position-specific score
+- consensus across independent signals
+- regime detection: frequency dominant, momentum dominant, transition dominant, transformation dominant, mixed, no-edge
+
+Seed transforms from prior Thai research (NOT permanent truth):
+- SUM: S=sum(C), X=(S+OFFSET)%10, pair [X,(X+1)%10]
+- Morning seed: previous-day Evening, offset -1
+- Evening seed: same-day Afternoon, offset -2
+- Afternoon candidate seed: same-day Noon, offset -5
+- Noon candidate seed: morning top_units + lower_units -7, then [X,X+1]
+
+All-day:
+- one daily observation
+- pool eligible digits across all 4 rounds
+- Hit1 if either predicted digit appears anywhere in day
+- Hit2 if both appear
+- frequency baseline can use prior 20 days, but must be causal and sufficiently sampled
+
+## 8) Critical lesson from Thai experiments
+A broad adaptive policy can improve one round while damaging others. Therefore do NOT globally enable an adaptive rule merely because aggregate Thai performance improves.
+
+Use round-specific, type-specific, causal gates. A candidate must prove:
+- positive OOS lift vs Champion
+- low damage
+- enough sample size
+- stability across multiple chronological windows
+- no catastrophic recent degradation
+- simplicity / low parameter count when performance is close
+
+If no edge is proven, keep Champion.
+
+## 9) Recommended development architecture
+Build a Thai Adaptive Intelligence Layer with these stages:
+1. Context extraction
+2. Candidate digit generation from multiple independent families
+3. Candidate scoring using only pre-target history
+4. Exact-type / round-specific memory
+5. Regime estimation from pre-target history
+6. Candidate-method routing
+7. Confidence / minimum-evidence gate
+8. Champion fallback when evidence is weak
+9. Existing Selection pipeline continues after the Thai layer
+10. After reveal, update memory and OOS statistics
+
+The router should learn when to use SUM, pair, transition, frequency, momentum, etc. It should not assume one formula is always best.
+
+## 10) Champion/Challenger promotion rule
+For every proposed change:
+- Compare on exactly the same target rows
+- Use chronological walk-forward
+- Report per-type results, not only aggregate
+- Report Hit1 first, Hit2 second
+- Report Rescue = Champion miss -&gt; Challenger hit
+- Report Damage = Champion hit -&gt; Challenger miss
+- Net = Rescue - Damage
+- A Challenger is not a Champion if it only improves aggregate while damaging already-strong types
+- Types already &gt;=70% should be protected/locked unless the new logic proves non-degradation on them
+- If a new method is only useful for one round/type, gate it only there
+
+## 11) Data requirements
+Preserve leading zeros. Examples: 00, 04, 07, 062, 005.
+
+Supplied Thai dataset contains 36 days from 14 Aug 69 through 2 Oct 69, four rounds/day, 144 raw round records. Morning has 35 usable predictions because the first morning lacks the previous-day evening in the supplied range.
+
+Earlier manual audit on that dataset found approximately:
+- Morning 25/35 = 71.43% Hit1
+- Noon 25/36 = 69.44% Hit1
+- Afternoon 27/36 = 75.00% Hit1
+- Evening 27/36 = 75.00% Hit1
+
+These are research-window figures only and must be re-computed from raw data before being used as a certification result.
+
+## 12) Files / research artifacts
+Important files in /mnt/data/production_audit include:
+- LOTTERY_RND_HANDOFF_PRODUCTION_EXACT.html
+- LOTTERY_SELECTION_V6.4_SELECTION_CONNECTED_CHALLENGER.html
+- V4_TYPE67_CHALLENGER_README.md
+- V4_oos_harness.html
+- oos67_clean.json
+- pdf_records_input.txt
+- selection_core_research.py/.json
+- formula_pruning_oos*.json/.out
+- FORMULA_EVOLUTION_V5.1_REPORT.md
+- formula_evolution_v5*.py/.json
+- formula_evolution_v52_fast.py/.json
+- v63/v65/v66 research artifacts
+
+## 13) What the next chat must do first
+Do not immediately rewrite the HTML.
+
+First:
+A. Verify which file is the actual latest source.
+B. Reconstruct/inspect the exact causal evaluation harness.
+C. Re-run the relevant OOS tests from raw chronological data.
+D. Benchmark Champion vs the latest Challenger.
+E. For Thai Intelligence, test candidate methods using nested/rolling walk-forward, with round-specific gates.
+F. Produce a table of every type/round showing tests, Hit1, Hit2, Rescue, Damage, Net, and status.
+G. Only after a candidate survives these tests should it be wired as a promotion candidate.
+
+## 14) Do not make these mistakes
+- Do not call a shadow/no-op router a working improvement
+- Do not use aggregate accuracy as proof
+- Do not use future target information
+- Do not optimize directly on the final 30 rows and call them OOS
+- Do not tune on the same rows used for certification
+- Do not change 67 types to make metrics look better
+- Do not remove weak types
+- Do not replace the existing Selection engine wholesale without proof
+- Do not claim a new Champion without a reproducible causal OOS report
+- Do not assume the Thai seed offsets are permanent truths
+
+## 15) Desired final workflow
+Research -&gt; causal OOS -&gt; forensic comparison -&gt; gated Challenger -&gt; repeated unseen validation -&gt; Champion promotion only if proven -&gt; generate final HTML -&gt; preserve old Champion as rollback.
+
+When reporting results, be explicit about:
+- dataset
+- chronological split
+- target population
+- number of tests
+- exact metric definitions
+- baseline
+- challenger
+- Rescue/Damage/Net
+- per-type regressions
+- whether the result is discovery, validation, or certification
+
+Start from the attached latest HTML source, but treat Production as the protected Champion until a new version is empirically proven.
+</pre>
+</details>
+</section>
 </body>
 </html>
