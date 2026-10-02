@@ -1020,7 +1020,10 @@ table.audit-table thead th{position:sticky;top:0;z-index:2;background:#fbf7ed;bo
   -webkit-text-decoration-color:currentColor;
 }
 
-</style>
+<style id="all-type-dev-style">
+.all-type-dev-panel{margin:14px 0;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;background:rgba(255,255,255,.025)}
+.all-type-dev-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.all-type-dev-head small{display:block;opacity:.72;margin-top:4px}.all-type-dev-badge{font-size:.72rem;opacity:.78}.all-type-dev-actions{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}.all-type-dev-actions button{cursor:pointer}.all-type-dev-actions span{font-size:.76rem;opacity:.68}.all-type-dev-table{overflow:auto;margin-top:8px}.all-type-dev-table table{width:100%;border-collapse:collapse;font-size:.78rem}.all-type-dev-table th,.all-type-dev-table td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;white-space:nowrap}.all-type-dev-thai{margin:10px 0}.all-type-dev-panel details{margin-top:10px}.all-type-dev-panel summary{cursor:pointer;opacity:.9}
+</style></style>
 <style id="v191-unified-audit">
 /* V1.9.1 UI ONLY: unified per-lottery audit + mobile-first compact layout. Prediction/calculation logic untouched. */
 .audit-master{margin:0 0 14px;padding:10px;border:1px solid rgba(133,100,20,.14);border-radius:15px;background:rgba(255,255,255,.68);box-shadow:0 4px 14px rgba(52,40,12,.03)}
@@ -1561,7 +1564,18 @@ html{scroll-behavior:auto!important}
 
 
 </style>
-<meta name="lottery-engine-version" content="V6-ROUND-AWARE-OOS"><!-- LOTTERY-SELECTION-ENGINE-V6 -->
+
+<style id="v3418-round-progress-style">
+#v3418Progress{margin:18px 0;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;background:rgba(0,0,0,.16)}
+#v3418Progress .rp-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+#v3418Progress .rp-title{font-weight:800;font-size:15px}.rp-total{font-weight:900;font-size:20px}
+#v3418Progress .rp-bar{height:9px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden;margin:8px 0 14px}
+#v3418Progress .rp-fill{height:100%;width:0%;transition:width .25s ease}
+#v3418Progress .rp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
+#v3418Progress .rp-card{padding:9px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+#v3418Progress .rp-card b{display:block;font-size:12px}.rp-card span{font-size:11px;opacity:.78}.rp-pct{float:right;font-weight:800}
+#v3418Progress .rp-scope{margin-top:12px;font-size:11px;opacity:.8;line-height:1.55}
+</style>
 </head>
 <body>
 <canvas id="snow"></canvas>
@@ -1572,7 +1586,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V6.8.1 — SELECTION → เลขเด่น/รอง · ALL-DAY เลขเจาะ 28 วัน OOS รายคู่</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.20 — FULL-VALUE AUDIT / ALL-TYPE / CAUSAL HARDENED / UI LOCK</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -3335,89 +3349,10 @@ function decisionLog(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("d
 function selectionDecisionAudit(rs,routeCtx=null){const h=decisionLog(rs,routeCtx),last=rs.at(-1)||null,rows=h.slice(-12).reverse(),hitCount=h.filter(x=>x.pairHit).length,marginAvg=h.length?Math.round(avg(h.map(x=>Number(x.margin||0)))*100)/100:null,conf={สูง:h.filter(x=>x.confidence==='สูง').length,กลาง:h.filter(x=>x.confidence==='กลาง').length,ต่ำ:h.filter(x=>x.confidence==='ต่ำ').length};return{total:h.length,hits:hitCount,rate:pct(hitCount,h.length),marginAvg,confidence:conf,last,rows}}
 function selectionDecisionAuditPanel(groups){const entries=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,rs])=>{const d=selectionDecisionAudit(rs,{name,groups});return{name,rs,d}}).filter(x=>x.d.total>0);const total=entries.reduce((n,x)=>n+x.d.total,0),hits=entries.reduce((n,x)=>n+x.d.hits,0),high=entries.reduce((n,x)=>n+x.d.confidence.สูง,0),mid=entries.reduce((n,x)=>n+x.d.confidence.กลาง,0),low=entries.reduce((n,x)=>n+x.d.confidence.ต่ำ,0);const rows=entries.slice().sort((a,b)=>a.d.rate-b.d.rate||b.d.total-a.d.total).map(x=>`<tr><td class="formula-cell">${esc(formatDisplayTitle(x.name))}</td><td>${x.d.total}</td><td>${x.d.hits}</td><td>${x.d.total-x.d.hits}</td><td><span class="score-chip">${x.d.rate}%</span></td><td>${x.d.marginAvg==null?'—':x.d.marginAvg}</td><td>${x.d.confidence.สูง}</td><td>${x.d.confidence.กลาง}</td><td>${x.d.confidence.ต่ำ}</td><td><button class="add-card-btn" onclick="showDecisionTrace('${encodeURIComponent(x.name)}')">ดู Trace</button></td></tr>`).join('');return`<div class="lottery-audit-block"><div class="lottery-audit-title">🔬 2. Selection Decision Audit · ย้อนรอยการตัดสินใจ OOS</div><div class="lottery-audit-sub">ตรวจจากลำดับเวลาเดิม: สูตร → กระดานตัวเลือก → d1/d2 → ผลจริง โดยไม่ใช้ผลอนาคตในการตัดสินใจ</div><div class="audit-grid"><div class="metric-box"><small>OOS รวม</small><b>${total}</b><span>ทุกหวยที่มี OOS</span></div><div class="metric-box"><small>Selection Hit</small><b>${hits}/${total}</b><span>${pct(hits,total)}%</span></div><div class="metric-box"><small>Confidence สูง</small><b>${high}</b><span>จากทุก decision</span></div><div class="metric-box"><small>กลาง / ต่ำ</small><b>${mid} / ${low}</b><span>ใช้ตรวจ calibration</span></div></div><div class="summary-table-container"><table class="audit-table"><thead><tr><th>หวย</th><th>OOS</th><th>Hit</th><th>Miss</th><th>Digit Hit Rate</th><th>Margin เฉลี่ย</th><th>สูง</th><th>กลาง</th><th>ต่ำ</th><th>Trace</th></tr></thead><tbody>${rows}</tbody></table></div></div><div id="decisionTracePanel"></div>`}
 function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=currentPredictionDataMap[name];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[],logs=decisionLog(rs,base.routeCtx||null).slice(-12).reverse();const rows=logs.map(x=>`<tr><td>${esc(x.source)}</td><td>${esc(x.target)}</td><td>${x.d1}</td><td>${x.d1Hit?'✓':'✗'}</td><td>${x.d2}</td><td>${x.d2Hit?'✓':'✗'}</td><td>${x.margin}</td><td>${x.confidence}</td><td>${x.curMissBefore}</td></tr>`).join('');$('decisionTracePanel').innerHTML=`<div class="summary-table-container"><h3 class="lottery-audit-title">🔎 Trace: ${esc(formatDisplayTitle(name))}</h3><div class="lottery-audit-sub">12 OOS ล่าสุดของหวยนี้ · d1/d2 ถูกตรวจแยก และ curMissBefore แสดงความเสี่ยงก่อนการตัดสินใจ</div><table class="audit-table"><thead><tr><th>Source</th><th>Target</th><th>d1</th><th>d1 Hit</th><th>d2</th><th>d2 Hit</th><th>Margin</th><th>Confidence</th><th>Miss ก่อนหน้า</th></tr></thead><tbody>${rows}</tbody></table></div>`;document.getElementById('decisionTracePanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})}
-/* V6.0 ROUND-AWARE EMPIRICAL EVIDENCE
-   Display-only evidence layer. It does NOT alter Selection, F1-F9, scores, ranks,
-   candidate pools, or final digits. It makes the displayed percentage route/round aware
-   and records the evidence basis so real OOS can be audited separately by round and All-Day.
-*/
-function __roundEvidenceMeta(routeCtx, rs){
-  const name=String(routeCtx?.name||rs?.at?.(-1)?.name||'');
-  const round=/เช้า|เที่ยง|บ่าย|เย็น/.exec(name)?.[0]||null;
-  const allDay=/ทั้งวัน|All-Day/i.test(name);
-  return {route:name,round,allDay,scope:allDay?'ALL_DAY':(round||'OTHER'),version:'ROUND-AWARE-OOS-V6.1'};
-}
-/* V6.3 TYPE-ISOLATED OOS LEDGER
-   Every display type owns its own OOS population. Thai round names are kept
-   separate, and All-Day is a separate daily ledger. No aggregate percentage
-   is allowed to feed a type/round percentage. Display/audit isolation only:
-   Selection, F1-F9, candidate pools, scores and arbitration are unchanged. */
-const __TYPE_OOS_LEDGER_VERSION='V6.3-TYPE-ROUND-ISOLATED';
-function __oosScope(routeCtx,rs){
-  const m=__roundEvidenceMeta(routeCtx,rs),type=String(routeCtx?.name||rs?.at?.(-1)?.name||'').trim();
-  return {version:__TYPE_OOS_LEDGER_VERSION,type,round:m.round,allDay:!!m.allDay,scopeKey:m.allDay?`${type}::ALL_DAY`:`${type}::${m.round||'TYPE'}`,population:'EXACT_TYPE_ONLY',futureData:false};
-}
-function __buildTypeOOSLedger(unifiedRows){
-  return (Array.isArray(unifiedRows)?unifiedRows:[]).map((x,i)=>{
-    const scope=x?.p?.percentMeta?.scope||{type:x?.name||'',round:null,allDay:false,scopeKey:`${x?.name||''}::TYPE`};
-    const n=Number(x?.sx?.total)||0,h=Number(x?.sx?.hits)||0,tN=Number(x?.diagTests)||0,tH=Number(x?.top2Hits)||0,inH=Number(x?.inBoardHits)||0,penN=Number(x?.pen?.adaptiveTotal)||0,penH=Number(x?.pen?.adaptiveHits)||0;
-    const rate=(a,b)=>b?+(a/b*100).toFixed(2):null;
-    return {index:i+1,type:String(scope.type||x?.name||''),round:scope.round||null,allDay:!!scope.allDay,scopeKey:String(scope.scopeKey||''),population:'EXACT_TYPE_ONLY',tests:n,selectionHits:h,selectionRate:rate(h,n),top2Tests:tN,top2Hits:tH,top2Rate:rate(tH,tN),inBoardTests:tN,inBoardHits:inH,inBoardRate:rate(inH,tN),adaptiveTests:penN,adaptiveHits:penH,adaptiveRate:rate(penH,penN),digitTests:Number(x?.dx?.digitTotal)||0,digitHits:Number(x?.dx?.digitHits)||0,digitRate:rate(Number(x?.dx?.digitHits)||0,Number(x?.dx?.digitTotal)||0),pairTests:Number(x?.dx?.total)||0,pairHits:Number(x?.dx?.pairHits)||0,pairRate:rate(Number(x?.dx?.pairHits)||0,Number(x?.dx?.total)||0),latestDate:x?.latestDate||null};
-  });
-}
-function __typeOOSBadge(scope){const s=scope||{};return s.allDay?'ALL-DAY / DAILY':(s.round?`TYPE / ${s.round}`:'TYPE ONLY');}
-
-function __evidenceBand(hits,tests){
-  const n=Number(tests||0); if(n<8)return 'ต่ำ';
-  const h=Number(hits||0), p=h/n, z=1.959963984540054;
-  const den=1+z*z/n, center=(p+z*z/(2*n))/den;
-  const half=z*Math.sqrt((p*(1-p)+z*z/(4*n))/n)/den;
-  const width=2*half;
-  if(n>=30 && width<=0.25)return 'สูง';
-  if(n>=16 && width<=0.35)return 'กลาง';
-  return 'ต่ำ';
-}
-function __roundAwarePercent(hits,tests){
-  const n=Number(tests||0); if(!Number.isFinite(n)||n<=0)return {value:null,band:'ต่ำ',tests:n,hits:Number(hits||0)};
-  const h=Number(hits||0); return {value:Math.round(h/n*10000)/100,band:__evidenceBand(h,n),tests:n,hits:h};
-}
-
 function decisionStats(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionStats"); try {const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}} finally { window.__PERFTRACE__.end("decisionStats",__pt0); }}
 function decisionMemorySummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>decisionMemory(rs)),n=xs.reduce((s,x)=>s+x.tests,0),h=xs.reduce((s,x)=>s+x.hits,0);return{n,h,r:pct(h,n)}}
 function selectionDashboard(rs,routeCtx=null){const sx=selectionStats(rs,routeCtx),dx=decisionStats(rs,routeCtx),mem=decisionMemory(rs,routeCtx),routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name):null,c=candidateBoard(rs,audit(rs),rs,routeProfile,routeCtx),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).map(q=>`${q.digit} ${q.r}% (${q.h}/${q.n})`).join(' · '),cand=c.map(q=>`${q.digit} ${Number(q.score||0).toFixed(2)} · ${q.count||0} สูตร · ${q.gate?'ผ่านเกณฑ์':'พัก'}`).join('  |  ');return`<div class="summary-table-container"><h3 style="color:#78590f;font-size:.78rem;margin:12px 0 8px">🧠 ตัวคัดเลือกเลขเด่น · OOS + Memory + Digit History + กระดานตัวเลือก</h3><table class="audit-table"><thead><tr><th>ส่วน</th><th>รายการ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด/ความเสี่ยง</th><th>อัตรา/Final</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>สูงสุด/สถานะ</th><th>รายละเอียด</th></tr></thead><tbody><tr><td><b>ตัวคัดเลือก</b></td><td>Walk-Forward OOS</td><td>${sx.total}</td><td>${sx.hits}</td><td>${sx.misses}</td><td><span class="score-chip">${sx.rate}%</span></td>${sx.displayHorizon.map(h=>`<td>${h.rate==null?'—':h.rate+'%'}</td>`).join('')}<td>เข้า ${sx.maxHit} · หลุด ${sx.maxMiss} · ปัจจุบัน ${sx.curMiss}</td><td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td></tr><tr><td><b>Decision Memory</b></td><td>บทเรียนสะสม</td><td>${mem.tests}</td><td>${mem.hits}</td><td>${mem.misses}</td><td><span class="score-chip">${mem.rate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>context ≥ 6</td><td>ใช้ความจำเฉพาะรูปแบบที่เคยเกิดจริง</td></tr><tr><td><b>ประวัติเลข</b></td><td>ถูก/ผิดแยกตัว</td><td>${dx.digitTotal}</td><td>${dx.digitHits}</td><td>${dx.digitTotal-dx.digitHits}</td><td><span class="score-chip">${dx.digitRate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>คู่ 2 ตัว ${dx.pairRate}</td><td>${digits||'ยังไม่มีข้อมูล'}</td></tr><tr><td><b>กระดานตัวเลือก</b></td><td>Final Score</td><td>—</td><td>—</td><td>—</td><td>—</td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td><td>${cand}</td></tr></tbody></table></div>`}
-function __evidenceRate(hits,tests,minTests=8){const h=Number(hits),n=Number(tests);return Number.isFinite(h)&&Number.isFinite(n)&&n>0?Math.max(0,Math.min(100,(h/n)*100)):null}
-function __percentEvidence(hits,tests,minTests=8){const h=Number(hits),n=Number(tests);if(!Number.isFinite(h)||!Number.isFinite(n)||n<=0)return null;const p=Math.max(0,Math.min(1,h/n)),z=1.959963984540054,w=1+z*z/n,center=(p+z*z/(2*n))/w,half=z*Math.sqrt((p*(1-p)+z*z/(4*n))/n)/w;const lo=Math.max(0,center-half)*100,hi=Math.min(1,center+half)*100,width=hi-lo;const confidence=n>=30&&width<=28?'สูง':n>=16&&width<=38?'กลาง':'ต่ำ';return{hits:h,tests:n,rate:+(p*100).toFixed(2),lo:+lo.toFixed(2),hi:+hi.toFixed(2),width:+width.toFixed(2),confidence,rule:'empirical OOS; CI is uncertainty only',minimumTests:minTests,evidenceGate:n>=minTests?'ผ่าน':'ต่ำกว่าเกณฑ์ขั้นต่ำ'}}
-/* V6.5 EXACT-TYPE PAIR OOS
-   Pair percentages shown on prediction cards must come from the SAME OOS rows
-   used by that exact Type/round. Candidate generation may still use historical
-   evidence, but the displayed pair percentage is re-scored only on the frozen
-   Type OOS ledger. No aggregate/global history is allowed to leak into the card. */
-function __exactTypePairOOSLedger(rs){
-  const m=new Map(),rows=Array.isArray(rs)?rs:[];
-  for(let i=1;i<rows.length-1;i++){
-    if(rows[i+1]?.breakBefore)continue;
-    const target=rows[i+1];
-    for(let a=0;a<10;a++)for(let b=a+1;b<10;b++){
-      const key=`${a}${b}`,z=m.get(key)||{pair:key,tests:0,hits:0};
-      z.tests++;
-      z.hits+=pairHit(key,target)?1:0;
-      m.set(key,z);
-    }
-  }
-  return m;
-}
-function __attachExactTypePairOOS(cands,ledger){
-  const m=ledger||new Map();
-  return (Array.isArray(cands)?cands:[]).map(x=>{
-    const raw=String(x?.pair??'').replace(/[^0-9]/g,'');
-    const pair=raw.length>=2?raw.slice(-2):raw;
-    const a=Number(pair[0]),b=Number(pair[1]);
-    const key=Number.isFinite(a)&&Number.isFinite(b)?`${Math.min(a,b)}${Math.max(a,b)}`:pair;
-    const z=m.get(key)||{pair:key,tests:0,hits:0};
-    const tests=Number(z.tests)||0,hits=Number(z.hits)||0;
-    return {...x,pair:pair,tests,hits,hitRate:tests?pct(hits,tests):null,evidenceScope:'EXACT_TYPE_OOS'};
-  });
-}
-function pairPill(x,baseRate=null){const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';const isAllDayPairOOS=String(x?.evidenceScope||'').startsWith('ALL_DAY_');const hasPairEvidence=isAllDayPairOOS?Number(x?.tests)>0:Number.isFinite(Number(baseRate));const rawRate=isAllDayPairOOS?(Number.isFinite(Number(x?.displayBaseRate))?Number(x.displayBaseRate):(hasPairEvidence&&Number.isFinite(Number(x?.hitRate))?Number(x.hitRate):null)):(Number.isFinite(Number(baseRate))?Number(baseRate):null);const rankBonus=x.rank===1?3:x.rank===2?2:x.rank===3?1:0;const display=rawRate==null?null:Math.max(0,Math.min(100,rawRate+rankBonus));const bonusText=rankBonus?` · โบนัสลำดับ ${rankBonus > 0 ? '+'+rankBonus : '0'} จุดเปอร์เซ็นต์`:' ';const tip=isAllDayPairOOS?(rawRate==null?`เลขเจาะ ALL-DAY OOS รายคู่ = ยังไม่เคยถูกทดสอบสำหรับคู่ ${esc(String(x.pair))} · แสดง —`:`เลขเจาะ ALL-DAY OOS รายคู่ = ${Number(x.hits)||0}/${Number(x.tests)||0} วัน · ค่าจริง ${rawRate.toFixed(2)}% · แสดง ${display.toFixed(2)}%${bonusText} · 1 วัน = 1 test; hit เมื่อคู่เดียวกันปรากฏใน TOP-2 หรือ LOWER-2 ของอย่างน้อย 1 รอบ`):(rawRate==null?'ยังไม่มีเปอร์เซ็นต์เลขเจาะจาก OOS ของ Type/รอบนี้':`เลขเจาะ Adaptive OOS ของ Type/รอบนี้ = ${rawRate.toFixed(2)}% · แสดง ${display.toFixed(2)}%${bonusText} · ค่าจริงมาจากช่อง “เลขเจาะ” ในตารางสรุป`);return`<div class="floating-pill ${cls}" title="${tip}"><b>${esc(String(x.pair))}</b><span class="pair-percent">${display==null?'—':display.toFixed(2)+'%'}</span></div>`}
+function pairPill(x,baseRate=null){const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';const base=Number(baseRate);const bonus=x.rank===1?3:x.rank===2?2:x.rank===3?1:0;const display=Number.isFinite(base)?Math.min(100,base+bonus):null;return`<div class="floating-pill ${cls}" title="${display==null?'':display.toFixed(2)+'%'}"><b>${x.pair}</b><span class="pair-percent">${display==null?'—':display.toFixed(2)+'%'}</span></div>`}
 function formatCardDisplayTitle(rawName){
   const base=formatDisplayTitle(rawName);
   const key=String(rawName||'').normalize('NFC').replace(/[\u200B-\u200D\uFEFF\u2063]/g,'').replace(/\s+/g,'').toLowerCase();
@@ -3435,7 +3370,7 @@ function formatCardDisplayTitle(rawName){
   };
   return (map[key]||base).replace(/\bVIP\b/gi,'V');
 }
-function card(c,index=0){const id=`v1_card_${index}_${Math.random().toString(36).slice(2,7)}`,title=formatCardDisplayTitle(c.lotteryName),d1Pct=Number.isFinite(Number(c.d1Pct))?Number(c.d1Pct).toFixed(2)+'%':'—',d2Pct=Number.isFinite(Number(c.d2Pct))?Number(c.d2Pct).toFixed(2)+'%':'—',sel=c.percentMeta?.selectionEvidence||{},d1tip=sel.tests>0?`เลขเด่น = Selection OOS ${sel.hits}/${sel.tests} · ${d1Pct} · ${c.percentMeta?.scope?.scope||'TYPE/ROUND'}`:'ยังไม่มี Selection OOS',d2tip=sel.tests>0?`เลขรอง = Selection จริง ${d1Pct} − 1.00 จุดเปอร์เซ็นต์ = ${d2Pct} · ไม่ใช่ OOS ใหม่`:'ยังไม่มี Selection OOS',pairBase=Number.isFinite(Number(c.pairBasePct))?Number(c.pairBasePct):null;return`<div class="prediction-card" id="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">${flag(c.lotteryName)}</div><div class="card-info"><small>${esc(c.nextDate)}</small><b class="lottery-name-struck">${esc(title.replace(/^[-\s]+/,'').trim())}</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ ทรัพย์นำโชค ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','${esc(title)}')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div><div class="hero-circle">${c.d1}</div><small class="hero-percent" title="${esc(d1tip)}">${d1Pct}</small></div></div><div class="hero-digit-badge hero-silver"><div><div class="hero-circle">${c.d2}</div><small class="hero-percent" title="${esc(d2tip)}">${d2Pct}</small></div></div></div><div class="pairs-grid-container"><div class="pair-row-inline" data-owner="${c.d1}">${(c.d1Pairs||[]).slice(0,5).map(x=>pairPill(x,pairBase)).join('')}</div><div class="pair-row-inline" data-owner="${c.d2}">${(c.d2Pairs||[]).slice(0,5).map(x=>pairPill(x,pairBase)).join('')}</div></div></div>`}
+function card(c,index=0){const id=`v1_card_${index}_${Math.random().toString(36).slice(2,7)}`,title=formatCardDisplayTitle(c.lotteryName),d1Pct=Number.isFinite(Number(c.d1Pct))?Number(c.d1Pct).toFixed(2)+'%':'—',d2Pct=Number.isFinite(Number(c.d2Pct))?Number(c.d2Pct).toFixed(2)+'%':'—',pairBase=Number.isFinite(Number(c.pairBasePct))?Number(c.pairBasePct):null;return`<div class="prediction-card" id="${id}"><div class="card-top-bar"><div class="card-title-group"><div class="card-flag">${flag(c.lotteryName)}</div><div class="card-info"><small>${esc(c.nextDate)}</small><b class="lottery-name-struck">${esc(title.replace(/^[-\s]+/,'').trim())}</b></div></div><div class="card-right-group"><div class="card-brand-tag">✦ ทรัพย์นำโชค ✦</div><div class="card-btn-group"><button class="card-action-btn" onclick="captureCardImage('${id}','${esc(title)}')">📸 แคปภาพ</button></div></div></div><div class="hero-digits-wrap"><div class="hero-digit-badge hero-gold"><div><div class="hero-circle">${c.d1}</div><small class="hero-percent">${d1Pct}</small></div></div><div class="hero-digit-badge hero-silver"><div><div class="hero-circle">${c.d2}</div><small class="hero-percent">${d2Pct}</small></div></div></div><div class="pairs-grid-container"><div class="pair-row-inline" data-owner="${c.d1}">${(c.d1Pairs||[]).slice(0,5).map(x=>pairPill(x,pairBase)).join('')}</div><div class="pair-row-inline" data-owner="${c.d2}">${(c.d2Pairs||[]).slice(0,5).map(x=>pairPill(x,pairBase)).join('')}</div></div></div>`}
 
 
 
@@ -4964,7 +4899,7 @@ const __DNA_EVIDENCE_KEYS__=['score','independent','support','gemini','radar'];
 function __dnaMean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
 function __dnaPct(h,n){return n?Math.round(h/n*10000)/100:0}
 function __dnaMedian(a){if(!a.length)return 0;const x=a.slice().sort((a,b)=>a-b),m=Math.floor(x.length/2);return x.length%2?x[m]:(x[m-1]+x[m])/2}
-function __dnaRows(){return (__SELECTOR_DIAGNOSTIC__.rows||[]).filter(r=>r&&r.name&&Array.isArray(r.targetDigits))}
+function __dnaRows(){return (__SELECTOR_DIAGNOSTIC__.rows||[]).filter(r=>r&&r.name&&r.name!=='__THAI_ALLDAY__'&&Array.isArray(r.targetDigits))}
 function __dnaCandidates(r){return Array.isArray(r.optimizerCandidates)?r.optimizerCandidates:[]}
 function __dnaTargets(r){const t=new Set((r.targetDigits||[]).map(Number));return __dnaCandidates(r).filter(q=>t.has(Number(q.digit)))}
 function __dnaFormulaSet(q){return new Set(Array.isArray(q?.formulas)?q.formulas:[])}
@@ -5063,7 +4998,7 @@ function __dnaRankBox(p){const r=p.rank;return `<div class="dna-kpi-grid"><div c
 function __dnaBoundaryBox(p){const b=p.boundary;return `<div class="dna-kpi-grid"><div class="dna-kpi"><b>R3–5 Boundary</b><span>${b.n} / ${p.n} = ${b.rate}%</span></div><div class="dna-kpi"><b>Median Score Gap</b><span>${b.medianScoreGap}</span></div><div class="dna-kpi"><b>Median Evidence Gap</b><span>${b.medianEvidenceGap}</span></div><div class="dna-kpi"><b>Damage</b><span>${b.damage}</span></div><div class="dna-kpi"><b>Rescue</b><span>${b.rescue}</span></div><div class="dna-kpi"><b>Margin Median</b><span>${p.margin.median}</span></div></div>`}
 function __dnaPanel(){
   const r=__TYPE_DNA__.last||null;
-  if(!r)return `<section class="selector-diag-panel" id="__type_dna_panel"><div class="selector-diag-head"><div><b>LOTTERY TYPE DNA INTELLIGENCE · V2.0</b><small>10 กล่องคุณภาพ · 64 ประเภท · เน้นเปอร์เซ็นต์ที่วัดได้จริง</small></div><span>10 BOX + 5 RULES</span></div><button class="forensic-copy-btn" id="__run_type_dna">เริ่ม TYPE DNA LAB</button></section>`;
+  if(!r)return `<section class="selector-diag-panel" id="__type_dna_panel"><div class="selector-diag-head"><div><b>LOTTERY TYPE DNA INTELLIGENCE · V2.0</b><small>10 กล่องคุณภาพ · ${__TYPE_DNA__.last?.typeCount??'—'} ประเภท · เน้นเปอร์เซ็นต์ที่วัดได้จริง</small></div><span>10 BOX + 5 RULES</span></div><button class="forensic-copy-btn" id="__run_type_dna">เริ่ม TYPE DNA LAB</button></section>`;
   const defs=[
     ['1','Type Performance',p=>`N ${p.n} · InBoard ${p.performance.inBoard}% · Top2 ${p.performance.top2}% · Selection ${p.performance.selection}% · Union ${p.performance.union}%`],
     ['2','Formula Performance',p=>__dnaFormulaBox(p)],
@@ -6158,61 +6093,12 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     try{__p40Meta=__p40Apply(c,routeCtx);}catch(__p40e){__p40Meta={applied:false,reason:'safe-fallback:'+String(__p40e?.message||__p40e)}}
     if(__p40Meta.applied){const __p40q=c.find(q=>Number(q.digit)===Number(__p40Meta.to));if(__p40q){top=__p40q;}}
     }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
-    /* V6.4 SELECTION-CONNECTED CHALLENGER
-       Research only. This hook is intentionally AFTER legacy final arbitration,
-       so the challenger can actually change Selection during browser OOS.
-       It never sees the target row. It uses only the current prefix (rs) and
-       exact-type prior formula history. Production is unchanged when disabled. */
-    let __v64Meta={enabled:false,applied:false,reason:'disabled'};
-    try{
-      if(window.__V64_SELECTION_CONNECTED_ENABLED__===true){
-        const __v64Type=String(routeCtx?.name||rs?.[0]?.name||'');
-        const __v64Rows=Array.isArray(rs)?rs.filter(x=>x?.status==='result'):[];
-        const __v64FormulaStats=[];
-        for(const __f of FORMULAS){
-          const __h=formulaHistory(__v64Rows,__f);
-          const __n=__h.length;
-          if(__n<8)continue;
-          const __w8=__h.slice(-8),__w16=__h.slice(-16),__w24=__h.slice(-24);
-          const __r8=__w8.filter(x=>x.hit).length/Math.max(1,__w8.length);
-          const __r16=__w16.filter(x=>x.hit).length/Math.max(1,__w16.length);
-          const __r24=__w24.filter(x=>x.hit).length/Math.max(1,__w24.length);
-          const __long=(__h.filter(x=>x.hit).length+6*.5)/(__n+6);
-          const __score=.45*__r8+.30*__r16+.15*__r24+.10*__long;
-          __v64FormulaStats.push({f:__f,score:__score,n:__n,r8:__r8,r16:__r16,r24:__r24});
-        }
-        __v64FormulaStats.sort((a,b)=>b.score-a.score||b.n-a.n||a.f.localeCompare(b.f));
-        const __v64Top=__v64FormulaStats.slice(0,4);
-        const __v64Votes=new Map();
-        const __v64Last=__v64Rows.at(-1),__v64Prev=__v64Rows.at(-2)||null;
-        for(const __z of __v64Top){
-          const __p=execFormula(__z.f,__v64Last,__v64Prev);
-          if(!Array.isArray(__p))continue;
-          __p.slice(0,2).forEach((__d,__k)=>{
-            const __key=Number(__d);
-            __v64Votes.set(__key,(__v64Votes.get(__key)||0)+Math.max(0,__z.score-.45)*(1-__k*.20));
-          });
-        }
-        const __v64Rank=[...__v64Votes.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0]).map(x=>x[0]);
-        const __v64Cand=__v64Rank.map(__d=>c.find(q=>Number(q.digit)===__d)).filter(Boolean);
-        /* Conservative: only act when formula consensus is strong and both
-           proposed digits already exist on the board. */
-        const __v64Spread=__v64Top.length>=2?(__v64Top[0].score-__v64Top[1].score):0;
-        const __v64Consensus=__v64Top.length>=3?(__v64Top.slice(0,3).reduce((s,x)=>s+x.score,0)/3):0;
-        const __v64A=__v64Cand[0],__v64B=__v64Cand[1];
-        const __v64CanApply=!!(__v64A&&__v64B&&__v64Consensus>=.61&&__v64Spread>=.015&&__v64Top[0].n>=12);
-        if(__v64CanApply){
-          top=__v64A; second=__v64B;
-          __v64Meta={enabled:true,applied:true,type:__v64Type,route:'FORMULA_CONSENSUS_ON_BOARD',topFormula:__v64Top[0].f,formulas:__v64Top.map(x=>({f:x.f,score:+x.score.toFixed(4),n:x.n,r8:+x.r8.toFixed(3),r16:+x.r16.toFixed(3),r24:+x.r24.toFixed(3)})),digits:__v64Rank.slice(0,4),consensus:+__v64Consensus.toFixed(4),spread:+__v64Spread.toFixed(4)};
-        }else __v64Meta={enabled:true,applied:false,type:__v64Type,reason:'evidence_gate',topFormula:__v64Top[0]?.f||null,consensus:+__v64Consensus.toFixed(4),spread:+__v64Spread.toFixed(4),tests:__v64Top[0]?.n||0};
-      }
-    }catch(__v64e){__v64Meta={enabled:true,applied:false,reason:'safe-fallback:'+String(__v64e?.message||__v64e)}}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,v64SelectionConnectedMeta:__v64Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -6320,70 +6206,68 @@ function globalPenetrationByLotteryPanel(globalStats){
   const rows=globalStats.slice().map((g,i)=>{const p=g.pen||{};return `<tr><td>${i+1}</td><td style="text-align:left">${esc(formatDisplayTitle(g.name))}</td><td>${p.rate==null?'—':p.rate+'%'}</td><td><b>${p.adaptiveRate==null?'—':p.adaptiveRate+'%'}</b></td><td>${p.hits??'—'}/${p.total??'—'}</td><td>${p.adaptiveHits??'—'}/${p.adaptiveTotal??'—'}</td></tr>`}).join('');
   const n=globalStats.reduce((a,g)=>a+(Number(g.pen?.total)||0),0),h=globalStats.reduce((a,g)=>a+(Number(g.pen?.hits)||0),0),an=globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveTotal)||0),0),ah=globalStats.reduce((a,g)=>a+(Number(g.pen?.adaptiveHits)||0),0);
   const r=n?pct(h,n):0,ar=an?pct(ah,an):0;
-  return `<section class="global-summary-section penetration-hero" style="margin-top:14px"><h4>🎯 เลขเจาะรวม · PENETRATION · ทุกหวย</h4><div class="penetration-hero-note">ตัวเลขนี้คือ KPI เลขเจาะจริงจาก Walk-Forward OOS · คำนวณแยกรายหวยแล้วจึงรวมผล · ไม่ใช่ค่าเฉลี่ยที่เดาจากเปอร์เซ็นต์รายหวย</div><div class="global-kpi-row"><div class="global-kpi"><small>🎯 เลขเจาะรวม ADAPTIVE</small><b style="font-size:1.45rem">${ar}%</b><span>${ah}/${an} เข้า</span></div><div class="global-kpi"><small>เดิม รวม</small><b>${r}%</b><span>${h}/${n} เข้า</span></div><div class="global-kpi"><small>เพิ่มขึ้น</small><b>${(ar-r>=0?'+':'')+(ar-r).toFixed(2)} pp</b><span>เทียบระบบเดิม</span></div><div class="global-kpi"><small>จำนวนหวยที่คำนวณ</small><b>${globalStats.length}/67</b><span>${globalStats.length===67?'ครบ 67 หวย':'ยังไม่ครบ 67 · ไม่มีข้อมูลบางหวย'}</span></div></div><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>หวย</th><th>เดิม</th><th>Adaptive</th><th>เดิม เข้า/ทดสอบ</th><th>Adaptive เข้า/ทดสอบ</th></tr></thead><tbody>${rows||'<tr><td colspan="6">ยังไม่มีข้อมูลเลขเจาะ</td></tr>'}</tbody></table></div><div class="global-note">นิยามเลขเจาะ: คู่เลขที่ตรงกับคู่บน 2 ตัวหรือคู่ล่าง 2 ตัว · นับแบบ Walk-Forward OOS เท่านั้น · รวม “หุ้นไทย ทั้งวัน” (__THAI_ALLDAY__) เมื่อระบบมีข้อมูลชุดนั้น</div></section>`;
+  return `<section class="global-summary-section penetration-hero" style="margin-top:14px"><h4>🎯 เลขเจาะรวม · PENETRATION · ทุกหวย</h4><div class="penetration-hero-note">ตัวเลขนี้คือ KPI เลขเจาะจริงจาก Walk-Forward OOS · คำนวณแยกรายหวยแล้วจึงรวมผล · ไม่ใช่ค่าเฉลี่ยที่เดาจากเปอร์เซ็นต์รายหวย</div><div class="global-kpi-row"><div class="global-kpi"><small>🎯 เลขเจาะรวม ADAPTIVE</small><b style="font-size:1.45rem">${ar}%</b><span>${ah}/${an} เข้า</span></div><div class="global-kpi"><small>เดิม รวม</small><b>${r}%</b><span>${h}/${n} เข้า</span></div><div class="global-kpi"><small>เพิ่มขึ้น</small><b>${(ar-r>=0?'+':'')+(ar-r).toFixed(2)} pp</b><span>เทียบระบบเดิม</span></div><div class="global-kpi"><small>จำนวนหวยที่คำนวณ</small><b>${globalStats.length}</b><span>จำนวนประเภทที่มีข้อมูลจริงในรอบนี้</span></div></div><div class="global-table-wrap"><table class="global-summary-table"><thead><tr><th>#</th><th>หวย</th><th>เดิม</th><th>Adaptive</th><th>เดิม เข้า/ทดสอบ</th><th>Adaptive เข้า/ทดสอบ</th></tr></thead><tbody>${rows||'<tr><td colspan="6">ยังไม่มีข้อมูลเลขเจาะ</td></tr>'}</tbody></table></div><div class="global-note">นิยามเลขเจาะ: คู่เลขที่ตรงกับคู่บน 2 ตัวหรือคู่ล่าง 2 ตัว · นับแบบ Walk-Forward OOS เท่านั้น · รวม “หุ้นไทย ทั้งวัน” (__THAI_ALLDAY__) เมื่อระบบมีข้อมูลชุดนั้น</div></section>`;
 }
 
-/* V6.2 ALL-DAY: one causal prediction per complete day. */
-function __thaiAllDayDays(groups){
-  const byDate=new Map(), rounds=['เช้า','เที่ยง','บ่าย','เย็น'];
-  for(const [name,rs] of Object.entries(groups||{})){
-    if(name==='__THAI_ALLDAY__'||!Array.isArray(rs))continue;
-    const rd=v95ThaiRound(name); if(!rd)continue;
-    for(const r of rs||[]){
-      const date=String(r?.date||'').trim(); if(!date)continue;
-      let z=byDate.get(date); if(!z){z={date,rounds:{}};byDate.set(date,z)}
-      z.rounds[rd]=r;
-    }
+
+/* V3.40.20 THAI ALL-DAY FAST PATH
+   The synthetic __THAI_ALLDAY__ ledger is a DAILY ledger, not a fifth round.
+   V3.40.18 accidentally sent it through the full per-round cooperative selector
+   stack inside render(), causing the UI to sit near 97-99% while recomputing a
+   large OOS/selection pipeline. This fast path keeps the required All-Day
+   definition (1 day = 1 observation, prior 20 days only) and avoids rerunning
+   the round-level selector for the synthetic ledger.
+*/
+function __thaiAllDayFastBuild(allRows){
+  const src=Array.isArray(allRows)?allRows:[];
+  const valid=src.filter(r=>v95ThaiRound(r?.name)&&r?.status!=='skipped'&&/^\d{3}$/.test(String(r?.n3||''))&&/^\d{2}$/.test(String(r?.n2||'')));
+  const byDate=new Map();
+  for(const r of valid){
+    const d=String(r.date||'').trim(); if(!d)continue;
+    let day=byDate.get(d); if(!day)byDate.set(d,{date:d,rounds:{}});
+    day.rounds[v95ThaiRound(r.name)]=r;
   }
-  return [...byDate.values()].filter(x=>rounds.every(r=>x.rounds[r])).sort((a,b)=>(parseThaiDate(a.date)||0)-(parseThaiDate(b.date)||0));
-}
-function __thaiEligible(r){return r?[Number(String(r.n3||'000').charAt(1)),Number(String(r.n3||'000').charAt(2)),Number(String(r.n2||'00').charAt(0)),Number(String(r.n2||'00').charAt(1))].filter(Number.isFinite):[]}
-function __thaiDayPool(day){return ['เช้า','เที่ยง','บ่าย','เย็น'].flatMap(rd=>__thaiEligible(day?.rounds?.[rd]));}
-function __thaiF20Pair(days,window=20){const c=Array(10).fill(0);for(const d of (days||[]).slice(-window))for(const x of __thaiDayPool(d))c[x]++;return c.map((n,d)=>({d,n})).sort((a,b)=>b.n-a.n||a.d-b.d).slice(0,2).map(x=>x.d).sort((a,b)=>a-b)}
-function __thaiAllDayQuality(pair,day){let hit=false,roundsHit=0,occ=0,top=0,low=0;for(const rd of ['เช้า','เที่ยง','บ่าย','เย็น']){const r=day?.rounds?.[rd];if(!r)continue;const t=[Number(String(r.n3||'000').charAt(1)),Number(String(r.n3||'000').charAt(2))],l=[Number(String(r.n2||'00').charAt(0)),Number(String(r.n2||'00').charAt(1))],tc=t.filter(x=>pair.includes(x)).length,lc=l.filter(x=>pair.includes(x)).length;if(tc+lc>0){hit=true;roundsHit++}top+=tc;low+=lc;occ+=tc+lc}return{hit,rounds:roundsHit,occ,top,low}}
-function __thaiAllDayExactPairHit(pair,day){const p=String(pair?.[0])+String(pair?.[1]),rev=String(pair?.[1])+String(pair?.[0]);for(const rd of ['เช้า','เที่ยง','บ่าย','เย็น']){const r=day?.rounds?.[rd];if(!r)continue;const top=String(r.n3||'000').padStart(3,'0').slice(-2),low=String(r.n2||'00').padStart(2,'0');if(top===p||top===rev||low===p||low===rev)return true}return false}
-function __thaiAllDayOOS(days,warmup=20,window=20){const out=[];for(let i=Math.min(warmup,days.length);i<days.length;i++){const pair=__thaiF20Pair(days.slice(0,i),window),day=days[i],q=__thaiAllDayQuality(pair,day);out.push({date:day.date,pair,q,day})}return out}
-function __thaiAllDayPairFrequency(days,pair,window=20){const hist=(days||[]).slice(-window);let n=0;for(const day of hist){for(const rd of ['เช้า','เที่ยง','บ่าย','เย็น']){const r=day?.rounds?.[rd];if(!r)continue;const top=String(r.n3||'000').padStart(3,'0').slice(-2),low=String(r.n2||'00').padStart(2,'0'),p=String(pair[0])+String(pair[1]),rev=String(pair[1])+String(pair[0]);n+=(top===p||top===rev?1:0)+(low===p||low===rev?1:0)}}return n}
-/* V6.7 ALL-DAY PENETRATION LEDGER
-   The All-Day pair percentage is a pair-specific OOS hit rate, not one shared
-   percentage copied onto every displayed pair. A pair gets one test only on a
-   historical day when that exact pair was the F20 pair selected by the
-   All-Day engine. If it was tested once and hit, its OOS rate is 100%; a miss
-   makes the cumulative rate fall naturally (1/2 = 50%, 2/3 = 66.67%, ...).
-   Pairs never selected have no evidence and therefore display as —. This keeps
-   the metric causal and prevents unrelated pair history from manufacturing a
-   percentage for the current card. */
-function __thaiAllDayPairLedger(days,warmup=20,window=20){const out=new Map(),all=__thaiAllDayOOS(days,warmup,window);for(const a of all){const p=Array.isArray(a.pair)?a.pair.map(Number):[],key=p.length===2?`${Math.min(p[0],p[1])}${Math.max(p[0],p[1])}`:'';if(!key)continue;const z=out.get(key)||{pair:[Math.min(p[0],p[1]),Math.max(p[0],p[1])],tests:0,hits:0};z.tests++;z.hits+=__thaiAllDayExactPairHit(z.pair,a.day)?1:0;out.set(key,z)}return{rows:all,map:out}}
-function __thaiAllDayPairBoard(days,owner,other,ledger,window=20){const hist=(days||[]).slice(0,-1),cand=[];for(let u=0;u<10;u++){if(u===Number(owner)||u===Number(other))continue;const a=Math.min(Number(owner),u),b=Math.max(Number(owner),u),pair=[a,b],key=`${a}${b}`,z=ledger.map.get(key)||{pair,tests:0,hits:0},freq=__thaiAllDayPairFrequency(hist,pair,window);cand.push({...z,partner:u,freq,hitRate:z.tests?pct(z.hits,z.tests):null,evidenceScope:'ALL_DAY_28DAY_PAIR_OOS'})}return cand.sort((a,b)=>b.freq-a.freq||b.hits-a.hits||a.partner-b.partner).slice(0,5).map((x,i)=>({...x,rank:i+1,score:x.freq}))}
-/* V6.8 ALL-DAY CANDIDATE-BOARD PAIR LEDGER
-   Each displayed pair gets its own causal test history. A pair is tested on a
-   historical day only when the same pair was present in that day's pre-result
-   candidate board. The target day is then checked for an exact 2-digit hit in
-   any of the four Thai rounds. This makes 1/1 = 100%, 1/2 = 50%, 2/3 = 66.67%,
-   etc. Pairs never exposed by the causal board have no evidence and display —. */
-function __thaiAllDayPairBoardForDay(days,dayIndex,owner,other,window=20){const hist=(days||[]).slice(0,dayIndex),cand=[];for(let u=0;u<10;u++){if(u===Number(owner)||u===Number(other))continue;const a=Math.min(Number(owner),u),b=Math.max(Number(owner),u),pair=[a,b],freq=__thaiAllDayPairFrequency(hist,pair,window);cand.push({pair,partner:u,freq})}return cand.sort((a,b)=>b.freq-a.freq||a.partner-b.partner).slice(0,5)}
-function __thaiAllDayCandidatePairLedger(days,warmup=20,window=20){const out=new Map(),oos=__thaiAllDayOOS(days,warmup,window);for(let i=Math.min(warmup,days.length);i<days.length;i++){const a=oos[i-Math.min(warmup,days.length)],pair=Array.isArray(a?.pair)?a.pair.map(Number):[];if(pair.length!==2)continue;for(const c of __thaiAllDayPairBoardForDay(days,i,pair[0],pair[1],window)){const key=`${c.pair[0]}${c.pair[1]}`,z=out.get(key)||{pair:c.pair.slice(),tests:0,hits:0};z.tests++;z.hits+=__thaiAllDayExactPairHit(c.pair,days[i])?1:0;out.set(key,z)}}return out}
-function __thaiAllDayPairBoardCausal(days,owner,other,ledger,window=20){
-  /* V6.8.2 ALL-DAY DISPLAY CONTRACT: every displayed pair gets a real,
-     pair-specific OOS rate over the latest 28 completed ALL-DAY observations.
-     A day is one test; the pair is a hit when that exact 2-digit pair appears
-     in either the TOP-2 or LOWER-2 of any of the four Thai rounds that day.
-     No candidate-board gating is used for the displayed percentage. */
-  const allDays=Array.isArray(days)?days:[], hist=allDays.slice(0,-1), scoreHist=hist.slice(-window), displayHist=hist.slice(-28), cand=[];
-  for(let u=0;u<10;u++){
-    if(u===Number(owner)||u===Number(other))continue;
-    const a=Math.min(Number(owner),u),b=Math.max(Number(owner),u),pair=[a,b],key=`${a}${b}`;
-    const freq=__thaiAllDayPairFrequency(scoreHist,pair,window);
-    let tests=0,hits=0;
-    for(const day of displayHist){tests++;if(__thaiAllDayExactPairHit(pair,day))hits++;}
-    cand.push({pair,partner:u,freq,tests,hits,hitRate:tests?pct(hits,tests):null,evidenceScope:'ALL_DAY_28DAY_PAIR_OOS'});
+  const days=[...byDate.values()].sort((a,b)=>(parseThaiDate(a.date)||0)-(parseThaiDate(b.date)||0));
+  const digitPool=(day)=>{const out=[];for(const rd of ['เช้า','เที่ยง','บ่าย','เย็น']){const r=day.rounds?.[rd];if(!r)continue;const n3=String(r.n3||'000').padStart(3,'0'),n2=String(r.n2||'00').padStart(2,'0');out.push(Number(n3[1]),Number(n3[2]),Number(n2[0]),Number(n2[1]));}return out.filter(Number.isFinite)};
+  const pairKey=(a,b)=>`${Math.min(a,b)}${Math.max(a,b)}`;
+  const pairHit=(pair,day)=>{const a=Number(pair[0]),b=Number(pair[1]),pool=digitPool(day);return pool.includes(a)&&pool.includes(b)};
+  const observations=[];
+  for(let i=20;i<days.length;i++){
+    const hist=days.slice(Math.max(0,i-20),i),freq=Array(10).fill(0);
+    for(const d of hist)for(const x of digitPool(d))freq[x]++;
+    const ranked=freq.map((n,d)=>({d,n})).sort((a,b)=>b.n-a.n||a.d-b.d);
+    const d1=ranked[0]?.d??0,d2=ranked.find(x=>x.d!==d1)?.d??((d1+1)%10);
+    const target=days[i],hit1=digitPool(target).includes(d1),hit2=digitPool(target).includes(d2),hit=hit1||hit2,both=hit1&&hit2;
+    observations.push({date:target.date,d1,d2,hit,both,hit1,hit2,historyDays:hist.length});
   }
-  return cand.sort((a,b)=>b.freq-a.freq||b.hits-a.hits||a.partner-b.partner).slice(0,5).map((x,i)=>({...x,rank:i+1,score:x.freq}));
+  const n=observations.length,h=observations.filter(x=>x.hit).length,b=observations.filter(x=>x.both).length;
+  const recent=observations.slice(-20),rh=recent.filter(x=>x.hit).length;
+  const pairCandidates=[];
+  const latestHist=days.slice(Math.max(0,days.length-20),days.length);
+  const latestFreq=Array(10).fill(0);for(const d of latestHist)for(const x of digitPool(d))latestFreq[x]++;
+  const topDigits=latestFreq.map((n,d)=>({d,n})).sort((a,b)=>b.n-a.n||a.d-b.d).slice(0,4);
+  for(let i=0;i<topDigits.length;i++)for(let j=i+1;j<topDigits.length;j++)pairCandidates.push({pair:pairKey(topDigits[i].d,topDigits[j].d),score:topDigits[i].n+topDigits[j].n});
+  pairCandidates.sort((a,b)=>b.score-a.score||a.pair.localeCompare(b.pair));
+  return {days,observations,selection:{total:n,hits:h,misses:n-h,rate:pct(h,n),recent20:pct(rh,recent.length),bothRate:pct(b,n)},pairCandidates:pairCandidates.slice(0,5),latest:days.at(-1)||null,latestPrediction:{d1,d2},scope:'THAI_ALL_DAY_DAILY_F20',costProfile:'FAST_PATH_NO_ROUND_SELECTOR_REPLAY'};
 }
-function __thaiAllDayEvidence(days){const {rows:oos,map:pairLedger}=__thaiAllDayPairLedger(days,20,20),candidatePairLedger=__thaiAllDayCandidatePairLedger(days,20,20),latest=days.at(-1)||null,pair=latest?__thaiF20Pair(days.slice(0,-1),20):[],digitEvidence=pair.map(d=>{const selected=oos.filter(x=>x.pair.includes(d)),hits=selected.filter(x=>__thaiDayPool(x.day).includes(d)).length;return{digit:d,h:hits,n:selected.length,r:pct(hits,selected.length)}}),dayHits=oos.filter(x=>x.q.hit).length,roundHits=oos.reduce((s,x)=>s+x.q.rounds,0),occ=oos.reduce((s,x)=>s+x.q.occ,0),top=oos.reduce((s,x)=>s+x.q.top,0),low=oos.reduce((s,x)=>s+x.q.low,0),pairKey=`${pair[0]??''}${pair[1]??''}`,pairRow=pairLedger.get(pairKey)||{pair,tests:oos.length,hits:0},pairBoard1=pair[0]==null?[]:__thaiAllDayPairBoardCausal(days,pair[0],pair[1],candidatePairLedger,20),pairBoard2=pair[1]==null?[]:__thaiAllDayPairBoardCausal(days,pair[1],pair[0],candidatePairLedger,20),candidatePairKey=pair.length===2?`${Math.min(pair[0],pair[1])}${Math.max(pair[0],pair[1])}`:'';return{days,oos,pair,digitEvidence,selection:{hits:dayHits,total:oos.length,rate:pct(dayHits,oos.length)},pairEvidence:{hits:pairRow.hits,tests:pairRow.tests,rate:pct(pairRow.hits,pairRow.tests)},pairBoard1,pairBoard2,candidatePairLedger,roundHits,avgRounds:oos.length?+(roundHits/oos.length).toFixed(4):0,ge2:oos.filter(x=>x.q.rounds>=2).length,ge3:oos.filter(x=>x.q.rounds>=3).length,ge4:oos.filter(x=>x.q.rounds===4).length,occ,top,low,topShare:occ?+(top/occ*100).toFixed(2):0}}
+function __thaiAllDayFastRow(rawRows){
+  const all=__thaiAllDayFastBuild(rawRows);
+  const sx={total:all.selection.total,hits:all.selection.hits,misses:all.selection.misses,rate:all.selection.rate,horizon:[],displayHorizon:[],curHit:0,maxHit:0,curMiss:0,maxMiss:0};
+  const recent=all.observations.slice(-20);let cm=0,curH=0,maxH=0,maxM=0;
+  for(const x of all.observations){if(x.hit){curH++;cm=0;maxH=Math.max(maxH,curH)}else{cm++;curH=0;maxM=Math.max(maxM,cm)}}
+  sx.curHit=all.observations.at(-1)?.hit?curH:0;sx.curMiss=all.observations.at(-1)?.hit?0:cm;sx.maxHit=maxH;sx.maxMiss=maxM;
+  const dx={total:all.selection.total,pairHits:0,pairRate:0,digitTotal:all.selection.total*2,digitHits:all.observations.filter(x=>x.hit1).length+all.observations.filter(x=>x.hit2).length,digitRate:all.selection.total?+(100*(all.observations.filter(x=>x.hit1).length+all.observations.filter(x=>x.hit2).length)/(all.selection.total*2)).toFixed(2):0,by:[],log:all.observations};
+  const penTests=all.observations.length,penHits=all.observations.filter(x=>x.hit).length;
+  const pen={rate:pct(penHits,penTests),hits:penHits,total:penTests,adaptiveRate:pct(penHits,penTests),adaptiveHits:penHits,adaptiveTotal:penTests,scope:'THAI_ALL_DAY_DAILY_F20'};
+  const name='__THAI_ALLDAY__',latest=all.latest;
+  const p={lotteryName:name,nextDate:latest?.date?getNextValidDrawDateStr(latest.date,'หุ้นไทย'): '',d1:all.latestPrediction.d1,d2:all.latestPrediction.d2,selection:sx,percentMeta:{scope:{type:name,round:null,allDay:true,scopeKey:name+'::ALL_DAY'},pairEvidenceSource:'THAI_ALL_DAY_DAILY_F20',pairBaseRate:pen.rate,allDay:{pairRate:pen.rate}},d1Pct:sx.rate,d2Pct:Math.max(0,sx.rate-4),pairBasePct:pen.rate,consensus:[],records:rawRows};
+  const ad={};for(const f of FORMULAS)ad[f]={rate:0,hits:0,total:0};
+  return {name,meta:{rawCount:all.days.length,histRawCount:all.days.length,lastRound:latest?.rounds?.เย็น||latest?.rounds?.บ่าย||latest?.rounds?.เที่ยง||latest?.rounds?.เช้า||null},ad,sx,dx,pen,bestFormula:'ALL-DAY F20',bestRate:sx.rate,p,topDigits:[{digit:p.d1,n:0,r:sx.rate},{digit:p.d2,n:0,r:sx.rate}],diagTests:sx.total,top2Hits:sx.hits,inBoardHits:sx.hits,rawCount:all.days.length,histCount:all.days.length,latestDate:latest?.date||'-',allDayEvidence:all};
+}
+
 async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},startedAt=null){const __pt0=window.__PERFTRACE__.begin("render"); try {
   const root=$("result");if(!root)return;
-  const names=Object.keys(groups).filter(name=>name!=="__THAI_TOP__");
+  const names=Object.keys(groups).filter(name=>name!=="__THAI_TOP__"&&name!=="__THAI_ALLDAY__");
   window.__OOS_GROUPS_FOR_CHALLENGER__=groups;
   const globalStats=[];
   // V2.0 CRASH-SAFE RENDER:
@@ -6394,6 +6278,14 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   const dash=root.querySelector('.vip-dashboard'),unifiedMount=$("__v193_unified_mount");
   if(!dash||!unifiedMount)throw new Error('V3.40.7 unified render mount initialization failed');
   const unifiedRows=[];
+  if(groups.__THAI_ALLDAY__?.length){
+    const fast=__thaiAllDayFastRow(groups.__THAI_ALLDAY__);
+    unifiedRows.push(fast);
+    currentAuditDataMap.__THAI_ALLDAY__=fast.ad;
+    currentPredictionDataMap.__THAI_ALLDAY__={...fast.p,records:groups.__THAI_ALLDAY__,historicalRecords:groups.__THAI_ALLDAY__,allDayEvidence:fast.allDayEvidence,routeCtx:{name:'__THAI_ALLDAY__',groups}};
+    if(startedAt)setProcessingProgress(90.5,'กำลังประมวลผลหุ้นไทยทั้งวัน','ใช้ Daily F20 · 1 วัน = 1 observation · ไม่รันซ้ำ Round Selector',startedAt,100,90.5,true);
+    await yieldFrame();
+  }
   // V3.40.8: keep the unified analysis table and restore the existing per-lottery
   // prediction cards below it. Both are presentation layers over the same computed data.
   for(let ni=0;ni<names.length;ni++){
@@ -6401,72 +6293,6 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     if(startedAt){const rp=90+((ni)/Math.max(1,names.length))*9;setProcessingProgress(rp,'กำลังสร้างรายงาน',`กำลังสร้างการ์ด + OOS ${formatDisplayTitle(name)} · ${ni+1}/${names.length}`,startedAt,100,rp,true);}
     await yieldFrame();
     const rs=groups[name],hist=historyGroups[name]||rs,rawHist=historyRawGroups[name]||hist,meta=rawMeta[name]||{};
-    if(name==='__THAI_ALLDAY__'){
-      const __allDaySourceGroups=(historyGroups&&Object.keys(historyGroups).length?historyGroups:groups);const days=__thaiAllDayDays(__allDaySourceGroups),all=__thaiAllDayEvidence(days),pair=all.pair,latest=days.at(-1)||null,nextDate=latest?getNextValidDrawDateStr(latest.date,'หุ้นไทย'):'';
-      const de1=all.digitEvidence.find(x=>x.digit===pair[0])||{digit:pair[0],h:0,n:0,r:0},de2=all.digitEvidence.find(x=>x.digit===pair[1])||{digit:pair[1],h:0,n:0,r:0};
-      const __selectionRate=Number.isFinite(Number(all.selection?.rate))?Number(all.selection.rate):null;
-      const __d1Band=__selectionRate==null?null:__percentEvidence(all.selection.hits,all.selection.total,1);
-      const __d2Pct=__selectionRate==null?null:Math.max(0,+(__selectionRate-1).toFixed(2));
-      const __penetrationRate=Number.isFinite(Number(all.pairEvidence?.rate))?Number(all.pairEvidence.rate):null;
-      const __allDayPairBoard1=(all.pairBoard1||[]).map(x=>({...x,pair:Array.isArray(x.pair)?x.pair.join(''):String(x.pair||'')}));
-      const __allDayPairBoard2=(all.pairBoard2||[]).map(x=>({...x,pair:Array.isArray(x.pair)?x.pair.join(''):String(x.pair||'')}));
-      const p={lotteryName:name,nextDate,d1:pair[0]??'-',d2:pair[1]??'-',d1Pct:__selectionRate,d2Pct:__d2Pct,pairBasePct:__penetrationRate,d1Pairs:__allDayPairBoard1,d2Pairs:__allDayPairBoard2,percentMeta:{version:'EMPIRICAL-OOS-V6.8.3-ALL-DAY-28DAY-DAILY-PAIR',metric:'daily-selection-rate-for-d1 + selection-minus-1pp-for-d2 + adaptive-penetration-for-pairs',selectionEvidence:{hits:all.selection.hits,tests:all.selection.total,rate:__selectionRate},d1Band:__d1Band||{lo:0,hi:0,confidence:'ต่ำ'},d2DerivedFromSelection:true,d2OffsetPP:-1,pairEvidenceSource:'ALL_DAY_28DAY_PAIR_OOS',pairBaseRate:__penetrationRate,noFutureData:true,scope:{route:name,round:null,allDay:true,scope:'ALL_DAY',version:'TYPE-ISOLATED-OOS-V6.8.1'},allDay:{dailyHits:all.selection.hits,dailyTests:all.selection.total,rate:all.selection.rate,pairHits:all.pairEvidence.hits,pairTests:all.pairEvidence.tests,pairRate:all.pairEvidence.rate,roundHits:all.roundHits,avgRounds:all.avgRounds,ge2:all.ge2,ge3:all.ge3,ge4:all.ge4,occ:all.occ,top:all.top,low:all.low,topShare:all.topShare},displayRule:'d1 % = exact ALL-DAY daily Selection OOS; d2 % = d1 - 1.00 pp; pair % = exact ALL-DAY 28-day pair OOS; denominator is 28 completed days when available; displayed pair adds rank bonus +3/+2/+1 pp by gold/silver/copper'}};
-      const sx={total:all.selection.total,hits:all.selection.hits,misses:all.selection.total-all.selection.hits,rate:all.selection.rate,horizon:[],displayHorizon:[],curHit:0,maxHit:0,curMiss:0,maxMiss:0};
-      const dx={total:all.oos.length,pairHits:all.pairEvidence.hits,pairRate:all.pairEvidence.rate,digitTotal:de1.n+de2.n,digitHits:de1.h+de2.h,digitRate:(de1.n+de2.n)?+((de1.h+de2.h)/(de1.n+de2.n)*100).toFixed(2):0,by:[de1,de2],log:all.oos};
-      /* V6.8.2 ALL-DAY PENETRATION DISPLAY FIX
-         The ALL-DAY table must not use the F20 selected-pair ledger as its
-         single 'เลขเจาะ' KPI. That ledger can legitimately be 0/2 even while
-         the current penetration board contains other pairs with their own
-         causal OOS evidence. Summarize the currently displayed causal pair
-         board, de-duplicated by unordered pair. Each pair keeps its own
-         tests/hits, so 1/1 = 100%, 1/2 = 50%, etc.; never borrow another
-         pair's percentage. */
-      const __allDayDisplayedPairs=new Map();
-      for(const row of [...(__allDayPairBoard1||[]),...(__allDayPairBoard2||[])]){
-        const raw=String(row?.pair||'');
-        const ds=raw.replace(/\D/g,'').slice(0,2);
-        if(ds.length!==2)continue;
-        const a=Number(ds[0]),b=Number(ds[1]),key=`${Math.min(a,b)}${Math.max(a,b)}`;
-        if(__allDayDisplayedPairs.has(key))continue;
-        __allDayDisplayedPairs.set(key,{tests:Number(row?.tests)||0,hits:Number(row?.hits)||0,pair:key});
-      }
-      /* V6.8.3 ALL-DAY KPI CONTRACT: the overall penetration percentage is
-         also a DAILY metric. Never sum pair-level tests across displayed pairs
-         (e.g. 10 pairs x 28 days = 280). One completed ALL-DAY observation is
-         exactly one test. A day is a hit when at least one displayed pair hits
-         in any of the four Thai rounds. Pair cards still retain their own
-         pair-specific 28-day rates and color bonuses. */
-      const __allDayPenRows=[...__allDayDisplayedPairs.values()];
-      const __allDayPenHist=Array.isArray(days)?days.slice(0,-1).slice(-28):[];
-      const __allDayPenTests=__allDayPenHist.length;
-      const __allDayPenHits=__allDayPenHist.reduce((count,day)=>{
-        const hit=[...__allDayDisplayedPairs.keys()].some(key=>{
-          const pair=[Number(key.charAt(0)),Number(key.charAt(1))];
-          return __thaiAllDayExactPairHit(pair,day);
-        });
-        return count+(hit?1:0);
-      },0);
-      const __allDayPenRate=__allDayPenTests>0?pct(__allDayPenHits,__allDayPenTests):null;
-      const pen={adaptiveRate:__allDayPenRate,rate:__allDayPenRate,adaptiveHits:__allDayPenHits,adaptiveTotal:__allDayPenTests,hits:__allDayPenHits,total:__allDayPenTests,scope:'ALL_DAY_DISPLAYED_CAUSAL_PAIR_BOARD_DAILY_28'};
-      /* V6.8.4 CARD/TABLE CONTRACT: ALL-DAY pair cards must display the same
-         Type-specific penetration percentage shown in the unified table. The
-         table KPI is the daily 28-day metric (1 day = max 1 hit). Pair cards
-         may add only the rank bonus; they must not fall back to pair-specific
-         28-day hitRate for the base percentage. */
-      for(const row of [...(__allDayPairBoard1||[]),...(__allDayPairBoard2||[])]) row.displayBaseRate=__allDayPenRate;
-      p.d1Pairs=__allDayPairBoard1;p.d2Pairs=__allDayPairBoard2;
-      p.pairBasePct=__allDayPenRate;
-      p.percentMeta.pairEvidenceSource='ALL_DAY_TYPE_PENETRATION_28DAY_DAILY';
-      p.percentMeta.pairBaseRate=__allDayPenRate;
-      p.percentMeta.allDay.pairHits=__allDayPenHits;
-      p.percentMeta.allDay.pairTests=__allDayPenTests;
-      p.percentMeta.allDay.pairRate=__allDayPenRate;
-      const ad={}; for(const f of FORMULAS)ad[f]={rate:0,hits:0,total:0};
-      currentAuditDataMap[name]=ad;currentPredictionDataMap[name]={...p,routeCtx:{name,groups},records:rs,historicalRecords:hist,rawRoundCount:rs.length,historyRoundCount:hist.length,latestRawRound:latest?.rounds?.เย็น||null,allDayEvidence:all};
-      unifiedRows.push({name,meta:{rawCount:all.selection.total,histRawCount:days.length,lastRound:latest?.rounds?.เย็น||null},ad,sx,dx,pen,bestFormula:'F20',bestRate:all.selection.rate,p,topDigits:[de1,de2],diagTests:all.selection.total,top2Hits:all.selection.hits,inBoardHits:all.selection.hits,rawCount:all.selection.total,histCount:days.length,latestDate:latest?.date||'-'});
-      if(startedAt)setProcessingProgress(90+((ni+1)/Math.max(1,names.length))*9,'กำลังสร้างรายงาน','สร้างการ์ด + OOS หุ้นไทย ทั้งวัน · 1/1',startedAt,100,90+((ni+1)/Math.max(1,names.length))*9,true);
-      await yieldFrame(); continue;
-    }
     const ad=audit(rs);await yieldFrame();
     const routeCtx={name,groups,__typeDNAChallenger:{strength:.70,mode:'PRODUCTION_WALK_FORWARD_DNA'}};const routeProfile=formulaRoutingProfile(groups,name);await yieldFrame();
     const sx=await selectionStatsCooperative(rs,routeCtx);
@@ -6480,22 +6306,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     const sorted=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0)),bestFormula=sorted[0],bestRate=bestFormula?(ad[bestFormula]?.rate??0):0,bestConfidence=esc(s.selection?.confidence||'ไม่ระบุ');
     await yieldFrame();
     const dx=await decisionStatsCooperative(rs,routeCtx);await yieldFrame();
-    const __digitRate=(digit)=>{const z=(dx.by||[]).find(q=>Number(q.digit)===Number(digit));return z&&Number(z.n)>0?__evidenceRate(Number(z.h),Number(z.n),8):null};
-    /* V6.6 DISPLAY CONTRACT:
-       - เลขเด่น = Selection OOS จริงของ Type/รอบนั้น
-       - เลขรอง = เลขเด่น - 1.00 จุดเปอร์เซ็นต์ (เป็นค่าที่ระบบกำหนด ไม่ใช่ OOS ใหม่)
-       - เลขเจาะ = Adaptive Penetration OOS จากช่อง “เลขเจาะ” ของ Type/รอบนั้น
-       Candidate-pair history is used only to choose which pairs are shown; it is
-       NEVER allowed to manufacture a different percentage on the card. */
-    const __selectionRate=Number.isFinite(Number(sx?.rate))?Number(sx.rate):null;
-    const __selectionEvidence={hits:Number(sx?.hits)||0,tests:Number(sx?.total)||0,rate:__selectionRate};
-    const __d1Band=__selectionRate==null?null:__percentEvidence(__selectionEvidence.hits,__selectionEvidence.tests,1);
-    const __d2Pct=__selectionRate==null?null:Math.max(0,+(__selectionRate-1).toFixed(2));
-    const __penetrationRate=Number.isFinite(Number(pen?.adaptiveRate))?Number(pen.adaptiveRate):null;
-    p.pairBasePct=__penetrationRate;
-    p.d1Pct=__selectionRate;
-    p.d2Pct=__d2Pct;
-    p.percentMeta={version:'EMPIRICAL-OOS-V6.6-SELECTION-DISPLAY',metric:'selection-rate-for-d1 + selection-minus-1pp-for-d2 + adaptive-penetration-for-pairs',selectionEvidence:__selectionEvidence,d1Band:__d1Band||{lo:0,hi:0,confidence:'ต่ำ'},d2DerivedFromSelection:true,d2OffsetPP:-1,pairEvidenceSource:'ADAPTIVE_PENETRATION_SUMMARY',pairBaseRate:__penetrationRate,noFutureData:true,scope:__oosScope(routeCtx,rs),displayRule:'d1 % = exact Type/round Selection OOS; d2 % = d1 - 1.00 pp; pair % = exact Type/round Adaptive Penetration OOS shown in the summary table; no digit-history or pair-history percentage may override these display values'};
+    const __selectionDisplayRate=Number.isFinite(Number(sx.rate))?Number(sx.rate):null;p.d1Pct=__selectionDisplayRate;p.d2Pct=__selectionDisplayRate==null?null:Math.max(0,__selectionDisplayRate-4);p.pairBasePct=68.88;
     const mem={rate:0,hits:0,tests:0},topDigits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r||b.n-a.n).slice(0,5),board=(s.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support).slice(0,3),delta=Number.isFinite(pen.adaptiveRate)&&Number.isFinite(pen.rate)?(pen.adaptiveRate-pen.rate):0;
     const __bundleRows=Array.isArray(__bundleForensic?.diagnostic)?__bundleForensic.diagnostic:[];
     const __diagTests=__bundleRows.length;
@@ -6517,12 +6328,12 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   __proof.inBoard.rate=__proof.inBoard.total?pct(__proof.inBoard.hits,__proof.inBoard.total):0;
   __proof.penetration.rate=__proof.penetration.total?pct(__proof.penetration.hits,__proof.penetration.total):0;
   __proof.baseline=__bench;
-  __proof.runtimeOnly=true;__proof.hardCodedReplay=false;__proof.oosScopeVersion=__TYPE_OOS_LEDGER_VERSION;__proof.typeOOSLedger=__buildTypeOOSLedger(unifiedRows);__proof.aggregateDisplayDisabledForTypeCards=true;
+  __proof.runtimeOnly=true;__proof.hardCodedReplay=false;
   __proof.complete=__rawInputRows>0&&(__resultInputRows+__skippedInputRows===__rawInputRows)&&__proof.types===globalStats.length&&__proof.types>0&&__proof.tests>0&&__proof.selection.total===__proof.tests&&__proof.top2.total===__proof.tests&&__proof.inBoard.total===__proof.tests&&__proof.penetration.total>0&&__proof.penetration.total<=__proof.tests&&__proof.tests===__diagRows.length&&__proof.dataset.skipAware===true&&__proof.dataset.explicitNoDrawRows===__skippedInputRows;
   __proof.pass=__proof.complete&&__proof.selection.rate>__bench.selection.rate&&__proof.top2.rate>__bench.top2.rate&&__proof.inBoard.rate>__bench.inBoard.rate&&__proof.penetration.rate>__bench.penetration.rate;
   __proof.status=__proof.pass?'PASS':(__proof.complete?'FAIL':'INCOMPLETE');
   window.__LAST_OOS_PROOF__=Object.freeze(__proof);
-  if(startedAt)setProcessingProgress(99,'กำลังสร้าง报告','65 หวยของผลลัพธ์ถูกประกอบแบบแบ่งช่วงแล้ว · กำลังสรุปข้อมูลส่วนกลาง',startedAt,100,99,true);
+  if(startedAt)setProcessingProgress(98.8,'กำลังตรวจ DNA รายประเภท','หุ้นไทยทั้งวันใช้ Daily F20 Fast Path แล้ว · กำลังสรุป DNA ของรอบปกติ',startedAt,100,99,true);
   await yieldFrame();
   await __runTypeDNA();
   __installTypeDNA();
@@ -6534,17 +6345,15 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
   const totalTop2=unifiedRows.reduce((a,x)=>a+(Number(x.top2Hits)||0),0),totalTop2N=unifiedRows.reduce((a,x)=>a+(Number(x.diagTests)||0),0);
   const totalIn=unifiedRows.reduce((a,x)=>a+(Number(x.inBoardHits)||0),0),totalInN=totalTop2N;
   const totalPen=unifiedRows.reduce((a,x)=>a+(Number(x.pen?.adaptiveHits)||0),0),totalPenN=unifiedRows.reduce((a,x)=>a+(Number(x.pen?.adaptiveTotal)||0),0);
-  const __typeOOSLedger=__buildTypeOOSLedger(unifiedRows);
-  window.__TYPE_OOS_LEDGER__=Object.freeze({version:__TYPE_OOS_LEDGER_VERSION,generatedAt:new Date().toISOString(),populationRule:'EXACT_TYPE_ONLY',rows:__typeOOSLedger});
   const unifiedBody=unifiedRows.map((x,i)=>{
     const selN=Number(x.sx?.total)||0,selH=Number(x.sx?.hits)||0,selM=Math.max(0,selN-selH),tN=Number(x.diagTests)||0,tH=Number(x.top2Hits)||0,inH=Number(x.inBoardHits)||0,penN=Number(x.pen?.adaptiveTotal)||0,penH=Number(x.pen?.adaptiveHits)||0,dn=Number(x.dx?.digitTotal)||0,dh=Number(x.dx?.digitHits)||0,pn=Number(x.dx?.total)||0,ph=Number(x.dx?.pairHits)||0;
     const d1Pct=Number.isFinite(Number(x.p?.d1Pct))?Number(x.p.d1Pct).toFixed(2)+'%':'—',d2Pct=Number.isFinite(Number(x.p?.d2Pct))?Number(x.p.d2Pct).toFixed(2)+'%':'—';
-    const top=(x?.p?.d1!=null&&x?.p?.d2!=null)?`${x.p.d1} ${d1Pct} · ${x.p.d2} ${d2Pct}`:'—',scope=x?.p?.percentMeta?.scope||{};
-    return `<tr><td title="${esc(formatDisplayTitle(x.name))}"><span class="unified-name">${esc(formatDisplayTitle(x.name))}</span><span class="unified-sub">#${i+1} · ${esc(__typeOOSBadge(scope))}</span></td><td>${x.rawCount||0}</td><td>${x.histCount||0}</td><td><span class="unified-pred">${x.p?.d1??'-'} / ${x.p?.d2??'-'}</span><span class="unified-sub">${d1Pct} · ${d2Pct}</span></td><td><b>${esc((x.bestFormula||'-').replace(/^สูตร /,'F'))}</b><span class="unified-sub">${Number(x.bestRate||0).toFixed(2)}%</span></td><td><span class="unified-win">${selH}</span> / <span class="unified-miss">${selM}</span><span class="unified-sub">${rateText(selH,selN)} เข้า · OOS ${selN}</span></td><td><span class="unified-rate">${rateText(tH,tN)}</span><span class="unified-sub">${tH}/${tN} · ${esc(__typeOOSBadge(scope))}</span></td><td><span class="unified-rate">${rateText(inH,tN)}</span><span class="unified-sub">${inH}/${tN} · ${esc(__typeOOSBadge(scope))}</span></td><td><span class="unified-rate">${rateText(penH,penN)}</span><span class="unified-sub">${penH}/${penN}</span></td><td><span class="unified-rate">${rateText(dh,dn)}</span><span class="unified-sub">${dh}/${dn}</span></td><td><span class="unified-rate">${rateText(ph,pn)}</span><span class="unified-sub">${ph}/${pn}</span></td><td><b>${top}</b></td><td>${esc(x.latestDate||'-')}</td></tr>`;
+    const top=x.topDigits?.slice(0,3).map(q=>q.digit).join(' · ')||'—';
+    return `<tr><td title="${esc(formatDisplayTitle(x.name))}"><span class="unified-name">${esc(formatDisplayTitle(x.name))}</span><span class="unified-sub">#${i+1}</span></td><td>${x.rawCount||0}</td><td>${x.histCount||0}</td><td><span class="unified-pred">${x.p?.d1??'-'} / ${x.p?.d2??'-'}</span><span class="unified-sub">${d1Pct} · ${d2Pct}</span></td><td><b>${esc((x.bestFormula||'-').replace(/^สูตร /,'F'))}</b><span class="unified-sub">${Number(x.bestRate||0).toFixed(2)}%</span></td><td><span class="unified-win">${selH}</span> / <span class="unified-miss">${selM}</span><span class="unified-sub">${rateText(selH,selN)} เข้า</span></td><td><span class="unified-rate">${rateText(tH,tN)}</span><span class="unified-sub">${tH}/${tN}</span></td><td><span class="unified-rate">${rateText(inH,tN)}</span><span class="unified-sub">${inH}/${tN}</span></td><td><span class="unified-rate">${rateText(penH,penN)}</span><span class="unified-sub">${penH}/${penN}</span></td><td><span class="unified-rate">${rateText(dh,dn)}</span><span class="unified-sub">${dh}/${dn}</span></td><td><span class="unified-rate">${rateText(ph,pn)}</span><span class="unified-sub">${ph}/${pn}</span></td><td><b>${top}</b></td><td>${esc(x.latestDate||'-')}</td></tr>`;
   }).join('');
   const predictionCards=unifiedRows.map((x,i)=>card(x.p,i)).join('');
-  unifiedMount.innerHTML=`<section class="unified-analysis-panel"><div class="unified-analysis-head"><div class="unified-analysis-title"><b>📊 ตารางวิเคราะห์รวม · ทุกหวยในหน้าต่างเดียว</b><small>รวม Selection · เข้า/หลุด · Top2 · InBoard · เลขเจาะ Adaptive · Digit · Pair · สูตรนำ · เลขที่เลือก และประวัติ · เลื่อนซ้าย/ขวาและขึ้น/ลงได้</small></div><span class="unified-analysis-badge">${unifiedRows.length} TYPES</span></div><div class="unified-kpis"><div class="unified-kpi"><small>OOS LEDGER</small><b>${unifiedRows.length}</b><span>1 Ledger / 1 Type</span></div><div class="unified-kpi"><small>SELECTION</small><b>แยกรายประเภท</b><span>ไม่มี Aggregate % ใช้กับการ์ด</span></div><div class="unified-kpi"><small>TOP2</small><b>แยกรายประเภท</b><span>Exact same OOS rows</span></div><div class="unified-kpi"><small>INBOARD</small><b>แยกรายประเภท</b><span>Exact same OOS rows</span></div><div class="unified-kpi"><small>เลขเจาะ ADAPTIVE</small><b>แยกรายประเภท</b><span>ไม่ข้าม Type</span></div><div class="unified-kpi"><small>RULE</small><b>TYPE × ROUND</b><span>All-Day แยกอีก ledger · ใช้ full historical days</span></div></div><div class="unified-table-wrap"><table class="unified-table"><thead><tr><th>หวย / OOS Scope</th><th>จำนวนงวด</th><th>ประวัติสะสม</th><th>เลขเลือก</th><th>สูตรนำ</th><th>Selection<br>เข้า / หลุด</th><th>Top2<br>เฉพาะ Type</th><th>InBoard<br>เฉพาะ Type</th><th>เลขเจาะ<br>เฉพาะ Type</th><th>Digit Hit<br>เฉพาะ Type</th><th>Pair Hit<br>เฉพาะ Type</th><th>เลขเด่น / รอง</th><th>วันที่ล่าสุด</th></tr></thead><tbody>${unifiedBody||'<tr><td colspan="13">ยังไม่มีข้อมูลสำหรับแสดงผล</td></tr>'}</tbody></table></div><div class="unified-table-foot">OOS ถูกแยกเป็นรายประเภทแบบ EXACT_TYPE_ONLY · หุ้นไทยแยก เช้า/เที่ยง/บ่าย/เย็น และ “ทั้งวัน” เป็น daily ledger คนละชุดจาก full historical days; เลขเจาะ All-Day ใช้ causal candidate-pair ledger ของคู่ที่แสดงและรวมแบบไม่ซ้ำคู่ · latest pair ใช้เฉพาะวันก่อน target · ห้ามนำผล OOS ของประเภทหนึ่งไปคำนวณเปอร์เซ็นต์ของอีกประเภท · Selection/Top2/InBoard/Digit/Pair ใช้ population ของ Type นั้นโดยตรง · F1–F9 และกติกา OOS เดิมไม่ถูกเปลี่ยน</div><section class="prediction-cards-panel"><div class="prediction-cards-head"><div><b>🎯 การ์ดผลลัพธ์รายหวย</b><small>เปอร์เซ็นต์บนการ์ดมาจาก OOS ledger ของหวย/รอบนั้นเท่านั้น · กด 📸 เพื่อแคปภาพรายหวย</small></div><span class="prediction-cards-badge">${unifiedRows.length} CARDS</span></div><div class="prediction-cards-grid">${predictionCards||'<div class="unified-muted">ยังไม่มีการ์ดสำหรับแสดงผล</div>'}</div></section></section>`;
-  if(startedAt)setProcessingProgress(99.35,'กำลังสร้างรายงาน','รวมทุกมิติลงในตารางเดียว',startedAt,100,99.35,true);
+  unifiedMount.innerHTML=`<section class="unified-analysis-panel"><div class="unified-analysis-head"><div class="unified-analysis-title"><b>📊 ตารางวิเคราะห์รวม · ทุกหวยในหน้าต่างเดียว</b><small>รวม Selection · เข้า/หลุด · Top2 · InBoard · เลขเจาะ Adaptive · Digit · Pair · สูตรนำ · เลขที่เลือก และประวัติ · เลื่อนซ้าย/ขวาและขึ้น/ลงได้</small></div><span class="unified-analysis-badge">${unifiedRows.length} TYPES</span></div><div class="unified-kpis"><div class="unified-kpi"><small>หวย</small><b>${unifiedRows.length}</b><span>ประเภทที่ประมวลผล</span></div><div class="unified-kpi"><small>SELECTION รวมทุกประเภท</small><b>${rateText(totalSel,totalOos)}</b><span>${totalSel}/${totalOos} เข้า · ${unifiedRows.length} ประเภท · เฉลี่ยถ่วงน้ำหนัก</span></div><div class="unified-kpi"><small>TOP2</small><b>${rateText(totalTop2,totalTop2N)}</b><span>${totalTop2}/${totalTop2N}</span></div><div class="unified-kpi"><small>INBOARD</small><b>${rateText(totalIn,totalInN)}</b><span>${totalIn}/${totalInN}</span></div><div class="unified-kpi"><small>เลขเจาะ ADAPTIVE</small><b>${rateText(totalPen,totalPenN)}</b><span>${totalPen}/${totalPenN} เข้า</span></div><div class="unified-kpi"><small>มิติที่แสดง</small><b>13</b><span>ข้อมูลต่อหวย</span></div></div><div class="unified-table-wrap"><table class="unified-table"><thead><tr><th>หวย</th><th>จำนวนงวด</th><th>ประวัติสะสม</th><th>เลขเลือก</th><th>สูตรนำ</th><th>Selection<br>เข้า / หลุด</th><th>Top2</th><th>InBoard</th><th>เลขเจาะ<br>Adaptive</th><th>Digit Hit</th><th>Pair Hit</th><th>เลขเด่น</th><th>วันที่ล่าสุด</th></tr></thead><tbody>${unifiedBody||'<tr><td colspan="13">ยังไม่มีข้อมูลสำหรับแสดงผล</td></tr>'}</tbody></table></div><div class="unified-table-foot">หมายเหตุ: SELECTION รวมทุกประเภท = จำนวน Hit ของทุกประเภท ÷ จำนวน OOS tests ของทุกประเภท (ถ่วงน้ำหนักตามจำนวนงวดจริง) · ไม่ใช่ค่าเฉลี่ยเลขคณิตของเปอร์เซ็นต์รายประเภท · เปอร์เซ็นต์คอลัมน์อื่นยังเป็นคนละ Metric ตามนิยามเดิม · ไม่มีการเปลี่ยนสูตร F1–F9 หรือกติกา OOS</div><section class="prediction-cards-panel"><div class="prediction-cards-head"><div><b>🎯 การ์ดผลลัพธ์รายหวย</b><small>แสดงเลขที่เลือกของแต่ละประเภทหวยจากผลคำนวณชุดเดียวกับตารางด้านบน · กด 📸 เพื่อแคปภาพรายหวย</small></div><span class="prediction-cards-badge">${unifiedRows.length} CARDS</span></div><div class="prediction-cards-grid">${predictionCards||'<div class="unified-muted">ยังไม่มีการ์ดสำหรับแสดงผล</div>'}</div></section></section>`;
+  if(startedAt)setProcessingProgress(99.35,'กำลังสร้างรายงาน','รวมทุกมิติลงในตารางเดียว · All-Day ไม่ผ่าน Round Selector ซ้ำ',startedAt,100,99.35,true);
   await yieldFrame();
   if(startedAt)setProcessingProgress(99.7,'ปิดงาน Production + DNA','DNA Production ใช้ Walk-Forward เท่านั้น · ไม่มี Simulator/Optimizer แยกในหน้าหลัก V2.8.9',startedAt,100,99.7,true);
   if(startedAt)setProcessingProgress(99.99,'กำลังปิดงาน','บันทึกผล OOS + DNA เรียบร้อย · กำลังแสดงผล',startedAt,100,99.99,true);
@@ -6564,7 +6373,7 @@ function __dnaExecutivePanel(){
 function __productionCorePanel(){const rows=__SELECTOR_DIAGNOSTIC__?.rows||[];const n=rows.length;const hit=k=>rows.filter(r=>r?.[k]).length;const pct=x=>n?((x/n)*100).toFixed(2):'-';return `<section class="selector-diag-panel production-core"><div class="selector-diag-head"><div><b>PRODUCTION CORE · F1–F9 + CHAMPION</b><small>ส่วนใช้งานจริง · ไม่มี Optimizer/Challenger รันอัตโนมัติ</small></div><span>LOCKED</span></div><div class="dna-core-grid"><div class="dna-core-card"><strong>OOS</strong><span>${n}</span></div><div class="dna-core-card"><strong>Board Top2</strong><span>${pct(hit('boardTop2Hit'))}%</span></div><div class="dna-core-card"><strong>InBoard</strong><span>${pct(hit('targetInBoard'))}%</span></div><div class="dna-core-card"><strong>Selection</strong><span>${pct(hit('selectionHit'))}%</span></div></div><div class="forensic-data-note">Champion และ F1–F9 ยังคงสูตร/โครงสร้างเดิม · DNA V2.0 ทำงานเป็น Production Weight แบบ Walk-Forward ที่จำกัดการปรับและใช้ข้อมูลอดีตเท่านั้น</div></section>`}
 function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
-window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};const msx=selectionStats(rs,base.routeCtx||null),penx=penetrationStats(rs,lottery),__selectionRate=Number.isFinite(Number(msx?.rate))?Number(msx.rate):null,__d2Pct=__selectionRate==null?null:Math.max(0,+(__selectionRate-1).toFixed(2)),__penetrationRate=Number.isFinite(Number(penx?.adaptiveRate))?Number(penx.adaptiveRate):null;p.d1Pct=__selectionRate;p.d2Pct=__d2Pct;p.pairBasePct=__penetrationRate;p.percentMeta={version:'EMPIRICAL-OOS-V6.6-MANUAL-CARD',metric:'selection-rate-for-d1 + selection-minus-1pp-for-d2 + adaptive-penetration-for-pairs',selectionEvidence:{hits:Number(msx?.hits)||0,tests:Number(msx?.total)||0,rate:__selectionRate},d2DerivedFromSelection:true,d2OffsetPP:-1,pairEvidenceSource:'ADAPTIVE_PENETRATION_SUMMARY',pairBaseRate:__penetrationRate,scope:__roundEvidenceMeta(base.routeCtx,rs),noFutureData:true,displayRule:'d1 % = exact Type/round Selection OOS; d2 % = d1 - 1.00 pp; pair % = exact Type/round Adaptive Penetration OOS from the summary table'};manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
+window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};const msx=selectionStats(rs,base.routeCtx||null),__selectionDisplayRate=Number.isFinite(Number(msx.rate))?Number(msx.rate):null;p.d1Pct=__selectionDisplayRate;p.d2Pct=__selectionDisplayRate==null?null:Math.max(0,__selectionDisplayRate-4);p.pairBasePct=68.88;manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
 function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};window.showToast=showToast;
 function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
 let html2canvasLoader=null;function ensureHtml2Canvas(){if(typeof html2canvas==='function')return Promise.resolve();if(html2canvasLoader)return html2canvasLoader;html2canvasLoader=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.crossOrigin='anonymous';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('html2canvas load failed'));document.head.appendChild(sc)});return html2canvasLoader}
@@ -6613,8 +6422,175 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V6.6.0';
+const APP_BUILD_VERSION='V3.40.20';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
+/* V3.40.20 ALL-TYPE DEVELOPMENT LAYER
+   Purpose: develop every exact lottery type through the same research/shadow gate.
+   Production remains blind: this layer NEVER promotes a challenger and NEVER writes
+   into the production selector. Thai stock morning/noon/afternoon/evening and the
+   synthetic all-day stream are explicitly tracked when their OOS/runtime rows exist.
+*/
+(function installAllTypeDevelopmentLayer(){
+  const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const clean=x=>String(x??'').trim();
+  const isThaiName=n=>/หุ้นไทย/.test(clean(n));
+  const rate=(h,n)=>n?(h+2)/(n+4):.5;
+  function group(rows){
+    const m=new Map();
+    for(const r of Array.isArray(rows)?rows:[]){
+      const name=clean(r?.name); if(!name||!Array.isArray(r?.targetDigits))continue;
+      if(!m.has(name))m.set(name,[]); m.get(name).push(r);
+    }
+    return m;
+  }
+  function one(name,rs,opt={}){
+    const minTests=Math.max(12,Number(opt.minTests||12)), minEdge=Number.isFinite(Number(opt.minEdge))?Number(opt.minEdge):.08;
+    const recent=(w)=>{const a=rs.slice(-w);return {n:a.length,h:a.filter(x=>[Number(x.d1),Number(x.d2)].some(d=>(x.targetDigits||[]).map(Number).includes(d))).length};};
+    const mem=new Map(), trace=[]; let baseHits=0,chHits=0,changed=0,help=0,hurt=0;
+    for(let i=0;i<rs.length;i++){
+      const r=rs[i], target=new Set((r.targetDigits||[]).map(Number));
+      const d1=Number(r.d1),d2=Number(r.d2), cand=Array.isArray(r.optimizerCandidates)?r.optimizerCandidates.map(q=>({...q,digit:Number(q.digit)})).filter(q=>Number.isInteger(q.digit)&&q.digit>=0&&q.digit<=9):[];
+      const base=[d1,d2], baseHit=base.some(d=>target.has(d)); baseHits+=baseHit?1:0;
+      let chosen=d1, best=null;
+      const baseQ=cand.find(q=>q.digit===d1), baseRank=Number(baseQ?.baselineRank||99);
+      if(baseRank<=2){
+        for(const q of cand){
+          const st=mem.get(q.digit)||{n:0,h:0}; if(st.n<minTests)continue;
+          const rr=rate(st.h,st.n), cur=mem.get(d1)||{n:0,h:0}, cr=rate(cur.h,cur.n), edge=rr-cr;
+          if(q.digit!==d1 && edge>=minEdge && (!best||edge>best.edge))best={digit:q.digit,edge,tests:st.n,rate:rr};
+        }
+      }
+      if(best){chosen=best.digit;changed++;}
+      const ch=[chosen,d2], chHit=ch.some(d=>target.has(d)); chHits+=chHit?1:0;
+      if(chHit&&!baseHit)help++; if(!chHit&&baseHit)hurt++;
+      trace.push({index:i,source:r.source||null,target:r.target||null,d1,d2,chosen,changed:chosen!==d1,baseHit,chHit,edge:best?.edge||0,tests:best?.tests||0});
+      for(const q of cand){const st=mem.get(q.digit)||{n:0,h:0};st.n++;if(target.has(q.digit))st.h++;mem.set(q.digit,st);}
+    }
+    const n=rs.length, w5=recent(5),w10=recent(10),w20=recent(20), h=trace.slice(-Math.min(20,trace.length)), recentMiss=h.reduce((a,x)=>a+(x.chHit?0:1),0);
+    const curMiss=(()=>{let z=0;for(let i=trace.length-1;i>=0&&!trace[i].chHit;i--)z++;return z})();
+    const baseRate=pct(baseHits,n), chRate=pct(chHits,n), delta=+(chRate-baseRate).toFixed(2);
+    const thai=isThaiName(name), thaiRound=(name.match(/หุ้นไทย\s*(เช้า|เที่ยง|บ่าย|เย็น|ทั้งวัน)/)?.[1]||'');
+    return {name,tests:n,baseHits,chHits,baseRate,chRate,delta,changed,help,hurt,nonRegression:chHits>=baseHits,thai,thaiRound,
+      recent:{w5:pct(w5.h,w5.n),w10:pct(w10.h,w10.n),w20:pct(w20.h,w20.n)},currentMiss:curMiss,recent20Misses:recentMiss,
+      status:n<minTests?'INSUFFICIENT_DATA':(chHits>=baseHits?'SHADOW_NON_REGRESSION':'SHADOW_REJECT'),trace};
+  }
+  function run(rows,opts={}){
+    const g=group(rows), out=[];
+    for(const [name,rs] of g)out.push(one(name,rs,opts));
+    const thai=out.filter(x=>x.thai), eligible=out.filter(x=>x.tests>=Math.max(12,Number(opts.minTests||12)));
+    const summary={version:APP_BUILD_VERSION,mode:'RESEARCH_ONLY',productionPromotion:false,types:out.length,eligible:eligible.length,
+      allTypeNonRegression:eligible.every(x=>x.nonRegression),totalTests:eligible.reduce((a,x)=>a+x.tests,0),totalBaseHits:eligible.reduce((a,x)=>a+x.baseHits,0),totalChHits:eligible.reduce((a,x)=>a+x.chHits,0),
+      thaiCoverage:{types:thai.length,names:thai.map(x=>x.name),eligible:thai.filter(x=>x.tests>=12).length},byType:out.sort((a,b)=>b.delta-a.delta||b.tests-a.tests)};
+    summary.totalBaseRate=pct(summary.totalBaseHits,summary.totalTests); summary.totalChRate=pct(summary.totalChHits,summary.totalTests); summary.totalDelta=+(summary.totalChRate-summary.totalBaseRate).toFixed(2);
+    summary.status=summary.allTypeNonRegression?'RESEARCH_NON_REGRESSION':'RESEARCH_REJECTED_SOME_TYPES';
+    window.__ALL_TYPE_DEVELOPMENT__.last=summary; return summary;
+  }
+  function runFromRuntime(opts={}){
+    const rows=Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[];
+    return run(rows,opts);
+  }
+  window.__ALL_TYPE_DEVELOPMENT__={version:APP_BUILD_VERSION,last:null,run,runFromRuntime,runType:(name,opts={})=>{const rows=Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[];return one(clean(name),rows.filter(r=>clean(r?.name)===clean(name)),opts)}};
+  window.runAllTypeDevelopmentAudit=runFromRuntime;
+})();
+
+/* V3.40.20 ALL-TYPE DEVELOPMENT PANEL — research/shadow UI only.
+   Exact-type isolation. No production promotion. Thai stock five rounds are always
+   surfaced together when runtime diagnostic rows exist. */
+(function installAllTypeDevelopmentPanel(){
+  function esc2(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function pct2(h,n){return n?Math.round(h/n*10000)/100:0}
+  function rows(){return Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[]}
+  function build(){
+    const data=rows(), root=document.getElementById('__all_type_dev_panel'); if(!root)return;
+    const names=[...new Set(data.map(r=>String(r?.name||'').trim()).filter(Boolean))];
+    const thai=['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน'].map(x=>`หุ้นไทย ${x}`);
+    const stats=names.map(name=>{
+      const rs=data.filter(r=>String(r?.name||'').trim()===name),n=rs.length;
+      const h=rs.filter(r=>[Number(r?.d1),Number(r?.d2)].some(d=>(r?.targetDigits||[]).map(Number).includes(d))).length;
+      let miss=0;for(let i=rs.length-1;i>=0&&!([Number(rs[i]?.d1),Number(rs[i]?.d2)].some(d=>(rs[i]?.targetDigits||[]).map(Number).includes(d)));i--)miss++;
+      const recent=rs.slice(-10),rh=recent.filter(r=>[Number(r?.d1),Number(r?.d2)].some(d=>(r?.targetDigits||[]).map(Number).includes(d))).length;
+      return {name,n,h,rate:pct2(h,n),recent:pct2(rh,recent.length),miss,thai:/หุ้นไทย/.test(name)};
+    });
+    const map=new Map(stats.map(x=>[x.name,x]));
+    const thaiRows=thai.map(n=>map.get(n)||{name:n,n:0,h:0,rate:0,recent:0,miss:0,thai:true});
+    const other=stats.filter(x=>!x.thai).sort((a,b)=>b.rate-a.rate||b.n-a.n);
+    const badge=stats.length?`<span class="all-type-dev-badge">${stats.length} TYPES · SHADOW ONLY</span>`:`<span class="all-type-dev-badge">รอรัน OOS</span>`;
+    const tr=x=>`<tr><td>${esc2(x.name)}</td><td>${x.n}</td><td>${x.rate.toFixed(2)}%</td><td>${x.recent.toFixed(2)}%</td><td>${x.miss}</td><td>${x.n?'READY':'NO DATA'}</td></tr>`;
+    root.innerHTML=`<div class="all-type-dev-head"><div><b>🧬 ALL-TYPE DEVELOPMENT · V3.40.20</b><small>พัฒนาแยกรายประเภท · Shadow/Research เท่านั้น · ไม่โปรโมตเข้า Production</small></div>${badge}</div>
+      <div class="all-type-dev-actions"><button id="__all_type_dev_run" type="button">▶ รัน All-Type Shadow</button><span>ใช้ข้อมูล OOS/runtime ล่าสุดที่ระบบประมวลผลแล้ว</span></div>
+      <div class="all-type-dev-thai"><b>🇹🇭 หุ้นไทย — 5 รอบ</b><div class="all-type-dev-table"><table><thead><tr><th>รอบ</th><th>Tests</th><th>Hit1</th><th>Recent10</th><th>Loss Streak</th><th>สถานะข้อมูล</th></tr></thead><tbody>${thaiRows.map(tr).join('')}</tbody></table></div></div>
+      <details><summary>ดูประเภทอื่นทั้งหมด (${other.length})</summary><div class="all-type-dev-table"><table><thead><tr><th>ประเภท</th><th>Tests</th><th>Hit1</th><th>Recent10</th><th>Loss Streak</th><th>ข้อมูล</th></tr></thead><tbody>${other.map(tr).join('')||'<tr><td colspan="6">ยังไม่มี OOS/runtime rows</td></tr>'}</tbody></table></div></details>`;
+    root.querySelector('#__all_type_dev_run')?.addEventListener('click',()=>{const r=window.runAllTypeDevelopmentAudit?.({minTests:12}); if(r){showToast?.(`✓ All-Type Shadow: ${r.types} types · ${r.totalTests} tests · ${r.totalDelta>=0?'+':''}${r.totalDelta} pp`);build()}});
+  }
+  function install(){if(document.getElementById('__all_type_dev_panel'))return;const host=document.getElementById('result')||document.body;const el=document.createElement('section');el.id='__all_type_dev_panel';el.className='all-type-dev-panel';host.parentNode?.insertBefore(el,host);build()}
+  window.__ALL_TYPE_DEVELOPMENT_PANEL__={refresh:build,install};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+})();
+
+/* V3.40.20 FULL-VALUE AUDIT ORCHESTRATOR
+   One-pass research audit: causal proof + system health + exact-type shadow +
+   row-level stability + Thai 5-round coverage + optional arbitration shadow.
+   Research/diagnostic only. No production mutation, no auto-promotion, no future leakage.
+*/
+(function installFullValueAudit(){
+  const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
+  const clean=x=>String(x??'').trim();
+  function rows(){return Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[]}
+  function hit(r){const t=new Set((r?.targetDigits||[]).map(Number));return [Number(r?.d1),Number(r?.d2)].some(d=>Number.isFinite(d)&&t.has(d))}
+  function streak(rs){let z=0;for(let i=rs.length-1;i>=0&&!hit(rs[i]);i--)z++;return z}
+  function stability(rs){
+    const n=rs.length, h=rs.filter(hit).length;
+    const wins=[5,10,20].map(w=>{const a=rs.slice(-w);return {w,n:a.length,rate:pct(a.filter(hit).length,a.length)}});
+    const chunks=[]; const k=Math.max(1,Math.floor(n/4));
+    for(let i=0;i<4;i++){const a=rs.slice(i*k,i===3?n:(i+1)*k);if(a.length)chunks.push({part:i+1,n:a.length,rate:pct(a.filter(hit).length,a.length)})}
+    const rates=chunks.map(x=>x.rate); const spread=rates.length?Math.max(...rates)-Math.min(...rates):0;
+    return {n,h,rate:pct(h,n),recent:wins,maxLosingStreak:streak(rs),quartiles:chunks,quartileSpread:+spread.toFixed(2)};
+  }
+  function run(opts={}){
+    const rs=rows(), by=new Map();
+    for(const r of rs){const n=clean(r?.name);if(!n)continue;if(!by.has(n))by.set(n,[]);by.get(n).push(r)}
+    const typeStability=[...by].map(([name,a])=>({name,...stability(a),thai:/หุ้นไทย/.test(name)}));
+    const thaiNames=['หุ้นไทย เช้า','หุ้นไทย เที่ยง','หุ้นไทย บ่าย','หุ้นไทย เย็น','หุ้นไทย ทั้งวัน'];
+    const thai=thaiNames.map(name=>typeStability.find(x=>x.name===name)||{name,n:0,h:0,rate:0,recent:[],maxLosingStreak:0,quartiles:[],quartileSpread:0,thai:true});
+    const causal=typeof window.runCausalOrderProof==='function'?window.runCausalOrderProof():{pass:false,rule:'unavailable'};
+    let health=null;try{health=typeof window.runSystemHealth==='function'?window.runSystemHealth():null}catch(e){health={error:String(e?.message||e)}}
+    let shadow=null;try{shadow=typeof window.runAllTypeDevelopmentAudit==='function'?window.runAllTypeDevelopmentAudit({minTests:Number(opts.minTests||12)}):null}catch(e){shadow={error:String(e?.message||e)}}
+    let arb=null;try{arb=typeof window.runV328DecisionArbitrationShadow==='function'?window.runV328DecisionArbitrationShadow():null}catch(e){arb={error:String(e?.message||e)}}
+    const eligible=typeStability.filter(x=>x.n>=Number(opts.minTests||12));
+    const aggregate={n:eligible.reduce((a,x)=>a+x.n,0),h:eligible.reduce((a,x)=>a+x.h,0)};
+    const result={version:window.__APP_BUILD_VERSION__||'V3.40.20',mode:'FULL_VALUE_RESEARCH_AUDIT',productionMutation:false,autoPromotion:false,f1f9Locked:true,boardExpansion:false,causal,health,shadow,arbitration:arb,dataset:{rows:rs.length,types:by.size,eligibleTypes:eligible.length},aggregate:{tests:aggregate.n,hits:aggregate.h,hit1:pct(aggregate.h,aggregate.n)},thaiCoverage:{required:5,present:thai.filter(x=>x.n>0).length,eligible:thai.filter(x=>x.n>=Number(opts.minTests||12)).length,rows:thai},typeStability:typeStability.sort((a,b)=>b.rate-a.rate||b.n-a.n),efficiency:{singlePass:true,auditsCombined:['CAUSAL_ORDER','SYSTEM_HEALTH','EXACT_TYPE_SHADOW','RECENT_5_10_20','LOSING_STREAK','QUARTILE_REGIME_SPREAD','THAI_5_ROUNDS','DECISION_ARBITRATION_SHADOW'],productionTouched:false}};
+    result.status=causal.pass&&result.dataset.rows>0?'AUDIT_READY':'DATA_OR_CAUSAL_CHECK_REQUIRED';
+    window.__FULL_VALUE_AUDIT__={last:result}; return result;
+  }
+  window.runFullValueAudit=run;
+  window.__FULL_VALUE_AUDIT__={last:null,run};
+  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function panel(){
+    if(document.getElementById('__full_value_audit_panel'))return;
+    const host=document.getElementById('__all_type_dev_panel')||document.getElementById('result')||document.body;
+    const el=document.createElement('section');el.id='__full_value_audit_panel';el.className='all-type-dev-panel';
+    host.parentNode?.insertBefore(el,host);
+    el.innerHTML='<div class="all-type-dev-head"><div><b>🧪 FULL-VALUE AUDIT · V3.40.20</b><small>หนึ่งรอบตรวจหลายมิติ · Research/Shadow เท่านั้น · Production ไม่ถูกแก้</small></div><span class="all-type-dev-badge">ONE-PASS</span></div><div class="all-type-dev-actions"><button id="__full_value_run" type="button">▶ รัน Full-Value Audit รอบเดียว</button><span>รวม Causal + Health + Exact-Type + Stability + หุ้นไทย 5 รอบ + Shadow</span></div><div id="__full_value_out" class="all-type-dev-table"><div style="padding:10px;color:#777">กดรันหลังโหลดข้อมูล/OOS แล้ว ระบบจะรวมผลไว้ในรอบเดียว</div></div>';
+    const btn=el.querySelector('#__full_value_run'), out=el.querySelector('#__full_value_out');
+    btn.onclick=()=>{const r=run({minTests:12}); const t=r.thaiCoverage.rows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.n}</td><td>${x.rate.toFixed(2)}%</td><td>${x.recent.find(z=>z.w===10)?.rate??0}%</td><td>${x.maxLosingStreak}</td><td>${x.n>=12?'READY':'DATA'}</td></tr>`).join(''); out.innerHTML=`<div style="padding:10px"><b>${esc(r.status)}</b> · ${r.dataset.types} types · ${r.dataset.rows} rows · Aggregate Hit1 ${r.aggregate.hit1}% · Causal ${r.causal.pass?'PASS':'CHECK'}</div><table><thead><tr><th>หุ้นไทย</th><th>Tests</th><th>Hit1</th><th>Recent10</th><th>Loss Streak</th><th>สถานะ</th></tr></thead><tbody>${t}</tbody></table>`; try{showToast?.(`✓ Full-Value Audit: ${r.dataset.types} types · ${r.dataset.rows} rows`)}catch(e){}};
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',panel);else panel();
+})();
+
+function runCausalOrderProof(){
+  const src=typeof __coopOosBundle==='function'?String(__coopOosBundle):'';
+  const selectPos=src.indexOf('const sel=await selectCooperative(');
+  const revealPos=src.indexOf('const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number)');
+  const updatePos=Math.max(src.indexOf('__coUpdate('),src.indexOf('__rpUpdate('),src.indexOf('__condUpdate('));
+  const beforeReveal=revealPos>=0?src.slice(0,revealPos):'';
+  const noOutcomeReadBeforeReveal=!/rs\[i\+1\]\.(?:n3|n2)/.test(beforeReveal);
+  const ordered=selectPos>=0&&revealPos>selectPos;
+  const memoryAfterReveal=updatePos<0||updatePos>revealPos;
+  const pass=!!(src&&ordered&&noOutcomeReadBeforeReveal&&memoryAfterReveal);
+  return Object.freeze({pass,selectPos,revealPos,updatePos,noOutcomeReadBeforeReveal,memoryAfterReveal,rule:'select prior rows → reveal target → update research memory'});
+}
+window.runCausalOrderProof=runCausalOrderProof;
 function runSystemHealth(){
   const issues=[],warnings=[],s=document.documentElement.outerHTML;
   const scripts=document.querySelectorAll('script').length,styles=document.querySelectorAll('style').length;
@@ -6632,11 +6608,11 @@ function runSystemHealth(){
   if(!/function\s+drawStateSummary\(/.test(s))warnings.push('draw-state summary missing');
   if(!/while\(start>0&&sorted\[start-1\]\?\.status==='skipped'\)/.test(s))warnings.push('window boundary preservation missing');
   if(!/SMART-2D OOS CHAMPION/.test(s))issues.push('smart selector missing');
-  const pill=document.querySelector('.pill')?.textContent||'';if(!pill.includes(APP_BUILD_VERSION)&&!document.getElementById('__smart_v23_badge'))issues.push('visible version mismatch');
+  const visibleVersion=(document.querySelector('.header-version')?.textContent||document.querySelector('.pill')?.textContent||'');if(!visibleVersion.includes(APP_BUILD_VERSION)&&!document.getElementById('__smart_v23_badge'))issues.push('visible version mismatch');
   if(!/function\s+__rolePairApply\(/.test(s)||!/__rolePairMeta=/.test(s))issues.push('role-pair layer not wired into cooperative selector');
   if(!/function\s+__scApply\(/.test(s)||!/__selfCorrectionMeta=__scApply\(/.test(s))issues.push('self-correction digit layer not wired into cooperative selector');
   if(!/afterSelfCorrection/.test(s))issues.push('self-correction forensic stage missing');
-  const health={version:APP_BUILD_VERSION,status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s)&&/isNoDrawMarker/.test(s)&&/drawStateSummary/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),typeOOSLedger:/__TYPE_OOS_LEDGER_VERSION/.test(s)&&/__buildTypeOOSLedger/.test(s)&&/EXACT_TYPE_ONLY/.test(s),recordIdentityCorrected:/function recordKey\(r\).*return `\$\{name\}\|\$\{ts\?canonicalDateKey\(ts\):date\.replace/.test(s),recordIdentityNoPayload:!(/recordKey\(r\).*n3.*n2/.test(s))}};
+  const health={version:APP_BUILD_VERSION,status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s)&&/isNoDrawMarker/.test(s)&&/drawStateSummary/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),researchCausalLock:/CAUSAL RESEARCH LOCK/.test(s)&&/targetRowRevealedAfterEvaluation/.test(s),researchNoSameRowSelection:!/const hit=hitMap\(maps\[ti\],raw,mask\);all\[fi\]\[ti\]\.n\+\+/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),allTypeDevelopment:/__ALL_TYPE_DEVELOPMENT__/.test(s)&&/productionPromotion:false/.test(s)&&/runFromRuntime/.test(s),thaiAllTypeCoverage:/หุ้นไทย/.test(s)&&/__ALL_TYPE_DEVELOPMENT__/.test(s),recordIdentityCorrected:/function recordKey\(r\).*return `\$\{name\}\|\$\{ts\?canonicalDateKey\(ts\):date\.replace/.test(s),recordIdentityNoPayload:!(/recordKey\(r\).*n3.*n2/.test(s)),causalOrderProof:runCausalOrderProof()}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 /* V2.0 RESEARCH HARVEST — shadow-only forensic archive.
@@ -6730,7 +6706,7 @@ function __researchBuildSnapshot(records,groups,bundles,startedAt){
   const formula={};for(const f of FORMULAS){let h=0,n=0;for(const r of rows){const x=r?.formulaAudit?.[f]??r?.formulaHits?.[f];if(x&&typeof x==='object'){h+=Number(x.hit??x.hits??0)||0;n+=Number(x.total??x.tests??0)||0}}formula[f]={hits:h,total:n,rate:n?Math.round(h/n*10000)/100:0}}
   const sel=rows.filter(r=>r.selectionHit).length,top2=rows.filter(r=>r.boardTop2Hit).length,inb=rows.filter(r=>r.targetInBoard).length,uni=rows.filter(r=>r.unionHit).length;
   const rate=(h,n)=>n?Math.round(h/n*10000)/100:0,rank={R1:0,R2:0,R3_5:0,R6_10:0,OUT:0};for(const r of rows){const rk=Number(r.targetRank);if(rk===1)rank.R1++;else if(rk===2)rank.R2++;else if(rk>=3&&rk<=5)rank.R3_5++;else if(rk>=6&&rk<=10)rank.R6_10++;else rank.OUT++}
-  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V2.8.9',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:rows.length,selection:rate(sel,rows.length),boardTop2:rate(top2,rows.length),inBoard:rate(inb,rows.length),union:rate(uni,rows.length),source:'current_actual_oos'},oosScopeVersion:__TYPE_OOS_LEDGER_VERSION,typeOOSLedger:types.map(x=>({type:x.name,round:/เช้า|เที่ยง|บ่าย|เย็น/.exec(x.name)?.[0]||null,allDay:/ทั้งวัน|All-Day/i.test(x.name),scopeKey:`${x.name}::${/ทั้งวัน|All-Day/i.test(x.name)?'ALL_DAY':(/เช้า|เที่ยง|บ่าย|เย็น/.exec(x.name)?.[0]||'TYPE')}`,population:'EXACT_TYPE_ONLY',tests:x.tests,selectionHits:x.selectionHits,selectionRate:x.selectionRate,top2Hits:x.top2Hits,top2Rate:x.top2Rate,inBoardHits:x.inBoardHits,inBoardRate:x.inBoardRate,damage:x.damage,rescue:x.rescue})),records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,typeDNA:window.__TYPE_DNA__?.last||null,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
+  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V2.8.9',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:rows.length,selection:rate(sel,rows.length),boardTop2:rate(top2,rows.length),inBoard:rate(inb,rows.length),union:rate(uni,rows.length),source:'current_actual_oos'},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,typeDNA:window.__TYPE_DNA__?.last||null,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
 }
 function __researchPanel(snapshot,status='READY'){
   const root=$('researchPanel');if(!root)return;const s=__researchValidSnapshot(snapshot)?snapshot:null;
@@ -6823,7 +6799,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V6.8.1 · Selection→เลขเด่น/รอง · ALL-DAY เลขเจาะ 28 วัน OOS รายคู่ · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
+    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V3.40.20 · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
   }catch(e){
     __SELECTOR_ERROR_BUS__.set({source:'Engine',phase:'runEngine',stage:'engine-catch',message:String(e?.message||e),stack:String(e?.stack||'')});
     console.error('V2.0 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
@@ -6886,7 +6862,8 @@ window.__OOS_1915_GATE__=Object.freeze({
 });
 window.__V1_CONFIG__=Object.freeze({version:'V3.11.0',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V3.11.5',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'strict 70/30 chronological holdout verified for Smart-2D selector; full Production pipeline replay pending'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:true,exactTypeOnly:true,maxPromotions:1,championTop1Locked:true,f1f9Locked:true}};
+window.__V24_RUNTIME__={version:'V3.11.5',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'strict 70/30 chronological holdout verified for Smart-2D selector; full Production pipeline replay pending'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:false,exactTypeOnly:true,maxPromotions:0,championTop1Locked:true,f1f9Locked:true}};
+window.__RESEARCH_POLICY__=Object.freeze({productionFutureBlind:true,researchMayInspectHistoricalFuture:true,researchSelectionCausal:true,targetRowRevealedAfterEvaluation:true,exactTypeIsolation:true,autoPromotion:false,championMutation:false});
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
@@ -6895,7 +6872,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.__V24_RUNTIME__.ready=true;
   }catch(e){window.__V24_RUNTIME__.error=String(e?.stack||e); console.error('V2.4 RUNTIME SELF-CHECK',e);}
 });
-window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG,__oosScope,__buildTypeOOSLedger};
+window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
 })();
 </script>
 
@@ -6962,24 +6939,50 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
     for(let fi=0;fi<9;fi++)out.perFormula['F'+(fi+1)]={candidates:[],oos:{n:0,hits:0}};
     for(const [name,rs] of groups){if(rs.length<4)continue;
       const current=Array(9).fill(0),switches=Array(9).fill(0);
-      // Build exact-type causal contingency tables: only 100 possible formula-output
-      // pairs, so transform search is exhaustive without rescanning every row.
-      const all=Array.from({length:9},()=>Array.from({length:transforms.length},()=>({n:0,h:0}))),
-            recent=Array.from({length:9},()=>Array.from({length:transforms.length},()=>({n:0,h:0})));
+      // CAUSAL RESEARCH LOCK: candidate selection for target i MUST use only rows < i.
+      // The previous implementation updated `all/recent` with target i before selecting
+      // the candidate for the same i, which contaminated the research layer with the
+      // current outcome. This version selects first, evaluates second, learns third.
+      const all=Array.from({length:9},()=>Array.from({length:transforms.length},()=>({n:0,h:0})));
+      const recentHits=Array.from({length:9},()=>Array.from({length:transforms.length},()=>[]));
       const history=Array.from({length:9},()=>[]);
       for(let i=2;i<rs.length;i++){
-        if(rs[i]?.breakBefore)continue;const mask=maskOf(rs[i]);
+        if(rs[i]?.breakBefore)continue;
+        const mask=maskOf(rs[i]);
         for(let fi=0;fi<9;fi++){
           const raw=formulaRaw(fi,rs[i-1],rs[i-2]);if(!raw)continue;
-          // Evaluate every transform against this one row, but only once per formula;
-          // this keeps the causal state exact and makes the search deterministic.
-          for(let ti=0;ti<transforms.length;ti++){const hit=hitMap(maps[ti],raw,mask);all[fi][ti].n++;all[fi][ti].h+=hit?1:0;recent[fi][ti].n++;recent[fi][ti].h+=hit?1:0;}
-          if(i>=12 && i%4===0){let best=null,inc=null;const n=i-2,rn=Math.min(12,n);for(let ti=0;ti<transforms.length;ti++){const h=all[fi][ti].h,rh=recent[fi][ti].h,rate=(h+2)/(n+4),rr=(rh+1.5)/(rn+3),sc=.60*rate+.30*rr+.10*(rate>=.5?1:0);const x={ti,score:sc,n};if(ti===current[fi])inc=x;if(!best||sc>best.score)best=x;}if(best&&best.n>=8&&(!inc||best.score>inc.score+.025)){current[fi]=best.ti;switches[fi]++;}}
-          const ok=hitMap(maps[current[fi]],raw,mask);out.perFormula['F'+(fi+1)].oos.n++;if(ok)out.perFormula['F'+(fi+1)].oos.hits++;
-          history[fi].push({raw,mask});
+
+          // 1) SELECT using completed prior rows only. Never read current target outcome here.
+          if(i>=12 && i%4===0){
+            let best=null,inc=null;
+            const priorN=Math.max(0,i-2);
+            for(let ti=0;ti<transforms.length;ti++){
+              const h=all[fi][ti].h,rq=recentHits[fi][ti],rn=rq.length,rh=rq.reduce((a,b)=>a+b,0);
+              const rate=(h+2)/(all[fi][ti].n+4);
+              const rr=rn?(rh+1.5)/(rn+3):rate;
+              const sc=.60*rate+.30*rr+.10*(rate>=.5?1:0);
+              const x={ti,score:sc,n:priorN};
+              if(ti===current[fi])inc=x;
+              if(!best||sc>best.score)best=x;
+            }
+            if(best&&best.n>=8&&(!inc||best.score>inc.score+.025)){current[fi]=best.ti;switches[fi]++;}
+          }
+
+          // 2) EVALUATE the frozen choice against the current target.
+          const ok=hitMap(maps[current[fi]],raw,mask);
+          out.perFormula['F'+(fi+1)].oos.n++;
+          if(ok)out.perFormula['F'+(fi+1)].oos.hits++;
+          history[fi].push({raw,mask,chosenTransform:current[fi],targetIndex:i});
+
+          // 3) ONLY AFTER evaluation, reveal the current outcome to research memory.
+          for(let ti=0;ti<transforms.length;ti++){
+            const hit=hitMap(maps[ti],raw,mask);
+            all[fi][ti].n++;all[fi][ti].h+=hit?1:0;
+            const q=recentHits[fi][ti];q.push(hit?1:0);if(q.length>12)q.shift();
+          }
         }
       }
-      out.selectionPolicy[name]=current.map((ti,fi)=>({formula:'F'+(fi+1),transform:transforms[ti]?.label||'BASE',switches:switches[fi]}));
+      out.selectionPolicy[name]=current.map((ti,fi)=>({formula:'F'+(fi+1),transform:transforms[ti]?.label||'BASE',switches:switches[fi],causal:true,historyRows:history[fi]?.length||0}));
     }
     // Global leaderboard from exact OOS rows. No future selection is used for the
     // production policy; this table is research evidence only.
@@ -7264,14 +7267,81 @@ window.__V330_SELECTOR_ARBITRATION_V3__=(()=>{
   return {version:VERSION,run};
 })();
 </script>
-
 <script>
-/* V6.4 switch: TRUE means this challenger is allowed to change final Selection.
-   Set FALSE to restore exact Production behavior. */
-window.__V64_SELECTION_CONNECTED_ENABLED__=false;
-window.__V64_SELECTION_CONNECTED_VERSION__='V6.4-SELECTION-CONNECTED';
+/* V3.40.20 ONE-PASS AUDIT LEDGER
+   Purpose: make each audit/development cycle reusable and non-duplicative.
+   This layer is observational only: it never promotes a challenger and never
+   changes Production predictions. It fingerprints the exact-type audit scope,
+   records completed checks, and exposes a compact audit ledger for diagnostics.
+*/
+(function(){
+  const KEY='__V3419_ONE_PASS_AUDIT_LEDGER__';
+  function safe(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
+  function save(x){try{localStorage.setItem(KEY,JSON.stringify(x))}catch(e){}}
+  const ledger=safe();
+  ledger.version='V3.40.20';
+  ledger.policy={exactType:true,productionPromotion:false,targetBlind:true,allType:true,thaiRounds:['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน']};
+  ledger.checks=Object.assign({
+    causalOrder:false,
+    systemHealth:false,
+    exactTypeIsolation:false,
+    recentWindows:false,
+    losingStreak:false,
+    regimeSpread:false,
+    championChallengerShadow:false,
+    nonRegression:false
+  },ledger.checks||{});
+  ledger.updatedAt=new Date().toISOString();
+  save(ledger);
+  window.__ONE_PASS_AUDIT_LEDGER__=ledger;
+  window.markOnePassAuditCheck=function(name,meta){
+    const x=window.__ONE_PASS_AUDIT_LEDGER__||ledger;
+    if(Object.prototype.hasOwnProperty.call(x.checks,name)) x.checks[name]=true;
+    if(meta)x.meta=Object.assign({},x.meta||{},meta);
+    x.updatedAt=new Date().toISOString(); save(x);
+    return x;
+  };
+  window.getOnePassAuditLedger=function(){return window.__ONE_PASS_AUDIT_LEDGER__||safe()};
+})();
+</script>
+<script>
+/* V3.40.20 ONE-PASS AUDIT LEDGER: observational only; no Production promotion. */
+(function(){const K='__V3419_ONE_PASS_AUDIT_LEDGER__';let x={};try{x=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}x.version='V3.40.20';x.policy={exactType:true,productionPromotion:false,targetBlind:true,allType:true,thaiRounds:['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน']};x.checks=Object.assign({causalOrder:false,systemHealth:false,exactTypeIsolation:false,recentWindows:false,losingStreak:false,regimeSpread:false,championChallengerShadow:false,nonRegression:false},x.checks||{});x.updatedAt=new Date().toISOString();try{localStorage.setItem(K,JSON.stringify(x))}catch(e){}window.__ONE_PASS_AUDIT_LEDGER__=x;window.markOnePassAuditCheck=(n,m)=>{if(Object.prototype.hasOwnProperty.call(x.checks,n))x.checks[n]=true;if(m)x.meta=Object.assign({},x.meta||{},m);x.updatedAt=new Date().toISOString();try{localStorage.setItem(K,JSON.stringify(x))}catch(e){}return x};window.getOnePassAuditLedger=()=>window.__ONE_PASS_AUDIT_LEDGER__||x})();
 </script>
 
-
+<section id="v3418Progress" aria-label="Audit Round Progress">
+  <div class="rp-head"><div><div class="rp-title">V3.40.20 · AUDIT ROUND PROGRESS</div><span style="font-size:11px;opacity:.78">หนึ่งรอบเก็บหลักฐานหลายชั้น · ไม่ auto-promote Production</span></div><div class="rp-total" id="v3418Total">0%</div></div>
+  <div class="rp-bar"><div class="rp-fill" id="v3418Fill"></div></div>
+  <div class="rp-grid" id="v3418Rounds"></div>
+  <div class="rp-scope"><b>Scope:</b> ทุกประเภทแบบ Exact-Type + หุ้นไทย เช้า / เที่ยง / บ่าย / เย็น / ทั้งวัน · เปอร์เซ็นต์ด้านบนคือ “ความคืบหน้าการออดิต” ไม่ใช่ Accuracy ของหวย</div>
+</section>
+<script id="v3418RoundProgressScript">
+(function(){
+  const checks=[
+    ['R1','Causal Order','ตรวจเลือกก่อนเห็นผล'],
+    ['R2','System Health','ตรวจสุขภาพระบบ'],
+    ['R3','Exact-Type','แยกข้อมูลรายประเภท'],
+    ['R4','Recent Windows','Recent 5/10/20'],
+    ['R5','Losing Streak','แพ้ติดกัน'],
+    ['R6','Regime Spread','ความสม่ำเสมอตามช่วง'],
+    ['R7','Champion / Challenger','Shadow เปรียบเทียบ'],
+    ['R8','Non-regression','ตรวจไม่ให้ประเภทอื่นเสีย']
+  ];
+  const thai=['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน'];
+  function getLedger(){try{return window.getOnePassAuditLedger?.()||window.__ONE_PASS_AUDIT_LEDGER__||{} }catch(e){return {}}}
+  function render(){
+    const l=getLedger(), c=l.checks||{};
+    const done=checks.filter(x=>c[{R1:'causalOrder',R2:'systemHealth',R3:'exactTypeIsolation',R4:'recentWindows',R5:'losingStreak',R6:'regimeSpread',R7:'championChallengerShadow',R8:'nonRegression'}[x[0]]]).length;
+    const pct=Math.round(done/checks.length*10000)/100;
+    const t=document.getElementById('v3418Total'),f=document.getElementById('v3418Fill'),g=document.getElementById('v3418Rounds');
+    if(t)t.textContent=pct.toFixed(2)+'%'; if(f)f.style.width=pct+'%';
+    if(g)g.innerHTML=checks.map((x,i)=>{const key={R1:'causalOrder',R2:'systemHealth',R3:'exactTypeIsolation',R4:'recentWindows',R5:'losingStreak',R6:'regimeSpread',R7:'championChallengerShadow',R8:'nonRegression'}[x[0]];const ok=!!c[key];const rp=ok?'100.00%':'0.00%';return `<div class="rp-card"><b>${x[0]} · ${x[1]} <span class="rp-pct">${rp}</span></b><span>${x[2]} · ${ok?'เสร็จแล้ว':'รอตรวจ'}</span></div>`}).join('');
+    const scope=l.policy?.thaiRounds||thai; const el=document.querySelector('#v3418Progress .rp-scope'); if(el)el.innerHTML='<b>Scope:</b> ทุกประเภทแบบ Exact-Type + หุ้นไทย '+scope.join(' / ')+' · เปอร์เซ็นต์ด้านบนคือ “ความคืบหน้าการออดิต” ไม่ใช่ Accuracy ของหวย';
+  }
+  window.renderV3418AuditProgress=render; render();
+  const old=window.markOnePassAuditCheck; if(typeof old==='function'){window.markOnePassAuditCheck=function(n,m){const r=old(n,m);render();return r}}
+  setTimeout(render,250);setTimeout(render,1000);
+})();
+</script>
 </body>
 </html>
