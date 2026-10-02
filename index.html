@@ -1566,15 +1566,6 @@ html{scroll-behavior:auto!important}
 </style>
 
 <style id="v3418-round-progress-style">
-#v3418Progress{margin:18px 0;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;background:rgba(0,0,0,.16)}
-#v3418Progress .rp-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
-#v3418Progress .rp-title{font-weight:800;font-size:15px}.rp-total{font-weight:900;font-size:20px}
-#v3418Progress .rp-bar{height:9px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden;margin:8px 0 14px}
-#v3418Progress .rp-fill{height:100%;width:0%;transition:width .25s ease}
-#v3418Progress .rp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
-#v3418Progress .rp-card{padding:9px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
-#v3418Progress .rp-card b{display:block;font-size:12px}.rp-card span{font-size:11px;opacity:.78}.rp-pct{float:right;font-weight:800}
-#v3418Progress .rp-scope{margin-top:12px;font-size:11px;opacity:.8;line-height:1.55}
 </style>
 </head>
 <body>
@@ -1586,7 +1577,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.20 — FULL-VALUE AUDIT / ALL-TYPE / CAUSAL HARDENED / UI LOCK</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.25 — FULL-VALUE AUDIT / ALL-TYPE / CAUSAL HARDENED / UI LOCK</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -3352,7 +3343,14 @@ function showDecisionTrace(encoded){const name=decodeURIComponent(encoded),base=
 function decisionStats(rs,routeCtx=null){const __pt0=window.__PERFTRACE__.begin("decisionStats"); try {const h=decisionLog(rs,routeCtx),digits=[...h.flatMap(x=>[{digit:x.d1,hit:x.d1Hit},{digit:x.d2,hit:x.d2Hit}])],by=Array.from({length:10},(_,digit)=>{const a=digits.filter(x=>x.digit===digit),z=a.filter(x=>x.hit).length;return{digit,n:a.length,h:z,r:pct(z,a.length)}});return{total:h.length,pairHits:h.filter(x=>x.pairHit).length,pairRate:pct(h.filter(x=>x.pairHit).length,h.length),digitTotal:digits.length,digitHits:digits.filter(x=>x.hit).length,digitRate:pct(digits.filter(x=>x.hit).length,digits.length),by,log:h}} finally { window.__PERFTRACE__.end("decisionStats",__pt0); }}
 function decisionMemorySummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).map(rs=>decisionMemory(rs)),n=xs.reduce((s,x)=>s+x.tests,0),h=xs.reduce((s,x)=>s+x.hits,0);return{n,h,r:pct(h,n)}}
 function selectionDashboard(rs,routeCtx=null){const sx=selectionStats(rs,routeCtx),dx=decisionStats(rs,routeCtx),mem=decisionMemory(rs,routeCtx),routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name):null,c=candidateBoard(rs,audit(rs),rs,routeProfile,routeCtx),digits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r).map(q=>`${q.digit} ${q.r}% (${q.h}/${q.n})`).join(' · '),cand=c.map(q=>`${q.digit} ${Number(q.score||0).toFixed(2)} · ${q.count||0} สูตร · ${q.gate?'ผ่านเกณฑ์':'พัก'}`).join('  |  ');return`<div class="summary-table-container"><h3 style="color:#78590f;font-size:.78rem;margin:12px 0 8px">🧠 ตัวคัดเลือกเลขเด่น · OOS + Memory + Digit History + กระดานตัวเลือก</h3><table class="audit-table"><thead><tr><th>ส่วน</th><th>รายการ</th><th>ทดสอบ</th><th>เข้า</th><th>หลุด/ความเสี่ยง</th><th>อัตรา/Final</th>${DISPLAY_WIN.map(w=>`<th>${w}</th>`).join('')}<th>สูงสุด/สถานะ</th><th>รายละเอียด</th></tr></thead><tbody><tr><td><b>ตัวคัดเลือก</b></td><td>Walk-Forward OOS</td><td>${sx.total}</td><td>${sx.hits}</td><td>${sx.misses}</td><td><span class="score-chip">${sx.rate}%</span></td>${sx.displayHorizon.map(h=>`<td>${h.rate==null?'—':h.rate+'%'}</td>`).join('')}<td>เข้า ${sx.maxHit} · หลุด ${sx.maxMiss} · ปัจจุบัน ${sx.curMiss}</td><td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td></tr><tr><td><b>Decision Memory</b></td><td>บทเรียนสะสม</td><td>${mem.tests}</td><td>${mem.hits}</td><td>${mem.misses}</td><td><span class="score-chip">${mem.rate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>context ≥ 6</td><td>ใช้ความจำเฉพาะรูปแบบที่เคยเกิดจริง</td></tr><tr><td><b>ประวัติเลข</b></td><td>ถูก/ผิดแยกตัว</td><td>${dx.digitTotal}</td><td>${dx.digitHits}</td><td>${dx.digitTotal-dx.digitHits}</td><td><span class="score-chip">${dx.digitRate}%</span></td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>คู่ 2 ตัว ${dx.pairRate}</td><td>${digits||'ยังไม่มีข้อมูล'}</td></tr><tr><td><b>กระดานตัวเลือก</b></td><td>Final Score</td><td>—</td><td>—</td><td>—</td><td>—</td>${DISPLAY_WIN.map(()=>'<td>—</td>').join('')}<td>เด่น ${c[0]?.digit??'-'} · รอง ${c[1]?.digit??'-'}</td><td>${cand}</td></tr></tbody></table></div>`}
-function pairPill(x,baseRate=null){const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';const base=Number(baseRate);const bonus=x.rank===1?3:x.rank===2?2:x.rank===3?1:0;const display=Number.isFinite(base)?Math.min(100,base+bonus):null;return`<div class="floating-pill ${cls}" title="${display==null?'':display.toFixed(2)+'%'}"><b>${x.pair}</b><span class="pair-percent">${display==null?'—':display.toFixed(2)+'%'}</span></div>`}
+function pairPill(x,baseRate=null){
+  const cls=x.rank===1?'pen-rank-gold':x.rank===2?'pen-rank-silver':x.rank===3?'pen-rank-copper':'pen-rank-other';
+  const base=Number(baseRate);
+  const bonus=x.rank===1?3:x.rank===2?2:x.rank===3?1:0;
+  const display=Number.isFinite(base)?Math.max(0,Math.min(100,base+bonus)):null;
+  const source=Number.isFinite(base)?base.toFixed(2)+'%':'—';
+  return`<div class="floating-pill ${cls}" title="${display==null?'':display.toFixed(2)+'%'}"><b>${x.pair}</b><span class="pair-percent">${display==null?'—':display.toFixed(2)+'%'}</span></div>`;
+}
 function formatCardDisplayTitle(rawName){
   const base=formatDisplayTitle(rawName);
   const key=String(rawName||'').normalize('NFC').replace(/[\u200B-\u200D\uFEFF\u2063]/g,'').replace(/\s+/g,'').toLowerCase();
@@ -6210,9 +6208,9 @@ function globalPenetrationByLotteryPanel(globalStats){
 }
 
 
-/* V3.40.20 THAI ALL-DAY FAST PATH
+/* V3.40.25 THAI ALL-DAY FAST PATH
    The synthetic __THAI_ALLDAY__ ledger is a DAILY ledger, not a fifth round.
-   V3.40.18 accidentally sent it through the full per-round cooperative selector
+   V3.40.18 previously sent it through the full per-round cooperative selector
    stack inside render(), causing the UI to sit near 97-99% while recomputing a
    large OOS/selection pipeline. This fast path keeps the required All-Day
    definition (1 day = 1 observation, prior 20 days only) and avoids rerunning
@@ -6224,8 +6222,10 @@ function __thaiAllDayFastBuild(allRows){
   const byDate=new Map();
   for(const r of valid){
     const d=String(r.date||'').trim(); if(!d)continue;
-    let day=byDate.get(d); if(!day)byDate.set(d,{date:d,rounds:{}});
-    day.rounds[v95ThaiRound(r.name)]=r;
+    let day=byDate.get(d);
+    if(!day){day={date:d,rounds:{}};byDate.set(d,day);}
+    const rd=v95ThaiRound(r.name);
+    if(rd) day.rounds[rd]=r;
   }
   const days=[...byDate.values()].sort((a,b)=>(parseThaiDate(a.date)||0)-(parseThaiDate(b.date)||0));
   const digitPool=(day)=>{const out=[];for(const rd of ['เช้า','เที่ยง','บ่าย','เย็น']){const r=day.rounds?.[rd];if(!r)continue;const n3=String(r.n3||'000').padStart(3,'0'),n2=String(r.n2||'00').padStart(2,'0');out.push(Number(n3[1]),Number(n3[2]),Number(n2[0]),Number(n2[1]));}return out.filter(Number.isFinite)};
@@ -6248,7 +6248,21 @@ function __thaiAllDayFastBuild(allRows){
   const topDigits=latestFreq.map((n,d)=>({d,n})).sort((a,b)=>b.n-a.n||a.d-b.d).slice(0,4);
   for(let i=0;i<topDigits.length;i++)for(let j=i+1;j<topDigits.length;j++)pairCandidates.push({pair:pairKey(topDigits[i].d,topDigits[j].d),score:topDigits[i].n+topDigits[j].n});
   pairCandidates.sort((a,b)=>b.score-a.score||a.pair.localeCompare(b.pair));
-  return {days,observations,selection:{total:n,hits:h,misses:n-h,rate:pct(h,n),recent20:pct(rh,recent.length),bothRate:pct(b,n)},pairCandidates:pairCandidates.slice(0,5),latest:days.at(-1)||null,latestPrediction:{d1,d2},scope:'THAI_ALL_DAY_DAILY_F20',costProfile:'FAST_PATH_NO_ROUND_SELECTOR_REPLAY'};
+  const latest=days.at(-1)||null;
+  const latestD1=topDigits[0]?.d??0;
+  const latestD2=topDigits.find(x=>x.d!==latestD1)?.d??((latestD1+1)%10);
+  // All-Day penetration evidence is computed only from the same prior F20 days
+  // used to make the current prediction. This keeps the fast path causal.
+  const pairEvidenceFor=(owner)=>{
+    const out=[];
+    for(let partner=0;partner<10;partner++){
+      if(partner===owner)continue;
+      const pair=`${owner}${partner}`, hitDays=latestHist.filter(day=>pairHit(pair,day)).length;
+      out.push({pair,score:hitDays,tests:latestHist.length,hits:hitDays,hitRate:latestHist.length?pct(hitDays,latestHist.length):null});
+    }
+    return out.sort((a,b)=>b.score-a.score||b.hits-a.hits||a.pair.localeCompare(b.pair)).slice(0,5).map((x,i)=>({...x,rank:i+1}));
+  };
+  return {days,observations,selection:{total:n,hits:h,misses:n-h,rate:pct(h,n),recent20:pct(rh,recent.length),bothRate:pct(b,n)},pairCandidates:pairCandidates.slice(0,5),latest,latestPrediction:{d1:latestD1,d2:latestD2},d1Pairs:pairEvidenceFor(latestD1),d2Pairs:pairEvidenceFor(latestD2),scope:'THAI_ALL_DAY_DAILY_F20',costProfile:'FAST_PATH_NO_ROUND_SELECTOR_REPLAY'};
 }
 function __thaiAllDayFastRow(rawRows){
   const all=__thaiAllDayFastBuild(rawRows);
@@ -6260,7 +6274,7 @@ function __thaiAllDayFastRow(rawRows){
   const penTests=all.observations.length,penHits=all.observations.filter(x=>x.hit).length;
   const pen={rate:pct(penHits,penTests),hits:penHits,total:penTests,adaptiveRate:pct(penHits,penTests),adaptiveHits:penHits,adaptiveTotal:penTests,scope:'THAI_ALL_DAY_DAILY_F20'};
   const name='__THAI_ALLDAY__',latest=all.latest;
-  const p={lotteryName:name,nextDate:latest?.date?getNextValidDrawDateStr(latest.date,'หุ้นไทย'): '',d1:all.latestPrediction.d1,d2:all.latestPrediction.d2,selection:sx,percentMeta:{scope:{type:name,round:null,allDay:true,scopeKey:name+'::ALL_DAY'},pairEvidenceSource:'THAI_ALL_DAY_DAILY_F20',pairBaseRate:pen.rate,allDay:{pairRate:pen.rate}},d1Pct:sx.rate,d2Pct:Math.max(0,sx.rate-4),pairBasePct:pen.rate,consensus:[],records:rawRows};
+  const p={lotteryName:name,nextDate:latest?.date?getNextValidDrawDateStr(latest.date,'หุ้นไทย'): '',d1:all.latestPrediction.d1,d2:all.latestPrediction.d2,d1Pairs:all.d1Pairs,d2Pairs:all.d2Pairs,selection:sx,percentMeta:{scope:{type:name,round:null,allDay:true,scopeKey:name+'::ALL_DAY'},pairEvidenceSource:'THAI_ALL_DAY_DAILY_F20',pairBaseRate:pen.adaptiveRate,allDay:{pairRate:pen.adaptiveRate}},d1Pct:sx.rate,d2Pct:sx.rate,pairBasePct:pen.adaptiveRate,consensus:[],records:rawRows};
   const ad={};for(const f of FORMULAS)ad[f]={rate:0,hits:0,total:0};
   return {name,meta:{rawCount:all.days.length,histRawCount:all.days.length,lastRound:latest?.rounds?.เย็น||latest?.rounds?.บ่าย||latest?.rounds?.เที่ยง||latest?.rounds?.เช้า||null},ad,sx,dx,pen,bestFormula:'ALL-DAY F20',bestRate:sx.rate,p,topDigits:[{digit:p.d1,n:0,r:sx.rate},{digit:p.d2,n:0,r:sx.rate}],diagTests:sx.total,top2Hits:sx.hits,inBoardHits:sx.hits,rawCount:all.days.length,histCount:all.days.length,latestDate:latest?.date||'-',allDayEvidence:all};
 }
@@ -6306,7 +6320,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     const sorted=FORMULAS.slice().sort((a,b)=>(ad[b].rate||0)-(ad[a].rate||0)),bestFormula=sorted[0],bestRate=bestFormula?(ad[bestFormula]?.rate??0):0,bestConfidence=esc(s.selection?.confidence||'ไม่ระบุ');
     await yieldFrame();
     const dx=await decisionStatsCooperative(rs,routeCtx);await yieldFrame();
-    const __selectionDisplayRate=Number.isFinite(Number(sx.rate))?Number(sx.rate):null;p.d1Pct=__selectionDisplayRate;p.d2Pct=__selectionDisplayRate==null?null:Math.max(0,__selectionDisplayRate-4);p.pairBasePct=68.88;
+    const __selectionDisplayRate=Number.isFinite(Number(sx.rate))?Number(sx.rate):null;const __penetrationDisplayRate=Number.isFinite(Number(pen.adaptiveRate))?Number(pen.adaptiveRate):null;p.d1Pct=__selectionDisplayRate;p.d2Pct=__selectionDisplayRate;p.pairBasePct=__penetrationDisplayRate;
     const mem={rate:0,hits:0,tests:0},topDigits=dx.by.filter(q=>q.n).sort((a,b)=>b.r-a.r||b.n-a.n).slice(0,5),board=(s.consensus||[]).slice().sort((a,b)=>b.score-a.score||b.support-a.support).slice(0,3),delta=Number.isFinite(pen.adaptiveRate)&&Number.isFinite(pen.rate)?(pen.adaptiveRate-pen.rate):0;
     const __bundleRows=Array.isArray(__bundleForensic?.diagnostic)?__bundleForensic.diagnostic:[];
     const __diagTests=__bundleRows.length;
@@ -6351,6 +6365,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     const top=x.topDigits?.slice(0,3).map(q=>q.digit).join(' · ')||'—';
     return `<tr><td title="${esc(formatDisplayTitle(x.name))}"><span class="unified-name">${esc(formatDisplayTitle(x.name))}</span><span class="unified-sub">#${i+1}</span></td><td>${x.rawCount||0}</td><td>${x.histCount||0}</td><td><span class="unified-pred">${x.p?.d1??'-'} / ${x.p?.d2??'-'}</span><span class="unified-sub">${d1Pct} · ${d2Pct}</span></td><td><b>${esc((x.bestFormula||'-').replace(/^สูตร /,'F'))}</b><span class="unified-sub">${Number(x.bestRate||0).toFixed(2)}%</span></td><td><span class="unified-win">${selH}</span> / <span class="unified-miss">${selM}</span><span class="unified-sub">${rateText(selH,selN)} เข้า</span></td><td><span class="unified-rate">${rateText(tH,tN)}</span><span class="unified-sub">${tH}/${tN}</span></td><td><span class="unified-rate">${rateText(inH,tN)}</span><span class="unified-sub">${inH}/${tN}</span></td><td><span class="unified-rate">${rateText(penH,penN)}</span><span class="unified-sub">${penH}/${penN}</span></td><td><span class="unified-rate">${rateText(dh,dn)}</span><span class="unified-sub">${dh}/${dn}</span></td><td><span class="unified-rate">${rateText(ph,pn)}</span><span class="unified-sub">${ph}/${pn}</span></td><td><b>${top}</b></td><td>${esc(x.latestDate||'-')}</td></tr>`;
   }).join('');
+  window.__LAST_RUNTIME_UNIFIED_ROWS__=unifiedRows.slice();
   const predictionCards=unifiedRows.map((x,i)=>card(x.p,i)).join('');
   unifiedMount.innerHTML=`<section class="unified-analysis-panel"><div class="unified-analysis-head"><div class="unified-analysis-title"><b>📊 ตารางวิเคราะห์รวม · ทุกหวยในหน้าต่างเดียว</b><small>รวม Selection · เข้า/หลุด · Top2 · InBoard · เลขเจาะ Adaptive · Digit · Pair · สูตรนำ · เลขที่เลือก และประวัติ · เลื่อนซ้าย/ขวาและขึ้น/ลงได้</small></div><span class="unified-analysis-badge">${unifiedRows.length} TYPES</span></div><div class="unified-kpis"><div class="unified-kpi"><small>หวย</small><b>${unifiedRows.length}</b><span>ประเภทที่ประมวลผล</span></div><div class="unified-kpi"><small>SELECTION รวมทุกประเภท</small><b>${rateText(totalSel,totalOos)}</b><span>${totalSel}/${totalOos} เข้า · ${unifiedRows.length} ประเภท · เฉลี่ยถ่วงน้ำหนัก</span></div><div class="unified-kpi"><small>TOP2</small><b>${rateText(totalTop2,totalTop2N)}</b><span>${totalTop2}/${totalTop2N}</span></div><div class="unified-kpi"><small>INBOARD</small><b>${rateText(totalIn,totalInN)}</b><span>${totalIn}/${totalInN}</span></div><div class="unified-kpi"><small>เลขเจาะ ADAPTIVE</small><b>${rateText(totalPen,totalPenN)}</b><span>${totalPen}/${totalPenN} เข้า</span></div><div class="unified-kpi"><small>มิติที่แสดง</small><b>13</b><span>ข้อมูลต่อหวย</span></div></div><div class="unified-table-wrap"><table class="unified-table"><thead><tr><th>หวย</th><th>จำนวนงวด</th><th>ประวัติสะสม</th><th>เลขเลือก</th><th>สูตรนำ</th><th>Selection<br>เข้า / หลุด</th><th>Top2</th><th>InBoard</th><th>เลขเจาะ<br>Adaptive</th><th>Digit Hit</th><th>Pair Hit</th><th>เลขเด่น</th><th>วันที่ล่าสุด</th></tr></thead><tbody>${unifiedBody||'<tr><td colspan="13">ยังไม่มีข้อมูลสำหรับแสดงผล</td></tr>'}</tbody></table></div><div class="unified-table-foot">หมายเหตุ: SELECTION รวมทุกประเภท = จำนวน Hit ของทุกประเภท ÷ จำนวน OOS tests ของทุกประเภท (ถ่วงน้ำหนักตามจำนวนงวดจริง) · ไม่ใช่ค่าเฉลี่ยเลขคณิตของเปอร์เซ็นต์รายประเภท · เปอร์เซ็นต์คอลัมน์อื่นยังเป็นคนละ Metric ตามนิยามเดิม · ไม่มีการเปลี่ยนสูตร F1–F9 หรือกติกา OOS</div><section class="prediction-cards-panel"><div class="prediction-cards-head"><div><b>🎯 การ์ดผลลัพธ์รายหวย</b><small>แสดงเลขที่เลือกของแต่ละประเภทหวยจากผลคำนวณชุดเดียวกับตารางด้านบน · กด 📸 เพื่อแคปภาพรายหวย</small></div><span class="prediction-cards-badge">${unifiedRows.length} CARDS</span></div><div class="prediction-cards-grid">${predictionCards||'<div class="unified-muted">ยังไม่มีการ์ดสำหรับแสดงผล</div>'}</div></section></section>`;
   if(startedAt)setProcessingProgress(99.35,'กำลังสร้างรายงาน','รวมทุกมิติลงในตารางเดียว · All-Day ไม่ผ่าน Round Selector ซ้ำ',startedAt,100,99.35,true);
@@ -6373,7 +6388,7 @@ function __dnaExecutivePanel(){
 function __productionCorePanel(){const rows=__SELECTOR_DIAGNOSTIC__?.rows||[];const n=rows.length;const hit=k=>rows.filter(r=>r?.[k]).length;const pct=x=>n?((x/n)*100).toFixed(2):'-';return `<section class="selector-diag-panel production-core"><div class="selector-diag-head"><div><b>PRODUCTION CORE · F1–F9 + CHAMPION</b><small>ส่วนใช้งานจริง · ไม่มี Optimizer/Challenger รันอัตโนมัติ</small></div><span>LOCKED</span></div><div class="dna-core-grid"><div class="dna-core-card"><strong>OOS</strong><span>${n}</span></div><div class="dna-core-card"><strong>Board Top2</strong><span>${pct(hit('boardTop2Hit'))}%</span></div><div class="dna-core-card"><strong>InBoard</strong><span>${pct(hit('targetInBoard'))}%</span></div><div class="dna-core-card"><strong>Selection</strong><span>${pct(hit('selectionHit'))}%</span></div></div><div class="forensic-data-note">Champion และ F1–F9 ยังคงสูตร/โครงสร้างเดิม · DNA V2.0 ทำงานเป็น Production Weight แบบ Walk-Forward ที่จำกัดการปรับและใช้ข้อมูลอดีตเท่านั้น</div></section>`}
 function installLotteryDetailLazy(){const root=$('result');if(!root)return;root.querySelectorAll('details[data-lottery-detail]').forEach(d=>d.addEventListener('toggle',()=>{if(!d.open||d.dataset.loaded)return;const tpl=d.querySelector('template'),body=document.createElement('div');body.className='lottery-detail-body';try{body.appendChild(tpl.content.cloneNode(true));tpl.replaceWith(body);d.dataset.loaded='1'}catch(e){body.innerHTML='<div class="error-box">⚠️ โหลดรายละเอียดไม่สำเร็จ</div>';console.error(e)}}))}
 function currentAuditDataMapGlobal(groups){const o={};for(const f of FORMULAS){const history=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([,v])=>v).flatMap(rs=>formulaHistory(rs,f));o[f]=stats(history)}return o}
-window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};const msx=selectionStats(rs,base.routeCtx||null),__selectionDisplayRate=Number.isFinite(Number(msx.rate))?Number(msx.rate):null;p.d1Pct=__selectionDisplayRate;p.d2Pct=__selectionDisplayRate==null?null:Math.max(0,__selectionDisplayRate-4);p.pairBasePct=68.88;manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
+window.addFormulaCard=(lottery,f)=>{lottery=decodeURIComponent(lottery);f=decodeURIComponent(f);const base=currentPredictionDataMap[lottery];if(!base){showToast('ไม่พบข้อมูลหวย');return}const rs=base.records||[];if(!rs.length){showToast('ไม่พบข้อมูลสูตร');return}const rawLast=base.latestRawRound||null;if(rawLast?.status==='skipped'){showToast('รอบล่าสุดงดออกผล · สูตรนี้ยังไม่คำนวณ');return}const last=rs.at(-1);const p0=execFormula(f,last,rs.at(-2));if(!p0){showToast('สูตรนี้ยังคำนวณไม่ได้');return}const anchor=Math.abs(7-Number(last.n3[0]))%10,p={lotteryName:lottery,fName:f,nextDate:getNextValidDrawDateStr(last.date,lottery),d1:p0[0],d2:p0[1],d1Pairs:pairs(p0[0],p0[1],anchor,rs,base.historicalRecords||rs),d2Pairs:pairs(p0[1],p0[0],anchor,rs,base.historicalRecords||rs)};const msx=selectionStats(rs,base.routeCtx||null),__selectionDisplayRate=Number.isFinite(Number(msx.rate))?Number(msx.rate):null,mpen=penetrationStats(rs,lottery),__penetrationDisplayRate=Number.isFinite(Number(mpen.adaptiveRate))?Number(mpen.adaptiveRate):null;p.d1Pct=__selectionDisplayRate;p.d2Pct=__selectionDisplayRate;p.pairBasePct=__penetrationDisplayRate;manualCards.push(p);$('manualCards').insertAdjacentHTML('beforeend',card(p,900+manualCards.length));showToast(`✓ เพิ่มการ์ด ${f} แล้ว`)};
 function showToast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};window.showToast=showToast;
 function updateIndicator(){try{$('recordCountIndicator').textContent=`สะสมในระบบ: ${JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').length} งวด`}catch(e){$('recordCountIndicator').textContent='สะสมในระบบ: 0 งวด'}}
 let html2canvasLoader=null;function ensureHtml2Canvas(){if(typeof html2canvas==='function')return Promise.resolve();if(html2canvasLoader)return html2canvasLoader;html2canvasLoader=new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.crossOrigin='anonymous';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('html2canvas load failed'));document.head.appendChild(sc)});return html2canvasLoader}
@@ -6422,161 +6437,9 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.40.20';
+const APP_BUILD_VERSION='V3.40.25';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
-/* V3.40.20 ALL-TYPE DEVELOPMENT LAYER
-   Purpose: develop every exact lottery type through the same research/shadow gate.
-   Production remains blind: this layer NEVER promotes a challenger and NEVER writes
-   into the production selector. Thai stock morning/noon/afternoon/evening and the
-   synthetic all-day stream are explicitly tracked when their OOS/runtime rows exist.
-*/
-(function installAllTypeDevelopmentLayer(){
-  const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
-  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const clean=x=>String(x??'').trim();
-  const isThaiName=n=>/หุ้นไทย/.test(clean(n));
-  const rate=(h,n)=>n?(h+2)/(n+4):.5;
-  function group(rows){
-    const m=new Map();
-    for(const r of Array.isArray(rows)?rows:[]){
-      const name=clean(r?.name); if(!name||!Array.isArray(r?.targetDigits))continue;
-      if(!m.has(name))m.set(name,[]); m.get(name).push(r);
-    }
-    return m;
-  }
-  function one(name,rs,opt={}){
-    const minTests=Math.max(12,Number(opt.minTests||12)), minEdge=Number.isFinite(Number(opt.minEdge))?Number(opt.minEdge):.08;
-    const recent=(w)=>{const a=rs.slice(-w);return {n:a.length,h:a.filter(x=>[Number(x.d1),Number(x.d2)].some(d=>(x.targetDigits||[]).map(Number).includes(d))).length};};
-    const mem=new Map(), trace=[]; let baseHits=0,chHits=0,changed=0,help=0,hurt=0;
-    for(let i=0;i<rs.length;i++){
-      const r=rs[i], target=new Set((r.targetDigits||[]).map(Number));
-      const d1=Number(r.d1),d2=Number(r.d2), cand=Array.isArray(r.optimizerCandidates)?r.optimizerCandidates.map(q=>({...q,digit:Number(q.digit)})).filter(q=>Number.isInteger(q.digit)&&q.digit>=0&&q.digit<=9):[];
-      const base=[d1,d2], baseHit=base.some(d=>target.has(d)); baseHits+=baseHit?1:0;
-      let chosen=d1, best=null;
-      const baseQ=cand.find(q=>q.digit===d1), baseRank=Number(baseQ?.baselineRank||99);
-      if(baseRank<=2){
-        for(const q of cand){
-          const st=mem.get(q.digit)||{n:0,h:0}; if(st.n<minTests)continue;
-          const rr=rate(st.h,st.n), cur=mem.get(d1)||{n:0,h:0}, cr=rate(cur.h,cur.n), edge=rr-cr;
-          if(q.digit!==d1 && edge>=minEdge && (!best||edge>best.edge))best={digit:q.digit,edge,tests:st.n,rate:rr};
-        }
-      }
-      if(best){chosen=best.digit;changed++;}
-      const ch=[chosen,d2], chHit=ch.some(d=>target.has(d)); chHits+=chHit?1:0;
-      if(chHit&&!baseHit)help++; if(!chHit&&baseHit)hurt++;
-      trace.push({index:i,source:r.source||null,target:r.target||null,d1,d2,chosen,changed:chosen!==d1,baseHit,chHit,edge:best?.edge||0,tests:best?.tests||0});
-      for(const q of cand){const st=mem.get(q.digit)||{n:0,h:0};st.n++;if(target.has(q.digit))st.h++;mem.set(q.digit,st);}
-    }
-    const n=rs.length, w5=recent(5),w10=recent(10),w20=recent(20), h=trace.slice(-Math.min(20,trace.length)), recentMiss=h.reduce((a,x)=>a+(x.chHit?0:1),0);
-    const curMiss=(()=>{let z=0;for(let i=trace.length-1;i>=0&&!trace[i].chHit;i--)z++;return z})();
-    const baseRate=pct(baseHits,n), chRate=pct(chHits,n), delta=+(chRate-baseRate).toFixed(2);
-    const thai=isThaiName(name), thaiRound=(name.match(/หุ้นไทย\s*(เช้า|เที่ยง|บ่าย|เย็น|ทั้งวัน)/)?.[1]||'');
-    return {name,tests:n,baseHits,chHits,baseRate,chRate,delta,changed,help,hurt,nonRegression:chHits>=baseHits,thai,thaiRound,
-      recent:{w5:pct(w5.h,w5.n),w10:pct(w10.h,w10.n),w20:pct(w20.h,w20.n)},currentMiss:curMiss,recent20Misses:recentMiss,
-      status:n<minTests?'INSUFFICIENT_DATA':(chHits>=baseHits?'SHADOW_NON_REGRESSION':'SHADOW_REJECT'),trace};
-  }
-  function run(rows,opts={}){
-    const g=group(rows), out=[];
-    for(const [name,rs] of g)out.push(one(name,rs,opts));
-    const thai=out.filter(x=>x.thai), eligible=out.filter(x=>x.tests>=Math.max(12,Number(opts.minTests||12)));
-    const summary={version:APP_BUILD_VERSION,mode:'RESEARCH_ONLY',productionPromotion:false,types:out.length,eligible:eligible.length,
-      allTypeNonRegression:eligible.every(x=>x.nonRegression),totalTests:eligible.reduce((a,x)=>a+x.tests,0),totalBaseHits:eligible.reduce((a,x)=>a+x.baseHits,0),totalChHits:eligible.reduce((a,x)=>a+x.chHits,0),
-      thaiCoverage:{types:thai.length,names:thai.map(x=>x.name),eligible:thai.filter(x=>x.tests>=12).length},byType:out.sort((a,b)=>b.delta-a.delta||b.tests-a.tests)};
-    summary.totalBaseRate=pct(summary.totalBaseHits,summary.totalTests); summary.totalChRate=pct(summary.totalChHits,summary.totalTests); summary.totalDelta=+(summary.totalChRate-summary.totalBaseRate).toFixed(2);
-    summary.status=summary.allTypeNonRegression?'RESEARCH_NON_REGRESSION':'RESEARCH_REJECTED_SOME_TYPES';
-    window.__ALL_TYPE_DEVELOPMENT__.last=summary; return summary;
-  }
-  function runFromRuntime(opts={}){
-    const rows=Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[];
-    return run(rows,opts);
-  }
-  window.__ALL_TYPE_DEVELOPMENT__={version:APP_BUILD_VERSION,last:null,run,runFromRuntime,runType:(name,opts={})=>{const rows=Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[];return one(clean(name),rows.filter(r=>clean(r?.name)===clean(name)),opts)}};
-  window.runAllTypeDevelopmentAudit=runFromRuntime;
-})();
-
-/* V3.40.20 ALL-TYPE DEVELOPMENT PANEL — research/shadow UI only.
-   Exact-type isolation. No production promotion. Thai stock five rounds are always
-   surfaced together when runtime diagnostic rows exist. */
-(function installAllTypeDevelopmentPanel(){
-  function esc2(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-  function pct2(h,n){return n?Math.round(h/n*10000)/100:0}
-  function rows(){return Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[]}
-  function build(){
-    const data=rows(), root=document.getElementById('__all_type_dev_panel'); if(!root)return;
-    const names=[...new Set(data.map(r=>String(r?.name||'').trim()).filter(Boolean))];
-    const thai=['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน'].map(x=>`หุ้นไทย ${x}`);
-    const stats=names.map(name=>{
-      const rs=data.filter(r=>String(r?.name||'').trim()===name),n=rs.length;
-      const h=rs.filter(r=>[Number(r?.d1),Number(r?.d2)].some(d=>(r?.targetDigits||[]).map(Number).includes(d))).length;
-      let miss=0;for(let i=rs.length-1;i>=0&&!([Number(rs[i]?.d1),Number(rs[i]?.d2)].some(d=>(rs[i]?.targetDigits||[]).map(Number).includes(d)));i--)miss++;
-      const recent=rs.slice(-10),rh=recent.filter(r=>[Number(r?.d1),Number(r?.d2)].some(d=>(r?.targetDigits||[]).map(Number).includes(d))).length;
-      return {name,n,h,rate:pct2(h,n),recent:pct2(rh,recent.length),miss,thai:/หุ้นไทย/.test(name)};
-    });
-    const map=new Map(stats.map(x=>[x.name,x]));
-    const thaiRows=thai.map(n=>map.get(n)||{name:n,n:0,h:0,rate:0,recent:0,miss:0,thai:true});
-    const other=stats.filter(x=>!x.thai).sort((a,b)=>b.rate-a.rate||b.n-a.n);
-    const badge=stats.length?`<span class="all-type-dev-badge">${stats.length} TYPES · SHADOW ONLY</span>`:`<span class="all-type-dev-badge">รอรัน OOS</span>`;
-    const tr=x=>`<tr><td>${esc2(x.name)}</td><td>${x.n}</td><td>${x.rate.toFixed(2)}%</td><td>${x.recent.toFixed(2)}%</td><td>${x.miss}</td><td>${x.n?'READY':'NO DATA'}</td></tr>`;
-    root.innerHTML=`<div class="all-type-dev-head"><div><b>🧬 ALL-TYPE DEVELOPMENT · V3.40.20</b><small>พัฒนาแยกรายประเภท · Shadow/Research เท่านั้น · ไม่โปรโมตเข้า Production</small></div>${badge}</div>
-      <div class="all-type-dev-actions"><button id="__all_type_dev_run" type="button">▶ รัน All-Type Shadow</button><span>ใช้ข้อมูล OOS/runtime ล่าสุดที่ระบบประมวลผลแล้ว</span></div>
-      <div class="all-type-dev-thai"><b>🇹🇭 หุ้นไทย — 5 รอบ</b><div class="all-type-dev-table"><table><thead><tr><th>รอบ</th><th>Tests</th><th>Hit1</th><th>Recent10</th><th>Loss Streak</th><th>สถานะข้อมูล</th></tr></thead><tbody>${thaiRows.map(tr).join('')}</tbody></table></div></div>
-      <details><summary>ดูประเภทอื่นทั้งหมด (${other.length})</summary><div class="all-type-dev-table"><table><thead><tr><th>ประเภท</th><th>Tests</th><th>Hit1</th><th>Recent10</th><th>Loss Streak</th><th>ข้อมูล</th></tr></thead><tbody>${other.map(tr).join('')||'<tr><td colspan="6">ยังไม่มี OOS/runtime rows</td></tr>'}</tbody></table></div></details>`;
-    root.querySelector('#__all_type_dev_run')?.addEventListener('click',()=>{const r=window.runAllTypeDevelopmentAudit?.({minTests:12}); if(r){showToast?.(`✓ All-Type Shadow: ${r.types} types · ${r.totalTests} tests · ${r.totalDelta>=0?'+':''}${r.totalDelta} pp`);build()}});
-  }
-  function install(){if(document.getElementById('__all_type_dev_panel'))return;const host=document.getElementById('result')||document.body;const el=document.createElement('section');el.id='__all_type_dev_panel';el.className='all-type-dev-panel';host.parentNode?.insertBefore(el,host);build()}
-  window.__ALL_TYPE_DEVELOPMENT_PANEL__={refresh:build,install};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-})();
-
-/* V3.40.20 FULL-VALUE AUDIT ORCHESTRATOR
-   One-pass research audit: causal proof + system health + exact-type shadow +
-   row-level stability + Thai 5-round coverage + optional arbitration shadow.
-   Research/diagnostic only. No production mutation, no auto-promotion, no future leakage.
-*/
-(function installFullValueAudit(){
-  const pct=(h,n)=>n?Math.round(h/n*10000)/100:0;
-  const clean=x=>String(x??'').trim();
-  function rows(){return Array.isArray(window.__SELECTOR_DIAGNOSTIC__?.rows)?window.__SELECTOR_DIAGNOSTIC__.rows:[]}
-  function hit(r){const t=new Set((r?.targetDigits||[]).map(Number));return [Number(r?.d1),Number(r?.d2)].some(d=>Number.isFinite(d)&&t.has(d))}
-  function streak(rs){let z=0;for(let i=rs.length-1;i>=0&&!hit(rs[i]);i--)z++;return z}
-  function stability(rs){
-    const n=rs.length, h=rs.filter(hit).length;
-    const wins=[5,10,20].map(w=>{const a=rs.slice(-w);return {w,n:a.length,rate:pct(a.filter(hit).length,a.length)}});
-    const chunks=[]; const k=Math.max(1,Math.floor(n/4));
-    for(let i=0;i<4;i++){const a=rs.slice(i*k,i===3?n:(i+1)*k);if(a.length)chunks.push({part:i+1,n:a.length,rate:pct(a.filter(hit).length,a.length)})}
-    const rates=chunks.map(x=>x.rate); const spread=rates.length?Math.max(...rates)-Math.min(...rates):0;
-    return {n,h,rate:pct(h,n),recent:wins,maxLosingStreak:streak(rs),quartiles:chunks,quartileSpread:+spread.toFixed(2)};
-  }
-  function run(opts={}){
-    const rs=rows(), by=new Map();
-    for(const r of rs){const n=clean(r?.name);if(!n)continue;if(!by.has(n))by.set(n,[]);by.get(n).push(r)}
-    const typeStability=[...by].map(([name,a])=>({name,...stability(a),thai:/หุ้นไทย/.test(name)}));
-    const thaiNames=['หุ้นไทย เช้า','หุ้นไทย เที่ยง','หุ้นไทย บ่าย','หุ้นไทย เย็น','หุ้นไทย ทั้งวัน'];
-    const thai=thaiNames.map(name=>typeStability.find(x=>x.name===name)||{name,n:0,h:0,rate:0,recent:[],maxLosingStreak:0,quartiles:[],quartileSpread:0,thai:true});
-    const causal=typeof window.runCausalOrderProof==='function'?window.runCausalOrderProof():{pass:false,rule:'unavailable'};
-    let health=null;try{health=typeof window.runSystemHealth==='function'?window.runSystemHealth():null}catch(e){health={error:String(e?.message||e)}}
-    let shadow=null;try{shadow=typeof window.runAllTypeDevelopmentAudit==='function'?window.runAllTypeDevelopmentAudit({minTests:Number(opts.minTests||12)}):null}catch(e){shadow={error:String(e?.message||e)}}
-    let arb=null;try{arb=typeof window.runV328DecisionArbitrationShadow==='function'?window.runV328DecisionArbitrationShadow():null}catch(e){arb={error:String(e?.message||e)}}
-    const eligible=typeStability.filter(x=>x.n>=Number(opts.minTests||12));
-    const aggregate={n:eligible.reduce((a,x)=>a+x.n,0),h:eligible.reduce((a,x)=>a+x.h,0)};
-    const result={version:window.__APP_BUILD_VERSION__||'V3.40.20',mode:'FULL_VALUE_RESEARCH_AUDIT',productionMutation:false,autoPromotion:false,f1f9Locked:true,boardExpansion:false,causal,health,shadow,arbitration:arb,dataset:{rows:rs.length,types:by.size,eligibleTypes:eligible.length},aggregate:{tests:aggregate.n,hits:aggregate.h,hit1:pct(aggregate.h,aggregate.n)},thaiCoverage:{required:5,present:thai.filter(x=>x.n>0).length,eligible:thai.filter(x=>x.n>=Number(opts.minTests||12)).length,rows:thai},typeStability:typeStability.sort((a,b)=>b.rate-a.rate||b.n-a.n),efficiency:{singlePass:true,auditsCombined:['CAUSAL_ORDER','SYSTEM_HEALTH','EXACT_TYPE_SHADOW','RECENT_5_10_20','LOSING_STREAK','QUARTILE_REGIME_SPREAD','THAI_5_ROUNDS','DECISION_ARBITRATION_SHADOW'],productionTouched:false}};
-    result.status=causal.pass&&result.dataset.rows>0?'AUDIT_READY':'DATA_OR_CAUSAL_CHECK_REQUIRED';
-    window.__FULL_VALUE_AUDIT__={last:result}; return result;
-  }
-  window.runFullValueAudit=run;
-  window.__FULL_VALUE_AUDIT__={last:null,run};
-  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-  function panel(){
-    if(document.getElementById('__full_value_audit_panel'))return;
-    const host=document.getElementById('__all_type_dev_panel')||document.getElementById('result')||document.body;
-    const el=document.createElement('section');el.id='__full_value_audit_panel';el.className='all-type-dev-panel';
-    host.parentNode?.insertBefore(el,host);
-    el.innerHTML='<div class="all-type-dev-head"><div><b>🧪 FULL-VALUE AUDIT · V3.40.20</b><small>หนึ่งรอบตรวจหลายมิติ · Research/Shadow เท่านั้น · Production ไม่ถูกแก้</small></div><span class="all-type-dev-badge">ONE-PASS</span></div><div class="all-type-dev-actions"><button id="__full_value_run" type="button">▶ รัน Full-Value Audit รอบเดียว</button><span>รวม Causal + Health + Exact-Type + Stability + หุ้นไทย 5 รอบ + Shadow</span></div><div id="__full_value_out" class="all-type-dev-table"><div style="padding:10px;color:#777">กดรันหลังโหลดข้อมูล/OOS แล้ว ระบบจะรวมผลไว้ในรอบเดียว</div></div>';
-    const btn=el.querySelector('#__full_value_run'), out=el.querySelector('#__full_value_out');
-    btn.onclick=()=>{const r=run({minTests:12}); const t=r.thaiCoverage.rows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.n}</td><td>${x.rate.toFixed(2)}%</td><td>${x.recent.find(z=>z.w===10)?.rate??0}%</td><td>${x.maxLosingStreak}</td><td>${x.n>=12?'READY':'DATA'}</td></tr>`).join(''); out.innerHTML=`<div style="padding:10px"><b>${esc(r.status)}</b> · ${r.dataset.types} types · ${r.dataset.rows} rows · Aggregate Hit1 ${r.aggregate.hit1}% · Causal ${r.causal.pass?'PASS':'CHECK'}</div><table><thead><tr><th>หุ้นไทย</th><th>Tests</th><th>Hit1</th><th>Recent10</th><th>Loss Streak</th><th>สถานะ</th></tr></thead><tbody>${t}</tbody></table>`; try{showToast?.(`✓ Full-Value Audit: ${r.dataset.types} types · ${r.dataset.rows} rows`)}catch(e){}};
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',panel);else panel();
-})();
+/* V3.40.25 CLEAN UI LOCK: removed duplicate All-Type/Full-Value runner panels from the visible page. Core production and audit functions remain unchanged. */
 
 function runCausalOrderProof(){
   const src=typeof __coopOosBundle==='function'?String(__coopOosBundle):'';
@@ -6612,7 +6475,7 @@ function runSystemHealth(){
   if(!/function\s+__rolePairApply\(/.test(s)||!/__rolePairMeta=/.test(s))issues.push('role-pair layer not wired into cooperative selector');
   if(!/function\s+__scApply\(/.test(s)||!/__selfCorrectionMeta=__scApply\(/.test(s))issues.push('self-correction digit layer not wired into cooperative selector');
   if(!/afterSelfCorrection/.test(s))issues.push('self-correction forensic stage missing');
-  const health={version:APP_BUILD_VERSION,status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:pill,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s)&&/isNoDrawMarker/.test(s)&&/drawStateSummary/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),researchCausalLock:/CAUSAL RESEARCH LOCK/.test(s)&&/targetRowRevealedAfterEvaluation/.test(s),researchNoSameRowSelection:!/const hit=hitMap\(maps\[ti\],raw,mask\);all\[fi\]\[ti\]\.n\+\+/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),allTypeDevelopment:/__ALL_TYPE_DEVELOPMENT__/.test(s)&&/productionPromotion:false/.test(s)&&/runFromRuntime/.test(s),thaiAllTypeCoverage:/หุ้นไทย/.test(s)&&/__ALL_TYPE_DEVELOPMENT__/.test(s),recordIdentityCorrected:/function recordKey\(r\).*return `\$\{name\}\|\$\{ts\?canonicalDateKey\(ts\):date\.replace/.test(s),recordIdentityNoPayload:!(/recordKey\(r\).*n3.*n2/.test(s)),causalOrderProof:runCausalOrderProof()}};
+  const health={version:APP_BUILD_VERSION,status:issues.length?'FAIL':warnings.length?'WARN':'PASS',issues,warnings,checks:{scriptBlocks:scripts,styleBlocks:styles,lockedFormulas:expected.length,decisionBundleReuse:/decisionStatsCooperative\(rs,routeCtx\)/.test(s),diagnosticConsistency:/formulaAudit/.test(s)&&/__selectorDiag/.test(s)&&/targetRanksAll/.test(s),version:visibleVersion,recursionGuard:/__SUPPORT_META_BUILD__/.test(s),skipLogic:/breakBefore/.test(s)&&/isNoDrawMarker/.test(s)&&/drawStateSummary/.test(s),rolePairWired:/__rolePairMeta=__rolePairApply\(/.test(s),selfCorrectionWired:/__selfCorrectionMeta=__scApply\(/.test(s),selfCorrectionStage:/afterSelfCorrection/.test(s),pairTriplet:/applyPairTripletIntelligence\(votes,historyRs\)/.test(s),pairTripletMeta:/pairTripletOutcomeMeta/.test(s),regime:/regimeDetect\(rs\)/.test(s),replacementDirection:/replacementDirectionMeta\(rs\)/.test(s),evidenceArbitration:/applyEvidenceArbitration\(votes,historyRs\)/.test(s),optimizerWired:false,optimizerProgress:false,optimizerPolicyValidation:false,optimizerErrorBus:/__SELECTOR_ERROR_BUS__/.test(s),productionDNA:/__typeDNAChallenger/.test(s),researchCausalLock:/CAUSAL RESEARCH LOCK/.test(s)&&/targetRowRevealedAfterEvaluation/.test(s),researchNoSameRowSelection:!/const hit=hitMap\(maps\[ti\],raw,mask\);all\[fi\]\[ti\]\.n\+\+/.test(s),typeDNA:/__TYPE_DNA__/.test(s),typeDNASafeMeta:/__typeAwareMeta/.test(s),typeDNA65:/__dnaPanel/.test(s),typeDNACopy:/__copy_type_dna_all/.test(s),researchCopy:/researchCopyAll/.test(s),forensicLazyTrace:/__buildForensicCompactTrace/.test(s),noEagerForensicJson:!(/const json=JSON\.stringify\(report\)/.test(s)),researchHarvest:/__runFullResearchHarvest/.test(s),researchIndexedDB:/__RESEARCH_DB__/.test(s),researchExport:/__exportResearchLatest/.test(s),allTypeDevelopment:/__ALL_TYPE_DEVELOPMENT__/.test(s)&&/productionPromotion:false/.test(s)&&/runFromRuntime/.test(s),thaiAllTypeCoverage:/หุ้นไทย/.test(s)&&/__ALL_TYPE_DEVELOPMENT__/.test(s),recordIdentityCorrected:/function recordKey\(r\).*return `\$\{name\}\|\$\{ts\?canonicalDateKey\(ts\):date\.replace/.test(s),recordIdentityNoPayload:!(/recordKey\(r\).*n3.*n2/.test(s)),causalOrderProof:runCausalOrderProof()}};
   window.__SYSTEM_HEALTH__=Object.freeze(health);return health;
 }
 /* V2.0 RESEARCH HARVEST — shadow-only forensic archive.
@@ -6799,7 +6662,7 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     await new Promise(r=>setTimeout(r,0));
     await render(groups,historyGroups,rawMeta,historyRawGroups,startedAt);document.body.classList.add("ui-smooth");installLotteryDetailLazy();updateIndicator();
     setProcessingProgress(100,'เสร็จสิ้น','สร้างรายงานครบแล้ว',startedAt,100,100,true);
-    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V3.40.20 · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
+    const __skipCount=Array.isArray(incoming)?incoming.filter(r=>String(r?.status||'')==='skipped').length:0;showToast(`✓ V3.40.25 · ประมวลผลเฉพาะ ${names.length} หวย · งดออกผล ${__skipCount} รอบถูกแยกออกจาก OOS/สูตร · ใช้ 30/100 งวดจริง · เก็บประวัติทั้งหมดไว้`);
   }catch(e){
     __SELECTOR_ERROR_BUS__.set({source:'Engine',phase:'runEngine',stage:'engine-catch',message:String(e?.message||e),stack:String(e?.stack||'')});
     console.error('V2.0 PROCESS ERROR',e);showToast(`⚠️ ประมวลผลไม่สำเร็จ: ${String(e?.message||e).slice(0,120)}`);
@@ -7265,82 +7128,6 @@ window.__V330_SELECTOR_ARBITRATION_V3__=(()=>{
     return {version:VERSION,mode:'RESEARCH_ONLY_SHADOW',tests:out.length,baselineHits:hitsBase,shadowHits:hitsShadow,deltaHits:hitsShadow-hitsBase,deltaPP:out.length?100*(hitsShadow-hitsBase)/out.length:0,changed:changed.length,help:help.length,hurt:hurt.length,futureLeakage:0,boardExpansion:false,f1f9Changed:false,productionPromotion:false,trace:out};
   }
   return {version:VERSION,run};
-})();
-</script>
-<script>
-/* V3.40.20 ONE-PASS AUDIT LEDGER
-   Purpose: make each audit/development cycle reusable and non-duplicative.
-   This layer is observational only: it never promotes a challenger and never
-   changes Production predictions. It fingerprints the exact-type audit scope,
-   records completed checks, and exposes a compact audit ledger for diagnostics.
-*/
-(function(){
-  const KEY='__V3419_ONE_PASS_AUDIT_LEDGER__';
-  function safe(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
-  function save(x){try{localStorage.setItem(KEY,JSON.stringify(x))}catch(e){}}
-  const ledger=safe();
-  ledger.version='V3.40.20';
-  ledger.policy={exactType:true,productionPromotion:false,targetBlind:true,allType:true,thaiRounds:['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน']};
-  ledger.checks=Object.assign({
-    causalOrder:false,
-    systemHealth:false,
-    exactTypeIsolation:false,
-    recentWindows:false,
-    losingStreak:false,
-    regimeSpread:false,
-    championChallengerShadow:false,
-    nonRegression:false
-  },ledger.checks||{});
-  ledger.updatedAt=new Date().toISOString();
-  save(ledger);
-  window.__ONE_PASS_AUDIT_LEDGER__=ledger;
-  window.markOnePassAuditCheck=function(name,meta){
-    const x=window.__ONE_PASS_AUDIT_LEDGER__||ledger;
-    if(Object.prototype.hasOwnProperty.call(x.checks,name)) x.checks[name]=true;
-    if(meta)x.meta=Object.assign({},x.meta||{},meta);
-    x.updatedAt=new Date().toISOString(); save(x);
-    return x;
-  };
-  window.getOnePassAuditLedger=function(){return window.__ONE_PASS_AUDIT_LEDGER__||safe()};
-})();
-</script>
-<script>
-/* V3.40.20 ONE-PASS AUDIT LEDGER: observational only; no Production promotion. */
-(function(){const K='__V3419_ONE_PASS_AUDIT_LEDGER__';let x={};try{x=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}x.version='V3.40.20';x.policy={exactType:true,productionPromotion:false,targetBlind:true,allType:true,thaiRounds:['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน']};x.checks=Object.assign({causalOrder:false,systemHealth:false,exactTypeIsolation:false,recentWindows:false,losingStreak:false,regimeSpread:false,championChallengerShadow:false,nonRegression:false},x.checks||{});x.updatedAt=new Date().toISOString();try{localStorage.setItem(K,JSON.stringify(x))}catch(e){}window.__ONE_PASS_AUDIT_LEDGER__=x;window.markOnePassAuditCheck=(n,m)=>{if(Object.prototype.hasOwnProperty.call(x.checks,n))x.checks[n]=true;if(m)x.meta=Object.assign({},x.meta||{},m);x.updatedAt=new Date().toISOString();try{localStorage.setItem(K,JSON.stringify(x))}catch(e){}return x};window.getOnePassAuditLedger=()=>window.__ONE_PASS_AUDIT_LEDGER__||x})();
-</script>
-
-<section id="v3418Progress" aria-label="Audit Round Progress">
-  <div class="rp-head"><div><div class="rp-title">V3.40.20 · AUDIT ROUND PROGRESS</div><span style="font-size:11px;opacity:.78">หนึ่งรอบเก็บหลักฐานหลายชั้น · ไม่ auto-promote Production</span></div><div class="rp-total" id="v3418Total">0%</div></div>
-  <div class="rp-bar"><div class="rp-fill" id="v3418Fill"></div></div>
-  <div class="rp-grid" id="v3418Rounds"></div>
-  <div class="rp-scope"><b>Scope:</b> ทุกประเภทแบบ Exact-Type + หุ้นไทย เช้า / เที่ยง / บ่าย / เย็น / ทั้งวัน · เปอร์เซ็นต์ด้านบนคือ “ความคืบหน้าการออดิต” ไม่ใช่ Accuracy ของหวย</div>
-</section>
-<script id="v3418RoundProgressScript">
-(function(){
-  const checks=[
-    ['R1','Causal Order','ตรวจเลือกก่อนเห็นผล'],
-    ['R2','System Health','ตรวจสุขภาพระบบ'],
-    ['R3','Exact-Type','แยกข้อมูลรายประเภท'],
-    ['R4','Recent Windows','Recent 5/10/20'],
-    ['R5','Losing Streak','แพ้ติดกัน'],
-    ['R6','Regime Spread','ความสม่ำเสมอตามช่วง'],
-    ['R7','Champion / Challenger','Shadow เปรียบเทียบ'],
-    ['R8','Non-regression','ตรวจไม่ให้ประเภทอื่นเสีย']
-  ];
-  const thai=['เช้า','เที่ยง','บ่าย','เย็น','ทั้งวัน'];
-  function getLedger(){try{return window.getOnePassAuditLedger?.()||window.__ONE_PASS_AUDIT_LEDGER__||{} }catch(e){return {}}}
-  function render(){
-    const l=getLedger(), c=l.checks||{};
-    const done=checks.filter(x=>c[{R1:'causalOrder',R2:'systemHealth',R3:'exactTypeIsolation',R4:'recentWindows',R5:'losingStreak',R6:'regimeSpread',R7:'championChallengerShadow',R8:'nonRegression'}[x[0]]]).length;
-    const pct=Math.round(done/checks.length*10000)/100;
-    const t=document.getElementById('v3418Total'),f=document.getElementById('v3418Fill'),g=document.getElementById('v3418Rounds');
-    if(t)t.textContent=pct.toFixed(2)+'%'; if(f)f.style.width=pct+'%';
-    if(g)g.innerHTML=checks.map((x,i)=>{const key={R1:'causalOrder',R2:'systemHealth',R3:'exactTypeIsolation',R4:'recentWindows',R5:'losingStreak',R6:'regimeSpread',R7:'championChallengerShadow',R8:'nonRegression'}[x[0]];const ok=!!c[key];const rp=ok?'100.00%':'0.00%';return `<div class="rp-card"><b>${x[0]} · ${x[1]} <span class="rp-pct">${rp}</span></b><span>${x[2]} · ${ok?'เสร็จแล้ว':'รอตรวจ'}</span></div>`}).join('');
-    const scope=l.policy?.thaiRounds||thai; const el=document.querySelector('#v3418Progress .rp-scope'); if(el)el.innerHTML='<b>Scope:</b> ทุกประเภทแบบ Exact-Type + หุ้นไทย '+scope.join(' / ')+' · เปอร์เซ็นต์ด้านบนคือ “ความคืบหน้าการออดิต” ไม่ใช่ Accuracy ของหวย';
-  }
-  window.renderV3418AuditProgress=render; render();
-  const old=window.markOnePassAuditCheck; if(typeof old==='function'){window.markOnePassAuditCheck=function(n,m){const r=old(n,m);render();return r}}
-  setTimeout(render,250);setTimeout(render,1000);
 })();
 </script>
 </body>
