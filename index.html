@@ -1577,7 +1577,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.33 — TYRANT 5 / STRICT TYPE-OOS / CAUSAL HARDENED</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.34 — TYRANT 5 / STRICT CAUSAL WFO / CERTIFICATION</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -5803,6 +5803,33 @@ function __v31ArbUpdate(routeCtx,row,target){
 async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=null){
   const __pt0=window.__PERFTRACE__.begin("selectCooperative");
   try{
+    /* V3.40.34 PRODUCTION CERTIFICATION BINDING.
+       Only the explicit final-production call may consume the certified causal
+       TYRANT-5 registry. Research/OOS calls are never allowed to read it. */
+    if(routeCtx?.__TYRANT5_PRODUCTION_FINAL__===true&&!routeCtx?.__TYRANT5_RESEARCH__){
+      const __cert=window.__TYRANT5_CERTIFIED_REGISTRY__?.[String(routeCtx?.name||rs?.at?.(-1)?.name||'').trim()];
+      if(__cert?.certified===true&&__cert?.candidate){
+        const __hc=Array.isArray(historyRs)&&historyRs.length?historyRs:rs;
+        const __last=__hc.at(-1),__prev=__hc.at(-2)||null;
+        let __rawPred=null;
+        try{
+          if(__cert.kind==='formula')__rawPred=typeof execFormula==='function'?execFormula(__cert.formula,__last,__prev):null;
+          else if(window.__TYRANT5__?.predictFeature) __rawPred=window.__TYRANT5__.predictFeature(__cert.candidate,__hc);
+        }catch(__e){}
+        const __norm10=x=>((Math.round(Number(x))%10)+10)%10;
+        const __pred=Array.isArray(__rawPred)&&__rawPred.length>=2?[__norm10(__rawPred[0]*Number(__cert.weight1)+Number(__cert.offset1)),__norm10(__rawPred[1]*Number(__cert.weight2)+Number(__cert.offset2))]:null;
+        if(Array.isArray(__pred)){
+          let __board=[];
+          try{__board=candidateBoardRaw(__hc,audit(__hc),__hc,routeProfile)||[]}catch(__e){__board=[]}
+          const __mk=d=>__board.find(q=>Number(q.digit)===Number(d))||{digit:Number(d),score:1,rawCount:1,independentSupport:1,gate:true,confidence:'สูง',formulas:[__cert.formula],certifiedChampion:true};
+          const __q1=__mk(__pred[0]),__q2=__mk(__pred[1]);
+          __q1.certifiedChampion=true;__q2.certifiedChampion=true;
+          const __cons=__board.slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0));
+          const __diag={rawBoard:__board.slice(),board:[__q1,__q2,...__cons.filter(q=>Number(q.digit)!==Number(__q1.digit)&&Number(q.digit)!==Number(__q2.digit))],certification:{status:'CERTIFIED',oosRate:__cert.oosRate,oosHits:__cert.oosHits,oosTests:__cert.oosTests,formula:__cert.formula,offset1:__cert.offset1,offset2:__cert.offset2,weight1:__cert.weight1,weight2:__cert.weight2,method:__cert.method}};
+          return {d1:Number(__pred[0]),d2:Number(__pred[1]),anchor:__norm10(Number(__last?.n3?.[0]||0)),pool:pairPool(__pred[0],__pred[1],__norm10(Number(__last?.n3?.[0]||0)),__hc,__hc),d1Pairs:pairs(__pred[0],__pred[1],__norm10(Number(__last?.n3?.[0]||0)),__hc,__hc),d2Pairs:pairs(__pred[1],__pred[0],__norm10(Number(__last?.n3?.[0]||0)),__hc,__hc),consensus:__diag.board,selection:{d1:__q1,d2:__q2,margin:Math.abs(Number(__q1.score||0)-Number(__q2.score||0)),confidence:'สูง',signalStrength:'สูง',anchorFormula:__cert.formula,anchorQuality:100,anchorConfidence:100,gate:true,certified:true,certification:__diag.certification,risk:riskOverride||selectionRiskProfile(__hc)},current:currentPredictions(__hc),__selectorDiag:__diag};
+        }
+      }
+    }
     if(!riskOverride){const cached=__coopSelectCacheGet(rs,routeCtx);if(cached)return cached}
     const risk=riskOverride||selectionRiskProfile(rs),c=await candidateBoardCooperative(rs,ad,historyRs,routeProfile,routeCtx),__v22EarlyMeta=__v22DigitFlowRank(c,rs),__rankBaseline=new Map(c.map(q=>[Number(q.digit),Number(q.score)])),__baselineRankMap=new Map(c.slice().sort((a,b)=>b.score-a.score||b.independentSupport-a.independentSupport||a.digit-b.digit).map((q,i)=>[Number(q.digit),i+1]));
     const __cloneRank=(arr)=>arr.slice(0,10).map((q,i)=>({rank:i+1,digit:Number(q.digit),score:Math.round(Number(q.score||0)*1000)/1000,support:Math.round(Number(q.support||0)*1000)/1000,independentSupport:Math.round(Number(q.independentSupport||0)*1000)/1000,gate:!!q.gate,contextAdj:Math.round(Number(q.contextAdj||0)*1000)/1000,memoryRate:q.memoryRate==null?null:Number(q.memoryRate),metaRate:q.metaRate==null?null:Number(q.metaRate),signalAnchor:!!q.signalAnchor,anchorBonus:Math.round(Number(q.anchorBonus||0)*1000)/1000,formulas:Array.isArray(q.formulas)?q.formulas.slice(0,9):[],rankStabilized:!!q.rankStabilized,rankDisplacement:q.rankDisplacement??null,guardrailApplied:!!q.guardrailApplied,guardrailBaseRank:q.guardrailBaseRank??null,rescueGuardApproved:!!q.rescueGuardApproved,rolePairApplied:!!q.rolePairApplied,rolePairAdj:q.rolePairAdj??0,rolePairRate:q.rolePairRate??null,rolePairTests:q.rolePairTests??null,selfCorrectionApplied:!!q.selfCorrectionApplied,selfCorrectionAdj:q.selfCorrectionAdj??0,selfCorrectionRate:q.selfCorrectionRate??null,selfCorrectionTests:q.selfCorrectionTests??null,typeDNAAdaptiveApplied:!!q.typeDNAAdaptiveApplied,typeDNAAdaptiveLift:q.typeDNAAdaptiveLift??0,typeDNAAdaptiveFormulaRate:q.typeDNAAdaptiveFormulaRate??null,typeDNAAdaptiveDigitRate:q.typeDNAAdaptiveDigitRate??null,typeDNAAdaptiveRankRate:q.typeDNAAdaptiveRankRate??null,typeDNAAdaptiveBaseRank:q.typeDNAAdaptiveBaseRank??null,typeDNAAdaptiveSource:q.typeDNAAdaptiveSource??null,geminiPairApplied:!!q.geminiPairApplied,geminiPairAdj:q.geminiPairAdj??0,geminiPairScore:q.geminiPairScore??null,geminiPairFreq:q.geminiPairFreq??null,geminiPairMomentum:q.geminiPairMomentum??null,geminiPairTransition:q.geminiPairTransition??null,geminiPairEvidence:q.geminiPairEvidence??null,selectorCoachApplied:!!q.__selectorCoachApplied,selectorCoachTests:q.__selectorCoachTests??null,selectorCoachHits:q.__selectorCoachHits??null,selectorCoachRate:q.__selectorCoachRate??null,selectorCoachPosterior:q.__selectorCoachPosterior??null,selectorCoachRecentRate:q.__selectorCoachRecentRate??null,selectorCoachLift:q.__selectorCoachLift??0,selectorCoachReason:q.__selectorCoachReason??null}));
@@ -6323,7 +6350,7 @@ async function render(groups,historyGroups={},rawMeta={},historyRawGroups={},sta
     await yieldFrame();
     const rs=groups[name],hist=historyGroups[name]||rs,rawHist=historyRawGroups[name]||hist,meta=rawMeta[name]||{};
     const ad=audit(rs);await yieldFrame();
-    const routeCtx={name,groups,__typeDNAChallenger:{strength:.70,mode:'PRODUCTION_WALK_FORWARD_DNA'}};const routeProfile=formulaRoutingProfile(groups,name);await yieldFrame();
+    const routeCtx={name,groups,__typeDNAChallenger:{strength:.70,mode:'PRODUCTION_WALK_FORWARD_DNA'},__TYRANT5_PRODUCTION_FINAL__:true};const routeProfile=formulaRoutingProfile(groups,name);await yieldFrame();
     const sx=await selectionStatsCooperative(rs,routeCtx);
     const __bundleForensic=window.__COOP_OOS_BUNDLE_CACHE__?.get?.(__coopRsKey(rs,routeCtx));
     if(__SELECTOR_DIAGNOSTIC__.enabled&&Array.isArray(__bundleForensic?.diagnostic)){for(const row of __bundleForensic.diagnostic)__SELECTOR_DIAGNOSTIC__.add(row);}
@@ -6470,7 +6497,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.40.33-TYRANT5-PDF-OOS';
+const APP_BUILD_VERSION='V3.40.34-TYRANT5-STRICT-CAUSAL-WFO';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1+tyrant5',f1f9Locked:false,coreBaselinePreserved:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 
 /* V3.40.26 STRICT AUDIT HARNESS
@@ -6704,10 +6731,10 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     setProcessingProgress(5,'ขั้นที่ 1/4 · เตรียมข้อมูล','อ่านข้อมูลเข้าและตรวจสอบรูปแบบ',startedAt,100,5,true);
     await new Promise(r=>setTimeout(r,0));
     let stored=[];try{const raw=localStorage.getItem(STORAGE_KEY);stored=raw?JSON.parse(raw):[]}catch(e){stored=[]}
-    const embeddedBase=Array.isArray(window.__PDF_CLEAN_RECORDS__)?window.__PDF_CLEAN_RECORDS__:stored; const allRecords=mergeStoredRecords(embeddedBase,incoming);
+    const allRecords=mergeStoredRecords(stored,incoming);
     if(parsed.errors.length)showToast(`⚠️ พบข้อมูลที่อ่านไม่ได้ ${parsed.errors.length} รายการ`);
     if(!allRecords.length){$('result').innerHTML=parsed.errors.map(esc).join('<br>');return}
-    if(!window.__TYRANT5_AUTORUN__){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(allRecords))}catch(e){showToast('⚠️ บันทึกประวัติในเครื่องไม่สำเร็จ')}}
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(allRecords))}catch(e){showToast('⚠️ บันทึกประวัติในเครื่องไม่สำเร็จ')}
     const allByName={};for(const r of allRecords){(allByName[r.name]??=[]).push(r)}
     // V1.9 PERFORMANCE ROUTING:
     // Keep the full accumulated history in localStorage, but process only the
@@ -14732,7 +14759,6 @@ window.__PDF_CLEAN_INPUT__=`รัฐบาลไทย | 1 ก.ค. 68
 68`;
 window.__PDF_CLEAN_RECORDS__=Object.freeze((()=>{try{return parseInput(window.__PDF_CLEAN_INPUT__).records.map((r,i)=>Object.freeze({...r,source:'สถิติ.pdf',sourceRow:i+1}));}catch(e){console.error('PDF CLEAN DATA PATCH',e);return[]}})());
 window.__PDF_CLEAN_AUDIT__=Object.freeze({rawRows:3002,cleanRows:window.__PDF_CLEAN_RECORDS__.length,types:new Set(window.__PDF_CLEAN_RECORDS__.map(r=>r.name)).size,duplicatesRemoved:3002-window.__PDF_CLEAN_RECORDS__.length,conflicts:0,sourceOnly:true});
-window.addEventListener('DOMContentLoaded',()=>{const el=document.getElementById('bulkInput');if(el&&!el.value.trim()&&window.__PDF_CLEAN_INPUT__)el.value=window.__PDF_CLEAN_INPUT__;});
 
 window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;/* V3.6 AUDIT HARDENING
    - No hard-coded champion percentages are treated as truth.
@@ -14789,7 +14815,7 @@ window.__OOS_1915_GATE__=Object.freeze({
 window.__V1_CONFIG__=Object.freeze({version:'V3.11.0',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
 window.__V24_RUNTIME__={version:'V3.11.5',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'strict 70/30 chronological holdout verified for Smart-2D selector; full Production pipeline replay pending'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:false,exactTypeOnly:true,maxPromotions:0,championTop1Locked:true,f1f9Locked:false}};
-window.__RESEARCH_POLICY__=Object.freeze({productionFutureBlind:true,researchMayInspectHistoricalFuture:true,researchSelectionCausal:true,targetRowRevealedAfterEvaluation:true,exactTypeIsolation:true,autoPromotion:false,championMutation:false});
+window.__RESEARCH_POLICY__=Object.freeze({productionFutureBlind:true,researchMayInspectHistoricalFuture:false,researchSelectionCausal:true,targetRowRevealedAfterEvaluation:true,exactTypeIsolation:true,autoPromotion:false,championMutation:false,strictTemporalIsolation:true});
 window.addEventListener('DOMContentLoaded',()=>{
   try{
     const required=[['run',typeof window.runEngine==='function'],['copyError',typeof window.copyLastProcessError==='function'],['clearInput',!!$('clearInput')],['clearGlobal',!!$('clearGlobal')]];
@@ -15665,185 +15691,173 @@ window.__V330_SELECTOR_ARBITRATION_V3__=(()=>{
 <script>
 (function installTyrant5(){
   'use strict';
-  const VERSION='TYRANT-5.0.0-PDF-OOS';
-  const TARGET=.70, CAP=.87, MIN_TRAIN=6, MIN_OOS=4;
+  /*
+   * TYRANT-5.2 STRICT CAUSAL WFO
+   * --------------------------------
+   * This research engine is deliberately separate from the legacy selector.
+   * It never evaluates the current target row before the current prediction is
+   * frozen.  It never replays a final champion over the same OOS rows.  Every
+   * training score is computed from rows strictly before T, and every OOS row
+   * is revealed only after the prediction has been committed.
+   */
+  const VERSION='TYRANT-5.2.0-STRICT-CAUSAL-WFO';
+  const TARGET=.70, CAP=.87, MIN_TRAIN=8, MIN_PRIOR_OOS=3, MIN_CERT_TESTS=12;
   const OFFSETS=[-4,-3,-2,-1,0,1,2,3,4], WEIGHTS=[1,2];
+  const BASE_FORMULA_COUNT=9;
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const norm=x=>((Math.round(Number(x))%10)+10)%10;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pct=(h,n)=>n?100*h/n:0;
+  const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+  const stdev=a=>{if(a.length<2)return 0;const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))))};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const cleanRows=()=>{
     const src=Array.isArray(window.__PDF_CLEAN_RECORDS__)?window.__PDF_CLEAN_RECORDS__:[];
     if(src.length)return src.slice();
-    try{return (typeof parseInput==='function'?parseInput(window.__PDF_CLEAN_INPUT__||'').records:[]).slice()}catch(_){return []}
+    try{return(typeof parseInput==='function'?parseInput(window.__PDF_CLEAN_INPUT__||'').records:[]).slice()}catch(_){return[]}
   };
-  function targetSet(r){
-    const n3=String(r?.n3||'000').padStart(3,'0'),n2=String(r?.n2||'00').padStart(2,'0');
-    return new Set([+n3[1],+n3[2],+n2[0],+n2[1]]);
-  }
-  function groupRows(rows){
+  const groupRows=rows=>{
     const m=new Map();
-    for(const r of rows){if(r?.status&&r.status!=='result')continue;const k=String(r?.name||'').trim();if(!k)continue;(m.get(k)||m.set(k,[]).get(k)).push(r)}
+    for(const r of rows){if(r?.status&&r.status!=='result')continue;const k=String(r?.name||'').trim();if(!k)continue;if(!m.has(k))m.set(k,[]);m.get(k).push(r)}
     for(const [k,v] of m){const z=typeof sortRecords==='function'?sortRecords(v):v.slice();m.set(k,z)}
     return m;
+  };
+  const targetSet=r=>{
+    const n3=String(r?.n3||'000').padStart(3,'0'),n2=String(r?.n2||'00').padStart(2,'0');
+    return new Set([+n3[1],+n3[2],+n2[0],+n2[1]]);
+  };
+  const hit=(pred,tset)=>Array.isArray(pred)&&pred.some(d=>tset.has(Number(d)));
+  const formulaList=()=>Array.isArray(window.__V1_CONFIG__?.formulas)&&window.__V1_CONFIG__.formulas.length>=20?window.__V1_CONFIG__.formulas.slice():[];
+  function recentDigits(prefix,field,limit=8){
+    const a=[];for(let i=prefix.length-1;i>=0&&a.length<limit;i--){const r=prefix[i];if(r?.status!=='result')continue;const x=field==='E'?String(r.n2||'').padStart(2,'0')[1]:String(r.n3||'').padStart(3,'0')[2];if(/^[0-9]$/.test(x))a.push(Number(x));}return a;
   }
-  function formulaList(){
-    const a=Array.isArray(window.__V1_CONFIG__?.formulas)?window.__V1_CONFIG__.formulas:[];
-    return a.length===20?a.slice():[];
+  function featureBase(prefix,kind){
+    const e=recentDigits(prefix,'E',10),c=recentDigits(prefix,'C',10);if(!e.length&&!c.length)return null;
+    if(kind==='MOMENTUM'){const a=e.slice(0,6),d=a.length>1?mean(a.slice(0,-1).map((x,i)=>a[i]-a[i+1])):0;return norm((a[0]??0)+Math.sign(d||0));}
+    if(kind==='VOLATILITY'){const a=e.slice(0,6),m=mean(a),v=stdev(a);return norm((a[0]??0)+Math.round(v));}
+    if(kind==='MEANREVERSION'){const a=e.slice(0,8),m=mean(a);return norm(Math.round(m)+(Math.round(m)-(a[0]??0)));}
+    if(kind==='CYCLE2'){return norm((e[0]??0)+(e[2]??e[0]??0));}
+    if(kind==='CYCLE3'){return norm((e[0]??0)+(e[3]??e[0]??0));}
+    if(kind==='TRANSITION'){if(e.length<2)return norm(e[0]??0);const last=e[0],prev=e[1],delta=norm(last-prev);return norm(last+delta);}
+    if(kind==='BLEND'){const em=mean(e.slice(0,5)),cm=mean(c.slice(0,5));return norm(Math.round((em+cm)/2));}
+    return null;
   }
-  function histories(rs){
-    const api=window.__TEST_EXPORTS__;
-    const out={};
-    for(const f of formulaList()){
-      let h=[];
-      try{h=api?.formulaHistory?api.formulaHistory(rs,f):[]}catch(_){h=[]}
-      const by=new Map();
-      for(const x of h)by.set(String(x.target||''),Array.isArray(x.pred)?x.pred.map(Number):null);
-      out[f]=by;
-    }
-    return out;
-  }
+  const FEATURE_NAMES=['F21 — Momentum Unit','F22 — Volatility Unit','F23 — Mean-Reversion Unit','F24 — Cycle-2 Unit','F25 — Cycle-3 Unit','F26 — Transition Unit','F27 — Causal Blend'];
   function candidatePool(){
-    const pool=[], fs=formulaList();
-    for(let fi=0;fi<fs.length;fi++)for(const w1 of WEIGHTS)for(const w2 of WEIGHTS)for(const o1 of OFFSETS)for(const o2 of OFFSETS)
-      pool.push({id:`${fi}|${w1}|${w2}|${o1}|${o2}`,fi,f:fs[fi],w1,w2,o1,o2});
+    const pool=[],fs=formulaList();
+    for(let fi=0;fi<fs.length;fi++)for(const w1 of WEIGHTS)for(const w2 of WEIGHTS)for(const o1 of OFFSETS)for(const o2 of OFFSETS)pool.push({kind:'formula',id:`F${fi+1}|${w1}|${w2}|${o1}|${o2}`,fi,formula:fs[fi],w1,w2,o1,o2,label:`F${fi+1}`});
+    FEATURE_NAMES.forEach((label,k)=>{const kind=['MOMENTUM','VOLATILITY','MEANREVERSION','CYCLE2','CYCLE3','TRANSITION','BLEND'][k];for(const w1 of WEIGHTS)for(const w2 of WEIGHTS)for(const o1 of OFFSETS)for(const o2 of OFFSETS)pool.push({kind:'feature',feature:kind,id:`${label.split(' ')[0]}|${w1}|${w2}|${o1}|${o2}`,w1,w2,o1,o2,label})});
     return pool;
   }
-  function applyPred(base,c){
-    if(!Array.isArray(base)||base.length<2)return null;
-    return [norm(base[0]*c.w1+c.o1),norm(base[1]*c.w2+c.o2)];
+  function rawBasePrediction(c,prefix){
+    if(!Array.isArray(prefix)||!prefix.length)return null;
+    const last=prefix.at(-1),prev=prefix.at(-2)||null;
+    if(c.kind==='formula')return typeof execFormula==='function'?execFormula(c.formula,last,prev):null;
+    const b=featureBase(prefix,c.feature);return b==null?null:[b,norm(b+1)];
   }
-  function isHit(pred,tset){return Array.isArray(pred)&&pred.some(d=>tset.has(Number(d)))}
+  function applyPred(base,c){return Array.isArray(base)&&base.length>=2?[norm(base[0]*c.w1+c.o1),norm(base[1]*c.w2+c.o2)]:null}
+  function predictionAt(rs,i,c){if(i<1)return null;return applyPred(rawBasePrediction(c,rs.slice(0,i)),c)}
+  function chooseCandidate(pool,rs,i,state,champion,championCi){
+    const {trainN,trainH,priorOos}=state;
+    const baseCandidates=state.baselineIndices;
+    let baseBest=null,baseRate=0;
+    for(const ci of baseCandidates){const n=trainN[ci]||0,h=trainH[ci]||0;if(n<MIN_TRAIN)continue;const rate=pct(h,n);if(!baseBest||rate>baseBest.rate||rate===baseBest.rate&&h>baseBest.h)baseBest={ci,rate,h,n,c:pool[ci]};}
+    baseRate=baseBest?.rate||0;
+    let chosen=baseBest?.c||pool[baseCandidates[0]]||pool[0],chosenTrain={n:trainN[baseBest?.ci??0]||0,h:trainH[baseBest?.ci??0]||0,rate:baseRate};
+    let bestScore=-Infinity,best=null;
+    for(let ci=0;ci<pool.length;ci++){
+      const n=trainN[ci]||0,h=trainH[ci]||0;if(n<MIN_TRAIN)continue;const rate=pct(h,n);
+      if(rate+1e-12<baseRate)continue; // historical baseline non-regression
+      const po=priorOos[ci]||{n:0,h:0},priorRate=po.n?pct(po.h,po.n):null;
+      if(champion&&ci!==championCi){
+        if(po.n<MIN_PRIOR_OOS)continue;
+        const champPrior=priorOos[championCi]||{n:0,h:0},champRate=champPrior.n?pct(champPrior.h,champPrior.n):0;
+        if(priorRate+1e-12<champRate)continue;
+      }
+      const score=.68*rate+.22*(priorRate==null?baseRate:priorRate)+.10*Math.min(87,rate);
+      if(score>bestScore){bestScore=score;best={ci,c:pool[ci],trainRate:rate,priorRate,score};}
+    }
+    if(best){chosen=best.c;chosenTrain={n:trainN[best.ci]||0,h:trainH[best.ci]||0,rate:best.trainRate};}
+    return{chosen,chosenCi:pool.indexOf(chosen),chosenTrain,baseRate,best,bestScore};
+  }
+  function makePanel(){
+    let panel=document.getElementById('__tyrant5_panel');
+    if(!panel){panel=document.createElement('div');panel.id='__tyrant5_panel';panel.className='panel';panel.style.margin='12px 0';const input=document.getElementById('bulkInput');input?.parentNode?.parentNode?.insertBefore(panel,input.parentNode.parentNode.firstChild||null)}
+    return panel;
+  }
+  function certifiedPrediction(policy,historyRs){
+    if(!policy||!Array.isArray(historyRs)||!historyRs.length)return null;
+    const c=policy.candidate;
+    const p=applyPred(rawBasePrediction(c,historyRs),c);
+    return p;
+  }
   async function run(opts={}){
     if(window.__TYRANT5_RUNNING__)return window.__TYRANT5_RESULT__||null;
     window.__TYRANT5_RUNNING__=true;
-    const started=performance.now(),rows=cleanRows(),groups=groupRows(rows),fs=formulaList();
-    if(rows.length!==1995||groups.size!==66||fs.length!==20){
-      const bad={version:VERSION,error:'SOURCE_PREFLIGHT_FAILED',rows:rows.length,types:groups.size,formulas:fs.length};
-      window.__TYRANT5_RESULT__=bad;window.__TYRANT5_RUNNING__=false;return bad;
-    }
-    const pool=candidatePool(),byId=new Map(pool.map((c,i)=>[c.id,i]));
-    const baselinePool=pool.filter(c=>c.fi<9&&c.w1===1&&c.w2===1&&c.o1===0&&c.o2===0);
-    const typeResults=[],allAudit=[];
-    let totalBaseH=0,totalBaseN=0,totalOptH=0,totalOptN=0,accepted=0,rejected=0,frozen=0;
+    const started=performance.now(),rows=cleanRows(),groups=groupRows(rows),pool=candidatePool(),fs=formulaList();
+    if(rows.length!==1995||groups.size!==66||fs.length<20){const bad={version:VERSION,error:'SOURCE_PREFLIGHT_FAILED',rows:rows.length,types:groups.size,formulas:fs.length};window.__TYRANT5_RESULT__=bad;window.__TYRANT5_RUNNING__=false;return bad}
+    const typeResults=[],registry={},audit=[],unresolved=[];let totalH=0,totalN=0,certified=0;
+    const panel=makePanel();panel.innerHTML='<b>TYRANT-5 STRICT CAUSAL WFO</b><br>กำลังสร้าง certification จากข้อมูลย้อนหลัง 1,995 แถว…';
     let typeIndex=0;
     for(const [name,raw] of groups){
-      typeIndex++;
-      const rs=typeof results==='function'?results(raw):raw;
-      if(rs.length<MIN_TRAIN+MIN_OOS+2){typeResults.push({name,n:rs.length,status:'INSUFFICIENT_DATA'});continue}
-      const H=histories(rs), dates=rs.map(r=>String(r.date||''));
-      const preds=pool.map(c=>new Array(rs.length).fill(null));
+      typeIndex++;const rs=raw.filter(r=>r?.status==='result');
+      if(rs.length<MIN_TRAIN+MIN_CERT_TESTS){const tr={name,n:rs.length,status:'NOT_CERTIFIED',reason:'INSUFFICIENT_DATA',oosTests:0,oosHits:0,oosRate:null,certified:false};typeResults.push(tr);unresolved.push(tr);continue}
+      const start=Math.max(MIN_TRAIN,2),folds=foldRanges(rs.length,start),priorOos=pool.map(()=>({n:0,h:0}));
+      const trainN=pool.map(()=>0),trainH=pool.map(()=>0),preds=pool.map(()=>new Array(rs.length).fill(null));
+      // Precompute each candidate's prediction for each target using ONLY the prefix
+      // immediately before that target. This is causal and avoids O(N²×candidate)
+      // recomputation during model selection.
+      for(let i=1;i<rs.length;i++){for(let ci=0;ci<pool.length;ci++)preds[ci][i]=predictionAt(rs,i,pool[ci]);if(i%5===0)await sleep(0)}
+      const baselineIndices=pool.map((c,ci)=>({c,ci})).filter(x=>x.c.kind==='formula'&&x.c.fi<BASE_FORMULA_COUNT&&x.c.w1===1&&x.c.w2===1&&x.c.o1===0&&x.c.o2===0).map(x=>x.ci);
+      const state={trainN,trainH,priorOos,baselineIndices};
+      let champion=null,championCi=-1,decisions=[],foldStats=folds.map(f=>({fold:f.fold,start:f.start,end:f.end,n:0,h:0,rate:null}));
+      let oosH=0,oosN=0;
       for(let i=0;i<rs.length;i++){
-        const d=dates[i];
-        for(let ci=0;ci<pool.length;ci++)preds[ci][i]=applyPred(H[pool[ci].f]?.get(d),pool[ci]);
+        // Rows before the certification start warm the training state only.
+        if(i<start){
+          for(let ci=0;ci<pool.length;ci++){const p=preds[ci][i];if(!p)continue;trainN[ci]++;if(hit(p,targetSet(rs[i])))trainH[ci]++;}
+          continue;
+        }
+        // Selection for T uses train/prior-OOS ledgers ending at T-1 only.
+        const sel=chooseCandidate(pool,rs,i,state,champion,championCi),chosen=sel.chosen,ci=sel.chosenCi;
+        const pred=preds[ci][i]; // frozen before target T is revealed
+        const target=targetSet(rs[i]);
+        const ok=hit(pred,target); // actual T is revealed only after prediction is fixed
+        const fold=foldStats.find(f=>i>=f.start&&i<f.end);if(fold){fold.n++;if(ok)fold.h++;fold.rate=pct(fold.h,fold.n)}
+        oosN++;if(ok)oosH++;totalN++;if(ok)totalH++;
+        // After T is revealed, update ALL historical/OOS ledgers for use at T+1.
+        for(let ui=0;ui<pool.length;ui++){const up=preds[ui][i];if(!up)continue;const uh=hit(up,target);trainN[ui]++;if(uh)trainH[ui]++;priorOos[ui].n++;if(uh)priorOos[ui].h++;}
+        const prevRate=championCi>=0&&priorOos[championCi].n?pct(priorOos[championCi].h,priorOos[championCi].n):null;
+        let promoted=false,reason='KEEP';
+        if(championCi<0){champion=chosen;championCi=ci;promoted=true;reason='INITIAL_BASELINE_OR_CAUSAL_CHAMPION'}
+        else if(chosen.id!==champion.id){const chosenPrior=priorOos[ci],champPrior=priorOos[championCi];const cr=chosenPrior.n?pct(chosenPrior.h,chosenPrior.n):0,hr=champPrior.n?pct(champPrior.h,champPrior.n):0;
+          if(sel.chosenTrain.rate+1e-12>=sel.baseRate && chosenPrior.n>=MIN_PRIOR_OOS && cr+1e-12>=hr && cr<=CAP*100+1e-9){champion=chosen;championCi=ci;promoted=true;reason='CAUSAL_PROMOTION_PRIOR_ONLY'}
+          else reason=cr>CAP*100?'REJECT_SAFETY_CAP':(cr<hr?'REJECT_NO_REGRESSION':'REJECT_MIN_EVIDENCE');
+        }
+        decisions.push({targetIndex:i,targetDate:rs[i].date,candidate:chosen.id,champion:champion.id,trainRate:+sel.chosenTrain.rate.toFixed(4),baselineTrainRate:+sel.baseRate.toFixed(4),priorChampionRate:prevRate,pred:pred?.slice()||null,hit:ok,promoted,reason});
+        if(i%2===0)await sleep(0);
       }
-      const train=pool.map(()=>({n:0,h:0})),oos=pool.map(()=>({n:0,h:0}));
-      const oosStart=Math.max(2,Math.floor(rs.length*.70));
-      let champion=null, frozenFlag=false, decisions=[];
-      for(let i=2;i<rs.length;i++){
-        const tset=targetSet(rs[i]);
-        if(i>=oosStart){
-          let baseBest=null;
-          for(const c of baselinePool){
-            const ci=byId.get(c.id),st=train[ci],rate=st.n>=MIN_TRAIN?(st.h+2)/(st.n+4):-.1;
-            if(!baseBest||rate>baseBest.rate||rate===baseBest.rate&&st.h>baseBest.h)baseBest={c,ci,rate,h:st.h,n:st.n};
-          }
-          if(!champion)champion=baseBest?.c||baselinePool[0];
-          const oldCi=byId.get(champion.id);
-          let challBest=null;
-          for(let ci=0;ci<pool.length;ci++){
-            const c=pool[ci],st=train[ci],rate=st.n>=MIN_TRAIN?(st.h+2)/(st.n+4):-.1;
-            if(st.n<MIN_TRAIN)continue;
-            if(!challBest||rate>challBest.rate||rate===challBest.rate&&st.h>challBest.h)challBest={c,ci,rate};
-          }
-          if(!challBest)challBest={c:champion,ci:oldCi,rate:0};
-          /* Evaluate the whole candidate pool on the current OOS row only after selection. */
-          for(let ci=0;ci<pool.length;ci++){
-            const p=preds[ci][i];if(!p)continue;
-            oos[ci].n++;if(isHit(p,tset))oos[ci].h++;
-          }
-          let promoted=false,reason='KEEP_CHAMPION';
-          const ci=challBest.ci;
-          if(!frozenFlag&&ci!==oldCi){
-            const ch=oos[ci],old=oos[oldCi],chRate=pct(ch.h,ch.n),oldRate=pct(old.h,old.n);
-            if(ch.n>=MIN_OOS&&chRate>oldRate&&chRate<=CAP*100+1e-9){
-              champion=challBest.c;promoted=true;accepted++;reason='ACCEPT_STRICT_IMPROVEMENT';
-            }else{
-              rejected++;
-              reason=chRate>CAP*100?'REJECT_SAFETY_CAP':(chRate<=oldRate?'REJECT_NO_REGRESSION':'REJECT_MIN_EVIDENCE');
-            }
-          }
-          const cci=byId.get(champion.id),cr=pct(oos[cci].h,oos[cci].n);
-          if(!frozenFlag&&oos[cci].n>=MIN_OOS&&cr>=70){frozenFlag=true;frozen++}
-          decisions.push({i,baseline:baseBest?.c?.id||null,challenger:challBest.c.id,champion:champion.id,championRate:+cr.toFixed(4),promoted,reason,frozen:frozenFlag});
-        }
-        for(let ci=0;ci<pool.length;ci++){
-          const p=preds[ci][i];if(!p)continue;
-          const hit=isHit(p,tset);
-          train[ci].n++;if(hit)train[ci].h++;
-        }
-        await sleep(0);
-      }
-      const finalCi=byId.get(champion.id),finalSt=oos[finalCi],finalRate=pct(finalSt.h,finalSt.n);
-      /* Replay fixed baseline and final champion on the same holdout for auditable reporting. */
-      let bh=0,bn=0,oh=0,on=0;
-      const baselineChosen=[],btrain=baselinePool.map(()=>({n:0,h:0}));
-      for(let i=2;i<rs.length;i++){
-        if(i>=oosStart){
-          let best=null;
-          for(let bi=0;bi<baselinePool.length;bi++){
-            const c=baselinePool[bi],st=btrain[bi],rate=st.n>=MIN_TRAIN?(st.h+2)/(st.n+4):-.1;
-            if(!best||rate>best.rate||rate===best.rate&&st.h>best.h)best={bi,ci:byId.get(c.id),rate,c};
-          }
-          if(best){const p=preds[best.ci][i];if(p){bn++;if(isHit(p,targetSet(rs[i])))bh++;baselineChosen.push(best.c.id)}}
-          const p=preds[finalCi][i];if(p){on++;if(isHit(p,targetSet(rs[i])))oh++}
-        }
-        for(let bi=0;bi<baselinePool.length;bi++){
-          const ci=byId.get(baselinePool[bi].id),p=preds[ci][i];if(!p)continue;
-          btrain[bi].n++;if(isHit(p,targetSet(rs[i])))btrain[bi].h++;
-        }
-      }
-      totalBaseH+=bh;totalBaseN+=bn;totalOptH+=oh;totalOptN+=on;
-      const status=finalRate>=70?'HARD_FREEZE':(finalRate>=(bh/bn*100)-1e-9?'OPTIMIZED_OR_EQUAL':'BASELINE_PRESERVED');
-      typeResults.push({name,n:rs.length,oosTests:on,baselineOOS:+pct(bh,bn).toFixed(2),optimizedOOS:+pct(oh,on).toFixed(2),gain:+(pct(oh,on)-pct(bh,bn)).toFixed(2),champion:{formula:fs[champion.fi],weight1:champion.w1,weight2:champion.w2,offset1:champion.o1,offset2:champion.o2},status,hardFreeze:finalRate>=70,safetyCap:87,decisions:decisions.length});
-      allAudit.push({name,n:rs.length,oosStart,finalChampion:champion.id,finalChampionRate:+finalRate.toFixed(2),frozen:frozenFlag});
+      // IMPORTANT: certification is based only on the sequential OOS stream above.
+      // There is NO final-champion replay over the same OOS rows.
+      const finalRate=pct(oosH,oosN),foldPass=foldStats.filter(f=>f.n>0&&f.rate>=70).length,cert=finalRate>=70&&oosN>=MIN_CERT_TESTS&&foldStats.length>=3&&foldPass>=2;
+      const finalChampion=champion||pool.find(c=>c.kind==='formula'&&c.fi===0&&c.w1===1&&c.w2===1&&c.o1===0&&c.o2===0);
+      const policy=finalChampion?{candidate:finalChampion,formula:finalChampion.kind==='formula'?finalChampion.formula:finalChampion.label,kind:finalChampion.kind,offset1:finalChampion.o1,offset2:finalChampion.o2,weight1:finalChampion.w1,weight2:finalChampion.w2,oosRate:+finalRate.toFixed(4),oosHits:oosH,oosTests:oosN,folds:foldStats.map(f=>({...f,rate:f.rate==null?null:+f.rate.toFixed(4)})),certified:cert,method:'strict-causal-expanding-wfo'}:null;
+      registry[name]=policy;
+      const tr={name,n:rs.length,oosTests:oosN,oosHits:oosH,oosRate:+finalRate.toFixed(2),folds:foldStats.map(f=>({...f,rate:f.rate==null?null:+f.rate.toFixed(2)})),foldsAt70:foldPass,champion:policy?{id:finalChampion.id,formula:policy.formula,kind:policy.kind,offset1:policy.offset1,offset2:policy.offset2,weight1:policy.weight1,weight2:policy.weight2}:null,certified:cert,status:cert?'CERTIFIED':'NOT_CERTIFIED',reason:cert?'CAUSAL_OOS_GATE_PASSED':'CAUSAL_OOS_BELOW_70_OR_INSUFFICIENT_BLOCK_SUPPORT',decisions:decisions.length};
+      typeResults.push(tr);audit.push({name,n:rs.length,certified:cert,oosHits:oosH,oosTests:oosN,oosRate:+finalRate.toFixed(4),folds:foldStats,finalChampion:finalChampion?.id||null});if(cert)certified++;else unresolved.push(tr);
       if(typeIndex%2===0)await sleep(0);
     }
-    const unresolved=typeResults.filter(x=>Number(x.optimizedOOS)<70);
-    const result={
-      version:VERSION,source:'embedded-PDF-clean',rows:rows.length,types:groups.size,formulas:20,
-      search:{offsets:OFFSETS,weights:WEIGHTS,candidatesPerFormula:OFFSETS.length*OFFSETS.length*WEIGHTS.length*WEIGHTS.length},
-      policy:{hardFreezeOOS:70,safetyCapOOS:87,strictNoRegression:true,walkForward:'expanding exact-type prior-only 70/30 holdout',localStorageUsed:false},
-      aggregate:{baselineOOS:+pct(totalBaseH,totalBaseN).toFixed(2),optimizedOOS:+pct(totalOptH,totalOptN).toFixed(2),gain:+(pct(totalOptH,totalOptN)-pct(totalBaseH,totalBaseN)).toFixed(2),accepted,rejected,frozen,atOrAbove70:typeResults.filter(x=>Number(x.optimizedOOS)>=70).length,unresolved:unresolved.length},
-      types:typeResults,unresolved:unresolved.map(x=>({name:x.name,oos:x.optimizedOOS,champion:x.champion})),
-      audit:allAudit,elapsedMs:+(performance.now()-started).toFixed(1)
-    };
-    window.__TYRANT5_RESULT__=Object.freeze(result);
-    window.__TYRANT5_STATUS__=Object.freeze({version:VERSION,done:true,aggregate:result.aggregate});
-    const box=document.getElementById('__tyrant5_panel');
-    if(box)box.innerHTML='<b>TYRANT 5 AUTO-OOS</b><br>20 formulas · '+result.rows.toLocaleString()+' clean rows · '+result.types+' types · Final OOS '+result.aggregate.optimizedOOS+'% · ≥70% '+result.aggregate.atOrAbove70+'/'+result.types+' · accepted '+accepted+' · rejected '+rejected+' · frozen '+frozen+(unresolved.length?' · <span style="color:#ff7d7d">unresolved '+unresolved.length+'</span>':'');
-    window.__TYRANT5_RUNNING__=false;
-    return result;
+    window.__TYRANT5_CERTIFIED_REGISTRY__=Object.freeze(registry);
+    const result={version:VERSION,source:'embedded-PDF-clean',rows:rows.length,types:groups.size,formulas:fs.length,candidatePool:pool.length,search:{baseFormulas:20,featureFormulas:FEATURE_NAMES.length,offsets:OFFSETS,weights:WEIGHTS},policy:{strictTemporalIsolation:true,expandingWalkForward:true,multiFold:true,noCurrentRowSelectionLeakage:true,noFinalChampionReplay:true,strictNoRegression:true,safetyCapOOS:87,certificationThreshold:70,minCertificationTests:MIN_CERT_TESTS,minPassingFolds:2,localStorageUsed:false,syntheticData:false,productionBinding:'CERTIFIED_REGISTRY_ONLY'},aggregate:{oosHits:totalH,oosTests:totalN,oosRate:+pct(totalH,totalN).toFixed(2),certifiedTypes:certified,notCertifiedTypes:unresolved.length,allCertified:certified===groups.size},types:typeResults,unresolved:unresolved.map(x=>({name:x.name,oosRate:x.oosRate,oosHits:x.oosHits,oosTests:x.oosTests,reason:x.reason})),audit,elapsedMs:+(performance.now()-started).toFixed(1)};
+    window.__TYRANT5_RESULT__=Object.freeze(result);window.__TYRANT5_STATUS__=Object.freeze({version:VERSION,done:true,aggregate:result.aggregate});
+    panel.innerHTML='<b>TYRANT-5 STRICT CAUSAL WFO</b><br>'+result.rows.toLocaleString()+' clean rows · '+result.types+' types · Aggregate OOS '+result.aggregate.oosRate+'% · CERTIFIED '+certified+'/'+result.types+(unresolved.length?' · <span style="color:#ff7d7d">NOT CERTIFIED '+unresolved.length+'</span>':' · ทุกประเภทผ่าน Certification Gate');
+    window.__TYRANT5_RUNNING__=false;return result;
   }
-  window.__TYRANT5__=Object.freeze({version:VERSION,run,config:{hardFreezeOOS:TARGET,safetyCapOOS:CAP,strictNoRegression:true,offsets:OFFSETS,weights:WEIGHTS}});
+  window.__TYRANT5__=Object.freeze({version:VERSION,run,config:{threshold:TARGET,safetyCap:CAP,strictTemporalIsolation:true,multiFold:true,offsets:OFFSETS,weights:WEIGHTS,features:FEATURE_NAMES},predictFeature:(candidate,history)=>{const b=featureBase(history,candidate?.feature);return b==null?null:[b,norm(b+1)]}});
   function boot(){
-    const input=document.getElementById('bulkInput');
-    if(!input)return;
     window.__TYRANT5_AUTORUN__=true;
-    if(window.__PDF_CLEAN_INPUT__)input.value=window.__PDF_CLEAN_INPUT__;
-    let panel=document.getElementById('__tyrant5_panel');
-    if(!panel){panel=document.createElement('div');panel.id='__tyrant5_panel';panel.className='panel';panel.style.margin='12px 0';panel.textContent='TYRANT 5 AUTO-OOS · กำลังเตรียม engine…';input.parentNode?.parentNode?.insertBefore(panel,input.parentNode?.parentNode?.firstChild||null)}
-    setTimeout(async()=>{
-      try{
-        if(typeof window.runEngine==='function')await window.runEngine();
-        await sleep(20);
-        await run();
-      }catch(e){
-        window.__TYRANT5_RUNNING__=false;
-        window.__TYRANT5_RESULT__={version:VERSION,error:String(e?.stack||e)};
-        if(panel)panel.textContent='TYRANT 5 ERROR · '+String(e?.message||e);
-      }
-    },80);
+    const panel=makePanel();panel.textContent='TYRANT-5 · กำลังรัน Strict Causal WFO จาก PDF-clean dataset — ไม่แตะ localStorage';
+    // Research initialization is automatic; Production runEngine remains a separate user action.
+    setTimeout(()=>run().catch(e=>{window.__TYRANT5_RUNNING__=false;window.__TYRANT5_RESULT__={version:VERSION,error:String(e?.stack||e)};const p=makePanel();p.textContent='TYRANT-5 ERROR · '+String(e?.message||e)}),80);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
