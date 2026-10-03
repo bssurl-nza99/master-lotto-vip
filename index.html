@@ -1577,7 +1577,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.30 — STRICT TYPE-OOS AUDIT / CAUSAL HARDENED / UI LOCK</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.32 — TYRANT 5 / STRICT TYPE-OOS / CAUSAL HARDENED</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -1761,7 +1761,18 @@ const formulas={
 'สูตร 6 — ร้อยบน + สิบล่าง':(A,B,C,D,E)=>{const d=norm(A+D);return[d,norm(d+1)]},
 'สูตร 7 — สิบบน + หน่วยล่าง + 2':(A,B,C,D,E)=>{const d=norm(B+E+2);return[d,norm(d+2)]},
 'สูตร 8 — ร้อยบน + หน่วยล่าง':(A,B,C,D,E)=>{const d=norm(A+E);return[d,norm(d+1)]},
-'สูตร 9 — หน่วยล่างก่อนหน้า + หน่วยล่างล่าสุด':(A,B,C,D,E,P)=>{if(!Number.isFinite(P))return null;const d=norm(P+E);return[d,norm(d+1)]}
+'สูตร 9 — หน่วยล่างก่อนหน้า + หน่วยล่างล่าสุด':(A,B,C,D,E,P)=>{if(!Number.isFinite(P))return null;const d=norm(P+E);return[d,norm(d+1)]},
+'สูตร 10 — หน่วยบนเดิม + หน่วยล่างล่าสุด':(A,B,C,D,E,P,pA,pB,pC,pD,pE)=>{if(!Number.isFinite(pC))return null;const d=norm(pC+E);return[d,norm(d+1)]},
+'สูตร 11 — หน่วยล่างเดิม + หน่วยบนล่าสุด':(A,B,C,D,E,P,pA,pB,pC,pD,pE)=>{if(!Number.isFinite(pE))return null;const d=norm(pE+C);return[d,norm(d+1)]},
+'สูตร 12 — ส่วนต่างสิบบน/สิบล่าง + หน่วยบน':(A,B,C,D,E)=>{const d=Math.abs(B-D)+C;return[d,norm(d+1)]},
+'สูตร 13 — ส่วนต่างผลรวมบน/ล่าง':(A,B,C,D,E)=>{const d=Math.abs((A+B+C)-(D+E));return[d,norm(d+1)]},
+'สูตร 14 — ร้อยบน + หน่วยบน + หน่วยล่าง':(A,B,C,D,E)=>{const d=A+C+E;return[d,norm(d+1)]},
+'สูตร 15 — สิบบน + สิบล่าง + หน่วยล่าง':(A,B,C,D,E)=>{const d=B+D+E;return[d,norm(d+1)]},
+'สูตร 16 — ร้อยบน + สิบบน + หน่วยล่าง':(A,B,C,D,E)=>{const d=A+B+E;return[d,norm(d+1)]},
+'สูตร 17 — หน่วยบน + สิบล่าง + หน่วยล่าง':(A,B,C,D,E)=>{const d=C+D+E;return[d,norm(d+1)]},
+'สูตร 18 — 2×ร้อยบน + สิบบน + หน่วยล่าง':(A,B,C,D,E)=>{const d=2*A+B+E;return[d,norm(d+1)]},
+'สูตร 19 — ร้อยบน + 2×สิบบน + สิบล่าง':(A,B,C,D,E)=>{const d=A+2*B+D;return[d,norm(d+1)]},
+'สูตร 20 — หน่วยบน + 2×หน่วยล่าง + สิบล่าง':(A,B,C,D,E)=>{const d=C+2*E+D;return[d,norm(d+1)]}
 };
 Object.freeze(formulas);const FORMULAS=Object.freeze(Object.keys(formulas));
 /* V1.3 THAI STOCK SPECIALIST — restored from V155 V95. This is NOT one of the 9 core formulas. */
@@ -1800,7 +1811,7 @@ function processingWindow(a,max=30){const sorted=sortRecords(a);if(!sorted.lengt
 function historicalIntelligenceWindow(a,max=HIST_MAX){return processingWindow(a,max)}
 function drawStateSummary(raw,processed){const rr=sortRecords(raw||[]),pp=Array.isArray(processed)?processed:results(rr),skipped=rr.filter(r=>r?.status==='skipped'),last=rr.at(-1)||null,lastResult=[...pp].at(-1)||null;return{rawRows:rr.length,resultRows:rr.filter(r=>r?.status==='result').length,skippedRows:skipped.length,latestStatus:last?.status||null,latestDate:last?.date||null,latestResultDate:lastResult?.date||null,latestSkipReason:last?.status==='skipped'?(last.skipReason||'NO_DRAW'):null,latestSkipMarker:last?.status==='skipped'?(last.skipMarker||''):null,boundaryBreaks:pp.filter(r=>r?.breakBefore).length}}
 function canonicalDateKey(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function execFormula(name,r,prev){const fn=formulas[name];if(!fn||!r||r.status!=='result')return null;const safePrev=r.breakBefore?null:prev,t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),p=safePrev?.n2?Number(safePrev.n2[1]):NaN;return fn(t[0],t[1],t[2],b[0],b[1],p)}
+function execFormula(name,r,prev){const fn=formulas[name];if(!fn||!r||r.status!=='result')return null;const safePrev=r.breakBefore?null:prev,t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),p=safePrev?.n2?Number(safePrev.n2[1]):NaN,pt=safePrev?.n3?safePrev.n3.split('').map(Number):[],pb=safePrev?.n2?safePrev.n2.split('').map(Number):[];return fn(t[0],t[1],t[2],b[0],b[1],p,pt[0],pt[1],pt[2],pb[0],pb[1])}
 function hit(pred,r){if(!pred)return{hit:false,hundredsOnly:false};const t=r.n3.split('').map(Number),b=r.n2.split('').map(Number),target=[t[1],t[2],b[0],b[1]],ok=pred.some(d=>target.includes(d)),ho=!ok&&pred.some(d=>d===t[0]);return{hit:ok,hundredsOnly:ho}}
 const __FORMULA_HISTORY_CACHE__=new WeakMap();
 function formulaHistory(rs,name){const __pt0=window.__PERFTRACE__.begin("formulaHistory"); try {if(!Array.isArray(rs)||rs.length<2)return [];const last=rs.at(-1),prev=rs.at(-2)||null;let by=__FORMULA_HISTORY_CACHE__.get(last);if(!by){by=new Map();__FORMULA_HISTORY_CACHE__.set(last,by)}if(by.has(name))return by.get(name);let out=[];if(prev){const pby=__FORMULA_HISTORY_CACHE__.get(prev);const prior=pby?.get(name);if(Array.isArray(prior))out=prior.slice();}const i=rs.length-2;if(out.length!==Math.max(0,i)){out=[];for(let j=0;j<rs.length-1;j++){if(rs[j+1]?.breakBefore)continue;const p=execFormula(name,rs[j],j?rs[j-1]:null);if(!p||rs[j+1]?.status!=='result')continue;const h=hit(p,rs[j+1]);out.push({source:rs[j].date,target:rs[j+1].date,pred:p,hit:h.hit,hundredsOnly:h.hundredsOnly})}}else if(!rs[rs.length-1]?.breakBefore){const p=execFormula(name,last,prev);if(p&&last?.status==='result'){/* current last predicts a future row; do not append */}}by.set(name,out);return out} finally { window.__PERFTRACE__.end("formulaHistory",__pt0); }}
@@ -2957,11 +2968,11 @@ const __FT_TRANSFORMS=__ftTransforms();
 function __ftSelectForType(rs){
  const key=String(rs?.[0]?.name||'')+'|'+String(rs?.at(-1)?.timestamp||rs?.at(-1)?.date||'');
  const hit=__FT_CAUSAL.cache.get(key); if(hit)return hit;
- const chosen=Array(9).fill(0); const detail=[];
+ const chosen=Array(FORMULAS.length).fill(0); const detail=[];
  // Training examples j use formula prediction from rows through j and target j+1.
  // For a current prediction at rs[n-1], only j <= n-2 is allowed; thus the current
  // row and its unknown target never participate in choosing a transform.
- for(let fi=0;fi<9;fi++){
+ for(let fi=0;fi<FORMULAS.length;fi++){
    const scores=__FT_TRANSFORMS.map((t,ti)=>({ti,n:0,h:0,recentN:0,recentH:0,blocks:[]}));
    const vals=[];
    for(let j=1;j<rs.length-1;j++){
@@ -2983,7 +2994,7 @@ function __ftSelectForType(rs){
  }
  const out={chosen,detail}; __FT_CAUSAL.cache.set(key,out); if(__FT_CAUSAL.cache.size>500){const k=__FT_CAUSAL.cache.keys().next().value;__FT_CAUSAL.cache.delete(k)} return out;
 }
-function currentPredictions(rs){const last=rs?.at(-1),prev=rs?.at(-2)||null,out={};if(!last)return out;let pol=null;try{pol=__ftSelectForType(rs)}catch{pol={chosen:Array(9).fill(0),detail:[]}}
+function currentPredictions(rs){const last=rs?.at(-1),prev=rs?.at(-2)||null,out={};if(!last)return out;let pol=null;try{pol=__ftSelectForType(rs)}catch{pol={chosen:Array(FORMULAS.length).fill(0),detail:[]}}
  for(let fi=0;fi<FORMULAS.length;fi++){const f=FORMULAS[fi],p=execFormula(f,last,prev);if(!p)continue;const m=__FT_TRANSFORMS[pol.chosen[fi]||0].sig;out[f]=p.map(d=>m[__ftNorm(d)]);}
  return out}
 function selectionRiskFromHistory(h){const a=Array.isArray(h)?h:[];if(!a.length)return{curMiss:0,curHit:0,maxMiss:0,maxHit:0,miss2:0,miss3:0};const st=streak(a),miss2=a.reduce((n,x,i)=>n+(i>0&&!x.hit&&!a[i-1].hit?1:0),0),miss3=a.reduce((n,x,i)=>n+(i>1&&!x.hit&&!a[i-1].hit&&!a[i-2].hit?1:0),0);return{curMiss:st.curMiss,curHit:st.curHit,maxMiss:st.maxMiss,maxHit:st.maxHit,miss2,miss3}}
@@ -4380,7 +4391,8 @@ const __EVO_POLICIES=Object.freeze((()=>{
    High-performing routes are locked and no longer spend 49-policy search work.
    Low-performing routes continue challenger search. Promotion happens only after
    completed OOS outcomes, so the current target can never train its own choice. */
-const __EVO_TARGET=.70, __EVO_MIN=16, __EVO_PROMOTE_EDGE=.010, __EVO_LOCK_TESTS=24;
+const __EVO_TARGET=.70, __EVO_MIN=16, __EVO_PROMOTE_EDGE=.010, __EVO_LOCK_TESTS=24, __EVO_SAFETY_CAP=.87;
+/* V3.40.31 PATCH: existing Targeted Optimization pool only; strict no-regression and 87% promotion cap. */
 const __EVO_STORE_KEY='__V1_9_29_CHAMPION_REGISTRY__';
 function __evoEnsure(mem){
   if(!mem)return null;
@@ -4447,7 +4459,7 @@ function __evoUpdate(mem,routeCtx,meta,targetSet){
   const pstats=rs.get(meta.selected?.id||'P00'), cur=e.champion.get(route);
   const curRate=cur?__evoPolicyRate(cur):.5;
   let best=null;
-  for(const p of meta.policies){const z=rs.get(p.id);if(!z||z.tests<__EVO_MIN)continue;const rate=__evoPolicyRate(z),edge=rate-curRate;if(rate>=__EVO_TARGET || (!cur&&rate>=curRate+__EVO_PROMOTE_EDGE) || (cur&&edge>=__EVO_PROMOTE_EDGE&&rate>=curRate))if(!best||rate>best.rate)best={id:p.id,tests:z.tests,hits:z.hits,rate,edge};}
+  for(const p of meta.policies){const z=rs.get(p.id);if(!z||z.tests<__EVO_MIN)continue;const rawRate=__evoPolicyRate(z),rate=Math.min(__EVO_SAFETY_CAP,rawRate),edge=rate-curRate;if(rate<curRate)continue;if(rate>=__EVO_TARGET || (!cur&&rate>=curRate+__EVO_PROMOTE_EDGE) || (cur&&edge>=__EVO_PROMOTE_EDGE&&rate>=curRate))if(!best||rate>best.rate)best={id:p.id,tests:z.tests,hits:z.hits,rate,edge};}
   if(best){
     const locked=best.rate>=__EVO_TARGET&&best.tests>=__EVO_LOCK_TESTS;
     const promoted={...best,locked,updatedAt:Date.now()};e.champion.set(route,promoted);__evoPersistChampion(route,promoted);
@@ -4458,6 +4470,9 @@ function __evoUpdate(mem,routeCtx,meta,targetSet){
 
 
 
+
+/* V3.40.31 STRICT POLICY AUDIT — Hard Freeze >=70%; below 70% remains in existing Targeted Optimization; any regression is rejected; promotion scoring capped at 87%. */
+window.__V34031_POLICY__=Object.freeze({version:'V3.40.31',hardFreezeOos:.70,safetyCap:.87,strictNoRegression:true,formulaSet:'F1-F20',fastPath:'F20',targetedOptimization:'TYRANT5-F1-F20-OOS-offset-weight-search',classify(rate,baseline){const r=Number(rate)||0,b=Number(baseline)||0;return Object.freeze({rate:r,baseline:b,hardFreeze:r>=.70,eligibleForTargetedOptimization:r<.70,strictNoRegression:r>=b,safetyCapped:Math.min(.87,r)});}});
 
 /* V1.9.43 RANK-PAIR INTELLIGENCE
    The board already contains the target in ~99.5% of OOS cases. This layer therefore
@@ -6455,8 +6470,8 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.40.30';
-window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
+const APP_BUILD_VERSION='V3.40.32-TYRANT5-PDF-OOS';
+window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1+tyrant5',f1f9Locked:false,coreBaselinePreserved:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 
 /* V3.40.26 STRICT AUDIT HARNESS
    Non-invasive production guard. It does not change F1-F9, cards, date pickers,
@@ -6521,7 +6536,7 @@ function runSystemHealth(){
   if(scripts<1)issues.push(`script blocks=${scripts}`);
   if(styles<1)issues.push('missing style block');
   if(!/function\s+parseInput\(/.test(s))issues.push('parseInput missing');
-  const expected=['F1','F2','F3','F4','F5','F6','F7','F8','F9'];
+  const expected=Array.from({length:20},(_,i)=>'F'+(i+1));
   const formulaNames=typeof FORMULAS==='undefined'?[]:FORMULAS;
   if(typeof formulas==='undefined'||Object.keys(formulas).length!==expected.length||formulaNames.length!==expected.length)issues.push('locked formula set incomplete');
   if(typeof formulas==='undefined'||Object.keys(formulas).length!==expected.length)issues.push('core formula registry mismatch');
@@ -6630,7 +6645,7 @@ function __researchBuildSnapshot(records,groups,bundles,startedAt){
   const formula={};for(const f of FORMULAS){let h=0,n=0;for(const r of rows){const x=r?.formulaAudit?.[f]??r?.formulaHits?.[f];if(x&&typeof x==='object'){h+=Number(x.hit??x.hits??0)||0;n+=Number(x.total??x.tests??0)||0}}formula[f]={hits:h,total:n,rate:n?Math.round(h/n*10000)/100:0}}
   const sel=rows.filter(r=>r.selectionHit).length,top2=rows.filter(r=>r.boardTop2Hit).length,inb=rows.filter(r=>r.targetInBoard).length,uni=rows.filter(r=>r.unionHit).length;
   const rate=(h,n)=>n?Math.round(h/n*10000)/100:0,rank={R1:0,R2:0,R3_5:0,R6_10:0,OUT:0};for(const r of rows){const rk=Number(r.targetRank);if(rk===1)rank.R1++;else if(rk===2)rank.R2++;else if(rk>=3&&rk<=5)rank.R3_5++;else if(rk>=6&&rk<=10)rank.R6_10++;else rank.OUT++}
-  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V2.8.9',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:rows.length,selection:rate(sel,rows.length),boardTop2:rate(top2,rows.length),inBoard:rate(inb,rows.length),union:rate(uni,rows.length),source:'current_actual_oos'},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,typeDNA:window.__TYPE_DNA__?.last||null,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:true,championLocked:true,proxyNotProof:true}}
+  return {schema:'LOTTERY_FORENSIC_RESEARCH_ARCHIVE',version:'V2.8.9',generatedAt:new Date().toISOString(),purpose:'Full-history chronological OOS evidence collection for one-shot forensic audit. Shadow/Research only.',baseline:{oos:rows.length,selection:rate(sel,rows.length),boardTop2:rate(top2,rows.length),inBoard:rate(inb,rows.length),union:rate(uni,rows.length),source:'current_actual_oos'},records,groupsMeta:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:Array.isArray(v)?v.length:0,first:Array.isArray(v)&&v[0]?.date||null,last:Array.isArray(v)&&v.at(-1)?.date||null}])),oos:{tests:rows.length,selectionHits:sel,selectionRate:rate(sel,rows.length),top2Hits:top2,top2Rate:rate(top2,rows.length),inBoardHits:inb,inBoardRate:rate(inb,rows.length),unionHits:uni,unionRate:rate(uni,rows.length),damage:rows.filter(r=>r.selectorDamage).length,rescue:rows.filter(r=>r.selectorRescued).length,rankBuckets:rank},formulaPerformance:formula,typeSummary:types,typeDNA:window.__TYPE_DNA__?.last||null,selectionLog:bundles.flatMap(b=>b?.selectionLog||[]),decisionLog:bundles.flatMap(b=>b?.decisionLog||[]),diagnosticRows:rows.map(__researchCompactRow),deepTypeAnalysis:__researchDeepTypeAnalysis(rows),integrity:__researchIntegrity(records,rows,types),systemHealth:window.__SYSTEM_HEALTH__||null,timing:{harvestMs:startedAt?performance.now()-startedAt:null},rules:{actualOOSOnly:true,productionMutation:false,autoPromotion:false,f1f9Locked:false,championLocked:true,proxyNotProof:true}}
 }
 function __researchPanel(snapshot,status='READY'){
   const root=$('researchPanel');if(!root)return;const s=__researchValidSnapshot(snapshot)?snapshot:null;
@@ -6689,10 +6704,10 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
     setProcessingProgress(5,'ขั้นที่ 1/4 · เตรียมข้อมูล','อ่านข้อมูลเข้าและตรวจสอบรูปแบบ',startedAt,100,5,true);
     await new Promise(r=>setTimeout(r,0));
     let stored=[];try{const raw=localStorage.getItem(STORAGE_KEY);stored=raw?JSON.parse(raw):[]}catch(e){stored=[]}
-    const allRecords=mergeStoredRecords(stored,incoming);
+    const embeddedBase=Array.isArray(window.__PDF_CLEAN_RECORDS__)?window.__PDF_CLEAN_RECORDS__:stored; const allRecords=mergeStoredRecords(embeddedBase,incoming);
     if(parsed.errors.length)showToast(`⚠️ พบข้อมูลที่อ่านไม่ได้ ${parsed.errors.length} รายการ`);
     if(!allRecords.length){$('result').innerHTML=parsed.errors.map(esc).join('<br>');return}
-    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(allRecords))}catch(e){showToast('⚠️ บันทึกประวัติในเครื่องไม่สำเร็จ')}
+    if(!window.__TYRANT5_AUTORUN__){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(allRecords))}catch(e){showToast('⚠️ บันทึกประวัติในเครื่องไม่สำเร็จ')}}
     const allByName={};for(const r of allRecords){(allByName[r.name]??=[]).push(r)}
     // V1.9 PERFORMANCE ROUTING:
     // Keep the full accumulated history in localStorage, but process only the
@@ -6732,6 +6747,7993 @@ async function runEngine(){const __pt0=window.__PERFTRACE__.begin("runEngine"); 
   }
 } finally { window.__LAST_RUN_TIMING__={ms:performance.now()-(window.__RUN_STARTED_AT__||performance.now()),finishedAt:new Date().toISOString()}; window.__PERFTRACE__.end("runEngine",__pt0); }}
 function applySummaryCollapse(lotteryCount){const result=$('result');if(!result)return;const blocks=[...result.querySelectorAll('.summary-table-container')];blocks.forEach(b=>{if(b.closest('.audit-collapse'))return;b.classList.remove('lazy-collapsed');});if(lotteryCount<AUDIT_TUNING.summaryCollapseMinLotteries)return;blocks.forEach((b,i)=>{const details=document.createElement('details');details.className='audit-collapse';const summary=document.createElement('summary');const heading=b.querySelector('h3,.lottery-audit-title,.consensus-head b');summary.textContent=(heading?.textContent||`ดูตารางสรุป ${i+1}`).trim();b.parentNode.insertBefore(details,b);details.appendChild(summary);details.appendChild(b);});}
+
+
+/* V3.40.31 PDF DATA PATCH: supplied PDF only; OCR cleanup + exact canonical-name/date dedup; no synthetic rows. */
+window.__PDF_CLEAN_META__=Object.freeze({source:'สถิติ.pdf',rawParsedRows:3002,cleanRows:1995,types:66,duplicateRows:1007,conflictingDuplicates:0,syntheticRows:0,dedupKey:'canonicalLotteryName|date'});
+window.__PDF_CLEAN_INPUT__=`รัฐบาลไทย | 1 ก.ค. 68
+246
+91
+
+รัฐบาลไทย | 16 ก.ค. 68
+324
+26
+
+รัฐบาลไทย | 1 ส.ค. 68
+852
+50
+
+รัฐบาลไทย | 16 ส.ค. 68
+865
+63
+
+รัฐบาลไทย | 1 ก.ย. 68
+356
+31
+
+รัฐบาลไทย | 16 ก.ย. 68
+646
+58
+
+รัฐบาลไทย | 1 ต.ค. 68
+978
+77
+
+รัฐบาลไทย | 16 ต.ค. 68
+696
+61
+
+รัฐบาลไทย | 1 พ.ย. 68
+898
+87
+
+รัฐบาลไทย | 16 พ.ย. 68
+145
+37
+
+รัฐบาลไทย | 1 ธ.ค. 68
+252
+22
+
+รัฐบาลไทย | 16 ธ.ค. 68
+895
+52
+
+รัฐบาลไทย | 2 ม.ค. 69
+706
+16
+
+รัฐบาลไทย | 17 ม.ค. 69
+972
+02
+
+รัฐบาลไทย | 1 ก.พ. 69
+629
+48
+
+รัฐบาลไทย | 16 ก.พ. 69
+563
+07
+
+รัฐบาลไทย | 1 มี.ค. 69
+866
+06
+
+รัฐบาลไทย | 16 มี.ค. 69
+009
+64
+
+รัฐบาลไทย | 1 เม.ย. 69
+514
+47
+
+รัฐบาลไทย | 16 เม.ย. 69
+612
+77
+
+รัฐบาลไทย | 2 พ.ค. 69
+077
+43
+
+รัฐบาลไทย | 16 พ.ค. 69
+387
+08
+
+รัฐบาลไทย | 1 มิ.ย. 69
+770
+95
+
+รัฐบาลไทย | 16 มิ.ย. 69
+184
+48
+
+รัฐบาลไทย | 1 ก.ค. 69
+495
+62
+
+รัฐบาลไทย | 16 ก.ค. 69
+214
+71
+
+มาเลย์ | 22 ก.ค. 69
+787
+16
+
+มาเลย์ | 25 ก.ค. 69
+215
+98
+
+มาเลย์ | 26 ก.ค. 69
+567
+54
+
+มาเลย์ | 29 ก.ค. 69
+584
+32
+
+มาเลย์ | 1 ส.ค. 69
+823
+32
+
+รัฐบาลไทย | 1 ส.ค. 69
+479
+69
+
+มาเลย์ | 2 ส.ค. 69
+630
+38
+
+มาเลย์ | 5 ส.ค. 69
+072
+33
+
+มาเลย์ | 8 ส.ค. 69
+924
+78
+
+มาเลย์ | 9 ส.ค. 69
+005
+15
+
+มาเลย์ | 12 ส.ค. 69
+850
+34
+
+หุ้นไทยบ่าย | 14 ส.ค. 69
+634
+98
+
+หุ้นไทยเช้า | 14 ส.ค. 69
+320
+84
+
+หุ้นไทยเที่ยง | 14 ส.ค. 69
+361
+25
+
+หุ้นไทยเย็น | 14 ส.ค. 69
+606
+30
+
+มาเลย์ | 15 ส.ค. 69
+039
+96
+
+มาเลย์ | 16 ส.ค. 69
+680
+87
+
+รัฐบาลไทย | 16 ส.ค. 69
+615
+53
+
+หุ้นไทยบ่าย | 17 ส.ค. 69
+255
+49
+
+หุ้นไทยเช้า | 17 ส.ค. 69
+533
+27
+
+หุ้นไทยเที่ยง | 17 ส.ค. 69
+402
+96
+
+หุ้นไทยเย็น | 17 ส.ค. 69
+744
+38
+
+หุ้นรัสเซีย | 18 ส.ค. 69
+130
+69
+
+หุ้นไทยบ่าย | 18 ส.ค. 69
+123
+21
+
+หุ้นไทยเช้า | 18 ส.ค. 69
+590
+46
+
+หุ้นไทยเที่ยง | 18 ส.ค. 69
+861
+17
+
+หุ้นไทยเย็น | 18 ส.ค. 69
+062
+82
+
+มาเลย์ | 19 ส.ค. 69
+416
+26
+
+ลาวพัฒนา | 19 ส.ค. 69
+063
+60
+
+หุ้นจีนบ่าย | 19 ส.ค. 69
+015
+35
+
+หุ้นจีนเช้า | 19 ส.ค. 69
+176
+74
+
+หุ้นดาวโจนส์ | 19 ส.ค. 69
+305
+65
+
+หุ้นนิคเคอิบ่าย | 19 ส.ค. 69
+642
+31
+
+หุ้นนิคเคอิเช้า | 19 ส.ค. 69
+425
+48
+
+หุ้นรัสเซีย | 19 ส.ค. 69
+050
+20
+
+หุ้นสิงคโปร์ | 19 ส.ค. 69
+424
+16
+
+หุ้นอังกฤษ | 19 ส.ค. 69
+335
+31
+
+หุ้นอินเดีย | 19 ส.ค. 69
+968
+78
+
+หุ้นอียิปต์ | 19 ส.ค. 69
+265
+13
+
+หุ้นฮั่งเส็งบ่าย | 19 ส.ค. 69
+507
+92
+
+หุ้นฮั่งเส็งเช้า | 19 ส.ค. 69
+338
+23
+
+หุ้นเกาหลี | 19 ส.ค. 69
+688
+66
+
+หุ้นเยอรมัน | 19 ส.ค. 69
+133
+03
+
+หุ้นไต้หวัน | 19 ส.ค. 69
+935
+33
+
+หุ้นไทยบ่าย | 19 ส.ค. 69
+763
+99
+
+หุ้นไทยเช้า | 19 ส.ค. 69
+506
+56
+
+หุ้นไทยเที่ยง | 19 ส.ค. 69
+655
+07
+
+หุ้นไทยเย็น | 19 ส.ค. 69
+276
+86
+
+ลาวพัฒนา | 20 ส.ค. 69
+900
+49
+
+หุ้นจีนบ่าย | 20 ส.ค. 69
+278
+63
+
+หุ้นจีนเช้า | 20 ส.ค. 69
+441
+26
+
+หุ้นดาวโจนส์ | 20 ส.ค. 69
+921
+84
+
+หุ้นนิคเคอิบ่าย | 20 ส.ค. 69
+679
+37
+
+หุ้นนิคเคอิเช้า | 20 ส.ค. 69
+249
+07
+
+หุ้นรัสเซีย | 20 ส.ค. 69
+326
+24
+
+หุ้นสิงคโปร์ | 20 ส.ค. 69
+191
+33
+
+หุ้นอังกฤษ | 20 ส.ค. 69
+816
+81
+
+หุ้นอินเดีย | 20 ส.ค. 69
+772
+04
+
+หุ้นอียิปต์ | 20 ส.ค. 69
+707
+42
+
+หุ้นฮั่งเส็งบ่าย | 20 ส.ค. 69
+849
+42
+
+หุ้นฮั่งเส็งเช้า | 20 ส.ค. 69
+632
+25
+
+หุ้นเกาหลี | 20 ส.ค. 69
+276
+88
+
+หุ้นเยอรมัน | 20 ส.ค. 69
+304
+29
+
+หุ้นไต้หวัน | 20 ส.ค. 69
+374
+39
+
+หุ้นไทยบ่าย | 20 ส.ค. 69
+375
+99
+
+หุ้นไทยเช้า | 20 ส.ค. 69
+612
+36
+
+หุ้นไทยเที่ยง | 20 ส.ค. 69
+126
+50
+
+หุ้นไทยเย็น | 20 ส.ค. 69
+699
+23
+
+ลาวพัฒนา | 21 ส.ค. 69
+253
+02
+
+หุ้นจีนบ่าย | 21 ส.ค. 69
+417
+39
+
+หุ้นจีนเช้า | 21 ส.ค. 69
+145
+67
+
+หุ้นดาวโจนส์ | 21 ส.ค. 69
+701
+80
+
+หุ้นนิคเคอิบ่าย | 21 ส.ค. 69
+636
+43
+
+หุ้นนิคเคอิเช้า | 21 ส.ค. 69
+845
+34
+
+หุ้นรัสเซีย | 21 ส.ค. 69
+250
+24
+
+หุ้นสิงคโปร์ | 21 ส.ค. 69
+896
+05
+
+หุ้นอังกฤษ | 21 ส.ค. 69
+656
+40
+
+หุ้นอินเดีย | 21 ส.ค. 69
+083
+11
+
+หุ้นฮั่งเส็งบ่าย | 21 ส.ค. 69
+946
+97
+
+หุ้นฮั่งเส็งเช้า | 21 ส.ค. 69
+324
+75
+
+หุ้นเกาหลี | 21 ส.ค. 69
+838
+62
+
+หุ้นเยอรมัน | 21 ส.ค. 69
+656
+52
+
+หุ้นไต้หวัน | 21 ส.ค. 69
+429
+55
+
+หุ้นไทยบ่าย | 21 ส.ค. 69
+605
+06
+
+หุ้นไทยเช้า | 21 ส.ค. 69
+084
+85
+
+หุ้นไทยเที่ยง | 21 ส.ค. 69
+176
+77
+
+หุ้นไทยเย็น | 21 ส.ค. 69
+178
+79
+
+มาเลย์ | 22 ส.ค. 69
+367
+27
+
+มาเลย์ | 23 ส.ค. 69
+456
+83
+
+หุ้นอียิปต์ | 23 ส.ค. 69
+036
+29
+
+ลาวพัฒนา | 24 ส.ค. 69
+552
+55
+
+หุ้นจีนบ่าย | 24 ส.ค. 69
+429
+88
+
+หุ้นจีนเช้า | 24 ส.ค. 69
+012
+05
+
+หุ้นดาวโจนส์ | 24 ส.ค. 69
+716
+15
+
+หุ้นนิคเคอิบ่าย | 24 ส.ค. 69
+809
+27
+
+หุ้นนิคเคอิเช้า | 24 ส.ค. 69
+871
+65
+
+หุ้นรัสเซีย | 24 ส.ค. 69
+409
+41
+
+หุ้นสิงคโปร์ | 24 ส.ค. 69
+046
+50
+
+หุ้นอังกฤษ | 24 ส.ค. 69
+432
+76
+
+หุ้นอินเดีย | 24 ส.ค. 69
+911
+72
+
+หุ้นอียิปต์ | 24 ส.ค. 69
+484
+52
+
+หุ้นฮั่งเส็งบ่าย | 24 ส.ค. 69
+733
+13
+
+หุ้นฮั่งเส็งเช้า | 24 ส.ค. 69
+523
+23
+
+หุ้นเกาหลี | 24 ส.ค. 69
+623
+15
+
+หุ้นเยอรมัน | 24 ส.ค. 69
+660
+96
+
+หุ้นไต้หวัน | 24 ส.ค. 69
+232
+97
+
+หุ้นไทยบ่าย | 24 ส.ค. 69
+912
+66
+
+หุ้นไทยเช้า | 24 ส.ค. 69
+336
+42
+
+หุ้นไทยเที่ยง | 24 ส.ค. 69
+532
+46
+
+หุ้นไทยเย็น | 24 ส.ค. 69
+005
+73
+
+ลาวพัฒนา | 25 ส.ค. 69
+600
+66
+
+หุ้นจีนบ่าย | 25 ส.ค. 69
+587
+42
+
+หุ้นจีนเช้า | 25 ส.ค. 69
+706
+23
+
+หุ้นดาวโจนส์ | 25 ส.ค. 69
+740
+24
+
+หุ้นนิคเคอิบ่าย | 25 ส.ค. 69
+643
+34
+
+หุ้นนิคเคอิเช้า | 25 ส.ค. 69
+868
+59
+
+หุ้นรัสเซีย | 25 ส.ค. 69
+095
+86
+
+หุ้นสิงคโปร์ | 25 ส.ค. 69
+568
+22
+
+หุ้นอังกฤษ | 25 ส.ค. 69
+616
+84
+
+หุ้นอินเดีย | 25 ส.ค. 69
+609
+98
+
+หุ้นอียิปต์ | 25 ส.ค. 69
+703
+19
+
+หุ้นฮั่งเส็งบ่าย | 25 ส.ค. 69
+110
+23
+
+หุ้นฮั่งเส็งเช้า | 25 ส.ค. 69
+319
+14
+
+หุ้นเกาหลี | 25 ส.ค. 69
+387
+64
+
+หุ้นเยอรมัน | 25 ส.ค. 69
+614
+54
+
+หุ้นไต้หวัน | 25 ส.ค. 69
+946
+14
+
+หุ้นไทยบ่าย | 25 ส.ค. 69
+194
+11
+
+หุ้นไทยเช้า | 25 ส.ค. 69
+180
+75
+
+หุ้นไทยเที่ยง | 25 ส.ค. 69
+711
+94
+
+หุ้นไทยเย็น | 25 ส.ค. 69
+201
+04
+
+มาเลย์ | 26 ส.ค. 69
+940
+42
+
+ลาวพัฒนา | 26 ส.ค. 69
+523
+55
+
+หุ้นจีนบ่าย | 26 ส.ค. 69
+133
+46
+
+หุ้นจีนเช้า | 26 ส.ค. 69
+129
+42
+
+หุ้นดาวโจนส์ | 26 ส.ค. 69
+388
+52
+
+หุ้นนิคเคอิบ่าย | 26 ส.ค. 69
+216
+73
+
+หุ้นนิคเคอิเช้า | 26 ส.ค. 69
+755
+12
+
+หุ้นรัสเซีย | 26 ส.ค. 69
+566
+29
+
+หุ้นสิงคโปร์ | 26 ส.ค. 69
+159
+09
+
+หุ้นอังกฤษ | 26 ส.ค. 69
+812
+04
+
+หุ้นอินเดีย | 26 ส.ค. 69
+294
+15
+
+หุ้นอียิปต์ | 26 ส.ค. 69
+654
+49
+
+หุ้นฮั่งเส็งบ่าย | 26 ส.ค. 69
+297
+87
+
+หุ้นฮั่งเส็งเช้า | 26 ส.ค. 69
+540
+30
+
+หุ้นเกาหลี | 26 ส.ค. 69
+424
+37
+
+หุ้นเยอรมัน | 26 ส.ค. 69
+596
+82
+
+หุ้นไต้หวัน | 26 ส.ค. 69
+262
+16
+
+หุ้นไทยบ่าย | 26 ส.ค. 69
+984
+83
+
+หุ้นไทยเช้า | 26 ส.ค. 69
+598
+97
+
+หุ้นไทยเที่ยง | 26 ส.ค. 69
+037
+36
+
+หุ้นไทยเย็น | 26 ส.ค. 69
+692
+91
+
+ลาวพัฒนา | 27 ส.ค. 69
+759
+97
+
+หุ้นจีนบ่าย | 27 ส.ค. 69
+888
+55
+
+หุ้นจีนเช้า | 27 ส.ค. 69
+593
+60
+
+หุ้นดาวโจนส์ | 27 ส.ค. 69
+944
+56
+
+หุ้นนิคเคอิบ่าย | 27 ส.ค. 69
+198
+18
+
+หุ้นนิคเคอิเช้า | 27 ส.ค. 69
+419
+97
+
+หุ้นรัสเซีย | 27 ส.ค. 69
+237
+71
+
+หุ้นสิงคโปร์ | 27 ส.ค. 69
+412
+47
+
+หุ้นอังกฤษ | 27 ส.ค. 69
+254
+58
+
+หุ้นอินเดีย | 27 ส.ค. 69
+359
+35
+
+หุ้นอียิปต์ | 27 ส.ค. 69
+654
+00
+
+หุ้นฮั่งเส็งบ่าย | 27 ส.ค. 69
+574
+23
+
+หุ้นฮั่งเส็งเช้า | 27 ส.ค. 69
+493
+04
+
+หุ้นเกาหลี | 27 ส.ค. 69
+377
+53
+
+หุ้นเยอรมัน | 27 ส.ค. 69
+724
+28
+
+หุ้นไต้หวัน | 27 ส.ค. 69
+522
+60
+
+หุ้นไทยบ่าย | 27 ส.ค. 69
+883
+91
+
+หุ้นไทยเช้า | 27 ส.ค. 69
+767
+75
+
+หุ้นไทยเที่ยง | 27 ส.ค. 69
+703
+11
+
+หุ้นไทยเย็น | 27 ส.ค. 69
+370
+22
+
+ลาวพัฒนา | 28 ส.ค. 69
+623
+06
+
+หุ้นจีนบ่าย | 28 ส.ค. 69
+307
+81
+
+หุ้นจีนเช้า | 28 ส.ค. 69
+983
+05
+
+หุ้นดาวโจนส์ | 28 ส.ค. 69
+999
+45
+
+หุ้นนิคเคอิบ่าย | 28 ส.ค. 69
+556
+58
+
+หุ้นนิคเคอิเช้า | 28 ส.ค. 69
+288
+90
+
+หุ้นรัสเซีย | 28 ส.ค. 69
+276
+39
+
+หุ้นสิงคโปร์ | 28 ส.ค. 69
+993
+81
+
+หุ้นอังกฤษ | 28 ส.ค. 69
+426
+72
+
+หุ้นอินเดีย | 28 ส.ค. 69
+451
+92
+
+หุ้นฮั่งเส็งบ่าย | 28 ส.ค. 69
+479
+05
+
+หุ้นฮั่งเส็งเช้า | 28 ส.ค. 69
+489
+15
+
+หุ้นเกาหลี | 28 ส.ค. 69
+278
+99
+
+หุ้นเยอรมัน | 28 ส.ค. 69
+999
+75
+
+หุ้นไต้หวัน | 28 ส.ค. 69
+145
+23
+
+หุ้นไทยบ่าย | 28 ส.ค. 69
+249
+21
+
+หุ้นไทยเช้า | 28 ส.ค. 69
+739
+31
+
+หุ้นไทยเที่ยง | 28 ส.ค. 69
+508
+62
+
+หุ้นไทยเย็น | 28 ส.ค. 69
+122
+48
+
+มาเลย์ | 29 ส.ค. 69
+535
+64
+
+มาเลย์ | 30 ส.ค. 69
+079
+88
+
+ลาวประตูชัย | 30 ส.ค. 69
+765
+70
+
+หุ้นอียิปต์ | 30 ส.ค. 69
+734
+20
+
+ฮานอย 4D | 30 ส.ค. 69
+748
+04
+
+ฮานอย Extra | 30 ส.ค. 69
+892
+80
+
+จีน VIP บ่าย | 31 ส.ค. 69
+814
+62
+
+จีน VIP เช้า | 31 ส.ค. 69
+004
+13
+
+นิคเคอิ VIP บ่าย | 31 ส.ค. 69
+866
+38
+
+นิคเคอิ VIP เช้า | 31 ส.ค. 69
+339
+47
+
+ประชาชนลาว | 31 ส.ค. 69
+726
+40
+
+รัสเซีย VIP | 31 ส.ค. 69
+913
+80
+
+ลาว Extra | 31 ส.ค. 69
+489
+96
+
+ลาว HD | 31 ส.ค. 69
+107
+41
+
+ลาว VIP | 31 ส.ค. 69
+504
+65
+
+ลาวกาชาด | 31 ส.ค. 69
+418
+27
+
+ลาวทีวี | 31 ส.ค. 69
+462
+42
+
+ลาวประตูชัย | 31 ส.ค. 69
+313
+85
+
+ลาวพัฒนา | 31 ส.ค. 69
+389
+43
+
+ลาวพิเศษ | 31 ส.ค. 69
+133
+81
+
+ลาวสตาร์ | 31 ส.ค. 69
+755
+41
+
+ลาวสตาร์ VIP | 31 ส.ค. 69
+695
+44
+
+ลาวสันติภาพ | 31 ส.ค. 69
+176
+18
+
+ลาวสามัคคี | 31 ส.ค. 69
+760
+97
+
+ลาวสามัคคี VIP | 31 ส.ค. 69
+130
+81
+
+ลาวอาเซียน | 31 ส.ค. 69
+285
+63
+
+ลาวเช้า | 31 ส.ค. 69
+440
+10
+
+สิงคโปร์ VIP | 31 ส.ค. 69
+342
+53
+
+หุ้นจีนบ่าย | 31 ส.ค. 69
+500
+93
+
+หุ้นจีนเช้า | 31 ส.ค. 69
+299
+08
+
+หุ้นดาวโจนส์ | 31 ส.ค. 69
+590
+09
+
+หุ้นนิคเคอิบ่าย | 31 ส.ค. 69
+193
+63
+
+หุ้นนิคเคอิเช้า | 31 ส.ค. 69
+160
+96
+
+หุ้นรัสเซีย | 31 ส.ค. 69
+852
+76
+
+หุ้นสิงคโปร์ | 31 ส.ค. 69
+536
+43
+
+หุ้นอินเดีย | 31 ส.ค. 69
+727
+24
+
+หุ้นอียิปต์ | 31 ส.ค. 69
+604
+30
+
+หุ้นฮั่งเส็งบ่าย | 31 ส.ค. 69
+699
+80
+
+หุ้นฮั่งเส็งเช้า | 31 ส.ค. 69
+236
+43
+
+หุ้นเกาหลี | 31 ส.ค. 69
+959
+81
+
+หุ้นเยอรมัน | 31 ส.ค. 69
+811
+88
+
+หุ้นไต้หวัน | 31 ส.ค. 69
+847
+98
+
+หุ้นไทยบ่าย | 31 ส.ค. 69
+684
+62
+
+หุ้นไทยเช้า | 31 ส.ค. 69
+627
+05
+
+หุ้นไทยเที่ยง | 31 ส.ค. 69
+667
+45
+
+หุ้นไทยเย็น | 31 ส.ค. 69
+716
+94
+
+อังกฤษ VIP | 31 ส.ค. 69
+085
+42
+
+ฮั่งเส็ง VIP บ่าย | 31 ส.ค. 69
+188
+65
+
+ฮั่งเส็ง VIP เช้า | 31 ส.ค. 69
+714
+18
+
+ฮานอย 4D | 31 ส.ค. 69
+633
+09
+
+ฮานอย Extra | 31 ส.ค. 69
+263
+82
+
+ฮานอย HD | 31 ส.ค. 69
+523
+44
+
+ฮานอย VIP | 31 ส.ค. 69
+738
+41
+
+ฮานอยกาชาด | 31 ส.ค. 69
+700
+43
+
+ฮานอยดึก | 31 ส.ค. 69
+900
+36
+
+ฮานอยทีวี | 31 ส.ค. 69
+047
+15
+
+ฮานอยปกติ | 31 ส.ค. 69
+644
+80
+
+ฮานอยพัฒนา | 31 ส.ค. 69
+328
+48
+
+ฮานอยพิเศษ | 31 ส.ค. 69
+319
+12
+
+ฮานอยสตาร์ | 31 ส.ค. 69
+520
+59
+
+ฮานอยสามัคคี | 31 ส.ค. 69
+180
+24
+
+ฮานอยเฉพาะกิจ | 31 ส.ค. 69
+890
+68
+
+ฮานอยเช้า | 31 ส.ค. 69
+033
+81
+
+เกาหลี VIP | 31 ส.ค. 69
+588
+61
+
+เยอรมัน VIP | 31 ส.ค. 69
+950
+32
+
+ไต้หวัน VIP | 31 ส.ค. 69
+417
+90
+
+จีน VIP บ่าย | 1 ก.ย. 69
+964
+95
+
+จีน VIP เช้า | 1 ก.ย. 69
+344
+93
+
+ดาวโจนส์ VIP | 1 ก.ย. 69
+514
+39
+
+ดาวโจนส์สตาร์ | 1 ก.ย. 69
+788
+93
+
+นิคเคอิ VIP บ่าย | 1 ก.ย. 69
+652
+35
+
+นิคเคอิ VIP เช้า | 1 ก.ย. 69
+205
+28
+
+ประชาชนลาว | 1 ก.ย. 69
+635
+27
+
+รัฐบาลไทย | 1 ก.ย. 69
+212
+04
+
+รัสเซีย VIP | 1 ก.ย. 69
+061
+33
+
+ลาว Extra | 1 ก.ย. 69
+432
+64
+
+ลาว HD | 1 ก.ย. 69
+903
+26
+
+ลาว VIP | 1 ก.ย. 69
+073
+60
+
+ลาวกาชาด | 1 ก.ย. 69
+477
+20
+
+ลาวทีวี | 1 ก.ย. 69
+507
+89
+
+ลาวประตูชัย | 1 ก.ย. 69
+915
+36
+
+ลาวพัฒนา | 1 ก.ย. 69
+475
+84
+
+ลาวพิเศษ | 1 ก.ย. 69
+305
+03
+
+ลาวสตาร์ | 1 ก.ย. 69
+701
+92
+
+ลาวสตาร์ VIP | 1 ก.ย. 69
+094
+31
+
+ลาวสันติภาพ | 1 ก.ย. 69
+616
+25
+
+ลาวสามัคคี | 1 ก.ย. 69
+813
+98
+
+ลาวสามัคคี VIP | 1 ก.ย. 69
+483
+24
+
+ลาวอาเซียน | 1 ก.ย. 69
+767
+29
+
+ลาวเช้า | 1 ก.ย. 69
+584
+94
+
+สิงคโปร์ VIP | 1 ก.ย. 69
+673
+75
+
+หุ้นจีนบ่าย | 1 ก.ย. 69
+238
+62
+
+หุ้นจีนเช้า | 1 ก.ย. 69
+311
+89
+
+หุ้นดาวโจนส์ | 1 ก.ย. 69
+688
+02
+
+หุ้นนิคเคอิบ่าย | 1 ก.ย. 69
+534
+59
+
+หุ้นนิคเคอิเช้า | 1 ก.ย. 69
+033
+60
+
+หุ้นรัสเซีย | 1 ก.ย. 69
+814
+62
+
+หุ้นสิงคโปร์ | 1 ก.ย. 69
+037
+99
+
+หุ้นอังกฤษ | 1 ก.ย. 69
+928
+98
+
+หุ้นอินเดีย | 1 ก.ย. 69
+428
+99
+
+หุ้นอียิปต์ | 1 ก.ย. 69
+129
+25
+
+หุ้นฮั่งเส็งบ่าย | 1 ก.ย. 69
+973
+26
+
+หุ้นฮั่งเส็งเช้า | 1 ก.ย. 69
+088
+11
+
+หุ้นเกาหลี | 1 ก.ย. 69
+383
+76
+
+หุ้นเยอรมัน | 1 ก.ย. 69
+011
+00
+
+หุ้นไต้หวัน | 1 ก.ย. 69
+872
+25
+
+หุ้นไทยบ่าย | 1 ก.ย. 69
+311
+95
+
+หุ้นไทยเช้า | 1 ก.ย. 69
+211
+95
+
+หุ้นไทยเที่ยง | 1 ก.ย. 69
+948
+32
+
+หุ้นไทยเย็น | 1 ก.ย. 69
+168
+48
+
+อังกฤษ VIP | 1 ก.ย. 69
+602
+48
+
+ฮั่งเส็ง VIP บ่าย | 1 ก.ย. 69
+719
+79
+
+ฮั่งเส็ง VIP เช้า | 1 ก.ย. 69
+497
+12
+
+ฮานอย 4D | 1 ก.ย. 69
+448
+41
+
+ฮานอย Extra | 1 ก.ย. 69
+330
+06
+
+ฮานอย HD | 1 ก.ย. 69
+038
+80
+
+ฮานอย VIP | 1 ก.ย. 69
+663
+18
+
+ฮานอยกาชาด | 1 ก.ย. 69
+149
+68
+
+ฮานอยดึก | 1 ก.ย. 69
+433
+62
+
+ฮานอยทีวี | 1 ก.ย. 69
+279
+17
+
+ฮานอยปกติ | 1 ก.ย. 69
+521
+64
+
+ฮานอยพัฒนา | 1 ก.ย. 69
+726
+17
+
+ฮานอยพิเศษ | 1 ก.ย. 69
+989
+37
+
+ฮานอยสตาร์ | 1 ก.ย. 69
+337
+19
+
+ฮานอยสามัคคี | 1 ก.ย. 69
+632
+95
+
+ฮานอยอาเซียน | 1 ก.ย. 69
+664
+74
+
+ฮานอยเฉพาะกิจ | 1 ก.ย. 69
+934
+74
+
+ฮานอยเช้า | 1 ก.ย. 69
+885
+78
+
+เกาหลี VIP | 1 ก.ย. 69
+616
+34
+
+เยอรมัน VIP | 1 ก.ย. 69
+377
+20
+
+ไต้หวัน VIP | 1 ก.ย. 69
+671
+85
+
+จีน VIP บ่าย | 2 ก.ย. 69
+912
+62
+
+จีน VIP เช้า | 2 ก.ย. 69
+723
+79
+
+ดาวโจนส์ VIP | 2 ก.ย. 69
+601
+33
+
+ดาวโจนส์สตาร์ | 2 ก.ย. 69
+481
+41
+
+นิคเคอิ VIP บ่าย | 2 ก.ย. 69
+734
+36
+
+นิคเคอิ VIP เช้า | 2 ก.ย. 69
+831
+55
+
+ประชาชนลาว | 2 ก.ย. 69
+181
+05
+
+มาเลย์ | 2 ก.ย. 69
+483
+21
+
+รัสเซีย VIP | 2 ก.ย. 69
+270
+34
+
+ลาว Extra | 2 ก.ย. 69
+238
+43
+
+ลาว HD | 2 ก.ย. 69
+586
+45
+
+ลาว VIP | 2 ก.ย. 69
+759
+97
+
+ลาวกาชาด | 2 ก.ย. 69
+362
+73
+
+ลาวทีวี | 2 ก.ย. 69
+726
+03
+
+ลาวประตูชัย | 2 ก.ย. 69
+067
+05
+
+ลาวพัฒนา | 2 ก.ย. 69
+351
+53
+
+ลาวพิเศษ | 2 ก.ย. 69
+233
+62
+
+ลาวสตาร์ | 2 ก.ย. 69
+573
+00
+
+ลาวสตาร์ VIP | 2 ก.ย. 69
+871
+68
+
+ลาวสันติภาพ | 2 ก.ย. 69
+280
+17
+
+ลาวสามัคคี | 2 ก.ย. 69
+431
+14
+
+ลาวสามัคคี VIP | 2 ก.ย. 69
+975
+99
+
+ลาวอาเซียน | 2 ก.ย. 69
+961
+98
+
+ลาวเช้า | 2 ก.ย. 69
+374
+70
+
+สิงคโปร์ VIP | 2 ก.ย. 69
+187
+60
+
+หุ้นจีนบ่าย | 2 ก.ย. 69
+155
+83
+
+หุ้นจีนเช้า | 2 ก.ย. 69
+533
+05
+
+หุ้นดาวโจนส์ | 2 ก.ย. 69
+195
+07
+
+หุ้นนิคเคอิบ่าย | 2 ก.ย. 69
+564
+70
+
+หุ้นนิคเคอิเช้า | 2 ก.ย. 69
+316
+18
+
+หุ้นรัสเซีย | 2 ก.ย. 69
+341
+73
+
+หุ้นสิงคโปร์ | 2 ก.ย. 69
+411
+74
+
+หุ้นอังกฤษ | 2 ก.ย. 69
+645
+83
+
+หุ้นอินเดีย | 2 ก.ย. 69
+035
+93
+
+หุ้นอียิปต์ | 2 ก.ย. 69
+972
+43
+
+หุ้นฮั่งเส็งบ่าย | 2 ก.ย. 69
+121
+52
+
+หุ้นฮั่งเส็งเช้า | 2 ก.ย. 69
+722
+51
+
+หุ้นเกาหลี | 2 ก.ย. 69
+297
+86
+
+หุ้นเยอรมัน | 2 ก.ย. 69
+933
+78
+
+หุ้นไต้หวัน | 2 ก.ย. 69
+472
+00
+
+หุ้นไทยบ่าย | 2 ก.ย. 69
+699
+69
+
+หุ้นไทยเช้า | 2 ก.ย. 69
+119
+49
+
+หุ้นไทยเที่ยง | 2 ก.ย. 69
+841
+27
+
+หุ้นไทยเย็น | 2 ก.ย. 69
+307
+61
+
+อังกฤษ VIP | 2 ก.ย. 69
+755
+12
+
+ฮั่งเส็ง VIP บ่าย | 2 ก.ย. 69
+422
+59
+
+ฮั่งเส็ง VIP เช้า | 2 ก.ย. 69
+301
+60
+
+ฮานอย 4D | 2 ก.ย. 69
+494
+02
+
+ฮานอย Extra | 2 ก.ย. 69
+474
+26
+
+ฮานอย HD | 2 ก.ย. 69
+700
+98
+
+ฮานอย VIP | 2 ก.ย. 69
+891
+82
+
+ฮานอยกาชาด | 2 ก.ย. 69
+959
+28
+
+ฮานอยดึก | 2 ก.ย. 69
+490
+48
+
+ฮานอยทีวี | 2 ก.ย. 69
+476
+61
+
+ฮานอยปกติ | 2 ก.ย. 69
+542
+43
+
+ฮานอยพัฒนา | 2 ก.ย. 69
+106
+88
+
+ฮานอยพิเศษ | 2 ก.ย. 69
+761
+87
+
+ฮานอยสตาร์ | 2 ก.ย. 69
+934
+53
+
+ฮานอยสามัคคี | 2 ก.ย. 69
+709
+76
+
+ฮานอยอาเซียน | 2 ก.ย. 69
+495
+56
+
+ฮานอยเฉพาะกิจ | 2 ก.ย. 69
+848
+14
+
+ฮานอยเช้า | 2 ก.ย. 69
+810
+93
+
+เกาหลี VIP | 2 ก.ย. 69
+728
+95
+
+เยอรมัน VIP | 2 ก.ย. 69
+965
+28
+
+ไต้หวัน VIP | 2 ก.ย. 69
+177
+08
+
+จีน VIP บ่าย | 3 ก.ย. 69
+887
+67
+
+จีน VIP เช้า | 3 ก.ย. 69
+164
+13
+
+ดาวโจนส์ VIP | 3 ก.ย. 69
+080
+41
+
+ดาวโจนส์สตาร์ | 3 ก.ย. 69
+155
+60
+
+นิคเคอิ VIP บ่าย | 3 ก.ย. 69
+350
+57
+
+นิคเคอิ VIP เช้า | 3 ก.ย. 69
+745
+88
+
+ประชาชนลาว | 3 ก.ย. 69
+557
+62
+
+รัสเซีย VIP | 3 ก.ย. 69
+564
+59
+
+ลาว Extra | 3 ก.ย. 69
+689
+29
+
+ลาว HD | 3 ก.ย. 69
+802
+37
+
+ลาว VIP | 3 ก.ย. 69
+301
+43
+
+ลาวกาชาด | 3 ก.ย. 69
+095
+36
+
+ลาวทีวี | 3 ก.ย. 69
+416
+90
+
+ลาวประตูชัย | 3 ก.ย. 69
+856
+73
+
+ลาวพัฒนา | 3 ก.ย. 69
+088
+50
+
+ลาวพิเศษ | 3 ก.ย. 69
+052
+30
+
+ลาวสตาร์ | 3 ก.ย. 69
+661
+79
+
+ลาวสตาร์ VIP | 3 ก.ย. 69
+643
+89
+
+ลาวสันติภาพ | 3 ก.ย. 69
+498
+33
+
+ลาวสามัคคี | 3 ก.ย. 69
+230
+02
+
+ลาวสามัคคี VIP | 3 ก.ย. 69
+125
+81
+
+ลาวอาเซียน | 3 ก.ย. 69
+773
+52
+
+ลาวเช้า | 3 ก.ย. 69
+692
+24
+
+สิงคโปร์ VIP | 3 ก.ย. 69
+035
+27
+
+หุ้นจีนบ่าย | 3 ก.ย. 69
+512
+57
+
+หุ้นจีนเช้า | 3 ก.ย. 69
+414
+59
+
+หุ้นดาวโจนส์ | 3 ก.ย. 69
+611
+16
+
+หุ้นนิคเคอิบ่าย | 3 ก.ย. 69
+448
+16
+
+หุ้นนิคเคอิเช้า | 3 ก.ย. 69
+583
+19
+
+หุ้นรัสเซีย | 3 ก.ย. 69
+003
+62
+
+หุ้นสิงคโปร์ | 3 ก.ย. 69
+771
+60
+
+หุ้นอังกฤษ | 3 ก.ย. 69
+152
+07
+
+หุ้นอินเดีย | 3 ก.ย. 69
+286
+49
+
+หุ้นอียิปต์ | 3 ก.ย. 69
+032
+60
+
+หุ้นฮั่งเส็งบ่าย | 3 ก.ย. 69
+331
+90
+
+หุ้นฮั่งเส็งเช้า | 3 ก.ย. 69
+749
+28
+
+หุ้นเกาหลี | 3 ก.ย. 69
+964
+67
+
+หุ้นเยอรมัน | 3 ก.ย. 69
+332
+99
+
+หุ้นไต้หวัน | 3 ก.ย. 69
+766
+06
+
+หุ้นไทยบ่าย | 3 ก.ย. 69
+163
+56
+
+หุ้นไทยเช้า | 3 ก.ย. 69
+873
+66
+
+หุ้นไทยเที่ยง | 3 ก.ย. 69
+567
+60
+
+หุ้นไทยเย็น | 3 ก.ย. 69
+892
+85
+
+อังกฤษ VIP | 3 ก.ย. 69
+122
+09
+
+ฮั่งเส็ง VIP บ่าย | 3 ก.ย. 69
+629
+39
+
+ฮั่งเส็ง VIP เช้า | 3 ก.ย. 69
+045
+55
+
+ฮานอย 4D | 3 ก.ย. 69
+912
+43
+
+ฮานอย Extra | 3 ก.ย. 69
+281
+03
+
+ฮานอย HD | 3 ก.ย. 69
+835
+57
+
+ฮานอย VIP | 3 ก.ย. 69
+144
+51
+
+ฮานอยกาชาด | 3 ก.ย. 69
+627
+84
+
+ฮานอยดึก | 3 ก.ย. 69
+164
+51
+
+ฮานอยทีวี | 3 ก.ย. 69
+223
+12
+
+ฮานอยปกติ | 3 ก.ย. 69
+511
+56
+
+ฮานอยพัฒนา | 3 ก.ย. 69
+456
+27
+
+ฮานอยพิเศษ | 3 ก.ย. 69
+602
+08
+
+ฮานอยสตาร์ | 3 ก.ย. 69
+903
+32
+
+ฮานอยสามัคคี | 3 ก.ย. 69
+611
+85
+
+ฮานอยอาเซียน | 3 ก.ย. 69
+166
+75
+
+ฮานอยเฉพาะกิจ | 3 ก.ย. 69
+608
+29
+
+ฮานอยเช้า | 3 ก.ย. 69
+006
+11
+
+เกาหลี VIP | 3 ก.ย. 69
+717
+13
+
+เยอรมัน VIP | 3 ก.ย. 69
+846
+92
+
+ไต้หวัน VIP | 3 ก.ย. 69
+398
+81
+
+จีน VIP บ่าย | 4 ก.ย. 69
+185
+40
+
+จีน VIP เช้า | 4 ก.ย. 69
+012
+19
+
+ดาวโจนส์ VIP | 4 ก.ย. 69
+836
+94
+
+ดาวโจนส์สตาร์ | 4 ก.ย. 69
+569
+18
+
+นิคเคอิ VIP บ่าย | 4 ก.ย. 69
+958
+25
+
+นิคเคอิ VIP เช้า | 4 ก.ย. 69
+739
+86
+
+ประชาชนลาว | 4 ก.ย. 69
+835
+95
+
+รัสเซีย VIP | 4 ก.ย. 69
+007
+32
+
+ลาว Extra | 4 ก.ย. 69
+247
+95
+
+ลาว HD | 4 ก.ย. 69
+452
+86
+
+ลาว VIP | 4 ก.ย. 69
+633
+96
+
+ลาวกาชาด | 4 ก.ย. 69
+672
+53
+
+ลาวทีวี | 4 ก.ย. 69
+702
+14
+
+ลาวประตูชัย | 4 ก.ย. 69
+350
+47
+
+ลาวพัฒนา | 4 ก.ย. 69
+187
+41
+
+ลาวพิเศษ | 4 ก.ย. 69
+211
+52
+
+ลาวสตาร์ | 4 ก.ย. 69
+474
+53
+
+ลาวสตาร์ VIP | 4 ก.ย. 69
+961
+77
+
+ลาวสันติภาพ | 4 ก.ย. 69
+739
+32
+
+ลาวสามัคคี | 4 ก.ย. 69
+623
+46
+
+ลาวสามัคคี VIP | 4 ก.ย. 69
+827
+98
+
+ลาวอาเซียน | 4 ก.ย. 69
+314
+76
+
+ลาวเช้า | 4 ก.ย. 69
+036
+81
+
+สิงคโปร์ VIP | 4 ก.ย. 69
+856
+16
+
+หุ้นจีนบ่าย | 4 ก.ย. 69
+697
+15
+
+หุ้นจีนเช้า | 4 ก.ย. 69
+139
+27
+
+หุ้นดาวโจนส์ | 4 ก.ย. 69
+425
+86
+
+หุ้นนิคเคอิบ่าย | 4 ก.ย. 69
+094
+46
+
+หุ้นนิคเคอิเช้า | 4 ก.ย. 69
+974
+26
+
+หุ้นรัสเซีย | 4 ก.ย. 69
+150
+47
+
+หุ้นสิงคโปร์ | 4 ก.ย. 69
+196
+25
+
+หุ้นอังกฤษ | 4 ก.ย. 69
+109
+43
+
+หุ้นอินเดีย | 4 ก.ย. 69
+543
+57
+
+หุ้นฮั่งเส็งบ่าย | 4 ก.ย. 69
+087
+56
+
+หุ้นฮั่งเส็งเช้า | 4 ก.ย. 69
+760
+29
+
+หุ้นเกาหลี | 4 ก.ย. 69
+823
+59
+
+หุ้นเยอรมัน | 4 ก.ย. 69
+640
+08
+
+หุ้นไต้หวัน | 4 ก.ย. 69
+113
+47
+
+หุ้นไทยบ่าย | 4 ก.ย. 69
+094
+02
+
+หุ้นไทยเช้า | 4 ก.ย. 69
+943
+51
+
+หุ้นไทยเที่ยง | 4 ก.ย. 69
+582
+90
+
+หุ้นไทยเย็น | 4 ก.ย. 69
+358
+66
+
+อังกฤษ VIP | 4 ก.ย. 69
+742
+57
+
+ฮั่งเส็ง VIP บ่าย | 4 ก.ย. 69
+427
+06
+
+ฮั่งเส็ง VIP เช้า | 4 ก.ย. 69
+259
+09
+
+ฮานอย 4D | 4 ก.ย. 69
+219
+40
+
+ฮานอย Extra | 4 ก.ย. 69
+272
+58
+
+ฮานอย HD | 4 ก.ย. 69
+066
+74
+
+ฮานอย VIP | 4 ก.ย. 69
+309
+89
+
+ฮานอยกาชาด | 4 ก.ย. 69
+535
+82
+
+ฮานอยดึก | 4 ก.ย. 69
+430
+06
+
+ฮานอยทีวี | 4 ก.ย. 69
+109
+29
+
+ฮานอยปกติ | 4 ก.ย. 69
+066
+52
+
+ฮานอยพัฒนา | 4 ก.ย. 69
+519
+69
+
+ฮานอยพิเศษ | 4 ก.ย. 69
+903
+94
+
+ฮานอยสตาร์ | 4 ก.ย. 69
+304
+89
+
+ฮานอยสามัคคี | 4 ก.ย. 69
+280
+67
+
+ฮานอยอาเซียน | 4 ก.ย. 69
+871
+91
+
+ฮานอยเฉพาะกิจ | 4 ก.ย. 69
+156
+33
+
+ฮานอยเช้า | 4 ก.ย. 69
+675
+02
+
+เกาหลี VIP | 4 ก.ย. 69
+685
+55
+
+เยอรมัน VIP | 4 ก.ย. 69
+877
+20
+
+ไต้หวัน VIP | 4 ก.ย. 69
+305
+21
+
+จีน VIP บ่าย | 5 ก.ย. 69
+393
+37
+
+จีน VIP เช้า | 5 ก.ย. 69
+632
+26
+
+ดาวโจนส์ VIP | 5 ก.ย. 69
+639
+08
+
+ดาวโจนส์สตาร์ | 5 ก.ย. 69
+282
+13
+
+นิคเคอิ VIP บ่าย | 5 ก.ย. 69
+909
+19
+
+นิคเคอิ VIP เช้า | 5 ก.ย. 69
+514
+71
+
+ประชาชนลาว | 5 ก.ย. 69
+292
+81
+
+มาเลย์ | 5 ก.ย. 69
+493
+99
+
+รัสเซีย VIP | 5 ก.ย. 69
+535
+16
+
+ลาว Extra | 5 ก.ย. 69
+159
+55
+
+ลาว HD | 5 ก.ย. 69
+030
+99
+
+ลาว VIP | 5 ก.ย. 69
+750
+47
+
+ลาวกาชาด | 5 ก.ย. 69
+720
+67
+
+ลาวทีวี | 5 ก.ย. 69
+332
+80
+
+ลาวประตูชัย | 5 ก.ย. 69
+539
+01
+
+ลาวพิเศษ | 5 ก.ย. 69
+144
+51
+
+ลาวสตาร์ | 5 ก.ย. 69
+912
+17
+
+ลาวสตาร์ VIP | 5 ก.ย. 69
+806
+49
+
+ลาวสันติภาพ | 5 ก.ย. 69
+624
+07
+
+ลาวสามัคคี | 5 ก.ย. 69
+208
+92
+
+ลาวสามัคคี VIP | 5 ก.ย. 69
+051
+00
+
+ลาวอาเซียน | 5 ก.ย. 69
+826
+75
+
+ลาวเช้า | 5 ก.ย. 69
+951
+49
+
+สิงคโปร์ VIP | 5 ก.ย. 69
+863
+04
+
+อังกฤษ VIP | 5 ก.ย. 69
+050
+92
+
+ฮั่งเส็ง VIP บ่าย | 5 ก.ย. 69
+347
+63
+
+ฮั่งเส็ง VIP เช้า | 5 ก.ย. 69
+809
+40
+
+ฮานอย 4D | 5 ก.ย. 69
+689
+32
+
+ฮานอย Extra | 5 ก.ย. 69
+431
+65
+
+ฮานอย HD | 5 ก.ย. 69
+747
+68
+
+ฮานอย VIP | 5 ก.ย. 69
+024
+94
+
+ฮานอยกาชาด | 5 ก.ย. 69
+503
+47
+
+ฮานอยดึก | 5 ก.ย. 69
+653
+71
+
+ฮานอยทีวี | 5 ก.ย. 69
+805
+91
+
+ฮานอยปกติ | 5 ก.ย. 69
+037
+04
+
+ฮานอยพัฒนา | 5 ก.ย. 69
+824
+44
+
+ฮานอยพิเศษ | 5 ก.ย. 69
+376
+65
+
+ฮานอยสตาร์ | 5 ก.ย. 69
+907
+94
+
+ฮานอยสามัคคี | 5 ก.ย. 69
+744
+92
+
+ฮานอยอาเซียน | 5 ก.ย. 69
+587
+62
+
+ฮานอยเฉพาะกิจ | 5 ก.ย. 69
+014
+17
+
+ฮานอยเช้า | 5 ก.ย. 69
+070
+77
+
+เกาหลี VIP | 5 ก.ย. 69
+740
+34
+
+เยอรมัน VIP | 5 ก.ย. 69
+899
+20
+
+ไต้หวัน VIP | 5 ก.ย. 69
+527
+91
+
+จีน VIP บ่าย | 6 ก.ย. 69
+991
+81
+
+จีน VIP เช้า | 6 ก.ย. 69
+712
+19
+
+ดาวโจนส์ VIP | 6 ก.ย. 69
+658
+90
+
+ดาวโจนส์สตาร์ | 6 ก.ย. 69
+437
+67
+
+นิคเคอิ VIP บ่าย | 6 ก.ย. 69
+026
+37
+
+นิคเคอิ VIP เช้า | 6 ก.ย. 69
+672
+45
+
+ประชาชนลาว | 6 ก.ย. 69
+539
+97
+
+มาเลย์ | 6 ก.ย. 69
+063
+20
+
+รัสเซีย VIP | 6 ก.ย. 69
+050
+37
+
+ลาว Extra | 6 ก.ย. 69
+038
+48
+
+ลาว HD | 6 ก.ย. 69
+763
+84
+
+ลาว VIP | 6 ก.ย. 69
+733
+37
+
+ลาวกาชาด | 6 ก.ย. 69
+388
+16
+
+ลาวทีวี | 6 ก.ย. 69
+471
+95
+
+ลาวประตูชัย | 6 ก.ย. 69
+421
+29
+
+ลาวพิเศษ | 6 ก.ย. 69
+266
+82
+
+ลาวสตาร์ | 6 ก.ย. 69
+975
+42
+
+ลาวสตาร์ VIP | 6 ก.ย. 69
+812
+35
+
+ลาวสันติภาพ | 6 ก.ย. 69
+733
+84
+
+ลาวสามัคคี | 6 ก.ย. 69
+493
+24
+
+ลาวสามัคคี VIP | 6 ก.ย. 69
+522
+85
+
+ลาวอาเซียน | 6 ก.ย. 69
+389
+46
+
+ลาวเช้า | 6 ก.ย. 69
+612
+89
+
+สิงคโปร์ VIP | 6 ก.ย. 69
+616
+15
+
+หุ้นอียิปต์ | 6 ก.ย. 69
+616
+84
+
+อังกฤษ VIP | 6 ก.ย. 69
+696
+10
+
+ฮั่งเส็ง VIP บ่าย | 6 ก.ย. 69
+772
+52
+
+ฮั่งเส็ง VIP เช้า | 6 ก.ย. 69
+901
+76
+
+ฮานอย 4D | 6 ก.ย. 69
+808
+97
+
+ฮานอย Extra | 6 ก.ย. 69
+799
+24
+
+ฮานอย HD | 6 ก.ย. 69
+640
+05
+
+ฮานอย VIP | 6 ก.ย. 69
+907
+64
+
+ฮานอยกาชาด | 6 ก.ย. 69
+209
+99
+
+ฮานอยดึก | 6 ก.ย. 69
+216
+23
+
+ฮานอยทีวี | 6 ก.ย. 69
+519
+40
+
+ฮานอยปกติ | 6 ก.ย. 69
+435
+76
+
+ฮานอยพัฒนา | 6 ก.ย. 69
+803
+13
+
+ฮานอยพิเศษ | 6 ก.ย. 69
+805
+54
+
+ฮานอยสตาร์ | 6 ก.ย. 69
+574
+95
+
+ฮานอยสามัคคี | 6 ก.ย. 69
+231
+75
+
+ฮานอยอาเซียน | 6 ก.ย. 69
+416
+63
+
+ฮานอยเฉพาะกิจ | 6 ก.ย. 69
+297
+45
+
+ฮานอยเช้า | 6 ก.ย. 69
+832
+79
+
+เกาหลี VIP | 6 ก.ย. 69
+142
+25
+
+เยอรมัน VIP | 6 ก.ย. 69
+925
+73
+
+ไต้หวัน VIP | 6 ก.ย. 69
+755
+50
+
+จีน VIP บ่าย | 7 ก.ย. 69
+893
+36
+
+จีน VIP เช้า | 7 ก.ย. 69
+182
+58
+
+ดาวโจนส์ VIP | 7 ก.ย. 69
+100
+16
+
+ดาวโจนส์สตาร์ | 7 ก.ย. 69
+451
+28
+
+นิคเคอิ VIP บ่าย | 7 ก.ย. 69
+121
+16
+
+นิคเคอิ VIP เช้า | 7 ก.ย. 69
+181
+27
+
+ประชาชนลาว | 7 ก.ย. 69
+465
+81
+
+รัสเซีย VIP | 7 ก.ย. 69
+758
+04
+
+ลาว Extra | 7 ก.ย. 69
+074
+30
+
+ลาว HD | 7 ก.ย. 69
+056
+28
+
+ลาว VIP | 7 ก.ย. 69
+280
+92
+
+ลาวกาชาด | 7 ก.ย. 69
+520
+45
+
+ลาวทีวี | 7 ก.ย. 69
+725
+35
+
+ลาวประตูชัย | 7 ก.ย. 69
+683
+54
+
+ลาวพัฒนา | 7 ก.ย. 69
+735
+67
+
+ลาวพิเศษ | 7 ก.ย. 69
+244
+82
+
+ลาวสตาร์ | 7 ก.ย. 69
+364
+87
+
+ลาวสตาร์ VIP | 7 ก.ย. 69
+201
+26
+
+ลาวสันติภาพ | 7 ก.ย. 69
+121
+95
+
+ลาวสามัคคี | 7 ก.ย. 69
+906
+89
+
+ลาวสามัคคี VIP | 7 ก.ย. 69
+297
+52
+
+ลาวอาเซียน | 7 ก.ย. 69
+006
+29
+
+ลาวเช้า | 7 ก.ย. 69
+051
+16
+
+สิงคโปร์ VIP | 7 ก.ย. 69
+341
+42
+
+หุ้นจีนบ่าย | 7 ก.ย. 69
+491
+94
+
+หุ้นจีนเช้า | 7 ก.ย. 69
+321
+24
+
+หุ้นนิคเคอิบ่าย | 7 ก.ย. 69
+984
+90
+
+หุ้นนิคเคอิเช้า | 7 ก.ย. 69
+011
+17
+
+หุ้นรัสเซีย | 7 ก.ย. 69
+121
+71
+
+หุ้นสิงคโปร์ | 7 ก.ย. 69
+228
+68
+
+หุ้นอังกฤษ | 7 ก.ย. 69
+213
+96
+
+หุ้นอินเดีย | 7 ก.ย. 69
+281
+62
+
+หุ้นอียิปต์ | 7 ก.ย. 69
+783
+33
+
+หุ้นฮั่งเส็งบ่าย | 7 ก.ย. 69
+312
+75
+
+หุ้นฮั่งเส็งเช้า | 7 ก.ย. 69
+273
+14
+
+หุ้นเกาหลี | 7 ก.ย. 69
+500
+77
+
+หุ้นเยอรมัน | 7 ก.ย. 69
+653
+87
+
+หุ้นไต้หวัน | 7 ก.ย. 69
+627
+14
+
+หุ้นไทยบ่าย | 7 ก.ย. 69
+446
+88
+
+หุ้นไทยเช้า | 7 ก.ย. 69
+100
+42
+
+หุ้นไทยเที่ยง | 7 ก.ย. 69
+555
+97
+
+หุ้นไทยเย็น | 7 ก.ย. 69
+982
+24
+
+อังกฤษ VIP | 7 ก.ย. 69
+337
+66
+
+ฮั่งเส็ง VIP บ่าย | 7 ก.ย. 69
+681
+95
+
+ฮั่งเส็ง VIP เช้า | 7 ก.ย. 69
+857
+47
+
+ฮานอย 4D | 7 ก.ย. 69
+295
+93
+
+ฮานอย Extra | 7 ก.ย. 69
+409
+58
+
+ฮานอย HD | 7 ก.ย. 69
+734
+53
+
+ฮานอย VIP | 7 ก.ย. 69
+745
+67
+
+ฮานอยกาชาด | 7 ก.ย. 69
+248
+42
+
+ฮานอยดึก | 7 ก.ย. 69
+051
+93
+
+ฮานอยทีวี | 7 ก.ย. 69
+879
+17
+
+ฮานอยปกติ | 7 ก.ย. 69
+990
+49
+
+ฮานอยพัฒนา | 7 ก.ย. 69
+596
+16
+
+ฮานอยพิเศษ | 7 ก.ย. 69
+403
+07
+
+ฮานอยสตาร์ | 7 ก.ย. 69
+519
+22
+
+ฮานอยสามัคคี | 7 ก.ย. 69
+639
+07
+
+ฮานอยอาเซียน | 7 ก.ย. 69
+553
+36
+
+ฮานอยเฉพาะกิจ | 7 ก.ย. 69
+246
+91
+
+ฮานอยเช้า | 7 ก.ย. 69
+492
+81
+
+เกาหลี VIP | 7 ก.ย. 69
+802
+03
+
+เยอรมัน VIP | 7 ก.ย. 69
+336
+58
+
+ไต้หวัน VIP | 7 ก.ย. 69
+893
+24
+
+จีน VIP บ่าย | 8 ก.ย. 69
+509
+48
+
+จีน VIP เช้า | 8 ก.ย. 69
+891
+81
+
+ดาวโจนส์ VIP | 8 ก.ย. 69
+726
+81
+
+ดาวโจนส์สตาร์ | 8 ก.ย. 69
+029
+35
+
+นิคเคอิ VIP บ่าย | 8 ก.ย. 69
+622
+76
+
+นิคเคอิ VIP เช้า | 8 ก.ย. 69
+864
+40
+
+ประชาชนลาว | 8 ก.ย. 69
+203
+77
+
+รัสเซีย VIP | 8 ก.ย. 69
+494
+61
+
+ลาว Extra | 8 ก.ย. 69
+947
+38
+
+ลาว HD | 8 ก.ย. 69
+625
+38
+
+ลาว VIP | 8 ก.ย. 69
+600
+06
+
+ลาวกาชาด | 8 ก.ย. 69
+625
+96
+
+ลาวทีวี | 8 ก.ย. 69
+866
+94
+
+ลาวประตูชัย | 8 ก.ย. 69
+824
+70
+
+ลาวพัฒนา | 8 ก.ย. 69
+743
+37
+
+ลาวพิเศษ | 8 ก.ย. 69
+271
+52
+
+ลาวสตาร์ | 8 ก.ย. 69
+510
+96
+
+ลาวสตาร์ VIP | 8 ก.ย. 69
+319
+67
+
+ลาวสันติภาพ | 8 ก.ย. 69
+649
+82
+
+ลาวสามัคคี | 8 ก.ย. 69
+834
+78
+
+ลาวสามัคคี VIP | 8 ก.ย. 69
+826
+18
+
+ลาวอาเซียน | 8 ก.ย. 69
+276
+32
+
+ลาวเช้า | 8 ก.ย. 69
+473
+30
+
+สิงคโปร์ VIP | 8 ก.ย. 69
+068
+36
+
+หุ้นจีนบ่าย | 8 ก.ย. 69
+321
+70
+
+หุ้นจีนเช้า | 8 ก.ย. 69
+205
+14
+
+หุ้นดาวโจนส์ | 8 ก.ย. 69
+607
+18
+
+หุ้นนิคเคอิบ่าย | 8 ก.ย. 69
+933
+51
+
+หุ้นนิคเคอิเช้า | 8 ก.ย. 69
+513
+29
+
+หุ้นรัสเซีย | 8 ก.ย. 69
+291
+70
+
+หุ้นสิงคโปร์ | 8 ก.ย. 69
+745
+83
+
+หุ้นอังกฤษ | 8 ก.ย. 69
+166
+47
+
+หุ้นอินเดีย | 8 ก.ย. 69
+758
+23
+
+หุ้นอียิปต์ | 8 ก.ย. 69
+430
+53
+
+หุ้นฮั่งเส็งบ่าย | 8 ก.ย. 69
+718
+94
+
+หุ้นฮั่งเส็งเช้า | 8 ก.ย. 69
+557
+55
+
+หุ้นเกาหลี | 8 ก.ย. 69
+166
+34
+
+หุ้นเยอรมัน | 8 ก.ย. 69
+763
+10
+
+หุ้นไต้หวัน | 8 ก.ย. 69
+578
+49
+
+หุ้นไทยบ่าย | 8 ก.ย. 69
+697
+85
+
+หุ้นไทยเช้า | 8 ก.ย. 69
+398
+16
+
+หุ้นไทยเที่ยง | 8 ก.ย. 69
+483
+99
+
+หุ้นไทยเย็น | 8 ก.ย. 69
+889
+07
+
+อังกฤษ VIP | 8 ก.ย. 69
+716
+03
+
+ฮั่งเส็ง VIP บ่าย | 8 ก.ย. 69
+770
+54
+
+ฮั่งเส็ง VIP เช้า | 8 ก.ย. 69
+018
+87
+
+ฮานอย 4D | 8 ก.ย. 69
+147
+78
+
+ฮานอย Extra | 8 ก.ย. 69
+674
+10
+
+ฮานอย HD | 8 ก.ย. 69
+116
+22
+
+ฮานอย VIP | 8 ก.ย. 69
+073
+30
+
+ฮานอยกาชาด | 8 ก.ย. 69
+962
+15
+
+ฮานอยดึก | 8 ก.ย. 69
+358
+19
+
+ฮานอยทีวี | 8 ก.ย. 69
+401
+97
+
+ฮานอยปกติ | 8 ก.ย. 69
+687
+87
+
+ฮานอยพัฒนา | 8 ก.ย. 69
+652
+69
+
+ฮานอยพิเศษ | 8 ก.ย. 69
+492
+82
+
+ฮานอยสตาร์ | 8 ก.ย. 69
+445
+94
+
+ฮานอยสามัคคี | 8 ก.ย. 69
+257
+34
+
+ฮานอยอาเซียน | 8 ก.ย. 69
+205
+64
+
+ฮานอยเฉพาะกิจ | 8 ก.ย. 69
+775
+10
+
+ฮานอยเช้า | 8 ก.ย. 69
+623
+76
+
+เกาหลี VIP | 8 ก.ย. 69
+918
+48
+
+เยอรมัน VIP | 8 ก.ย. 69
+288
+07
+
+ไต้หวัน VIP | 8 ก.ย. 69
+066
+82
+
+จีน VIP บ่าย | 9 ก.ย. 69
+122
+12
+
+จีน VIP เช้า | 9 ก.ย. 69
+025
+85
+
+ดาวโจนส์ VIP | 9 ก.ย. 69
+030
+49
+
+ดาวโจนส์สตาร์ | 9 ก.ย. 69
+278
+63
+
+นิคเคอิ VIP บ่าย | 9 ก.ย. 69
+452
+28
+
+นิคเคอิ VIP เช้า | 9 ก.ย. 69
+863
+74
+
+ประชาชนลาว | 9 ก.ย. 69
+828
+04
+
+มาเลย์ | 9 ก.ย. 69
+609
+65
+
+รัสเซีย VIP | 9 ก.ย. 69
+359
+48
+
+ลาว Extra | 9 ก.ย. 69
+822
+03
+
+ลาว HD | 9 ก.ย. 69
+649
+86
+
+ลาว VIP | 9 ก.ย. 69
+054
+30
+
+ลาวกาชาด | 9 ก.ย. 69
+390
+71
+
+ลาวทีวี | 9 ก.ย. 69
+043
+22
+
+ลาวประตูชัย | 9 ก.ย. 69
+310
+11
+
+ลาวพัฒนา | 9 ก.ย. 69
+816
+38
+
+ลาวพิเศษ | 9 ก.ย. 69
+099
+30
+
+ลาวสตาร์ | 9 ก.ย. 69
+862
+39
+
+ลาวสตาร์ VIP | 9 ก.ย. 69
+539
+64
+
+ลาวสันติภาพ | 9 ก.ย. 69
+406
+84
+
+ลาวสามัคคี | 9 ก.ย. 69
+817
+38
+
+ลาวสามัคคี VIP | 9 ก.ย. 69
+775
+67
+
+ลาวอาเซียน | 9 ก.ย. 69
+848
+50
+
+ลาวเช้า | 9 ก.ย. 69
+611
+92
+
+สิงคโปร์ VIP | 9 ก.ย. 69
+459
+15
+
+หุ้นจีนบ่าย | 9 ก.ย. 69
+332
+11
+
+หุ้นจีนเช้า | 9 ก.ย. 69
+433
+88
+
+หุ้นดาวโจนส์ | 9 ก.ย. 69
+066
+41
+
+หุ้นนิคเคอิบ่าย | 9 ก.ย. 69
+278
+55
+
+หุ้นนิคเคอิเช้า | 9 ก.ย. 69
+523
+90
+
+หุ้นรัสเซีย | 9 ก.ย. 69
+469
+22
+
+หุ้นสิงคโปร์ | 9 ก.ย. 69
+963
+82
+
+หุ้นอังกฤษ | 9 ก.ย. 69
+006
+60
+
+หุ้นอินเดีย | 9 ก.ย. 69
+423
+35
+
+หุ้นอียิปต์ | 9 ก.ย. 69
+074
+44
+
+หุ้นฮั่งเส็งบ่าย | 9 ก.ย. 69
+496
+22
+
+หุ้นฮั่งเส็งเช้า | 9 ก.ย. 69
+687
+31
+
+หุ้นเกาหลี | 9 ก.ย. 69
+147
+81
+
+หุ้นเยอรมัน | 9 ก.ย. 69
+645
+18
+
+หุ้นไต้หวัน | 9 ก.ย. 69
+336
+58
+
+หุ้นไทยบ่าย | 09 ก.ย. 69
+875
+14
+
+หุ้นไทยเช้า | 09 ก.ย. 69
+027
+38
+
+หุ้นไทยเที่ยง | 09 ก.ย. 69
+389
+00
+
+หุ้นไทยเย็น | 09 ก.ย. 69
+689
+00
+
+อังกฤษ VIP | 9 ก.ย. 69
+817
+36
+
+ฮั่งเส็ง VIP บ่าย | 9 ก.ย. 69
+571
+61
+
+ฮั่งเส็ง VIP เช้า | 9 ก.ย. 69
+793
+87
+
+ฮานอย 4D | 9 ก.ย. 69
+644
+64
+
+ฮานอย Extra | 9 ก.ย. 69
+659
+17
+
+ฮานอย HD | 9 ก.ย. 69
+225
+19
+
+ฮานอย VIP | 9 ก.ย. 69
+176
+52
+
+ฮานอยกาชาด | 9 ก.ย. 69
+891
+69
+
+ฮานอยดึก | 9 ก.ย. 69
+923
+50
+
+ฮานอยทีวี | 9 ก.ย. 69
+497
+65
+
+ฮานอยปกติ | 9 ก.ย. 69
+504
+65
+
+ฮานอยพัฒนา | 9 ก.ย. 69
+371
+37
+
+ฮานอยพิเศษ | 9 ก.ย. 69
+507
+85
+
+ฮานอยสตาร์ | 9 ก.ย. 69
+833
+30
+
+ฮานอยสามัคคี | 9 ก.ย. 69
+912
+78
+
+ฮานอยอาเซียน | 9 ก.ย. 69
+746
+05
+
+ฮานอยเฉพาะกิจ | 9 ก.ย. 69
+342
+89
+
+ฮานอยเช้า | 9 ก.ย. 69
+276
+50
+
+เกาหลี VIP | 9 ก.ย. 69
+291
+09
+
+เยอรมัน VIP | 9 ก.ย. 69
+612
+38
+
+ไต้หวัน VIP | 9 ก.ย. 69
+286
+62
+
+จีน VIP บ่าย | 10 ก.ย. 69
+278
+08
+
+จีน VIP เช้า | 10 ก.ย. 69
+232
+87
+
+ดาวโจนส์ VIP | 10 ก.ย. 69
+562
+19
+
+ดาวโจนส์สตาร์ | 10 ก.ย. 69
+967
+09
+
+นิคเคอิ VIP บ่าย | 10 ก.ย. 69
+112
+96
+
+นิคเคอิ VIP เช้า | 10 ก.ย. 69
+082
+48
+
+ประชาชนลาว | 10 ก.ย. 69
+206
+85
+
+รัสเซีย VIP | 10 ก.ย. 69
+115
+64
+
+ลาว Extra | 10 ก.ย. 69
+029
+97
+
+ลาว HD | 10 ก.ย. 69
+366
+50
+
+ลาว VIP | 10 ก.ย. 69
+859
+48
+
+ลาวกาชาด | 10 ก.ย. 69
+328
+35
+
+ลาวทีวี | 10 ก.ย. 69
+818
+30
+
+ลาวประตูชัย | 10 ก.ย. 69
+684
+31
+
+ลาวพัฒนา | 10 ก.ย. 69
+128
+71
+
+ลาวพิเศษ | 10 ก.ย. 69
+173
+71
+
+ลาวสตาร์ | 10 ก.ย. 69
+406
+44
+
+ลาวสตาร์ VIP | 10 ก.ย. 69
+244
+05
+
+ลาวสันติภาพ | 10 ก.ย. 69
+484
+90
+
+ลาวสามัคคี | 10 ก.ย. 69
+353
+43
+
+ลาวสามัคคี VIP | 10 ก.ย. 69
+107
+61
+
+ลาวเช้า | 10 ก.ย. 69
+522
+74
+
+สิงคโปร์ VIP | 10 ก.ย. 69
+990
+10
+
+หุ้นจีนบ่าย | 10 ก.ย. 69
+767
+65
+
+หุ้นจีนเช้า | 10 ก.ย. 69
+749
+83
+
+หุ้นดาวโจนส์ | 10 ก.ย. 69
+410
+56
+
+หุ้นนิคเคอิบ่าย | 10 ก.ย. 69
+095
+17
+
+หุ้นนิคเคอิเช้า | 10 ก.ย. 69
+746
+32
+
+หุ้นรัสเซีย | 10 ก.ย. 69
+167
+98
+
+หุ้นสิงคโปร์ | 10 ก.ย. 69
+975
+88
+
+หุ้นอังกฤษ | 10 ก.ย. 69
+892
+14
+
+หุ้นอินเดีย | 10 ก.ย. 69
+259
+36
+
+หุ้นอียิปต์ | 10 ก.ย. 69
+017
+57
+
+หุ้นฮั่งเส็งบ่าย | 10 ก.ย. 69
+447
+49
+
+หุ้นฮั่งเส็งเช้า | 10 ก.ย. 69
+952
+44
+
+หุ้นเกาหลี | 10 ก.ย. 69
+911
+36
+
+หุ้นเยอรมัน | 10 ก.ย. 69
+115
+30
+
+หุ้นไต้หวัน | 10 ก.ย. 69
+049
+87
+
+หุ้นไทยบ่าย | 10 ก.ย. 69
+060
+29
+
+หุ้นไทยเช้า | 10 ก.ย. 69
+047
+42
+
+หุ้นไทยเที่ยง | 10 ก.ย. 69
+727
+62
+
+หุ้นไทยเย็น | 10 ก.ย. 69
+007
+82
+
+อังกฤษ VIP | 10 ก.ย. 69
+464
+25
+
+ฮั่งเส็ง VIP บ่าย | 10 ก.ย. 69
+313
+20
+
+ฮั่งเส็ง VIP เช้า | 10 ก.ย. 69
+730
+02
+
+ฮานอย 4D | 10 ก.ย. 69
+246
+49
+
+ฮานอย Extra | 10 ก.ย. 69
+833
+40
+
+ฮานอย HD | 10 ก.ย. 69
+527
+75
+
+ฮานอย VIP | 10 ก.ย. 69
+691
+80
+
+ฮานอยกาชาด | 10 ก.ย. 69
+035
+56
+
+ฮานอยดึก | 10 ก.ย. 69
+868
+98
+
+ฮานอยทีวี | 10 ก.ย. 69
+748
+05
+
+ฮานอยปกติ | 10 ก.ย. 69
+981
+95
+
+ฮานอยพัฒนา | 10 ก.ย. 69
+357
+58
+
+ฮานอยพิเศษ | 10 ก.ย. 69
+461
+73
+
+ฮานอยสตาร์ | 10 ก.ย. 69
+022
+13
+
+ฮานอยสามัคคี | 10 ก.ย. 69
+807
+56
+
+ฮานอยอาเซียน | 10 ก.ย. 69
+101
+37
+
+ฮานอยเฉพาะกิจ | 10 ก.ย. 69
+551
+86
+
+ฮานอยเช้า | 10 ก.ย. 69
+089
+64
+
+เกาหลี VIP | 10 ก.ย. 69
+841
+07
+
+เยอรมัน VIP | 10 ก.ย. 69
+431
+06
+
+ไต้หวัน VIP | 10 ก.ย. 69
+424
+65
+
+จีน VIP บ่าย | 11 ก.ย. 69
+031
+78
+
+จีน VIP เช้า | 11 ก.ย. 69
+583
+18
+
+ดาวโจนส์ VIP | 11 ก.ย. 69
+382
+94
+
+ดาวโจนส์สตาร์ | 11 ก.ย. 69
+405
+72
+
+นิคเคอิ VIP บ่าย | 11 ก.ย. 69
+408
+21
+
+นิคเคอิ VIP เช้า | 11 ก.ย. 69
+585
+60
+
+ประชาชนลาว | 11 ก.ย. 69
+590
+45
+
+รัสเซีย VIP | 11 ก.ย. 69
+687
+20
+
+ลาว Extra | 11 ก.ย. 69
+877
+74
+
+ลาว HD | 11 ก.ย. 69
+197
+42
+
+ลาว VIP | 11 ก.ย. 69
+062
+70
+
+ลาวกาชาด | 11 ก.ย. 69
+602
+91
+
+ลาวทีวี | 11 ก.ย. 69
+004
+00
+
+ลาวประตูชัย | 11 ก.ย. 69
+332
+80
+
+ลาวพัฒนา | 11 ก.ย. 69
+350
+33
+
+ลาวพิเศษ | 11 ก.ย. 69
+122
+91
+
+ลาวสตาร์ | 11 ก.ย. 69
+639
+32
+
+ลาวสตาร์ VIP | 11 ก.ย. 69
+930
+21
+
+ลาวสามัคคี | 11 ก.ย. 69
+910
+69
+
+ลาวสามัคคี VIP | 11 ก.ย. 69
+644
+36
+
+ลาวอาเซียน | 11 ก.ย. 69
+849
+83
+
+ลาวเช้า | 11 ก.ย. 69
+431
+28
+
+สิงคโปร์ VIP | 11 ก.ย. 69
+345
+34
+
+หุ้นจีนบ่าย | 11 ก.ย. 69
+126
+41
+
+หุ้นจีนเช้า | 11 ก.ย. 69
+877
+90
+
+หุ้นดาวโจนส์ | 11 ก.ย. 69
+329
+19
+
+หุ้นนิคเคอิบ่าย | 11 ก.ย. 69
+134
+61
+
+หุ้นนิคเคอิเช้า | 11 ก.ย. 69
+939
+56
+
+หุ้นรัสเซีย | 11 ก.ย. 69
+088
+79
+
+หุ้นสิงคโปร์ | 11 ก.ย. 69
+593
+18
+
+หุ้นอังกฤษ | 11 ก.ย. 69
+044
+52
+
+หุ้นอินเดีย | 11 ก.ย. 69
+176
+83
+
+หุ้นฮั่งเส็งบ่าย | 11 ก.ย. 69
+563
+84
+
+หุ้นฮั่งเส็งเช้า | 11 ก.ย. 69
+251
+96
+
+หุ้นเกาหลี | 11 ก.ย. 69
+818
+93
+
+หุ้นเยอรมัน | 11 ก.ย. 69
+856
+41
+
+หุ้นไต้หวัน | 11 ก.ย. 69
+485
+64
+
+หุ้นไทยบ่าย | 11 ก.ย. 69
+518
+89
+
+หุ้นไทยเช้า | 11 ก.ย. 69
+081
+26
+
+หุ้นไทยเที่ยง | 11 ก.ย. 69
+176
+31
+
+หุ้นไทยเย็น | 11 ก.ย. 69
+952
+55
+
+อังกฤษ VIP | 11 ก.ย. 69
+049
+17
+
+ฮั่งเส็ง VIP บ่าย | 11 ก.ย. 69
+554
+63
+
+ฮั่งเส็ง VIP เช้า | 11 ก.ย. 69
+105
+03
+
+ฮานอย 4D | 11 ก.ย. 69
+857
+72
+
+ฮานอย Extra | 11 ก.ย. 69
+015
+07
+
+ฮานอย HD | 11 ก.ย. 69
+616
+51
+
+ฮานอย VIP | 11 ก.ย. 69
+257
+95
+
+ฮานอยกาชาด | 11 ก.ย. 69
+266
+27
+
+ฮานอยดึก | 11 ก.ย. 69
+218
+92
+
+ฮานอยทีวี | 11 ก.ย. 69
+762
+08
+
+ฮานอยปกติ | 11 ก.ย. 69
+352
+83
+
+ฮานอยพัฒนา | 11 ก.ย. 69
+949
+08
+
+ฮานอยพิเศษ | 11 ก.ย. 69
+491
+33
+
+ฮานอยสตาร์ | 11 ก.ย. 69
+591
+24
+
+ฮานอยสามัคคี | 11 ก.ย. 69
+375
+11
+
+ฮานอยอาเซียน | 11 ก.ย. 69
+980
+98
+
+ฮานอยเฉพาะกิจ | 11 ก.ย. 69
+623
+60
+
+ฮานอยเช้า | 11 ก.ย. 69
+574
+20
+
+เกาหลี VIP | 11 ก.ย. 69
+244
+04
+
+เยอรมัน VIP | 11 ก.ย. 69
+557
+03
+
+ไต้หวัน VIP | 11 ก.ย. 69
+158
+88
+
+จีน VIP บ่าย | 12 ก.ย. 69
+341
+69
+
+จีน VIP เช้า | 12 ก.ย. 69
+229
+71
+
+ดาวโจนส์ VIP | 12 ก.ย. 69
+601
+42
+
+ดาวโจนส์สตาร์ | 12 ก.ย. 69
+751
+42
+
+นิคเคอิ VIP บ่าย | 12 ก.ย. 69
+978
+46
+
+นิคเคอิ VIP เช้า | 12 ก.ย. 69
+406
+67
+
+ประชาชนลาว | 12 ก.ย. 69
+408
+56
+
+มาเลย์ | 12 ก.ย. 69
+379
+61
+
+รัสเซีย VIP | 12 ก.ย. 69
+984
+92
+
+ลาว Extra | 12 ก.ย. 69
+454
+30
+
+ลาว HD | 12 ก.ย. 69
+043
+66
+
+ลาว VIP | 12 ก.ย. 69
+382
+43
+
+ลาวกาชาด | 12 ก.ย. 69
+638
+25
+
+ลาวทีวี | 12 ก.ย. 69
+994
+39
+
+ลาวพิเศษ | 12 ก.ย. 69
+087
+30
+
+ลาวสตาร์ | 12 ก.ย. 69
+330
+77
+
+ลาวสตาร์ VIP | 12 ก.ย. 69
+242
+65
+
+ลาวสันติภาพ | 12 ก.ย. 69
+428
+14
+
+ลาวสามัคคี | 12 ก.ย. 69
+048
+60
+
+ลาวสามัคคี VIP | 12 ก.ย. 69
+502
+15
+
+ลาวอาเซียน | 12 ก.ย. 69
+396
+04
+
+ลาวเช้า | 12 ก.ย. 69
+933
+56
+
+สิงคโปร์ VIP | 12 ก.ย. 69
+826
+18
+
+อังกฤษ VIP | 12 ก.ย. 69
+241
+19
+
+ฮั่งเส็ง VIP บ่าย | 12 ก.ย. 69
+313
+10
+
+ฮั่งเส็ง VIP เช้า | 12 ก.ย. 69
+499
+02
+
+ฮานอย 4D | 12 ก.ย. 69
+980
+90
+
+ฮานอย Extra | 12 ก.ย. 69
+573
+43
+
+ฮานอย HD | 12 ก.ย. 69
+315
+18
+
+ฮานอย VIP | 12 ก.ย. 69
+930
+39
+
+ฮานอยกาชาด | 12 ก.ย. 69
+614
+16
+
+ฮานอยดึก | 12 ก.ย. 69
+545
+09
+
+ฮานอยทีวี | 12 ก.ย. 69
+482
+05
+
+ฮานอยปกติ | 12 ก.ย. 69
+851
+35
+
+ฮานอยพัฒนา | 12 ก.ย. 69
+093
+75
+
+ฮานอยพิเศษ | 12 ก.ย. 69
+963
+98
+
+ฮานอยสตาร์ | 12 ก.ย. 69
+065
+88
+
+ฮานอยสามัคคี | 12 ก.ย. 69
+366
+53
+
+ฮานอยอาเซียน | 12 ก.ย. 69
+371
+65
+
+ฮานอยเฉพาะกิจ | 12 ก.ย. 69
+569
+18
+
+ฮานอยเช้า | 12 ก.ย. 69
+096
+80
+
+เกาหลี VIP | 12 ก.ย. 69
+227
+37
+
+เยอรมัน VIP | 12 ก.ย. 69
+471
+33
+
+ไต้หวัน VIP | 12 ก.ย. 69
+591
+15
+
+จีน VIP บ่าย | 13 ก.ย. 69
+742
+45
+
+จีน VIP เช้า | 13 ก.ย. 69
+739
+98
+
+ดาวโจนส์ VIP | 13 ก.ย. 69
+228
+61
+
+ดาวโจนส์สตาร์ | 13 ก.ย. 69
+609
+14
+
+นิคเคอิ VIP บ่าย | 13 ก.ย. 69
+290
+47
+
+นิคเคอิ VIP เช้า | 13 ก.ย. 69
+252
+58
+
+ประชาชนลาว | 13 ก.ย. 69
+987
+66
+
+มาเลย์ | 13 ก.ย. 69
+977
+45
+
+รัสเซีย VIP | 13 ก.ย. 69
+896
+75
+
+ลาว Extra | 13 ก.ย. 69
+629
+00
+
+ลาว HD | 13 ก.ย. 69
+442
+03
+
+ลาว VIP | 13 ก.ย. 69
+845
+78
+
+ลาวกาชาด | 13 ก.ย. 69
+790
+63
+
+ลาวทีวี | 13 ก.ย. 69
+018
+07
+
+ลาวประตูชัย | 13 ก.ย. 69
+036
+08
+
+ลาวพิเศษ | 13 ก.ย. 69
+277
+82
+
+ลาวสตาร์ | 13 ก.ย. 69
+188
+13
+
+ลาวสตาร์ VIP | 13 ก.ย. 69
+531
+40
+
+ลาวสันติภาพ | 13 ก.ย. 69
+178
+23
+
+ลาวสามัคคี | 13 ก.ย. 69
+472
+14
+
+ลาวสามัคคี VIP | 13 ก.ย. 69
+599
+75
+
+ลาวอาเซียน | 13 ก.ย. 69
+036
+08
+
+ลาวเช้า | 13 ก.ย. 69
+981
+16
+
+สิงคโปร์ VIP | 13 ก.ย. 69
+235
+48
+
+หุ้นอียิปต์ | 13 ก.ย. 69
+479
+38
+
+อังกฤษ VIP | 13 ก.ย. 69
+224
+36
+
+ฮั่งเส็ง VIP บ่าย | 13 ก.ย. 69
+108
+67
+
+ฮั่งเส็ง VIP เช้า | 13 ก.ย. 69
+427
+73
+
+ฮานอย 4D | 13 ก.ย. 69
+820
+81
+
+ฮานอย Extra | 13 ก.ย. 69
+823
+97
+
+ฮานอย HD | 13 ก.ย. 69
+504
+11
+
+ฮานอย VIP | 13 ก.ย. 69
+455
+20
+
+ฮานอยกาชาด | 13 ก.ย. 69
+950
+71
+
+ฮานอยดึก | 13 ก.ย. 69
+481
+46
+
+ฮานอยทีวี | 13 ก.ย. 69
+698
+85
+
+ฮานอยปกติ | 13 ก.ย. 69
+799
+29
+
+ฮานอยพัฒนา | 13 ก.ย. 69
+810
+19
+
+ฮานอยพิเศษ | 13 ก.ย. 69
+505
+96
+
+ฮานอยสตาร์ | 13 ก.ย. 69
+083
+62
+
+ฮานอยสามัคคี | 13 ก.ย. 69
+436
+28
+
+ฮานอยอาเซียน | 13 ก.ย. 69
+975
+12
+
+ฮานอยเฉพาะกิจ | 13 ก.ย. 69
+710
+24
+
+ฮานอยเช้า | 13 ก.ย. 69
+467
+58
+
+เกาหลี VIP | 13 ก.ย. 69
+330
+87
+
+เยอรมัน VIP | 13 ก.ย. 69
+244
+35
+
+ไต้หวัน VIP | 13 ก.ย. 69
+487
+34
+
+จีน VIP บ่าย | 14 ก.ย. 69
+819
+64
+
+จีน VIP เช้า | 14 ก.ย. 69
+203
+66
+
+ดาวโจนส์ VIP | 14 ก.ย. 69
+187
+56
+
+ดาวโจนส์สตาร์ | 14 ก.ย. 69
+280
+77
+
+นิคเคอิ VIP บ่าย | 14 ก.ย. 69
+692
+43
+
+นิคเคอิ VIP เช้า | 14 ก.ย. 69
+985
+98
+
+ประชาชนลาว | 14 ก.ย. 69
+643
+41
+
+รัสเซีย VIP | 14 ก.ย. 69
+219
+45
+
+ลาว Extra | 14 ก.ย. 69
+377
+51
+
+ลาว HD | 14 ก.ย. 69
+765
+18
+
+ลาว VIP | 14 ก.ย. 69
+264
+72
+
+ลาวกาชาด | 14 ก.ย. 69
+781
+30
+
+ลาวทีวี | 14 ก.ย. 69
+728
+47
+
+ลาวประตูชัย | 14 ก.ย. 69
+569
+04
+
+ลาวพัฒนา | 14 ก.ย. 69
+344
+33
+
+ลาวพิเศษ | 14 ก.ย. 69
+458
+14
+
+ลาวสตาร์ | 14 ก.ย. 69
+272
+86
+
+ลาวสตาร์ VIP | 14 ก.ย. 69
+495
+07
+
+ลาวสันติภาพ | 14 ก.ย. 69
+108
+32
+
+ลาวสามัคคี | 14 ก.ย. 69
+259
+52
+
+ลาวสามัคคี VIP | 14 ก.ย. 69
+425
+74
+
+ลาวอาเซียน | 14 ก.ย. 69
+481
+95
+
+ลาวเช้า | 14 ก.ย. 69
+684
+27
+
+สิงคโปร์ VIP | 14 ก.ย. 69
+926
+33
+
+หุ้นจีนบ่าย | 14 ก.ย. 69
+457
+69
+
+หุ้นจีนเช้า | 14 ก.ย. 69
+692
+34
+
+หุ้นดาวโจนส์ | 14 ก.ย. 69
+120
+09
+
+หุ้นนิคเคอิบ่าย | 14 ก.ย. 69
+299
+35
+
+หุ้นนิคเคอิเช้า | 14 ก.ย. 69
+861
+73
+
+หุ้นรัสเซีย | 14 ก.ย. 69
+476
+88
+
+หุ้นสิงคโปร์ | 14 ก.ย. 69
+802
+09
+
+หุ้นอังกฤษ | 14 ก.ย. 69
+757
+13
+
+หุ้นอินเดีย | 14 ก.ย. 69
+176
+83
+
+หุ้นอียิปต์ | 14 ก.ย. 69
+655
+24
+
+หุ้นฮั่งเส็งบ่าย | 14 ก.ย. 69
+760
+97
+
+หุ้นฮั่งเส็งเช้า | 14 ก.ย. 69
+311
+48
+
+หุ้นเกาหลี | 14 ก.ย. 69
+636
+82
+
+หุ้นเยอรมัน | 14 ก.ย. 69
+081
+75
+
+หุ้นไต้หวัน | 14 ก.ย. 69
+252
+33
+
+หุ้นไทยบ่าย | 14 ก.ย. 69
+031
+21
+
+หุ้นไทยเช้า | 14 ก.ย. 69
+464
+88
+
+หุ้นไทยเที่ยง | 14 ก.ย. 69
+288
+64
+
+หุ้นไทยเย็น | 14 ก.ย. 69
+707
+45
+
+อังกฤษ VIP | 14 ก.ย. 69
+860
+31
+
+ฮั่งเส็ง VIP บ่าย | 14 ก.ย. 69
+082
+27
+
+ฮั่งเส็ง VIP เช้า | 14 ก.ย. 69
+702
+70
+
+ฮานอย 4D | 14 ก.ย. 69
+363
+24
+
+ฮานอย Extra | 14 ก.ย. 69
+896
+03
+
+ฮานอย HD | 14 ก.ย. 69
+927
+20
+
+ฮานอย VIP | 14 ก.ย. 69
+439
+63
+
+ฮานอยกาชาด | 14 ก.ย. 69
+094
+59
+
+ฮานอยดึก | 14 ก.ย. 69
+906
+91
+
+ฮานอยทีวี | 14 ก.ย. 69
+367
+71
+
+ฮานอยปกติ | 14 ก.ย. 69
+522
+92
+
+ฮานอยพัฒนา | 14 ก.ย. 69
+218
+01
+
+ฮานอยพิเศษ | 14 ก.ย. 69
+581
+34
+
+ฮานอยสตาร์ | 14 ก.ย. 69
+602
+71
+
+ฮานอยสามัคคี | 14 ก.ย. 69
+522
+76
+
+ฮานอยอาเซียน | 14 ก.ย. 69
+148
+44
+
+ฮานอยเฉพาะกิจ | 14 ก.ย. 69
+068
+78
+
+ฮานอยเช้า | 14 ก.ย. 69
+431
+07
+
+เกาหลี VIP | 14 ก.ย. 69
+907
+09
+
+เยอรมัน VIP | 14 ก.ย. 69
+722
+01
+
+ไต้หวัน VIP | 14 ก.ย. 69
+964
+78
+
+จีน VIP บ่าย | 15 ก.ย. 69
+356
+17
+
+จีน VIP เช้า | 15 ก.ย. 69
+484
+61
+
+ดาวโจนส์ VIP | 15 ก.ย. 69
+480
+39
+
+ดาวโจนส์สตาร์ | 15 ก.ย. 69
+274
+65
+
+นิคเคอิ VIP บ่าย | 15 ก.ย. 69
+414
+47
+
+นิคเคอิ VIP เช้า | 15 ก.ย. 69
+151
+58
+
+ประชาชนลาว | 15 ก.ย. 69
+548
+56
+
+รัสเซีย VIP | 15 ก.ย. 69
+687
+15
+
+ลาว Extra | 15 ก.ย. 69
+429
+26
+
+ลาว HD | 15 ก.ย. 69
+608
+69
+
+ลาว VIP | 15 ก.ย. 69
+021
+50
+
+ลาวกาชาด | 15 ก.ย. 69
+009
+72
+
+ลาวทีวี | 15 ก.ย. 69
+919
+75
+
+ลาวพัฒนา | 15 ก.ย. 69
+249
+82
+
+ลาวพิเศษ | 15 ก.ย. 69
+566
+35
+
+ลาวสตาร์ | 15 ก.ย. 69
+339
+00
+
+ลาวสตาร์ VIP | 15 ก.ย. 69
+822
+67
+
+ลาวสันติภาพ | 15 ก.ย. 69
+099
+14
+
+ลาวสามัคคี | 15 ก.ย. 69
+763
+27
+
+ลาวสามัคคี VIP | 15 ก.ย. 69
+064
+70
+
+ลาวอาเซียน | 15 ก.ย. 69
+157
+05
+
+ลาวเช้า | 15 ก.ย. 69
+795
+53
+
+สิงคโปร์ VIP | 15 ก.ย. 69
+682
+01
+
+หุ้นจีนบ่าย | 15 ก.ย. 69
+797
+60
+
+หุ้นจีนเช้า | 15 ก.ย. 69
+963
+06
+
+หุ้นดาวโจนส์ | 15 ก.ย. 69
+311
+09
+
+หุ้นนิคเคอิบ่าย | 15 ก.ย. 69
+410
+89
+
+หุ้นนิคเคอิเช้า | 15 ก.ย. 69
+236
+37
+
+หุ้นรัสเซีย | 15 ก.ย. 69
+116
+60
+
+หุ้นสิงคโปร์ | 15 ก.ย. 69
+864
+38
+
+หุ้นอังกฤษ | 15 ก.ย. 69
+813
+44
+
+หุ้นอินเดีย | 15 ก.ย. 69
+382
+94
+
+หุ้นอียิปต์ | 15 ก.ย. 69
+917
+62
+
+หุ้นฮั่งเส็งบ่าย | 15 ก.ย. 69
+724
+36
+
+หุ้นฮั่งเส็งเช้า | 15 ก.ย. 69
+945
+15
+
+หุ้นเกาหลี | 15 ก.ย. 69
+528
+08
+
+หุ้นเยอรมัน | 15 ก.ย. 69
+228
+53
+
+หุ้นไต้หวัน | 15 ก.ย. 69
+149
+03
+
+หุ้นไทยบ่าย | 15 ก.ย. 69
+764
+43
+
+หุ้นไทยเช้า | 15 ก.ย. 69
+186
+21
+
+หุ้นไทยเที่ยง | 15 ก.ย. 69
+451
+56
+
+หุ้นไทยเย็น | 15 ก.ย. 69
+666
+41
+
+อังกฤษ VIP | 15 ก.ย. 69
+034
+97
+
+ฮั่งเส็ง VIP บ่าย | 15 ก.ย. 69
+531
+03
+
+ฮั่งเส็ง VIP เช้า | 15 ก.ย. 69
+465
+34
+
+ฮานอย 4D | 15 ก.ย. 69
+116
+91
+
+ฮานอย Extra | 15 ก.ย. 69
+610
+46
+
+ฮานอย HD | 15 ก.ย. 69
+709
+12
+
+ฮานอย VIP | 15 ก.ย. 69
+272
+33
+
+ฮานอยกาชาด | 15 ก.ย. 69
+697
+52
+
+ฮานอยดึก | 15 ก.ย. 69
+991
+22
+
+ฮานอยทีวี | 15 ก.ย. 69
+141
+80
+
+ฮานอยปกติ | 15 ก.ย. 69
+429
+41
+
+ฮานอยพัฒนา | 15 ก.ย. 69
+141
+60
+
+ฮานอยพิเศษ | 15 ก.ย. 69
+996
+17
+
+ฮานอยสตาร์ | 15 ก.ย. 69
+568
+87
+
+ฮานอยสามัคคี | 15 ก.ย. 69
+001
+59
+
+ฮานอยอาเซียน | 15 ก.ย. 69
+078
+09
+
+ฮานอยเฉพาะกิจ | 15 ก.ย. 69
+872
+16
+
+ฮานอยเช้า | 15 ก.ย. 69
+650
+62
+
+เกาหลี VIP | 15 ก.ย. 69
+003
+24
+
+เยอรมัน VIP | 15 ก.ย. 69
+192
+61
+
+ไต้หวัน VIP | 15 ก.ย. 69
+048
+04
+
+จีน VIP บ่าย | 16 ก.ย. 69
+534
+03
+
+จีน VIP เช้า | 16 ก.ย. 69
+572
+08
+
+ดาวโจนส์ VIP | 16 ก.ย. 69
+285
+93
+
+ดาวโจนส์สตาร์ | 16 ก.ย. 69
+608
+69
+
+นิคเคอิ VIP บ่าย | 16 ก.ย. 69
+798
+65
+
+นิคเคอิ VIP เช้า | 16 ก.ย. 69
+716
+43
+
+ประชาชนลาว | 16 ก.ย. 69
+571
+03
+
+มาเลย์ | 16 ก.ย. 69
+087
+81
+
+รัฐบาลไทย | 16 ก.ย. 69
+640
+64
+
+รัสเซีย VIP | 16 ก.ย. 69
+844
+75
+
+ลาว Extra | 16 ก.ย. 69
+395
+09
+
+ลาว HD | 16 ก.ย. 69
+532
+35
+
+ลาว VIP | 16 ก.ย. 69
+837
+68
+
+ลาวกาชาด | 16 ก.ย. 69
+126
+91
+
+ลาวทีวี | 16 ก.ย. 69
+241
+31
+
+ลาวประตูชัย | 16 ก.ย. 69
+890
+53
+
+ลาวพัฒนา | 16 ก.ย. 69
+902
+89
+
+ลาวพิเศษ | 16 ก.ย. 69
+364
+73
+
+ลาวสตาร์ | 16 ก.ย. 69
+714
+59
+
+ลาวสตาร์ VIP | 16 ก.ย. 69
+081
+23
+
+ลาวสันติภาพ | 16 ก.ย. 69
+932
+75
+
+ลาวสามัคคี | 16 ก.ย. 69
+601
+16
+
+ลาวสามัคคี VIP | 16 ก.ย. 69
+757
+47
+
+ลาวอาเซียน | 16 ก.ย. 69
+754
+85
+
+ลาวเช้า | 16 ก.ย. 69
+861
+17
+
+สิงคโปร์ VIP | 16 ก.ย. 69
+529
+28
+
+หุ้นจีนบ่าย | 16 ก.ย. 69
+474
+77
+
+หุ้นจีนเช้า | 16 ก.ย. 69
+685
+88
+
+หุ้นดาวโจนส์ | 16 ก.ย. 69
+190
+21
+
+หุ้นนิคเคอิบ่าย | 16 ก.ย. 69
+300
+90
+
+หุ้นนิคเคอิเช้า | 16 ก.ย. 69
+600
+10
+
+หุ้นรัสเซีย | 16 ก.ย. 69
+126
+90
+
+หุ้นสิงคโปร์ | 16 ก.ย. 69
+541
+23
+
+หุ้นอังกฤษ | 16 ก.ย. 69
+847
+34
+
+หุ้นอินเดีย | 16 ก.ย. 69
+645
+63
+
+หุ้นอียิปต์ | 16 ก.ย. 69
+266
+51
+
+หุ้นฮั่งเส็งบ่าย | 16 ก.ย. 69
+378
+54
+
+หุ้นฮั่งเส็งเช้า | 16 ก.ย. 69
+735
+11
+
+หุ้นเกาหลี | 16 ก.ย. 69
+076
+48
+
+หุ้นเยอรมัน | 16 ก.ย. 69
+775
+47
+
+หุ้นไต้หวัน | 16 ก.ย. 69
+890
+41
+
+หุ้นไทยบ่าย | 16 ก.ย. 69
+185
+81
+
+หุ้นไทยเช้า | 16 ก.ย. 69
+407
+41
+
+หุ้นไทยเที่ยง | 16 ก.ย. 69
+365
+01
+
+หุ้นไทยเย็น | 16 ก.ย. 69
+673
+93
+
+อังกฤษ VIP | 16 ก.ย. 69
+127
+86
+
+ฮั่งเส็ง VIP บ่าย | 16 ก.ย. 69
+653
+13
+
+ฮั่งเส็ง VIP เช้า | 16 ก.ย. 69
+278
+37
+
+ฮานอย 4D | 16 ก.ย. 69
+753
+30
+
+ฮานอย Extra | 16 ก.ย. 69
+381
+35
+
+ฮานอย HD | 16 ก.ย. 69
+928
+15
+
+ฮานอย VIP | 16 ก.ย. 69
+853
+52
+
+ฮานอยกาชาด | 16 ก.ย. 69
+616
+01
+
+ฮานอยดึก | 16 ก.ย. 69
+295
+48
+
+ฮานอยทีวี | 16 ก.ย. 69
+611
+62
+
+ฮานอยปกติ | 16 ก.ย. 69
+344
+72
+
+ฮานอยพัฒนา | 16 ก.ย. 69
+259
+19
+
+ฮานอยพิเศษ | 16 ก.ย. 69
+313
+67
+
+ฮานอยสตาร์ | 16 ก.ย. 69
+028
+86
+
+ฮานอยสามัคคี | 16 ก.ย. 69
+906
+82
+
+ฮานอยเฉพาะกิจ | 16 ก.ย. 69
+158
+07
+
+ฮานอยเช้า | 16 ก.ย. 69
+603
+64
+
+เกาหลี VIP | 16 ก.ย. 69
+223
+98
+
+เยอรมัน VIP | 16 ก.ย. 69
+004
+77
+
+ไต้หวัน VIP | 16 ก.ย. 69
+028
+11
+
+จีน VIP บ่าย | 17 ก.ย. 69
+518
+75
+
+จีน VIP เช้า | 17 ก.ย. 69
+244
+60
+
+ดาวโจนส์ VIP | 17 ก.ย. 69
+437
+96
+
+ดาวโจนส์สตาร์ | 17 ก.ย. 69
+921
+64
+
+นิคเคอิ VIP บ่าย | 17 ก.ย. 69
+371
+63
+
+นิคเคอิ VIP เช้า | 17 ก.ย. 69
+197
+47
+
+ประชาชนลาว | 17 ก.ย. 69
+445
+27
+
+รัสเซีย VIP | 17 ก.ย. 69
+876
+20
+
+ลาว Extra | 17 ก.ย. 69
+228
+22
+
+ลาว HD | 17 ก.ย. 69
+134
+19
+
+ลาว VIP | 17 ก.ย. 69
+231
+92
+
+ลาวกาชาด | 17 ก.ย. 69
+593
+57
+
+ลาวทีวี | 17 ก.ย. 69
+105
+14
+
+ลาวประตูชัย | 17 ก.ย. 69
+080
+85
+
+ลาวพัฒนา | 17 ก.ย. 69
+595
+75
+
+ลาวพิเศษ | 17 ก.ย. 69
+480
+74
+
+ลาวสตาร์ | 17 ก.ย. 69
+175
+31
+
+ลาวสตาร์ VIP | 17 ก.ย. 69
+775
+16
+
+ลาวสันติภาพ | 17 ก.ย. 69
+517
+41
+
+ลาวสามัคคี | 17 ก.ย. 69
+452
+14
+
+ลาวสามัคคี VIP | 17 ก.ย. 69
+649
+86
+
+ลาวอาเซียน | 17 ก.ย. 69
+042
+01
+
+ลาวเช้า | 17 ก.ย. 69
+306
+49
+
+สิงคโปร์ VIP | 17 ก.ย. 69
+626
+18
+
+หุ้นจีนบ่าย | 17 ก.ย. 69
+991
+83
+
+หุ้นจีนเช้า | 17 ก.ย. 69
+541
+33
+
+หุ้นดาวโจนส์ | 17 ก.ย. 69
+804
+14
+
+หุ้นนิคเคอิบ่าย | 17 ก.ย. 69
+625
+25
+
+หุ้นนิคเคอิเช้า | 17 ก.ย. 69
+687
+87
+
+หุ้นรัสเซีย | 17 ก.ย. 69
+599
+27
+
+หุ้นสิงคโปร์ | 17 ก.ย. 69
+052
+11
+
+หุ้นอังกฤษ | 17 ก.ย. 69
+614
+67
+
+หุ้นอินเดีย | 17 ก.ย. 69
+459
+86
+
+หุ้นอียิปต์ | 17 ก.ย. 69
+872
+06
+
+หุ้นฮั่งเส็งบ่าย | 17 ก.ย. 69
+429
+49
+
+หุ้นฮั่งเส็งเช้า | 17 ก.ย. 69
+346
+32
+
+หุ้นเกาหลี | 17 ก.ย. 69
+054
+22
+
+หุ้นเยอรมัน | 17 ก.ย. 69
+671
+96
+
+หุ้นไต้หวัน | 17 ก.ย. 69
+800
+10
+
+หุ้นไทยบ่าย | 17 ก.ย. 69
+907
+34
+
+หุ้นไทยเช้า | 17 ก.ย. 69
+113
+40
+
+หุ้นไทยเที่ยง | 17 ก.ย. 69
+650
+77
+
+หุ้นไทยเย็น | 17 ก.ย. 69
+734
+61
+
+อังกฤษ VIP | 17 ก.ย. 69
+805
+38
+
+ฮั่งเส็ง VIP บ่าย | 17 ก.ย. 69
+417
+24
+
+ฮั่งเส็ง VIP เช้า | 17 ก.ย. 69
+564
+61
+
+ฮานอย 4D | 17 ก.ย. 69
+132
+46
+
+ฮานอย Extra | 17 ก.ย. 69
+284
+66
+
+ฮานอย HD | 17 ก.ย. 69
+300
+40
+
+ฮานอย VIP | 17 ก.ย. 69
+889
+95
+
+ฮานอยกาชาด | 17 ก.ย. 69
+609
+97
+
+ฮานอยดึก | 17 ก.ย. 69
+287
+53
+
+ฮานอยทีวี | 17 ก.ย. 69
+325
+50
+
+ฮานอยปกติ | 17 ก.ย. 69
+960
+51
+
+ฮานอยพัฒนา | 17 ก.ย. 69
+946
+44
+
+ฮานอยพิเศษ | 17 ก.ย. 69
+260
+84
+
+ฮานอยสตาร์ | 17 ก.ย. 69
+713
+56
+
+ฮานอยสามัคคี | 17 ก.ย. 69
+696
+13
+
+ฮานอยอาเซียน | 17 ก.ย. 69
+265
+20
+
+ฮานอยเฉพาะกิจ | 17 ก.ย. 69
+082
+31
+
+ฮานอยเช้า | 17 ก.ย. 69
+453
+12
+
+เกาหลี VIP | 17 ก.ย. 69
+973
+02
+
+เยอรมัน VIP | 17 ก.ย. 69
+631
+86
+
+ไต้หวัน VIP | 17 ก.ย. 69
+976
+39
+
+จีน VIP บ่าย | 18 ก.ย. 69
+248
+01
+
+จีน VIP เช้า | 18 ก.ย. 69
+820
+24
+
+ดาวโจนส์ VIP | 18 ก.ย. 69
+394
+62
+
+ดาวโจนส์สตาร์ | 18 ก.ย. 69
+590
+41
+
+นิคเคอิ VIP บ่าย | 18 ก.ย. 69
+421
+76
+
+นิคเคอิ VIP เช้า | 18 ก.ย. 69
+799
+47
+
+ประชาชนลาว | 18 ก.ย. 69
+591
+87
+
+รัสเซีย VIP | 18 ก.ย. 69
+212
+87
+
+ลาว Extra | 18 ก.ย. 69
+793
+50
+
+ลาว HD | 18 ก.ย. 69
+832
+14
+
+ลาว VIP | 18 ก.ย. 69
+971
+89
+
+ลาวกาชาด | 18 ก.ย. 69
+813
+24
+
+ลาวทีวี | 18 ก.ย. 69
+428
+80
+
+ลาวประตูชัย | 18 ก.ย. 69
+760
+59
+
+ลาวพัฒนา | 18 ก.ย. 69
+502
+35
+
+ลาวพิเศษ | 18 ก.ย. 69
+204
+72
+
+ลาวสตาร์ | 18 ก.ย. 69
+319
+70
+
+ลาวสตาร์ VIP | 18 ก.ย. 69
+733
+98
+
+ลาวสันติภาพ | 18 ก.ย. 69
+456
+31
+
+ลาวสามัคคี | 18 ก.ย. 69
+871
+18
+
+ลาวสามัคคี VIP | 18 ก.ย. 69
+226
+72
+
+ลาวอาเซียน | 18 ก.ย. 69
+858
+70
+
+ลาวเช้า | 18 ก.ย. 69
+799
+85
+
+สิงคโปร์ VIP | 18 ก.ย. 69
+562
+69
+
+หุ้นจีนบ่าย | 18 ก.ย. 69
+087
+96
+
+หุ้นจีนเช้า | 18 ก.ย. 69
+348
+57
+
+หุ้นดาวโจนส์ | 18 ก.ย. 69
+264
+40
+
+หุ้นนิคเคอิบ่าย | 18 ก.ย. 69
+895
+70
+
+หุ้นนิคเคอิเช้า | 18 ก.ย. 69
+211
+86
+
+หุ้นรัสเซีย | 18 ก.ย. 69
+595
+96
+
+หุ้นสิงคโปร์ | 18 ก.ย. 69
+611
+41
+
+หุ้นอังกฤษ | 18 ก.ย. 69
+913
+01
+
+หุ้นอินเดีย | 18 ก.ย. 69
+496
+63
+
+หุ้นฮั่งเส็งบ่าย | 18 ก.ย. 69
+078
+49
+
+หุ้นฮั่งเส็งเช้า | 18 ก.ย. 69
+884
+55
+
+หุ้นเกาหลี | 18 ก.ย. 69
+820
+66
+
+หุ้นเยอรมัน | 18 ก.ย. 69
+406
+65
+
+หุ้นไต้หวัน | 18 ก.ย. 69
+075
+75
+
+หุ้นไทยบ่าย | 18 ก.ย. 69
+681
+47
+
+หุ้นไทยเช้า | 18 ก.ย. 69
+594
+60
+
+หุ้นไทยเที่ยง | 18 ก.ย. 69
+989
+55
+
+หุ้นไทยเย็น | 18 ก.ย. 69
+615
+81
+
+อังกฤษ VIP | 18 ก.ย. 69
+605
+12
+
+ฮั่งเส็ง VIP บ่าย | 18 ก.ย. 69
+620
+04
+
+ฮั่งเส็ง VIP เช้า | 18 ก.ย. 69
+185
+08
+
+ฮานอย 4D | 18 ก.ย. 69
+196
+30
+
+ฮานอย Extra | 18 ก.ย. 69
+716
+52
+
+ฮานอย HD | 18 ก.ย. 69
+016
+66
+
+ฮานอย VIP | 18 ก.ย. 69
+226
+30
+
+ฮานอยกาชาด | 18 ก.ย. 69
+991
+48
+
+ฮานอยดึก | 18 ก.ย. 69
+770
+33
+
+ฮานอยทีวี | 18 ก.ย. 69
+369
+93
+
+ฮานอยปกติ | 18 ก.ย. 69
+367
+32
+
+ฮานอยพัฒนา | 18 ก.ย. 69
+747
+64
+
+ฮานอยพิเศษ | 18 ก.ย. 69
+545
+13
+
+ฮานอยสตาร์ | 18 ก.ย. 69
+047
+31
+
+ฮานอยสามัคคี | 18 ก.ย. 69
+200
+86
+
+ฮานอยอาเซียน | 18 ก.ย. 69
+082
+76
+
+ฮานอยเฉพาะกิจ | 18 ก.ย. 69
+237
+59
+
+ฮานอยเช้า | 18 ก.ย. 69
+021
+08
+
+เกาหลี VIP | 18 ก.ย. 69
+897
+67
+
+เยอรมัน VIP | 18 ก.ย. 69
+946
+98
+
+ไต้หวัน VIP | 18 ก.ย. 69
+582
+93
+
+จีน VIP บ่าย | 19 ก.ย. 69
+671
+80
+
+จีน VIP เช้า | 19 ก.ย. 69
+138
+27
+
+ดาวโจนส์ VIP | 19 ก.ย. 69
+734
+82
+
+ดาวโจนส์สตาร์ | 19 ก.ย. 69
+928
+37
+
+นิคเคอิ VIP บ่าย | 19 ก.ย. 69
+829
+68
+
+นิคเคอิ VIP เช้า | 19 ก.ย. 69
+551
+18
+
+ประชาชนลาว | 19 ก.ย. 69
+197
+82
+
+มาเลย์ | 19 ก.ย. 69
+061
+00
+
+รัสเซีย VIP | 19 ก.ย. 69
+760
+79
+
+ลาว Extra | 19 ก.ย. 69
+641
+53
+
+ลาว HD | 19 ก.ย. 69
+893
+71
+
+ลาว VIP | 19 ก.ย. 69
+317
+43
+
+ลาวกาชาด | 19 ก.ย. 69
+594
+08
+
+ลาวทีวี | 19 ก.ย. 69
+073
+44
+
+ลาวประตูชัย | 19 ก.ย. 69
+162
+97
+
+ลาวพิเศษ | 19 ก.ย. 69
+663
+16
+
+ลาวสตาร์ | 19 ก.ย. 69
+958
+72
+
+ลาวสตาร์ VIP | 19 ก.ย. 69
+642
+17
+
+ลาวสันติภาพ | 19 ก.ย. 69
+719
+52
+
+ลาวสามัคคี | 19 ก.ย. 69
+205
+62
+
+ลาวสามัคคี VIP | 19 ก.ย. 69
+742
+87
+
+ลาวอาเซียน | 19 ก.ย. 69
+566
+38
+
+ลาวเช้า | 19 ก.ย. 69
+072
+51
+
+สิงคโปร์ VIP | 19 ก.ย. 69
+585
+83
+
+อังกฤษ VIP | 19 ก.ย. 69
+034
+51
+
+ฮั่งเส็ง VIP บ่าย | 19 ก.ย. 69
+405
+70
+
+ฮั่งเส็ง VIP เช้า | 19 ก.ย. 69
+342
+12
+
+ฮานอย 4D | 19 ก.ย. 69
+249
+36
+
+ฮานอย Extra | 19 ก.ย. 69
+512
+98
+
+ฮานอย HD | 19 ก.ย. 69
+539
+98
+
+ฮานอย VIP | 19 ก.ย. 69
+190
+70
+
+ฮานอยกาชาด | 19 ก.ย. 69
+012
+10
+
+ฮานอยดึก | 19 ก.ย. 69
+649
+27
+
+ฮานอยทีวี | 19 ก.ย. 69
+224
+26
+
+ฮานอยปกติ | 19 ก.ย. 69
+412
+14
+
+ฮานอยพัฒนา | 19 ก.ย. 69
+208
+07
+
+ฮานอยพิเศษ | 19 ก.ย. 69
+565
+67
+
+ฮานอยสตาร์ | 19 ก.ย. 69
+768
+12
+
+ฮานอยสามัคคี | 19 ก.ย. 69
+485
+45
+
+ฮานอยอาเซียน | 19 ก.ย. 69
+836
+55
+
+ฮานอยเฉพาะกิจ | 19 ก.ย. 69
+747
+39
+
+ฮานอยเช้า | 19 ก.ย. 69
+812
+68
+
+เกาหลี VIP | 19 ก.ย. 69
+262
+17
+
+เยอรมัน VIP | 19 ก.ย. 69
+576
+93
+
+ไต้หวัน VIP | 19 ก.ย. 69
+499
+62
+
+จีน VIP บ่าย | 20 ก.ย. 69
+985
+08
+
+จีน VIP เช้า | 20 ก.ย. 69
+596
+91
+
+ดาวโจนส์ VIP | 20 ก.ย. 69
+645
+30
+
+ดาวโจนส์สตาร์ | 20 ก.ย. 69
+580
+96
+
+นิคเคอิ VIP บ่าย | 20 ก.ย. 69
+913
+16
+
+นิคเคอิ VIP เช้า | 20 ก.ย. 69
+053
+85
+
+ประชาชนลาว | 20 ก.ย. 69
+994
+76
+
+มาเลย์ | 20 ก.ย. 69
+650
+46
+
+รัสเซีย VIP | 20 ก.ย. 69
+536
+78
+
+ลาว Extra | 20 ก.ย. 69
+067
+07
+
+ลาว HD | 20 ก.ย. 69
+166
+83
+
+ลาว VIP | 20 ก.ย. 69
+567
+25
+
+ลาวกาชาด | 20 ก.ย. 69
+860
+19
+
+ลาวทีวี | 20 ก.ย. 69
+041
+48
+
+ลาวประตูชัย | 20 ก.ย. 69
+346
+31
+
+ลาวพิเศษ | 20 ก.ย. 69
+478
+94
+
+ลาวสตาร์ | 20 ก.ย. 69
+868
+71
+
+ลาวสตาร์ VIP | 20 ก.ย. 69
+086
+54
+
+ลาวสันติภาพ | 20 ก.ย. 69
+936
+35
+
+ลาวสามัคคี | 20 ก.ย. 69
+188
+41
+
+ลาวสามัคคี VIP | 20 ก.ย. 69
+133
+91
+
+ลาวอาเซียน | 20 ก.ย. 69
+102
+34
+
+ลาวเช้า | 20 ก.ย. 69
+947
+03
+
+สิงคโปร์ VIP | 20 ก.ย. 69
+483
+08
+
+หุ้นอียิปต์ | 20 ก.ย. 69
+147
+25
+
+อังกฤษ VIP | 20 ก.ย. 69
+882
+01
+
+ฮั่งเส็ง VIP บ่าย | 20 ก.ย. 69
+320
+28
+
+ฮั่งเส็ง VIP เช้า | 20 ก.ย. 69
+423
+16
+
+ฮานอย 4D | 20 ก.ย. 69
+805
+71
+
+ฮานอย Extra | 20 ก.ย. 69
+636
+74
+
+ฮานอย HD | 20 ก.ย. 69
+229
+55
+
+ฮานอย VIP | 20 ก.ย. 69
+103
+55
+
+ฮานอยกาชาด | 20 ก.ย. 69
+827
+40
+
+ฮานอยดึก | 20 ก.ย. 69
+872
+15
+
+ฮานอยทีวี | 20 ก.ย. 69
+774
+67
+
+ฮานอยปกติ | 20 ก.ย. 69
+538
+48
+
+ฮานอยพัฒนา | 20 ก.ย. 69
+079
+92
+
+ฮานอยพิเศษ | 20 ก.ย. 69
+349
+85
+
+ฮานอยสตาร์ | 20 ก.ย. 69
+302
+54
+
+ฮานอยสามัคคี | 20 ก.ย. 69
+187
+49
+
+ฮานอยอาเซียน | 20 ก.ย. 69
+157
+63
+
+ฮานอยเฉพาะกิจ | 20 ก.ย. 69
+450
+61
+
+ฮานอยเช้า | 20 ก.ย. 69
+953
+84
+
+เกาหลี VIP | 20 ก.ย. 69
+075
+14
+
+เยอรมัน VIP | 20 ก.ย. 69
+016
+53
+
+ไต้หวัน VIP | 20 ก.ย. 69
+982
+97
+
+จีน VIP บ่าย | 21 ก.ย. 69
+047
+25
+
+จีน VIP เช้า | 21 ก.ย. 69
+336
+96
+
+ดาวโจนส์ VIP | 21 ก.ย. 69
+462
+74
+
+ดาวโจนส์สตาร์ | 21 ก.ย. 69
+734
+05
+
+นิคเคอิ VIP บ่าย | 21 ก.ย. 69
+539
+12
+
+นิคเคอิ VIP เช้า | 21 ก.ย. 69
+480
+31
+
+ประชาชนลาว | 21 ก.ย. 69
+114
+57
+
+รัสเซีย VIP | 21 ก.ย. 69
+760
+37
+
+ลาว Extra | 21 ก.ย. 69
+223
+08
+
+ลาว HD | 21 ก.ย. 69
+754
+31
+
+ลาว VIP | 21 ก.ย. 69
+894
+18
+
+ลาวกาชาด | 21 ก.ย. 69
+288
+45
+
+ลาวทีวี | 21 ก.ย. 69
+019
+66
+
+ลาวประตูชัย | 21 ก.ย. 69
+551
+24
+
+ลาวพัฒนา | 21 ก.ย. 69
+225
+92
+
+ลาวพิเศษ | 21 ก.ย. 69
+396
+83
+
+ลาวสตาร์ | 21 ก.ย. 69
+058
+93
+
+ลาวสตาร์ VIP | 21 ก.ย. 69
+161
+72
+
+ลาวสันติภาพ | 21 ก.ย. 69
+196
+05
+
+ลาวสามัคคี | 21 ก.ย. 69
+284
+12
+
+ลาวสามัคคี VIP | 21 ก.ย. 69
+916
+89
+
+ลาวอาเซียน | 21 ก.ย. 69
+309
+64
+
+ลาวเช้า | 21 ก.ย. 69
+715
+83
+
+สิงคโปร์ VIP | 21 ก.ย. 69
+715
+50
+
+หุ้นจีนบ่าย | 21 ก.ย. 69
+002
+15
+
+หุ้นจีนเช้า | 21 ก.ย. 69
+823
+36
+
+หุ้นดาวโจนส์ | 21 ก.ย. 69
+883
+19
+
+หุ้นรัสเซีย | 21 ก.ย. 69
+472
+23
+
+หุ้นสิงคโปร์ | 21 ก.ย. 69
+523
+12
+
+หุ้นอังกฤษ | 21 ก.ย. 69
+901
+88
+
+หุ้นอินเดีย | 21 ก.ย. 69
+899
+03
+
+หุ้นอียิปต์ | 21 ก.ย. 69
+431
+16
+
+หุ้นฮั่งเส็งบ่าย | 21 ก.ย. 69
+271
+93
+
+หุ้นฮั่งเส็งเช้า | 21 ก.ย. 69
+158
+80
+
+หุ้นเกาหลี | 21 ก.ย. 69
+299
+79
+
+หุ้นเยอรมัน | 21 ก.ย. 69
+501
+95
+
+หุ้นไต้หวัน | 21 ก.ย. 69
+884
+09
+
+หุ้นไทยบ่าย | 21 ก.ย. 69
+631
+16
+
+หุ้นไทยเช้า | 21 ก.ย. 69
+316
+01
+
+หุ้นไทยเที่ยง | 21 ก.ย. 69
+660
+45
+
+หุ้นไทยเย็น | 21 ก.ย. 69
+603
+88
+
+อังกฤษ VIP | 21 ก.ย. 69
+920
+78
+
+ฮั่งเส็ง VIP บ่าย | 21 ก.ย. 69
+663
+07
+
+ฮั่งเส็ง VIP เช้า | 21 ก.ย. 69
+506
+14
+
+ฮานอย 4D | 21 ก.ย. 69
+101
+81
+
+ฮานอย Extra | 21 ก.ย. 69
+800
+42
+
+ฮานอย HD | 21 ก.ย. 69
+907
+19
+
+ฮานอย VIP | 21 ก.ย. 69
+917
+23
+
+ฮานอยกาชาด | 21 ก.ย. 69
+626
+25
+
+ฮานอยดึก | 21 ก.ย. 69
+415
+10
+
+ฮานอยทีวี | 21 ก.ย. 69
+464
+09
+
+ฮานอยปกติ | 21 ก.ย. 69
+432
+99
+
+ฮานอยพัฒนา | 21 ก.ย. 69
+042
+72
+
+ฮานอยพิเศษ | 21 ก.ย. 69
+740
+97
+
+ฮานอยสตาร์ | 21 ก.ย. 69
+524
+65
+
+ฮานอยสามัคคี | 21 ก.ย. 69
+215
+36
+
+ฮานอยอาเซียน | 21 ก.ย. 69
+952
+62
+
+ฮานอยเฉพาะกิจ | 21 ก.ย. 69
+766
+90
+
+ฮานอยเช้า | 21 ก.ย. 69
+661
+34
+
+เกาหลี VIP | 21 ก.ย. 69
+676
+21
+
+เยอรมัน VIP | 21 ก.ย. 69
+830
+72
+
+ไต้หวัน VIP | 21 ก.ย. 69
+140
+44
+
+จีน VIP บ่าย | 22 ก.ย. 69
+989
+62
+
+จีน VIP เช้า | 22 ก.ย. 69
+337
+95
+
+ดาวโจนส์ VIP | 22 ก.ย. 69
+569
+25
+
+ดาวโจนส์สตาร์ | 22 ก.ย. 69
+893
+65
+
+นิคเคอิ VIP บ่าย | 22 ก.ย. 69
+762
+76
+
+นิคเคอิ VIP เช้า | 22 ก.ย. 69
+909
+53
+
+ประชาชนลาว | 22 ก.ย. 69
+033
+48
+
+รัสเซีย VIP | 22 ก.ย. 69
+150
+22
+
+ลาว Extra | 22 ก.ย. 69
+376
+56
+
+ลาว HD | 22 ก.ย. 69
+036
+41
+
+ลาว VIP | 22 ก.ย. 69
+651
+46
+
+ลาวกาชาด | 22 ก.ย. 69
+121
+01
+
+ลาวทีวี | 22 ก.ย. 69
+499
+81
+
+ลาวประตูชัย | 22 ก.ย. 69
+841
+72
+
+ลาวพัฒนา | 22 ก.ย. 69
+507
+75
+
+ลาวพิเศษ | 22 ก.ย. 69
+913
+49
+
+ลาวสตาร์ | 22 ก.ย. 69
+090
+03
+
+ลาวสตาร์ VIP | 22 ก.ย. 69
+599
+28
+
+ลาวสันติภาพ | 22 ก.ย. 69
+658
+77
+
+ลาวสามัคคี | 22 ก.ย. 69
+189
+11
+
+ลาวสามัคคี VIP | 22 ก.ย. 69
+200
+92
+
+ลาวอาเซียน | 22 ก.ย. 69
+321
+39
+
+ลาวเช้า | 22 ก.ย. 69
+120
+83
+
+สิงคโปร์ VIP | 22 ก.ย. 69
+381
+37
+
+หุ้นจีนบ่าย | 22 ก.ย. 69
+374
+28
+
+หุ้นจีนเช้า | 22 ก.ย. 69
+487
+85
+
+หุ้นดาวโจนส์ | 22 ก.ย. 69
+369
+14
+
+หุ้นรัสเซีย | 22 ก.ย. 69
+467
+95
+
+หุ้นสิงคโปร์ | 22 ก.ย. 69
+376
+53
+
+หุ้นอังกฤษ | 22 ก.ย. 69
+833
+68
+
+หุ้นอินเดีย | 22 ก.ย. 69
+908
+91
+
+หุ้นอียิปต์ | 22 ก.ย. 69
+089
+42
+
+หุ้นฮั่งเส็งบ่าย | 22 ก.ย. 69
+775
+04
+
+หุ้นฮั่งเส็งเช้า | 22 ก.ย. 69
+175
+04
+
+หุ้นเกาหลี | 22 ก.ย. 69
+139
+40
+
+หุ้นเยอรมัน | 22 ก.ย. 69
+885
+84
+
+หุ้นไต้หวัน | 22 ก.ย. 69
+017
+33
+
+หุ้นไทยบ่าย | 22 ก.ย. 69
+205
+02
+
+หุ้นไทยเช้า | 22 ก.ย. 69
+168
+65
+
+หุ้นไทยเที่ยง | 22 ก.ย. 69
+637
+34
+
+หุ้นไทยเย็น | 22 ก.ย. 69
+044
+41
+
+อังกฤษ VIP | 22 ก.ย. 69
+954
+23
+
+ฮั่งเส็ง VIP บ่าย | 22 ก.ย. 69
+580
+62
+
+ฮั่งเส็ง VIP เช้า | 22 ก.ย. 69
+477
+49
+
+ฮานอย 4D | 22 ก.ย. 69
+451
+59
+
+ฮานอย Extra | 22 ก.ย. 69
+267
+34
+
+ฮานอย HD | 22 ก.ย. 69
+213
+84
+
+ฮานอย VIP | 22 ก.ย. 69
+078
+10
+
+ฮานอยกาชาด | 22 ก.ย. 69
+279
+49
+
+ฮานอยดึก | 22 ก.ย. 69
+142
+08
+
+ฮานอยทีวี | 22 ก.ย. 69
+863
+54
+
+ฮานอยปกติ | 22 ก.ย. 69
+922
+92
+
+ฮานอยพัฒนา | 22 ก.ย. 69
+727
+37
+
+ฮานอยพิเศษ | 22 ก.ย. 69
+351
+02
+
+ฮานอยสตาร์ | 22 ก.ย. 69
+515
+57
+
+ฮานอยสามัคคี | 22 ก.ย. 69
+062
+44
+
+ฮานอยอาเซียน | 22 ก.ย. 69
+897
+81
+
+ฮานอยเฉพาะกิจ | 22 ก.ย. 69
+953
+48
+
+ฮานอยเช้า | 22 ก.ย. 69
+638
+98
+
+เกาหลี VIP | 22 ก.ย. 69
+387
+15
+
+เยอรมัน VIP | 22 ก.ย. 69
+604
+26
+
+ไต้หวัน VIP | 22 ก.ย. 69
+441
+08
+
+จีน VIP บ่าย | 23 ก.ย. 69
+857
+52
+
+จีน VIP เช้า | 23 ก.ย. 69
+360
+09
+
+ดาวโจนส์ VIP | 23 ก.ย. 69
+712
+78
+
+ดาวโจนส์สตาร์ | 23 ก.ย. 69
+462
+34
+
+นิคเคอิ VIP บ่าย | 23 ก.ย. 69
+366
+25
+
+นิคเคอิ VIP เช้า | 23 ก.ย. 69
+790
+13
+
+ประชาชนลาว | 23 ก.ย. 69
+436
+60
+
+มาเลย์ | 23 ก.ย. 69
+069
+19
+
+รัสเซีย VIP | 23 ก.ย. 69
+980
+63
+
+ลาว Extra | 23 ก.ย. 69
+482
+46
+
+ลาว HD | 23 ก.ย. 69
+873
+82
+
+ลาว VIP | 23 ก.ย. 69
+813
+48
+
+ลาวกาชาด | 23 ก.ย. 69
+224
+63
+
+ลาวทีวี | 23 ก.ย. 69
+593
+55
+
+ลาวประตูชัย | 23 ก.ย. 69
+821
+65
+
+ลาวพัฒนา | 23 ก.ย. 69
+960
+79
+
+ลาวพิเศษ | 23 ก.ย. 69
+736
+97
+
+ลาวสตาร์ | 23 ก.ย. 69
+591
+76
+
+ลาวสตาร์ VIP | 23 ก.ย. 69
+025
+89
+
+ลาวสันติภาพ | 23 ก.ย. 69
+061
+80
+
+ลาวสามัคคี | 23 ก.ย. 69
+533
+95
+
+ลาวสามัคคี VIP | 23 ก.ย. 69
+864
+98
+
+ลาวอาเซียน | 23 ก.ย. 69
+372
+81
+
+ลาวเช้า | 23 ก.ย. 69
+092
+51
+
+สิงคโปร์ VIP | 23 ก.ย. 69
+594
+59
+
+หุ้นจีนบ่าย | 23 ก.ย. 69
+607
+67
+
+หุ้นจีนเช้า | 23 ก.ย. 69
+472
+02
+
+หุ้นดาวโจนส์ | 23 ก.ย. 69
+159
+10
+
+หุ้นรัสเซีย | 23 ก.ย. 69
+323
+56
+
+หุ้นสิงคโปร์ | 23 ก.ย. 69
+991
+85
+
+หุ้นอังกฤษ | 23 ก.ย. 69
+526
+07
+
+หุ้นอินเดีย | 23 ก.ย. 69
+825
+17
+
+หุ้นอียิปต์ | 23 ก.ย. 69
+493
+96
+
+หุ้นฮั่งเส็งบ่าย | 23 ก.ย. 69
+412
+63
+
+หุ้นฮั่งเส็งเช้า | 23 ก.ย. 69
+604
+71
+
+หุ้นเกาหลี | 23 ก.ย. 69
+456
+17
+
+หุ้นเยอรมัน | 23 ก.ย. 69
+063
+22
+
+หุ้นไต้หวัน | 23 ก.ย. 69
+729
+12
+
+หุ้นไทยบ่าย | 23 ก.ย. 69
+572
+28
+
+หุ้นไทยเช้า | 23 ก.ย. 69
+904
+40
+
+หุ้นไทยเที่ยง | 23 ก.ย. 69
+183
+39
+
+หุ้นไทยเย็น | 23 ก.ย. 69
+170
+26
+
+อังกฤษ VIP | 23 ก.ย. 69
+983
+25
+
+ฮั่งเส็ง VIP บ่าย | 23 ก.ย. 69
+535
+47
+
+ฮั่งเส็ง VIP เช้า | 23 ก.ย. 69
+021
+54
+
+ฮานอย 4D | 23 ก.ย. 69
+320
+62
+
+ฮานอย Extra | 23 ก.ย. 69
+165
+10
+
+ฮานอย HD | 23 ก.ย. 69
+978
+77
+
+ฮานอย VIP | 23 ก.ย. 69
+986
+36
+
+ฮานอยกาชาด | 23 ก.ย. 69
+172
+66
+
+ฮานอยดึก | 23 ก.ย. 69
+830
+84
+
+ฮานอยทีวี | 23 ก.ย. 69
+450
+39
+
+ฮานอยปกติ | 23 ก.ย. 69
+406
+50
+
+ฮานอยพัฒนา | 23 ก.ย. 69
+873
+50
+
+ฮานอยพิเศษ | 23 ก.ย. 69
+083
+95
+
+ฮานอยสตาร์ | 23 ก.ย. 69
+493
+63
+
+ฮานอยสามัคคี | 23 ก.ย. 69
+603
+97
+
+ฮานอยอาเซียน | 23 ก.ย. 69
+262
+35
+
+ฮานอยเฉพาะกิจ | 23 ก.ย. 69
+218
+73
+
+ฮานอยเช้า | 23 ก.ย. 69
+445
+66
+
+เกาหลี VIP | 23 ก.ย. 69
+103
+39
+
+เยอรมัน VIP | 23 ก.ย. 69
+401
+47
+
+ไต้หวัน VIP | 23 ก.ย. 69
+039
+98
+
+จีน VIP บ่าย | 24 ก.ย. 69
+218
+02
+
+จีน VIP เช้า | 24 ก.ย. 69
+535
+61
+
+ดาวโจนส์ VIP | 24 ก.ย. 69
+938
+04
+
+ดาวโจนส์สตาร์ | 24 ก.ย. 69
+104
+63
+
+นิคเคอิ VIP บ่าย | 24 ก.ย. 69
+453
+14
+
+นิคเคอิ VIP เช้า | 24 ก.ย. 69
+439
+78
+
+ประชาชนลาว | 24 ก.ย. 69
+299
+17
+
+รัสเซีย VIP | 24 ก.ย. 69
+548
+61
+
+ลาว Extra | 24 ก.ย. 69
+623
+82
+
+ลาว HD | 24 ก.ย. 69
+977
+42
+
+ลาว VIP | 24 ก.ย. 69
+346
+83
+
+ลาวกาชาด | 24 ก.ย. 69
+049
+50
+
+ลาวทีวี | 24 ก.ย. 69
+498
+84
+
+ลาวประตูชัย | 24 ก.ย. 69
+686
+70
+
+ลาวพัฒนา | 24 ก.ย. 69
+667
+26
+
+ลาวพิเศษ | 24 ก.ย. 69
+242
+92
+
+ลาวสตาร์ | 24 ก.ย. 69
+163
+80
+
+ลาวสตาร์ VIP | 24 ก.ย. 69
+160
+24
+
+ลาวสันติภาพ | 24 ก.ย. 69
+133
+04
+
+ลาวสามัคคี | 24 ก.ย. 69
+157
+91
+
+ลาวสามัคคี VIP | 24 ก.ย. 69
+503
+15
+
+ลาวอาเซียน | 24 ก.ย. 69
+710
+37
+
+ลาวเช้า | 24 ก.ย. 69
+821
+77
+
+สิงคโปร์ VIP | 24 ก.ย. 69
+897
+76
+
+หุ้นจีนบ่าย | 24 ก.ย. 69
+697
+10
+
+หุ้นจีนเช้า | 24 ก.ย. 69
+934
+73
+
+หุ้นดาวโจนส์ | 24 ก.ย. 69
+998
+61
+
+หุ้นนิคเคอิบ่าย | 24 ก.ย. 69
+399
+04
+
+หุ้นนิคเคอิเช้า | 24 ก.ย. 69
+341
+46
+
+หุ้นรัสเซีย | 24 ก.ย. 69
+810
+87
+
+หุ้นสิงคโปร์ | 24 ก.ย. 69
+337
+54
+
+หุ้นอังกฤษ | 24 ก.ย. 69
+999
+27
+
+หุ้นอินเดีย | 24 ก.ย. 69
+054
+00
+
+หุ้นอียิปต์ | 24 ก.ย. 69
+669
+24
+
+หุ้นฮั่งเส็งบ่าย | 24 ก.ย. 69
+113
+99
+
+หุ้นฮั่งเส็งเช้า | 24 ก.ย. 69
+475
+37
+
+หุ้นเยอรมัน | 24 ก.ย. 69
+653
+10
+
+หุ้นไต้หวัน | 24 ก.ย. 69
+460
+69
+
+หุ้นไทยบ่าย | 24 ก.ย. 69
+279
+91
+
+หุ้นไทยเช้า | 24 ก.ย. 69
+575
+95
+
+หุ้นไทยเที่ยง | 24 ก.ย. 69
+796
+74
+
+หุ้นไทยเย็น | 24 ก.ย. 69
+658
+12
+
+อังกฤษ VIP | 24 ก.ย. 69
+144
+60
+
+ฮั่งเส็ง VIP บ่าย | 24 ก.ย. 69
+353
+58
+
+ฮั่งเส็ง VIP เช้า | 24 ก.ย. 69
+714
+84
+
+ฮานอย 4D | 24 ก.ย. 69
+453
+65
+
+ฮานอย Extra | 24 ก.ย. 69
+219
+37
+
+ฮานอย HD | 24 ก.ย. 69
+197
+70
+
+ฮานอย VIP | 24 ก.ย. 69
+847
+28
+
+ฮานอยกาชาด | 24 ก.ย. 69
+505
+55
+
+ฮานอยดึก | 24 ก.ย. 69
+932
+89
+
+ฮานอยทีวี | 24 ก.ย. 69
+321
+99
+
+ฮานอยปกติ | 24 ก.ย. 69
+196
+82
+
+ฮานอยพัฒนา | 24 ก.ย. 69
+347
+35
+
+ฮานอยพิเศษ | 24 ก.ย. 69
+420
+24
+
+ฮานอยสตาร์ | 24 ก.ย. 69
+655
+15
+
+ฮานอยสามัคคี | 24 ก.ย. 69
+965
+21
+
+ฮานอยอาเซียน | 24 ก.ย. 69
+713
+46
+
+ฮานอยเฉพาะกิจ | 24 ก.ย. 69
+076
+30
+
+ฮานอยเช้า | 24 ก.ย. 69
+182
+96
+
+เกาหลี VIP | 24 ก.ย. 69
+332
+96
+
+เยอรมัน VIP | 24 ก.ย. 69
+293
+44
+
+ไต้หวัน VIP | 24 ก.ย. 69
+589
+90
+
+จีน VIP บ่าย | 25 ก.ย. 69
+488
+98
+
+จีน VIP เช้า | 25 ก.ย. 69
+561
+93
+
+ดาวโจนส์ VIP | 25 ก.ย. 69
+405
+47
+
+ดาวโจนส์สตาร์ | 25 ก.ย. 69
+031
+24
+
+นิคเคอิ VIP บ่าย | 25 ก.ย. 69
+537
+34
+
+นิคเคอิ VIP เช้า | 25 ก.ย. 69
+621
+91
+
+ประชาชนลาว | 25 ก.ย. 69
+203
+64
+
+รัสเซีย VIP | 25 ก.ย. 69
+843
+98
+
+ลาว Extra | 25 ก.ย. 69
+441
+74
+
+ลาว HD | 25 ก.ย. 69
+224
+35
+
+ลาว VIP | 25 ก.ย. 69
+612
+96
+
+ลาวกาชาด | 25 ก.ย. 69
+371
+68
+
+ลาวทีวี | 25 ก.ย. 69
+158
+86
+
+ลาวประตูชัย | 25 ก.ย. 69
+337
+27
+
+ลาวพัฒนา | 25 ก.ย. 69
+383
+23
+
+ลาวพิเศษ | 25 ก.ย. 69
+514
+75
+
+ลาวสตาร์ | 25 ก.ย. 69
+561
+12
+
+ลาวสตาร์ VIP | 25 ก.ย. 69
+718
+07
+
+ลาวสันติภาพ | 25 ก.ย. 69
+350
+45
+
+ลาวสามัคคี | 25 ก.ย. 69
+881
+88
+
+ลาวสามัคคี VIP | 25 ก.ย. 69
+677
+96
+
+ลาวอาเซียน | 25 ก.ย. 69
+941
+50
+
+ลาวเช้า | 25 ก.ย. 69
+411
+27
+
+สิงคโปร์ VIP | 25 ก.ย. 69
+079
+17
+
+หุ้นดาวโจนส์ | 25 ก.ย. 69
+862
+64
+
+หุ้นนิคเคอิบ่าย | 25 ก.ย. 69
+420
+21
+
+หุ้นนิคเคอิเช้า | 25 ก.ย. 69
+814
+15
+
+หุ้นรัสเซีย | 25 ก.ย. 69
+511
+99
+
+หุ้นสิงคโปร์ | 25 ก.ย. 69
+112
+75
+
+หุ้นอังกฤษ | 25 ก.ย. 69
+525
+26
+
+หุ้นอินเดีย | 25 ก.ย. 69
+574
+20
+
+หุ้นฮั่งเส็งบ่าย | 25 ก.ย. 69
+009
+04
+
+หุ้นฮั่งเส็งเช้า | 25 ก.ย. 69
+319
+94
+
+หุ้นเยอรมัน | 25 ก.ย. 69
+864
+11
+
+หุ้นไทยบ่าย | 25 ก.ย. 69
+596
+38
+
+หุ้นไทยเช้า | 25 ก.ย. 69
+333
+75
+
+หุ้นไทยเที่ยง | 25 ก.ย. 69
+418
+60
+
+หุ้นไทยเย็น | 25 ก.ย. 69
+163
+05
+
+อังกฤษ VIP | 25 ก.ย. 69
+706
+49
+
+ฮั่งเส็ง VIP บ่าย | 25 ก.ย. 69
+733
+74
+
+ฮั่งเส็ง VIP เช้า | 25 ก.ย. 69
+320
+05
+
+ฮานอย 4D | 25 ก.ย. 69
+290
+86
+
+ฮานอย Extra | 25 ก.ย. 69
+995
+83
+
+ฮานอย HD | 25 ก.ย. 69
+807
+89
+
+ฮานอย VIP | 25 ก.ย. 69
+712
+98
+
+ฮานอยกาชาด | 25 ก.ย. 69
+433
+50
+
+ฮานอยดึก | 25 ก.ย. 69
+130
+85
+
+ฮานอยทีวี | 25 ก.ย. 69
+512
+88
+
+ฮานอยปกติ | 25 ก.ย. 69
+465
+30
+
+ฮานอยพัฒนา | 25 ก.ย. 69
+462
+17
+
+ฮานอยพิเศษ | 25 ก.ย. 69
+785
+06
+
+ฮานอยสตาร์ | 25 ก.ย. 69
+994
+03
+
+ฮานอยสามัคคี | 25 ก.ย. 69
+916
+37
+
+ฮานอยอาเซียน | 25 ก.ย. 69
+235
+80
+
+ฮานอยเฉพาะกิจ | 25 ก.ย. 69
+534
+02
+
+ฮานอยเช้า | 25 ก.ย. 69
+792
+80
+
+เกาหลี VIP | 25 ก.ย. 69
+377
+68
+
+เยอรมัน VIP | 25 ก.ย. 69
+982
+10
+
+ไต้หวัน VIP | 25 ก.ย. 69
+527
+74
+
+จีน VIP บ่าย | 26 ก.ย. 69
+566
+37
+
+จีน VIP เช้า | 26 ก.ย. 69
+264
+10
+
+ดาวโจนส์ VIP | 26 ก.ย. 69
+052
+18
+
+ดาวโจนส์สตาร์ | 26 ก.ย. 69
+563
+22
+
+นิคเคอิ VIP บ่าย | 26 ก.ย. 69
+035
+80
+
+นิคเคอิ VIP เช้า | 26 ก.ย. 69
+039
+84
+
+ประชาชนลาว | 26 ก.ย. 69
+944
+07
+
+มาเลย์ | 26 ก.ย. 69
+391
+61
+
+รัสเซีย VIP | 26 ก.ย. 69
+271
+41
+
+ลาว Extra | 26 ก.ย. 69
+610
+51
+
+ลาว HD | 26 ก.ย. 69
+902
+11
+
+ลาว VIP | 26 ก.ย. 69
+065
+50
+
+ลาวกาชาด | 26 ก.ย. 69
+576
+24
+
+ลาวทีวี | 26 ก.ย. 69
+424
+15
+
+ลาวประตูชัย | 26 ก.ย. 69
+058
+87
+
+ลาวพิเศษ | 26 ก.ย. 69
+588
+65
+
+ลาวสตาร์ | 26 ก.ย. 69
+290
+68
+
+ลาวสตาร์ VIP | 26 ก.ย. 69
+173
+56
+
+ลาวสันติภาพ | 26 ก.ย. 69
+814
+61
+
+ลาวสามัคคี | 26 ก.ย. 69
+432
+94
+
+ลาวสามัคคี VIP | 26 ก.ย. 69
+284
+02
+
+ลาวเช้า | 26 ก.ย. 69
+239
+51
+
+สิงคโปร์ VIP | 26 ก.ย. 69
+157
+29
+
+อังกฤษ VIP | 26 ก.ย. 69
+072
+48
+
+ฮั่งเส็ง VIP บ่าย | 26 ก.ย. 69
+278
+60
+
+ฮั่งเส็ง VIP เช้า | 26 ก.ย. 69
+212
+44
+
+ฮานอย 4D | 26 ก.ย. 69
+410
+59
+
+ฮานอย Extra | 26 ก.ย. 69
+022
+78
+
+ฮานอย HD | 26 ก.ย. 69
+928
+29
+
+ฮานอย VIP | 26 ก.ย. 69
+910
+18
+
+ฮานอยกาชาด | 26 ก.ย. 69
+254
+10
+
+ฮานอยดึก | 26 ก.ย. 69
+491
+04
+
+ฮานอยทีวี | 26 ก.ย. 69
+736
+11
+
+ฮานอยปกติ | 26 ก.ย. 69
+132
+93
+
+ฮานอยพัฒนา | 26 ก.ย. 69
+569
+25
+
+ฮานอยพิเศษ | 26 ก.ย. 69
+584
+04
+
+ฮานอยสตาร์ | 26 ก.ย. 69
+598
+77
+
+ฮานอยสามัคคี | 26 ก.ย. 69
+093
+19
+
+ฮานอยอาเซียน | 26 ก.ย. 69
+592
+79
+
+ฮานอยเฉพาะกิจ | 26 ก.ย. 69
+640
+21
+
+ฮานอยเช้า | 26 ก.ย. 69
+143
+75
+
+เกาหลี VIP | 26 ก.ย. 69
+392
+57
+
+เยอรมัน VIP | 26 ก.ย. 69
+513
+87
+
+ไต้หวัน VIP | 26 ก.ย. 69
+832
+09
+
+จีน VIP บ่าย | 27 ก.ย. 69
+539
+97
+
+จีน VIP เช้า | 27 ก.ย. 69
+179
+29
+
+ดาวโจนส์ VIP | 27 ก.ย. 69
+450
+47
+
+ดาวโจนส์สตาร์ | 27 ก.ย. 69
+635
+91
+
+นิคเคอิ VIP บ่าย | 27 ก.ย. 69
+094
+43
+
+นิคเคอิ VIP เช้า | 27 ก.ย. 69
+668
+76
+
+ประชาชนลาว | 27 ก.ย. 69
+346
+27
+
+มาเลย์ | 27 ก.ย. 69
+063
+21
+
+รัสเซีย VIP | 27 ก.ย. 69
+733
+19
+
+ลาว Extra | 27 ก.ย. 69
+476
+46
+
+ลาว HD | 27 ก.ย. 69
+645
+36
+
+ลาว VIP | 27 ก.ย. 69
+091
+60
+
+ลาวกาชาด | 27 ก.ย. 69
+633
+92
+
+ลาวทีวี | 27 ก.ย. 69
+613
+44
+
+ลาวประตูชัย | 27 ก.ย. 69
+008
+46
+
+ลาวพิเศษ | 27 ก.ย. 69
+168
+61
+
+ลาวสตาร์ | 27 ก.ย. 69
+058
+03
+
+ลาวสตาร์ VIP | 27 ก.ย. 69
+825
+49
+
+ลาวสามัคคี | 27 ก.ย. 69
+303
+93
+
+ลาวสามัคคี VIP | 27 ก.ย. 69
+724
+57
+
+ลาวอาเซียน | 27 ก.ย. 69
+396
+52
+
+ลาวเช้า | 27 ก.ย. 69
+120
+57
+
+สิงคโปร์ VIP | 27 ก.ย. 69
+067
+65
+
+หุ้นอียิปต์ | 27 ก.ย. 69
+169
+00
+
+อังกฤษ VIP | 27 ก.ย. 69
+339
+78
+
+ฮั่งเส็ง VIP บ่าย | 27 ก.ย. 69
+882
+21
+
+ฮั่งเส็ง VIP เช้า | 27 ก.ย. 69
+557
+08
+
+ฮานอย Extra | 27 ก.ย. 69
+949
+08
+
+ฮานอย HD | 27 ก.ย. 69
+523
+42
+
+ฮานอย VIP | 27 ก.ย. 69
+162
+44
+
+ฮานอยกาชาด | 27 ก.ย. 69
+717
+59
+
+ฮานอยดึก | 27 ก.ย. 69
+517
+59
+
+ฮานอยทีวี | 27 ก.ย. 69
+135
+33
+
+ฮานอยปกติ | 27 ก.ย. 69
+473
+70
+
+ฮานอยพัฒนา | 27 ก.ย. 69
+544
+15
+
+ฮานอยพิเศษ | 27 ก.ย. 69
+782
+88
+
+ฮานอยสตาร์ | 27 ก.ย. 69
+950
+09
+
+ฮานอยสามัคคี | 27 ก.ย. 69
+380
+54
+
+ฮานอยอาเซียน | 27 ก.ย. 69
+306
+90
+
+ฮานอยเฉพาะกิจ | 27 ก.ย. 69
+336
+75
+
+ฮานอยเช้า | 27 ก.ย. 69
+987
+65
+
+เกาหลี VIP | 27 ก.ย. 69
+828
+35
+
+เยอรมัน VIP | 27 ก.ย. 69
+240
+74
+
+ไต้หวัน VIP | 27 ก.ย. 69
+136
+26
+
+จีน VIP บ่าย | 28 ก.ย. 69
+354
+34
+
+จีน VIP เช้า | 28 ก.ย. 69
+264
+60
+
+ดาวโจนส์ VIP | 28 ก.ย. 69
+962
+83
+
+ดาวโจนส์สตาร์ | 28 ก.ย. 69
+447
+13
+
+นิคเคอิ VIP บ่าย | 28 ก.ย. 69
+709
+06
+
+นิคเคอิ VIP เช้า | 28 ก.ย. 69
+231
+39
+
+ประชาชนลาว | 28 ก.ย. 69
+560
+42
+
+รัสเซีย VIP | 28 ก.ย. 69
+385
+64
+
+ลาว Extra | 28 ก.ย. 69
+771
+75
+
+ลาว HD | 28 ก.ย. 69
+985
+33
+
+ลาว VIP | 28 ก.ย. 69
+491
+24
+
+ลาวกาชาด | 28 ก.ย. 69
+080
+31
+
+ลาวทีวี | 28 ก.ย. 69
+473
+17
+
+ลาวประตูชัย | 28 ก.ย. 69
+327
+11
+
+ลาวพัฒนา | 28 ก.ย. 69
+277
+42
+
+ลาวพิเศษ | 28 ก.ย. 69
+510
+95
+
+ลาวสตาร์ | 28 ก.ย. 69
+107
+21
+
+ลาวสตาร์ VIP | 28 ก.ย. 69
+489
+36
+
+ลาวสันติภาพ | 28 ก.ย. 69
+789
+06
+
+ลาวสามัคคี | 28 ก.ย. 69
+164
+91
+
+ลาวสามัคคี VIP | 28 ก.ย. 69
+845
+98
+
+ลาวอาเซียน | 28 ก.ย. 69
+758
+63
+
+ลาวเช้า | 28 ก.ย. 69
+541
+68
+
+สิงคโปร์ VIP | 28 ก.ย. 69
+680
+79
+
+หุ้นจีนบ่าย | 28 ก.ย. 69
+875
+22
+
+หุ้นจีนเช้า | 28 ก.ย. 69
+828
+69
+
+หุ้นดาวโจนส์ | 28 ก.ย. 69
+151
+11
+
+หุ้นนิคเคอิบ่าย | 28 ก.ย. 69
+762
+58
+
+หุ้นนิคเคอิเช้า | 28 ก.ย. 69
+353
+67
+
+หุ้นสิงคโปร์ | 28 ก.ย. 69
+902
+90
+
+หุ้นอังกฤษ | 28 ก.ย. 69
+488
+37
+
+หุ้นอินเดีย | 28 ก.ย. 69
+172
+00
+
+หุ้นอียิปต์ | 28 ก.ย. 69
+871
+98
+
+หุ้นฮั่งเส็งบ่าย | 28 ก.ย. 69
+251
+42
+
+หุ้นฮั่งเส็งเช้า | 28 ก.ย. 69
+609
+00
+
+หุ้นเกาหลี | 28 ก.ย. 69
+137
+19
+
+หุ้นเยอรมัน | 28 ก.ย. 69
+442
+22
+
+หุ้นไทยบ่าย | 28 ก.ย. 69
+108
+55
+
+หุ้นไทยเช้า | 28 ก.ย. 69
+494
+69
+
+หุ้นไทยเที่ยง | 28 ก.ย. 69
+750
+13
+
+หุ้นไทยเย็น | 28 ก.ย. 69
+337
+26
+
+อังกฤษ VIP | 28 ก.ย. 69
+071
+79
+
+ฮั่งเส็ง VIP บ่าย | 28 ก.ย. 69
+824
+62
+
+ฮั่งเส็ง VIP เช้า | 28 ก.ย. 69
+981
+83
+
+ฮานอย 4D | 28 ก.ย. 69
+319
+50
+
+ฮานอย HD | 28 ก.ย. 69
+308
+31
+
+ฮานอย VIP | 28 ก.ย. 69
+585
+10
+
+ฮานอยกาชาด | 28 ก.ย. 69
+100
+06
+
+ฮานอยดึก | 28 ก.ย. 69
+413
+78
+
+ฮานอยทีวี | 28 ก.ย. 69
+491
+48
+
+ฮานอยปกติ | 28 ก.ย. 69
+115
+08
+
+ฮานอยพัฒนา | 28 ก.ย. 69
+566
+79
+
+ฮานอยพิเศษ | 28 ก.ย. 69
+758
+44
+
+ฮานอยสตาร์ | 28 ก.ย. 69
+384
+20
+
+ฮานอยสามัคคี | 28 ก.ย. 69
+522
+17
+
+ฮานอยอาเซียน | 28 ก.ย. 69
+997
+33
+
+ฮานอยเฉพาะกิจ | 28 ก.ย. 69
+944
+15
+
+ฮานอยเช้า | 28 ก.ย. 69
+963
+74
+
+เกาหลี VIP | 28 ก.ย. 69
+502
+21
+
+เยอรมัน VIP | 28 ก.ย. 69
+935
+97
+
+ไต้หวัน VIP | 28 ก.ย. 69
+376
+22
+
+จีน VIP บ่าย | 29 ก.ย. 69
+063
+09
+
+จีน VIP เช้า | 29 ก.ย. 69
+852
+22
+
+ดาวโจนส์ VIP | 29 ก.ย. 69
+859
+30
+
+ดาวโจนส์สตาร์ | 29 ก.ย. 69
+500
+38
+
+นิคเคอิ VIP บ่าย | 29 ก.ย. 69
+240
+74
+
+นิคเคอิ VIP เช้า | 29 ก.ย. 69
+523
+73
+
+ประชาชนลาว | 29 ก.ย. 69
+308
+28
+
+รัสเซีย VIP | 29 ก.ย. 69
+912
+36
+
+ลาว Extra | 29 ก.ย. 69
+104
+50
+
+ลาว HD | 29 ก.ย. 69
+336
+80
+
+ลาว VIP | 29 ก.ย. 69
+297
+62
+
+ลาวกาชาด | 29 ก.ย. 69
+763
+52
+
+ลาวทีวี | 29 ก.ย. 69
+829
+46
+
+ลาวพัฒนา | 29 ก.ย. 69
+616
+66
+
+ลาวพิเศษ | 29 ก.ย. 69
+679
+86
+
+ลาวสตาร์ | 29 ก.ย. 69
+891
+57
+
+ลาวสตาร์ VIP | 29 ก.ย. 69
+681
+59
+
+ลาวสามัคคี | 29 ก.ย. 69
+420
+94
+
+ลาวสามัคคี VIP | 29 ก.ย. 69
+714
+67
+
+ลาวเช้า | 29 ก.ย. 69
+705
+26
+
+สิงคโปร์ VIP | 29 ก.ย. 69
+042
+47
+
+หุ้นจีนบ่าย | 29 ก.ย. 69
+195
+20
+
+หุ้นจีนเช้า | 29 ก.ย. 69
+178
+03
+
+หุ้นดาวโจนส์ | 29 ก.ย. 69
+992
+59
+
+หุ้นนิคเคอิบ่าย | 29 ก.ย. 69
+127
+35
+
+หุ้นนิคเคอิเช้า | 29 ก.ย. 69
+700
+62
+
+หุ้นสิงคโปร์ | 29 ก.ย. 69
+484
+18
+
+หุ้นอังกฤษ | 29 ก.ย. 69
+671
+17
+
+หุ้นอินเดีย | 29 ก.ย. 69
+907
+65
+
+หุ้นอียิปต์ | 29 ก.ย. 69
+712
+59
+
+หุ้นฮั่งเส็งบ่าย | 29 ก.ย. 69
+357
+94
+
+หุ้นฮั่งเส็งเช้า | 29 ก.ย. 69
+652
+99
+
+หุ้นเกาหลี | 29 ก.ย. 69
+864
+73
+
+หุ้นเยอรมัน | 29 ก.ย. 69
+921
+79
+
+หุ้นไต้หวัน | 29 ก.ย. 69
+196
+64
+
+หุ้นไทยบ่าย | 29 ก.ย. 69
+851
+86
+
+หุ้นไทยเช้า | 29 ก.ย. 69
+820
+17
+
+หุ้นไทยเที่ยง | 29 ก.ย. 69
+427
+10
+
+หุ้นไทยเย็น | 29 ก.ย. 69
+630
+07
+
+อังกฤษ VIP | 29 ก.ย. 69
+487
+59
+
+ฮั่งเส็ง VIP บ่าย | 29 ก.ย. 69
+968
+56
+
+ฮั่งเส็ง VIP เช้า | 29 ก.ย. 69
+199
+73
+
+ฮานอย 4D | 29 ก.ย. 69
+282
+91
+
+ฮานอย Extra | 29 ก.ย. 69
+860
+12
+
+ฮานอย HD | 29 ก.ย. 69
+738
+46
+
+ฮานอย VIP | 29 ก.ย. 69
+403
+93
+
+ฮานอยกาชาด | 29 ก.ย. 69
+947
+86
+
+ฮานอยดึก | 29 ก.ย. 69
+752
+34
+
+ฮานอยทีวี | 29 ก.ย. 69
+845
+83
+
+ฮานอยปกติ | 29 ก.ย. 69
+651
+89
+
+ฮานอยพัฒนา | 29 ก.ย. 69
+770
+32
+
+ฮานอยพิเศษ | 29 ก.ย. 69
+108
+37
+
+ฮานอยสตาร์ | 29 ก.ย. 69
+092
+76
+
+ฮานอยสามัคคี | 29 ก.ย. 69
+057
+69
+
+ฮานอยเฉพาะกิจ | 29 ก.ย. 69
+419
+67
+
+ฮานอยเช้า | 29 ก.ย. 69
+036
+50
+
+เกาหลี VIP | 29 ก.ย. 69
+890
+03
+
+เยอรมัน VIP | 29 ก.ย. 69
+276
+41
+
+ไต้หวัน VIP | 29 ก.ย. 69
+045
+35
+
+จีน VIP บ่าย | 30 ก.ย. 69
+953
+36
+
+จีน VIP เช้า | 30 ก.ย. 69
+404
+03
+
+ดาวโจนส์ VIP | 30 ก.ย. 69
+143
+02
+
+นิคเคอิ VIP บ่าย | 30 ก.ย. 69
+527
+85
+
+นิคเคอิ VIP เช้า | 30 ก.ย. 69
+270
+20
+
+มาเลย์ | 30 ก.ย. 69
+859
+89
+
+สิงคโปร์ VIP | 30 ก.ย. 69
+586
+63
+
+หุ้นจีนบ่าย | 30 ก.ย. 69
+762
+33
+
+หุ้นจีนเช้า | 30 ก.ย. 69
+461
+34
+
+หุ้นดาวโจนส์ | 30 ก.ย. 69
+605
+87
+
+หุ้นนิคเคอิบ่าย | 30 ก.ย. 69
+372
+45
+
+หุ้นนิคเคอิเช้า | 30 ก.ย. 69
+881
+54
+
+หุ้นสิงคโปร์ | 30 ก.ย. 69
+588
+96
+
+หุ้นอังกฤษ | 30 ก.ย. 69
+600
+71
+
+หุ้นอินเดีย | 30 ก.ย. 69
+029
+78
+
+หุ้นอียิปต์ | 30 ก.ย. 69
+483
+29
+
+หุ้นฮั่งเส็งบ่าย | 30 ก.ย. 69
+327
+70
+
+หุ้นฮั่งเส็งเช้า | 30 ก.ย. 69
+314
+43
+
+หุ้นเกาหลี | 30 ก.ย. 69
+552
+12
+
+หุ้นเยอรมัน | 30 ก.ย. 69
+089
+32
+
+หุ้นไต้หวัน | 30 ก.ย. 69
+013
+17
+
+หุ้นไทยบ่าย | 30 ก.ย. 69
+919
+11
+
+หุ้นไทยเช้า | 30 ก.ย. 69
+420
+90
+
+หุ้นไทยเที่ยง | 30 ก.ย. 69
+083
+47
+
+หุ้นไทยเย็น | 30 ก.ย. 69
+601
+29
+
+อังกฤษ VIP | 30 ก.ย. 69
+308
+94
+
+ฮั่งเส็ง VIP บ่าย | 30 ก.ย. 69
+776
+14
+
+ฮั่งเส็ง VIP เช้า | 30 ก.ย. 69
+838
+37
+
+เกาหลี VIP | 30 ก.ย. 69
+530
+20
+
+เยอรมัน VIP | 30 ก.ย. 69
+581
+72
+
+ไต้หวัน VIP | 30 ก.ย. 69
+388
+68`;
+window.__PDF_CLEAN_RECORDS__=Object.freeze((()=>{try{return parseInput(window.__PDF_CLEAN_INPUT__).records.map((r,i)=>Object.freeze({...r,source:'สถิติ.pdf',sourceRow:i+1}));}catch(e){console.error('PDF CLEAN DATA PATCH',e);return[]}})());
+window.__PDF_CLEAN_AUDIT__=Object.freeze({rawRows:3002,cleanRows:window.__PDF_CLEAN_RECORDS__.length,types:new Set(window.__PDF_CLEAN_RECORDS__.map(r=>r.name)).size,duplicatesRemoved:3002-window.__PDF_CLEAN_RECORDS__.length,conflicts:0,sourceOnly:true});
+window.addEventListener('DOMContentLoaded',()=>{const el=document.getElementById('bulkInput');if(el&&!el.value.trim()&&window.__PDF_CLEAN_INPUT__)el.value=window.__PDF_CLEAN_INPUT__;});
+
 window.runEngine=runEngine;window.runFullResearchHarvest=__runFullResearchHarvest;window.exportResearchLatest=__exportResearchLatest;/* V3.6 AUDIT HARDENING
    - No hard-coded champion percentages are treated as truth.
    - Dataset size/type count are measured from the actual run.
@@ -6786,7 +14788,7 @@ window.__OOS_1915_GATE__=Object.freeze({
 });
 window.__V1_CONFIG__=Object.freeze({version:'V3.11.0',build:'FORENSIC-REPLAY-OOS-VERIFIED',formulas:FORMULAS,windows:WIN,displayWindows:DISPLAY_WIN,targetPositions:['top tens','top units','bottom tens','bottom units'],hundredsExcluded:true,legacySelectorsRemoved:true,consensus:'weighted-evidence',selection:'V2.0+d1d2-partner-learning+gemini-d1d2+forensic-onepack+fast-prefix-cache+regime-controller+replacement-direction+evidence-arbitration+pair-triplet-replacement+flow-outcome-meta+flow-radar+ten-selector-ensemble+navigation-radar+radar-matrix-meta-arbitration+support-filter+volatility-shield+support-granularity+soft-routing+independent-evidence+selection-meta+adaptive-d2+production-type-dna+route-aware-cache+type-family-profile+top4-routing+guarded-routing+formula-research-stack+3-level-frozen-holdout+neighbor-robustness+family-stability+robustness-gate+global-selection-audit+recent-30+historical-50-100-all+reliability+independence+digit-history+risk+confidence+decision-memory+adaptive-penetration-pair-ranking+ui-cleanup+system-clean-ui+lazy-secondary-sections+card-lock+runfix+pair-quality+context-learning+anti-overfit+oos-hardening+clean-shrinkage+relative-recent+margin-confidence+candidate-outcome-ensemble+production-dna-executive+global-dna-summary+r35-selection-bottleneck-repair+adaptive-stability-shield'});
 window.addEventListener('DOMContentLoaded',()=>{window.__MANUAL_RUN_ONLY__=true;if($('run'))$('run').onclick=runEngine;if($('clearInput'))$('clearInput').onclick=()=>{$('bulkInput').value='';showToast('✓ ล้างกล่องกรอกข้อมูลแล้ว')};if($('copyError'))$('copyError').onclick=()=>window.copyLastProcessError();if($('clearGlobal'))$('clearGlobal').onclick=()=>{if(confirm('ต้องการล้างข้อมูลสะสมทั้งหมดในระบบจริงหรือไม่?')){localStorage.removeItem(STORAGE_KEY);$('result').innerHTML='';document.body.classList.remove('ui-smooth');window.__COOP_DECISION_TIMELINE__?.clear?.();window.__SELECTION_META_TIMELINE__?.clear?.();window.__SELECTOR_CONTEXT_TIMELINE__?.clear?.();try{localStorage.removeItem(__EVO_STORE_KEY)}catch(e){};try{indexedDB.deleteDatabase(__RESEARCH_DB__)}catch(e){};window.__RESEARCH_ARCHIVE__=null;window.__COOP_OOS_BUNDLE_CACHE__?.clear?.();window.__COOP_SELECT_CACHE__?.clear?.();currentAuditDataMap={};currentPredictionDataMap={};const panel=$('processingPanel');if(panel){panel.classList.remove('show','indeterminate');$('processingBar').style.width='0%';$('processingPercent').textContent='0%';$('processingStage').textContent='พร้อมประมวลผล';$('processingStatus').textContent='';$('processingEta').textContent='';}updateIndicator();showToast('✓ ล้างข้อมูลสะสมทั้งหมดเรียบร้อย')}};updateIndicator();runSystemHealth() });
-window.__V24_RUNTIME__={version:'V3.11.5',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'strict 70/30 chronological holdout verified for Smart-2D selector; full Production pipeline replay pending'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:false,exactTypeOnly:true,maxPromotions:0,championTop1Locked:true,f1f9Locked:true}};
+window.__V24_RUNTIME__={version:'V3.11.5',engine:'SMART-2D+',ready:false,error:null,oos:{selection:null,top2:null,penetration:null,tests:0,verification:'strict 70/30 chronological holdout verified for Smart-2D selector; full Production pipeline replay pending'},challenger:{id:'V2.6+ TRUE-FINAL-ARBITRATOR',productionMutation:false,exactTypeOnly:true,maxPromotions:0,championTop1Locked:true,f1f9Locked:false}};
 window.__RESEARCH_POLICY__=Object.freeze({productionFutureBlind:true,researchMayInspectHistoricalFuture:true,researchSelectionCausal:true,targetRowRevealedAfterEvaluation:true,exactTypeIsolation:true,autoPromotion:false,championMutation:false});
 window.addEventListener('DOMContentLoaded',()=>{
   try{
@@ -6849,20 +14851,41 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
     const prim=[...m.values()].slice(0,80);for(const f of prim)for(const g of prim.slice(0,20))add(`(${f.label})∘(${g.label})`,x=>f.fn(g.fn(x)),1.3);
     return [...m.values()];
   };
-  const formulaKeys=()=>((typeof FORMULAS!=='undefined'&&Array.isArray(FORMULAS)&&FORMULAS.length===9)?FORMULAS.slice():[]);
-  const direct=(f,r,p)=>{const t=String(r.n3).split('').map(Number),b=String(r.n2).split('').map(Number),A=t[0],B=t[1],C=t[2],D=b[0],E=b[1],P=p?Number(p.n2[1]):NaN;switch(f){case 0:{const d=norm(B+D);return[d,norm(d+1)]}case 1:{const d=norm(A+B+C);return[d,norm(d+1)]}case 2:{const d=norm(A+D+E);return[d,norm(d+1)]}case 3:{const d=norm(C+E);return[d,norm(d+1)]}case 4:{const d=norm(10-E);return[d,norm(d+1)]}case 5:{const d=norm(A+D);return[d,norm(d+1)]}case 6:{const d=norm(B+E+2);return[d,norm(d+2)]}case 7:{const d=norm(A+E);return[d,norm(d+1)]}case 8:{if(!Number.isFinite(P))return null;const d=norm(P+E);return[d,norm(d+1)]}default:return null}};
+  const formulaKeys=()=>((typeof FORMULAS!=='undefined'&&Array.isArray(FORMULAS))?FORMULAS.slice():[]);
+  const direct=(f,r,p)=>{const t=String(r.n3).split('').map(Number),b=String(r.n2).split('').map(Number),A=t[0],B=t[1],C=t[2],D=b[0],E=b[1],pt=p?String(p.n3).split('').map(Number):[],pb=p?String(p.n2).split('').map(Number):[],P=pb.length?pb[1]:NaN;switch(f){
+case 0:{const d=norm(B+D);return[d,norm(d+1)]}
+case 1:{const d=norm(A+B+C);return[d,norm(d+1)]}
+case 2:{const d=norm(A+D+E);return[d,norm(d+1)]}
+case 3:{const d=norm(C+E);return[d,norm(d+1)]}
+case 4:{const d=norm(10-E);return[d,norm(d+1)]}
+case 5:{const d=norm(A+D);return[d,norm(d+1)]}
+case 6:{const d=norm(B+E+2);return[d,norm(d+2)]}
+case 7:{const d=norm(A+E);return[d,norm(d+1)]}
+case 8:{if(!Number.isFinite(P))return null;const d=norm(P+E);return[d,norm(d+1)]}
+case 9:{if(!Number.isFinite(pt[2]))return null;const d=norm(pt[2]+E);return[d,norm(d+1)]}
+case 10:{if(!Number.isFinite(pb[1]))return null;const d=norm(pb[1]+C);return[d,norm(d+1)]}
+case 11:{const d=Math.abs(B-D)+C;return[d,norm(d+1)]}
+case 12:{const d=Math.abs((A+B+C)-(D+E));return[d,norm(d+1)]}
+case 13:{const d=A+C+E;return[d,norm(d+1)]}
+case 14:{const d=B+D+E;return[d,norm(d+1)]}
+case 15:{const d=A+B+E;return[d,norm(d+1)]}
+case 16:{const d=C+D+E;return[d,norm(d+1)]}
+case 17:{const d=2*A+B+E;return[d,norm(d+1)]}
+case 18:{const d=A+2*B+D;return[d,norm(d+1)]}
+case 19:{const d=C+2*E+D;return[d,norm(d+1)]}
+default:return null}};
   const rowsByType=records=>{const m=new Map();for(const r of records||[]){if(r?.status!=='result')continue;const n=String(r.name||'').trim();if(!n)continue;(m.get(n)||m.set(n,[]).get(n)).push(r)}for(const [n,rs] of m)m.set(n,typeof sortRecords==='function'?sortRecords(rs):rs.slice());return m};
   const stab=a=>{if(a.length<8)return .5;const k=Math.min(4,Math.max(1,Math.floor(a.length/8))),v=[];for(let i=0;i<k;i++){const s=Math.floor(i*a.length/k),e=Math.floor((i+1)*a.length/k);if(e>s)v.push(a.slice(s,e).reduce((x,y)=>x+y,0)/(e-s))}const mean=v.reduce((x,y)=>x+y,0)/v.length,sd=Math.sqrt(v.reduce((s,x)=>s+(x-mean)**2,0)/v.length);return clamp(1-2*sd,0,1)};
   const formulaRaw=(fi,r,p)=>direct(fi,r,p);
   const target=r=>new Set([Number(String(r?.n3||'000').padStart(3,'0')[1]),Number(String(r?.n3||'000').padStart(3,'0')[2]),Number(String(r?.n2||'00').padStart(2,'0')[0]),Number(String(r?.n2||'00').padStart(2,'0')[1])]);
   function run(records){
-    const transforms=transformers(),maps=transforms.map(t=>t.sig.map(Number)),groups=rowsByType(records),out={version:VER,types:groups.size,transformCount:transforms.length,formulaCount:9,productionMutation:false,perFormula:{},selectionPolicy:{},overall:{n:0,hits:0}};
+    const transforms=transformers(),maps=transforms.map(t=>t.sig.map(Number)),groups=rowsByType(records),out={version:VER,types:groups.size,transformCount:transforms.length,formulaCount:FORMULAS.length,productionMutation:false,perFormula:{},selectionPolicy:{},overall:{n:0,hits:0}};
     const maskOf=r=>{const n3=String(r?.n3||'000').padStart(3,'0'),n2=String(r?.n2||'00').padStart(2,'0');return (1<<Number(n3[1]))|(1<<Number(n3[2]))|(1<<Number(n2[0]))|(1<<Number(n2[1]));};
     const pairIndex=p=>norm(p[0])*10+norm(p[1]);
     const hitMap=(map,p,mask)=>((mask&(1<<map[norm(p[0])]))!==0)||((mask&(1<<map[norm(p[1])]))!==0);
-    for(let fi=0;fi<9;fi++)out.perFormula['F'+(fi+1)]={candidates:[],oos:{n:0,hits:0}};
+    for(let fi=0;fi<FORMULAS.length;fi++)out.perFormula['F'+(fi+1)]={candidates:[],oos:{n:0,hits:0}};
     for(const [name,rs] of groups){if(rs.length<4)continue;
-      const current=Array(9).fill(0),switches=Array(9).fill(0);
+      const current=Array(FORMULAS.length).fill(0),switches=Array(FORMULAS.length).fill(0);
       // CAUSAL RESEARCH LOCK: candidate selection for target i MUST use only rows < i.
       // The previous implementation updated `all/recent` with target i before selecting
       // the candidate for the same i, which contaminated the research layer with the
@@ -6873,7 +14896,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
       for(let i=2;i<rs.length;i++){
         if(rs[i]?.breakBefore)continue;
         const mask=maskOf(rs[i]);
-        for(let fi=0;fi<9;fi++){
+        for(let fi=0;fi<FORMULAS.length;fi++){
           const raw=formulaRaw(fi,rs[i-1],rs[i-2]);if(!raw)continue;
 
           // 1) SELECT using completed prior rows only. Never read current target outcome here.
@@ -6910,7 +14933,7 @@ window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,s
     }
     // Global leaderboard from exact OOS rows. No future selection is used for the
     // production policy; this table is research evidence only.
-    for(let fi=0;fi<9;fi++){
+    for(let fi=0;fi<FORMULAS.length;fi++){
       const stats=transforms.map((tr,ti)=>({transform:tr.label,n:0,h:0}));
       for(const rs of groups.values())for(let i=2;i<rs.length;i++){if(rs[i]?.breakBefore)continue;const raw=formulaRaw(fi,rs[i-1],rs[i-2]);if(!raw)continue;const mask=maskOf(rs[i]);for(let ti=0;ti<transforms.length;ti++){stats[ti].n++;if(hitMap(maps[ti],raw,mask))stats[ti].h++;}}
       out.perFormula['F'+(fi+1)].candidates=stats.map(x=>({...x,rate:x.n?100*x.h/x.n:0})).sort((a,b)=>b.rate-a.rate||b.h-a.h).slice(0,30);
@@ -7635,6 +15658,194 @@ window.__V330_SELECTOR_ARBITRATION_V3__=(()=>{
     const result=await runBatchOosBundle({rawRecords:raw,baselinePredictor:baseline,challengerPredictor:challenger,typesList:types,chunkSize:opts.chunkSize||10,onBatch:b=>{console.info(`[V3.40.28] Batch ${b.batch}/${b.totalBatches}`,b.types);opts.onBatch?.(b)}});
     window.__V34028_LAST_PROMOTION_GATE__=Object.freeze(result);return result;
   };
+})();
+</script>
+
+
+<script>
+(function installTyrant5(){
+  'use strict';
+  const VERSION='TYRANT-5.0.0-PDF-OOS';
+  const TARGET=.70, CAP=.87, MIN_TRAIN=6, MIN_OOS=4;
+  const OFFSETS=[-4,-3,-2,-1,0,1,2,3,4], WEIGHTS=[1,2];
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const norm=x=>((Math.round(Number(x))%10)+10)%10;
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pct=(h,n)=>n?100*h/n:0;
+  const cleanRows=()=>{
+    const src=Array.isArray(window.__PDF_CLEAN_RECORDS__)?window.__PDF_CLEAN_RECORDS__:[];
+    if(src.length)return src.slice();
+    try{return (typeof parseInput==='function'?parseInput(window.__PDF_CLEAN_INPUT__||'').records:[]).slice()}catch(_){return []}
+  };
+  function targetSet(r){
+    const n3=String(r?.n3||'000').padStart(3,'0'),n2=String(r?.n2||'00').padStart(2,'0');
+    return new Set([+n3[1],+n3[2],+n2[0],+n2[1]]);
+  }
+  function groupRows(rows){
+    const m=new Map();
+    for(const r of rows){if(r?.status&&r.status!=='result')continue;const k=String(r?.name||'').trim();if(!k)continue;(m.get(k)||m.set(k,[]).get(k)).push(r)}
+    for(const [k,v] of m){const z=typeof sortRecords==='function'?sortRecords(v):v.slice();m.set(k,z)}
+    return m;
+  }
+  function formulaList(){
+    const a=Array.isArray(window.__V1_CONFIG__?.formulas)?window.__V1_CONFIG__.formulas:[];
+    return a.length===20?a.slice():[];
+  }
+  function histories(rs){
+    const api=window.__TEST_EXPORTS__;
+    const out={};
+    for(const f of formulaList()){
+      let h=[];
+      try{h=api?.formulaHistory?api.formulaHistory(rs,f):[]}catch(_){h=[]}
+      const by=new Map();
+      for(const x of h)by.set(String(x.target||''),Array.isArray(x.pred)?x.pred.map(Number):null);
+      out[f]=by;
+    }
+    return out;
+  }
+  function candidatePool(){
+    const pool=[], fs=formulaList();
+    for(let fi=0;fi<fs.length;fi++)for(const w1 of WEIGHTS)for(const w2 of WEIGHTS)for(const o1 of OFFSETS)for(const o2 of OFFSETS)
+      pool.push({id:`${fi}|${w1}|${w2}|${o1}|${o2}`,fi,f:fs[fi],w1,w2,o1,o2});
+    return pool;
+  }
+  function applyPred(base,c){
+    if(!Array.isArray(base)||base.length<2)return null;
+    return [norm(base[0]*c.w1+c.o1),norm(base[1]*c.w2+c.o2)];
+  }
+  function isHit(pred,tset){return Array.isArray(pred)&&pred.some(d=>tset.has(Number(d)))}
+  async function run(opts={}){
+    if(window.__TYRANT5_RUNNING__)return window.__TYRANT5_RESULT__||null;
+    window.__TYRANT5_RUNNING__=true;
+    const started=performance.now(),rows=cleanRows(),groups=groupRows(rows),fs=formulaList();
+    if(rows.length!==1995||groups.size!==66||fs.length!==20){
+      const bad={version:VERSION,error:'SOURCE_PREFLIGHT_FAILED',rows:rows.length,types:groups.size,formulas:fs.length};
+      window.__TYRANT5_RESULT__=bad;window.__TYRANT5_RUNNING__=false;return bad;
+    }
+    const pool=candidatePool(),byId=new Map(pool.map((c,i)=>[c.id,i]));
+    const baselinePool=pool.filter(c=>c.fi<9&&c.w1===1&&c.w2===1&&c.o1===0&&c.o2===0);
+    const typeResults=[],allAudit=[];
+    let totalBaseH=0,totalBaseN=0,totalOptH=0,totalOptN=0,accepted=0,rejected=0,frozen=0;
+    let typeIndex=0;
+    for(const [name,raw] of groups){
+      typeIndex++;
+      const rs=typeof results==='function'?results(raw):raw;
+      if(rs.length<MIN_TRAIN+MIN_OOS+2){typeResults.push({name,n:rs.length,status:'INSUFFICIENT_DATA'});continue}
+      const H=histories(rs), dates=rs.map(r=>String(r.date||''));
+      const preds=pool.map(c=>new Array(rs.length).fill(null));
+      for(let i=0;i<rs.length;i++){
+        const d=dates[i];
+        for(let ci=0;ci<pool.length;ci++)preds[ci][i]=applyPred(H[pool[ci].f]?.get(d),pool[ci]);
+      }
+      const train=pool.map(()=>({n:0,h:0})),oos=pool.map(()=>({n:0,h:0}));
+      const oosStart=Math.max(2,Math.floor(rs.length*.70));
+      let champion=null, frozenFlag=false, decisions=[];
+      for(let i=2;i<rs.length;i++){
+        const tset=targetSet(rs[i]);
+        if(i>=oosStart){
+          let baseBest=null;
+          for(const c of baselinePool){
+            const ci=byId.get(c.id),st=train[ci],rate=st.n>=MIN_TRAIN?(st.h+2)/(st.n+4):-.1;
+            if(!baseBest||rate>baseBest.rate||rate===baseBest.rate&&st.h>baseBest.h)baseBest={c,ci,rate,h:st.h,n:st.n};
+          }
+          if(!champion)champion=baseBest?.c||baselinePool[0];
+          const oldCi=byId.get(champion.id);
+          let challBest=null;
+          for(let ci=0;ci<pool.length;ci++){
+            const c=pool[ci],st=train[ci],rate=st.n>=MIN_TRAIN?(st.h+2)/(st.n+4):-.1;
+            if(st.n<MIN_TRAIN)continue;
+            if(!challBest||rate>challBest.rate||rate===challBest.rate&&st.h>challBest.h)challBest={c,ci,rate};
+          }
+          if(!challBest)challBest={c:champion,ci:oldCi,rate:0};
+          /* Evaluate the whole candidate pool on the current OOS row only after selection. */
+          for(let ci=0;ci<pool.length;ci++){
+            const p=preds[ci][i];if(!p)continue;
+            oos[ci].n++;if(isHit(p,tset))oos[ci].h++;
+          }
+          let promoted=false,reason='KEEP_CHAMPION';
+          const ci=challBest.ci;
+          if(!frozenFlag&&ci!==oldCi){
+            const ch=oos[ci],old=oos[oldCi],chRate=pct(ch.h,ch.n),oldRate=pct(old.h,old.n);
+            if(ch.n>=MIN_OOS&&chRate>oldRate&&chRate<=CAP*100+1e-9){
+              champion=challBest.c;promoted=true;accepted++;reason='ACCEPT_STRICT_IMPROVEMENT';
+            }else{
+              rejected++;
+              reason=chRate>CAP*100?'REJECT_SAFETY_CAP':(chRate<=oldRate?'REJECT_NO_REGRESSION':'REJECT_MIN_EVIDENCE');
+            }
+          }
+          const cci=byId.get(champion.id),cr=pct(oos[cci].h,oos[cci].n);
+          if(!frozenFlag&&oos[cci].n>=MIN_OOS&&cr>=70){frozenFlag=true;frozen++}
+          decisions.push({i,baseline:baseBest?.c?.id||null,challenger:challBest.c.id,champion:champion.id,championRate:+cr.toFixed(4),promoted,reason,frozen:frozenFlag});
+        }
+        for(let ci=0;ci<pool.length;ci++){
+          const p=preds[ci][i];if(!p)continue;
+          const hit=isHit(p,tset);
+          train[ci].n++;if(hit)train[ci].h++;
+        }
+        await sleep(0);
+      }
+      const finalCi=byId.get(champion.id),finalSt=oos[finalCi],finalRate=pct(finalSt.h,finalSt.n);
+      /* Replay fixed baseline and final champion on the same holdout for auditable reporting. */
+      let bh=0,bn=0,oh=0,on=0;
+      const baselineChosen=[],btrain=baselinePool.map(()=>({n:0,h:0}));
+      for(let i=2;i<rs.length;i++){
+        if(i>=oosStart){
+          let best=null;
+          for(let bi=0;bi<baselinePool.length;bi++){
+            const c=baselinePool[bi],st=btrain[bi],rate=st.n>=MIN_TRAIN?(st.h+2)/(st.n+4):-.1;
+            if(!best||rate>best.rate||rate===best.rate&&st.h>best.h)best={bi,ci:byId.get(c.id),rate,c};
+          }
+          if(best){const p=preds[best.ci][i];if(p){bn++;if(isHit(p,targetSet(rs[i])))bh++;baselineChosen.push(best.c.id)}}
+          const p=preds[finalCi][i];if(p){on++;if(isHit(p,targetSet(rs[i])))oh++}
+        }
+        for(let bi=0;bi<baselinePool.length;bi++){
+          const ci=byId.get(baselinePool[bi].id),p=preds[ci][i];if(!p)continue;
+          btrain[bi].n++;if(isHit(p,targetSet(rs[i])))btrain[bi].h++;
+        }
+      }
+      totalBaseH+=bh;totalBaseN+=bn;totalOptH+=oh;totalOptN+=on;
+      const status=finalRate>=70?'HARD_FREEZE':(finalRate>=(bh/bn*100)-1e-9?'OPTIMIZED_OR_EQUAL':'BASELINE_PRESERVED');
+      typeResults.push({name,n:rs.length,oosTests:on,baselineOOS:+pct(bh,bn).toFixed(2),optimizedOOS:+pct(oh,on).toFixed(2),gain:+(pct(oh,on)-pct(bh,bn)).toFixed(2),champion:{formula:fs[champion.fi],weight1:champion.w1,weight2:champion.w2,offset1:champion.o1,offset2:champion.o2},status,hardFreeze:finalRate>=70,safetyCap:87,decisions:decisions.length});
+      allAudit.push({name,n:rs.length,oosStart,finalChampion:champion.id,finalChampionRate:+finalRate.toFixed(2),frozen:frozenFlag});
+      if(typeIndex%2===0)await sleep(0);
+    }
+    const unresolved=typeResults.filter(x=>Number(x.optimizedOOS)<70);
+    const result={
+      version:VERSION,source:'embedded-PDF-clean',rows:rows.length,types:groups.size,formulas:20,
+      search:{offsets:OFFSETS,weights:WEIGHTS,candidatesPerFormula:OFFSETS.length*OFFSETS.length*WEIGHTS.length*WEIGHTS.length},
+      policy:{hardFreezeOOS:70,safetyCapOOS:87,strictNoRegression:true,walkForward:'expanding exact-type prior-only 70/30 holdout',localStorageUsed:false},
+      aggregate:{baselineOOS:+pct(totalBaseH,totalBaseN).toFixed(2),optimizedOOS:+pct(totalOptH,totalOptN).toFixed(2),gain:+(pct(totalOptH,totalOptN)-pct(totalBaseH,totalBaseN)).toFixed(2),accepted,rejected,frozen,atOrAbove70:typeResults.filter(x=>Number(x.optimizedOOS)>=70).length,unresolved:unresolved.length},
+      types:typeResults,unresolved:unresolved.map(x=>({name:x.name,oos:x.optimizedOOS,champion:x.champion})),
+      audit:allAudit,elapsedMs:+(performance.now()-started).toFixed(1)
+    };
+    window.__TYRANT5_RESULT__=Object.freeze(result);
+    window.__TYRANT5_STATUS__=Object.freeze({version:VERSION,done:true,aggregate:result.aggregate});
+    const box=document.getElementById('__tyrant5_panel');
+    if(box)box.innerHTML='<b>TYRANT 5 AUTO-OOS</b><br>20 formulas · '+result.rows.toLocaleString()+' clean rows · '+result.types+' types · Final OOS '+result.aggregate.optimizedOOS+'% · ≥70% '+result.aggregate.atOrAbove70+'/'+result.types+' · accepted '+accepted+' · rejected '+rejected+' · frozen '+frozen+(unresolved.length?' · <span style="color:#ff7d7d">unresolved '+unresolved.length+'</span>':'');
+    window.__TYRANT5_RUNNING__=false;
+    return result;
+  }
+  window.__TYRANT5__=Object.freeze({version:VERSION,run,config:{hardFreezeOOS:TARGET,safetyCapOOS:CAP,strictNoRegression:true,offsets:OFFSETS,weights:WEIGHTS}});
+  function boot(){
+    const input=document.getElementById('bulkInput');
+    if(!input)return;
+    window.__TYRANT5_AUTORUN__=true;
+    if(window.__PDF_CLEAN_INPUT__)input.value=window.__PDF_CLEAN_INPUT__;
+    let panel=document.getElementById('__tyrant5_panel');
+    if(!panel){panel=document.createElement('div');panel.id='__tyrant5_panel';panel.className='panel';panel.style.margin='12px 0';panel.textContent='TYRANT 5 AUTO-OOS · กำลังเตรียม engine…';input.parentNode?.parentNode?.insertBefore(panel,input.parentNode?.parentNode?.firstChild||null)}
+    setTimeout(async()=>{
+      try{
+        if(typeof window.runEngine==='function')await window.runEngine();
+        await sleep(20);
+        await run();
+      }catch(e){
+        window.__TYRANT5_RUNNING__=false;
+        window.__TYRANT5_RESULT__={version:VERSION,error:String(e?.stack||e)};
+        if(panel)panel.textContent='TYRANT 5 ERROR · '+String(e?.message||e);
+      }
+    },80);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
 
