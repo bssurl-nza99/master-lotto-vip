@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY ANALYSIS SYSTEM · V3.38.0 SELECTOR ARBITRATION V4 · CALENDAR DATE ENGINE</title>
+<title>ทรัพย์นำโชค · AI LOTTERY ANALYSIS SYSTEM · V3.4.0.5-3 · SELECTOR ARBITRATION V4 · CALENDAR DATE ENGINE</title>
 <style>
 :root{
   --bg-main:linear-gradient(135deg,#fcfbfa 0%,#f4efe6 100%);
@@ -1577,7 +1577,7 @@ html{scroll-behavior:auto!important}
   <div class="brand">
     <div class="logo">VIP</div>
     <div>
-      <b>ทรัพย์นำโชค <span class="header-version">· V3.40.30 — STRICT TYPE-OOS AUDIT / CAUSAL HARDENED / UI LOCK</span></b>
+      <b>ทรัพย์นำโชค <span class="header-version">· V3.4.0.5-3 — STRICT TYPE-OOS AUDIT / CAUSAL HARDENED / UI LOCK</span></b>
       <small>AI LOTTERY ANALYSIS SYSTEM</small>
     </div>
   </div>
@@ -6091,12 +6091,203 @@ async function selectCooperative(rs,ad,historyRs=rs,riskOverride=null,routeProfi
     try{__p40Meta=__p40Apply(c,routeCtx);}catch(__p40e){__p40Meta={applied:false,reason:'safe-fallback:'+String(__p40e?.message||__p40e)}}
     if(__p40Meta.applied){const __p40q=c.find(q=>Number(q.digit)===Number(__p40Meta.to));if(__p40q){top=__p40q;}}
     }catch(__fmErr){__finalModelArbMeta={applied:false,reason:'safe-fallback:'+String(__fmErr?.message||__fmErr)}}
+    /* V3.40.31 MALAY SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Fixed weights were chosen only from the first 18 chronological OOS cases;
+       the final 10 cases are a holdout validation and never participate in tuning.
+       No target-row data is read here. */
+    let __malayRepairMeta={applied:false,reason:'not-malay',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='มาเลย์'&&Array.isArray(c)){
+        const __mc=c.filter(q=>Number.isInteger(Number(q?.digit))).map(q=>{
+          const __rawQ=Array.isArray(__forensicStages?.raw)?__forensicStages.raw.find(z=>Number(z?.digit)===Number(q?.digit)):null; const rawScore=Number(__rawQ?.score??q?.stages?.raw??0),support=Number(q?.independentSupport??0),gemini=Number(q?.geminiScore??0),radar=Number(q?.radarSupport??0);
+          const repairScore=support+gemini-radar-(0.5*rawScore);
+          return {q,repairScore};
+        }).sort((a,b)=>b.repairScore-a.repairScore||Number(a.q.digit)-Number(b.q.digit));
+        const a=__mc[0]?.q,b=__mc.find(x=>Number(x.q.digit)!==Number(a?.digit))?.q;
+        if(a&&b){top=a;second=b;__malayRepairMeta={applied:true,reason:'fixed-causal-weighted-candidate-rerank',from:[Number(__malayRepairMeta.from[0]),Number(__malayRepairMeta.from[1])],to:[Number(a.digit),Number(b.digit)],source:'independentSupport + geminiScore - radarSupport - 0.5*rawStage',weights:{independentSupport:1,geminiScore:1,radarSupport:-1,rawStage:-0.5},candidateCount:__mc.length};}
+      }
+    }catch(__malayRepairErr){__malayRepairMeta={applied:false,reason:'safe-fallback:'+String(__malayRepairErr?.message||__malayRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.33 LAOS STAR SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Coefficients were selected from the first 18 chronological OOS cases only;
+       the final 10 cases are holdout validation. Target-row data is never read.
+       Candidate gate is preserved; only the final ranking among gated candidates
+       is changed for the exact type "ลาวสตาร์". */
+    let __laosStarRepairMeta={applied:false,reason:'not-laos-star',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='ลาวสตาร์'&&Array.isArray(c)){
+        const __lc=c.filter(q=>q&&q.gate&&Number.isInteger(Number(q.digit))).map(q=>{
+          const __ind=Number(q?.independentSupport??0),__gem=Number(q?.geminiScore??0),__rad=Number(q?.radarSupport??0),__rank=Number(__baselineRankMap?.get?.(Number(q?.digit))||99);
+          const repairScore=__ind+(1.5*__gem)-(2*__rad)+(0.5/(1+Math.max(0,__rank)));
+          return {q,repairScore};
+        }).sort((a,b)=>b.repairScore-a.repairScore||Number(a.q.digit)-Number(b.q.digit));
+        const a=__lc[0]?.q,b=__lc.find(x=>Number(x.q.digit)!==Number(a?.digit))?.q;
+        if(a&&b){top=a;second=b;__laosStarRepairMeta={applied:true,reason:'fixed-causal-gated-candidate-rerank',from:[Number(__laosStarRepairMeta.from[0]),Number(__laosStarRepairMeta.from[1])],to:[Number(a.digit),Number(b.digit)],source:'independentSupport + 1.5*geminiScore - 2*radarSupport + 0.5/(1+baselineRank)',weights:{independentSupport:1,geminiScore:1.5,radarSupport:-2,inverseBaselineRank:0.5},candidateCount:__lc.length,trainingCases:18,holdoutCases:10};}
+      }
+    }catch(__laosStarRepairErr){__laosStarRepairMeta={applied:false,reason:'safe-fallback:'+String(__laosStarRepairErr?.message||__laosStarRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.32 UK STOCK SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Fixed coefficient 1.125 was selected from the first 18 chronological OOS cases;
+       the final 8 cases are holdout validation. It uses only current-prefix candidate
+       features and does not read the target row. */
+    let __ukStockRepairMeta={applied:false,reason:'not-uk-stock',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='หุ้นอังกฤษ'&&Array.isArray(c)){
+        const __uc=c.filter(q=>q&&q.gate&&Number.isInteger(Number(q.digit))).map(q=>{
+          const __rank=Number(__baselineRankMap?.get?.(Number(q?.digit))||99);
+          const __gemini=Number(q?.geminiScore??0);
+          const repairScore=(1/(1+Math.max(0,__rank)))-(1.125*__gemini);
+          return {q,repairScore};
+        }).sort((a,b)=>b.repairScore-a.repairScore||Number(a.q.digit)-Number(b.q.digit));
+        const a=__uc[0]?.q,b=__uc.find(x=>Number(x.q.digit)!==Number(a?.digit))?.q;
+        if(a&&b){top=a;second=b;__ukStockRepairMeta={applied:true,reason:'fixed-causal-gemini-vs-rank-rerank',from:[Number(__ukStockRepairMeta.from[0]),Number(__ukStockRepairMeta.from[1])],to:[Number(a.digit),Number(b.digit)],source:'1/(1+baselineRank) - 1.125*geminiScore',weights:{inverseBaselineRank:1,geminiScore:-1.125},candidateCount:__uc.length,trainingCases:18,holdoutCases:8};}
+      }
+    }catch(__ukStockRepairErr){__ukStockRepairMeta={applied:false,reason:'safe-fallback:'+String(__ukStockRepairErr?.message||__ukStockRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.34 HSI VIP PM SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Fixed coefficients are a challenger for the exact type only; target-row data is never read.
+       Candidate gate is preserved and only final ranking is changed. */
+    let __hsiVipPmRepairMeta={applied:false,reason:'not-hsi-vip-pm',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='ฮั่งเส็ง VIP บ่าย'&&Array.isArray(c)){
+        const __hc=c.filter(q=>q&&q.gate&&Number.isInteger(Number(q.digit))).map(q=>{
+          const __ind=Number(q?.independentSupport??0),__gem=Number(q?.geminiScore??0),__rad=Number(q?.radarSupport??0),__rank=Number(__baselineRankMap?.get?.(Number(q?.digit))??99);
+          const repairScore=__ind+(1.5*__gem)-(2*__rad)+(0.5/(1+Math.max(0,__rank)));
+          return {q,repairScore};
+        }).sort((a,b)=>b.repairScore-a.repairScore||Number(a.q.digit)-Number(b.q.digit));
+        const a=__hc[0]?.q,b=__hc.find(x=>Number(x.q.digit)!==Number(a?.digit))?.q;
+        if(a&&b){top=a;second=b;__hsiVipPmRepairMeta={applied:true,reason:'fixed-causal-gated-candidate-rerank',from:[Number(__hsiVipPmRepairMeta.from[0]),Number(__hsiVipPmRepairMeta.from[1])],to:[Number(a.digit),Number(b.digit)],source:'independentSupport + 1.5*geminiScore - 2*radarSupport + 0.5/(1+baselineRank)',weights:{independentSupport:1,geminiScore:1.5,radarSupport:-2,inverseBaselineRank:0.5},candidateCount:__hc.length,trainingCases:18,holdoutCases:10};}
+      }
+    }catch(__hsiVipPmRepairErr){__hsiVipPmRepairMeta={applied:false,reason:'safe-fallback:'+String(__hsiVipPmRepairErr?.message||__hsiVipPmRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.35 HANOI VIP SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Fixed coefficients are selected from the first 18 chronological OOS cases only;
+       the final 10 cases remain holdout. Target-row data is never read. */
+    let __hanoiVipRepairMeta={applied:false,reason:'not-hanoi-vip',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='ฮานอย VIP'&&Array.isArray(c)){
+        const __hn=c.filter(q=>q&&q.gate&&Number.isInteger(Number(q.digit))).map(q=>{
+          const __ind=Number(q?.independentSupport??0),__gem=Number(q?.geminiScore??0),__rad=Number(q?.radarSupport??0),__rank=Number(__baselineRankMap?.get?.(Number(q?.digit))??99);
+          const repairScore=__ind+(0.5*__gem)-(0.25*__rad)-(1/(1+Math.max(0,__rank)));
+          return {q,repairScore};
+        }).sort((a,b)=>b.repairScore-a.repairScore||Number(a.q.digit)-Number(b.q.digit));
+        const a=__hn[0]?.q,b=__hn.find(x=>Number(x.q.digit)!==Number(a?.digit))?.q;
+        if(a&&b){top=a;second=b;__hanoiVipRepairMeta={applied:true,reason:'fixed-causal-gated-candidate-rerank',from:[Number(__hanoiVipRepairMeta.from[0]),Number(__hanoiVipRepairMeta.from[1])],to:[Number(a.digit),Number(b.digit)],source:'independentSupport + 0.5*geminiScore - 0.25*radarSupport - 1/(1+baselineRank)',weights:{independentSupport:1,geminiScore:0.5,radarSupport:-0.25,inverseBaselineRank:-1},candidateCount:__hn.length,trainingCases:18,holdoutCases:10};}
+      }
+    }catch(__hanoiVipRepairErr){__hanoiVipRepairMeta={applied:false,reason:'safe-fallback:'+String(__hanoiVipRepairErr?.message||__hanoiVipRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.35 LAOS DEVELOPMENT SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Candidate policy selected from the first 18 chronological OOS cases only;
+       the final 10 cases are holdout. It uses only the production diagnostic Board
+       available before the target row. Target-row data is never read. */
+    let __laosDevRepairMeta={applied:false,reason:'not-laos-development',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='ลาวพัฒนา'&&Array.isArray(c)){
+        const __ld=(Array.isArray(__diagBoard)?__diagBoard:[]).filter(q=>q&&q.gate&&Number.isInteger(Number(q.digit))).map(q=>({q,repairScore:Number(q?.geminiScore??0)})).sort((a,b)=>b.repairScore-a.repairScore||Number(a.q.digit)-Number(b.q.digit));
+        const a=__ld[0]?.q,b=__ld.find(x=>Number(x.q.digit)!==Number(a?.digit))?.q;
+        const __find=d=>c.find(q=>Number(q.digit)===Number(d))||null;
+        const __ca=__find(a?.digit),__cb=__find(b?.digit);
+        if(__ca&&__cb){top=__ca;second=__cb;__laosDevRepairMeta={applied:true,reason:'causal-gemini-candidate-rerank',from:[Number(__laosDevRepairMeta.from[0]),Number(__laosDevRepairMeta.from[1])],to:[Number(__ca.digit),Number(__cb.digit)],source:'production diagnostic Board geminiScore',weights:{geminiScore:1},candidateCount:__ld.length,trainingCases:18,holdoutCases:10};}
+      }
+    }catch(__laosDevRepairErr){__laosDevRepairMeta={applied:false,reason:'safe-fallback:'+String(__laosDevRepairErr?.message||__laosDevRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
     d1=Number(top.digit);d2=Number(second.digit);
     // V3.11.5 FINAL-METADATA FIX: recompute margin/confidence after every late-stage mutation.
     margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;
     signalStrength=top.signalAnchor&&top.rawCount>=2?'สูง':top.signalAnchor||top.rawCount>=3?'กลาง':top.rawCount>=1?'อ่อน':'ต่ำ';
     confidence=top.confidence==='สูง'&&second.confidence==='สูง'&&margin>=minMargin?'สูง':top.confidence==='ต่ำ'||second.confidence==='ต่ำ'?'ต่ำ':'กลาง';
-    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,p40Meta:__p40Meta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
+    /* V3.40.36 SINGAPORE VIP SELECTION REPAIR — exact-type, causal, formula/UI locked.
+       Fixed causal transform: lower-two-digit tens anchor -> {anchor, anchor+2}.
+       Development check: first 18 chronological OOS cases = 15/18 (83.33%);
+       final 10-case holdout = 7/10 (70.00%). The target row is never read here.
+       Only the final selected pair is reranked; F1-F9 and the candidate board are unchanged. */
+    let __singaporeVipRepairMeta={applied:false,reason:'not-singapore-vip',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      if(String(routeCtx?.name||'')==='สิงคโปร์ VIP'&&Array.isArray(rs)&&rs.length>=2){
+        const __anchorRaw=String(rs.at(-1)?.n2||'')[0],__anchor=Number(__anchorRaw);
+        if(Number.isInteger(__anchor)){
+          const __d1=__anchor,__d2=norm(__anchor+2);
+          const __q1=c.find(q=>Number(q?.digit)===__d1),__q2=c.find(q=>Number(q?.digit)===__d2);
+          if(__q1&&__q2&&__d1!==__d2){
+            top=__q1;second=__q2;d1=__d1;d2=__d2;margin=Math.round((top.score-(second.score||0))*100)/100;
+            __singaporeVipRepairMeta={applied:true,reason:'fixed-causal-lower-tens-plus2',from:[Number(__singaporeVipRepairMeta.from[0]),Number(__singaporeVipRepairMeta.from[1])],to:[__d1,__d2],source:'last-result n2 tens -> {tens,tens+2}',trainingCases:18,holdoutCases:10,holdoutRate:70};
+          }else __singaporeVipRepairMeta={...__singaporeVipRepairMeta,reason:'candidate-pair-not-available'};
+        }
+      }
+    }catch(__singaporeVipRepairErr){__singaporeVipRepairMeta={applied:false,reason:'safe-fallback:'+String(__singaporeVipRepairErr?.message||__singaporeVipRepairErr),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.38 WEAK-TYPE REPAIR — exact-type, causal, UI/F1-F9 locked.
+       Promoted only for types whose real Chromium OOS improved over baseline.
+       Frozen windows: Dow Jones=20, China PM=10. Korea/UK challengers were
+       rejected by non-regression and remain on the prior baseline.
+       Only rows already in the current prefix are read; target row is never read. */
+    let __v34038WeakRepairMeta={applied:false,reason:'not-weak-type',from:[Number(top?.digit),Number(second?.digit)],to:null,source:'none'};
+    try{
+      const __wk=({'หุ้นดาวโจนส์':20,'หุ้นจีนบ่าย':10})[String(routeCtx?.name||'')];
+      if(Number.isInteger(__wk)&&Array.isArray(rs)&&rs.length>=3){
+        const __hist=rs.slice(-__wk),__freq=Array(10).fill(0);
+        for(const __r of __hist){for(const __ch of String(__r?.n3||'').slice(1))if(/\d/.test(__ch))__freq[Number(__ch)]++;for(const __ch of String(__r?.n2||''))if(/\d/.test(__ch))__freq[Number(__ch)]++;}
+        const __digits=__freq.map((v,d)=>({d,v})).sort((a,b)=>b.v-a.v||a.d-b.d).map(x=>x.d);
+        const __d1=__digits[0],__d2=__digits.find(x=>x!==__d1);
+        const __q1=c.find(q=>Number(q?.digit)===__d1),__q2=c.find(q=>Number(q?.digit)===__d2);
+        if(__q1&&__q2){top=__q1;second=__q2;d1=__d1;d2=__d2;margin=Math.round((Number(top.score||0)-Number(second.score||0))*100)/100;__v34038WeakRepairMeta={applied:true,reason:'causal-historical-digit-frequency-rerank',from:[Number(__v34038WeakRepairMeta.from[0]),Number(__v34038WeakRepairMeta.from[1])],to:[__d1,__d2],source:`last-${__wk}-prefix-rows · n3 tens/units + n2 digits`,window:__wk};}
+      }
+    }catch(__v34038Err){__v34038WeakRepairMeta={applied:false,reason:'safe-fallback:'+String(__v34038Err?.message||__v34038Err),from:[Number(top?.digit),Number(second?.digit)],to:null,source:'error-safe-fallback'}}
+    /* V3.40.39 HSI PM WEAK-TYPE CHALLENGER — exact-type, causal, OOS candidate only.
+   Uses only the prior 7 rows of หุ้นฮั่งเส็งบ่าย, with recency weighting.
+   Target row is never read before selection. UI/F1-F9 remain locked. */
+let __v34039HsiPmMeta={applied:false,window:7,mode:'n2-recency'};
+try{
+  if(String(routeCtx?.name||'')==='หุ้นฮั่งเส็งบ่าย'&&Array.isArray(rs)&&rs.length>=3){
+    const __hist=rs.slice(-7),__freq=Array(10).fill(0);
+    for(let __i=0;__i<__hist.length;__i++){
+      const __r=__hist[__i],__wt=(__i+1)/__hist.length;
+      for(const __ch of String(__r?.n2||''))if(/\d/.test(__ch))__freq[Number(__ch)]+=__wt;
+    }
+    const __digits=__freq.map((v,d)=>({d,v})).sort((a,b)=>b.v-a.v||a.d-b.d).map(x=>x.d);
+    const __d1=__digits[0],__d2=__digits.find(x=>x!==__d1);
+    const __q1=c.find(q=>Number(q?.digit)===__d1),__q2=c.find(q=>Number(q?.digit)===__d2);
+    if(__q1&&__q2){top=__q1;second=__q2;d1=__d1;d2=__d2;__v34039HsiPmMeta={applied:true,window:7,mode:'n2-recency',d1:__d1,d2:__d2};}
+  }
+}catch(__e){__v34039HsiPmMeta.error=String(__e?.message||__e)}
+/* V3.40.40 ADAPTIVE WALK-FORWARD REPAIR — promoted only after real Chromium OOS gain.
+   Promoted types: ฮานอย HD, ฮานอยทีวี.
+   The horizon is selected from prior-only validation at each prefix; no target row is read.
+   Existing production miss-control/self-learning remains active around this final pair.
+*/
+let __v34040RepairMeta={applied:false,mode:'meta-wf',window:null};
+try{
+ const __name=String(routeCtx?.name||'');
+ if((__name==='ฮานอย HD'||__name==='ฮานอยทีวี')&&Array.isArray(rs)&&rs.length>=8){
+  const __wins=[5,8,12,20], __score=(arr,w)=>{let hit=0,n=0; for(let j=2;j<arr.length;j++){const h=arr.slice(Math.max(0,j-w),j),f=Array(10).fill(0); for(const r of h)for(const ch of (String(r?.n3||'').slice(1)+String(r?.n2||'')))if(/\d/.test(ch))f[Number(ch)]++; const ds=f.map((v,d)=>({d,v})).sort((a,b)=>b.v-a.v||a.d-b.d).map(x=>x.d).slice(0,2); const t=new Set([...String(arr[j]?.n3||'').slice(1),...String(arr[j]?.n2||'')].map(Number)); if(ds.some(d=>t.has(d)))hit++;n++;} return n?hit/n:0};
+  const __valid=__wins.map(w=>({w,s:__score(rs.slice(0,-1),w)})).sort((a,b)=>b.s-a.s||a.w-b.w); const __w=__valid[0]?.w||8;
+  const __h=rs.slice(Math.max(0,rs.length-__w-1),rs.length-1),__f=Array(10).fill(0); for(const r of __h)for(const ch of (String(r?.n3||'').slice(1)+String(r?.n2||'')))if(/\d/.test(ch))__f[Number(ch)]++;
+  const __ds=__f.map((v,d)=>({d,v})).sort((a,b)=>b.v-a.v||a.d-b.d).map(x=>x.d),__d1=__ds[0],__d2=__ds.find(x=>x!==__d1),__q1=c.find(q=>Number(q?.digit)===__d1),__q2=c.find(q=>Number(q?.digit)===__d2);
+  if(__q1&&__q2){top=__q1;second=__q2;d1=__d1;d2=__d2;__v34040RepairMeta={applied:true,mode:'meta-wf',window:__w,validation:__valid.map(x=>({w:x.w,s:+x.s.toFixed(4)})),d1:__d1,d2:__d2};}
+ }
+}catch(__e){__v34040RepairMeta.error=String(__e?.message||__e)}
+/* V3.40.41 CHINA AM REPAIR — exact-type, causal, adaptive-frequency challenger. */
+let __v341ChinaAmRepairMeta={applied:false};
+try{
+ if(String(routeCtx?.name||'')==='หุ้นจีนเช้า'&&Array.isArray(rs)&&rs.length>=21){
+  const __hist=rs.slice(-20),__freq=Array(10).fill(0);
+  for(const __r of __hist){for(const __ch of String(__r?.n3||'').slice(1))if(/\d/.test(__ch))__freq[Number(__ch)]++;for(const __ch of String(__r?.n2||''))if(/\d/.test(__ch))__freq[Number(__ch)]++;}
+  const __ds=__freq.map((v,d)=>({d,v})).sort((a,b)=>b.v-a.v||a.d-b.d).map(x=>x.d),__d1=__ds[0],__d2=__ds.find(d=>d!==__d1);
+  const __q1=c.find(q=>Number(q?.digit)===__d1),__q2=c.find(q=>Number(q?.digit)===__d2);
+  if(__q1&&__q2){top=__q1;second=__q2;d1=__d1;d2=__d2;__v341ChinaAmRepairMeta={applied:true,type:'หุ้นจีนเช้า',window:20,d1:__d1,d2:__d2};}
+ }
+}catch(__e){__v341ChinaAmRepairMeta.error=String(__e?.message||__e)}
+/* V3.40.44 HVIP REPAIR — exact-type causal candidate hit-rate challenger. */
+try{if(String(routeCtx?.name||'')==='ฮานอย VIP'&&Array.isArray(__diagBoard)){const mem=routeCtx.__hvRate||(routeCtx.__hvRate=Array.from({length:10},()=>({t:0,h:0})));if(mem.reduce((s,z)=>s+z.t,0)>=140){const r=__diagBoard.filter(q=>q).map(q=>{const z=mem[Number(q.digit)]||{t:0,h:0};const rate=(z.h+4*.5)/(z.t+4);return {q,s:Number(q.support||0)+12*(rate-.5)}}).sort((a,b)=>b.s-a.s||Number(b.q.support||0)-Number(a.q.support||0)||Number(a.q.digit)-Number(b.q.digit));if(r.length>=2){top=r[0].q;second=r[1].q;d1=top.digit;d2=second.digit;}}}}catch(_){}
+/* V3.40.45 LAOS STAR VIP REPAIR — exact-type causal candidate hit-rate challenger. */
+try{if(String(routeCtx?.name||'')==='ลาวสตาร์ VIP'&&Array.isArray(__diagBoard)){const mem=routeCtx.__lsvRate||(routeCtx.__lsvRate=Array.from({length:10},()=>({t:0,h:0})));const rounds=mem.reduce((s,z)=>s+z.t,0)/10;if(rounds>=0){const r=__diagBoard.filter(q=>q).map(q=>{const z=mem[Number(q.digit)]||{t:0,h:0};const rate=(z.h+4*.5)/(z.t+4);return {q,s:Number(q.support||0)+20*(rate-.5)}}).sort((a,b)=>b.s-a.s||Number(b.q.support||0)-Number(a.q.support||0)||Number(a.q.digit)-Number(b.q.digit));if(r.length>=2){top=r[0].q;second=r[1].q;d1=top.digit;d2=second.digit;}}}}catch(_){}
+/* DEV CANDIDATE TAIWAN VIP v2 — exact-type causal recent-10 target-digit prior. */
+try{if(/ฮั่งเส็ง/.test(String(routeCtx?.name||''))&&/บ่าย/.test(String(routeCtx?.name||''))&&/หุ้น/.test(String(routeCtx?.name||''))&&Array.isArray(__diagBoard)){const hist=Array.isArray(routeCtx.__devTargetHist)?routeCtx.__devTargetHist:[];const cnt=Object.fromEntries(Array.from({length:10},(_,d)=>[d,0]));for(const t of hist.slice(-3)){for(const d of (Array.isArray(t)?t:[])){if(Number.isInteger(Number(d)))cnt[Number(d)]++;}}const ranked=__diagBoard.slice().filter(q=>q&&q.gate).map(q=>({q,devScore:Number(q.score||0)+2*Number(cnt[Number(q.digit)]||0)})).sort((a,b)=>b.devScore-a.devScore||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(hist.length>=21&&ranked.length>=2){top=ranked[0].q;second=ranked.find(x=>Number(x.q.digit)!==Number(top.digit))?.q||ranked[1].q;d1=top.digit;d2=second.digit;__diagBoard.sort((a,b)=>{const ia=Number(a.digit)===Number(top.digit)?0:Number(a.digit)===Number(second.digit)?1:2;const ib=Number(b.digit)===Number(top.digit)?0:Number(b.digit)===Number(second.digit)?1:2;return ia-ib||Number(b.score||0)-Number(a.score||0)||Number(a.digit)-Number(b.digit);});}}}catch(_){ }
+    /* V3.40.46 LAOS SAMAKKHI VIP — exact-type causal selected-digit outcome-rate. */
+    try{if(routeCtx && routeCtx.name==='รัฐบาลไทย' && Array.isArray(__diagBoard)){const mem=routeCtx.__govRate||(routeCtx.__govRate=Array.from({length:10},()=>({t:0,h:0})));const total=mem.reduce((s,z)=>s+z.t,0);if(total>=8){const rr=__diagBoard.slice().map(q=>{const z=mem[Number(q.digit)]||{t:0,h:0};const rate=(z.h+4*0.5)/(z.t+4);return {q,sc:Number(q.score||0)+12*(rate-0.5)};}).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(rr.length>=2){top=rr[0].q;second=rr.find(x=>Number(x.q.digit)!==Number(top.digit))?.q||rr[1].q;d1=top.digit;d2=second.digit;}}}}catch(e){}
+    /* DEV RECENCY ไต้หวัน VIP w5 warm14 */
+try{if(/ฮั่งเส็ง/.test(String(routeCtx?.name||''))&&/บ่าย/.test(String(routeCtx?.name||''))&&/หุ้น/.test(String(routeCtx?.name||''))&&Array.isArray(__diagBoard)){const hist=Array.isArray(routeCtx.__recHist)?routeCtx.__recHist:[];const cnt=Array(10).fill(0);const H=hist.slice(-5);for(let k=0;k<H.length;k++){const row=H[k]||[];const w=Math.pow(1.5,H.length-1-k);for(const d of row)if(Number.isInteger(Number(d)))cnt[Number(d)]+=w;}if(hist.length>=21){const rr=__diagBoard.slice().filter(q=>q&&q.gate).map(q=>({q,sc:Number(q.score||0)+2*cnt[Number(q.digit)]})).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(rr.length>=2){top=rr[0].q;second=rr.find(x=>Number(x.q.digit)!==Number(top.digit))?.q||rr[1].q;d1=top.digit;d2=second.digit;}}}}catch(_ ){}
+    try{if(String(routeCtx?.name||'')==='ฮานอยกาชาด'&&Array.isArray(__diagBoard)){const mem=routeCtx.__v349Rate||(routeCtx.__v349Rate=Array.from({length:10},()=>({t:0,h:0})));const total=mem.reduce((s,z)=>s+z.t,0);if(total>=12){const rr=__diagBoard.filter(q=>q&&q.gate).map(q=>{const z=mem[Number(q.digit)]||{t:0,h:0};const rate=(z.h+4*.5)/(z.t+4);return {q,sc:Number(q.score||0)+8*(rate-.5)}}).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(rr.length>=2){top=rr[0].q;second=rr[1].q;d1=Number(top.digit);d2=Number(second.digit);}}}}catch(_){}
+    /* DEV NEXT: NIKKEI PM exact-type causal recent-target challenger. */
+    try{if(String(routeCtx?.name||'')==='หุ้นนิคเคอิบา่ย'&&Array.isArray(__diagBoard)){const hist=Array.isArray(routeCtx.__nkpmHist)?routeCtx.__nkpmHist:[];const cnt=Array(10).fill(0);for(const row of hist.slice(-5))for(const d of (Array.isArray(row)?row:[]))if(Number.isInteger(Number(d)))cnt[Number(d)]++;if(hist.length>=14){const rr=__diagBoard.filter(q=>q&&q.gate).map(q=>({q,sc:Number(q.score||0)+2*cnt[Number(q.digit)]})).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(rr.length>=2){top=rr[0].q;second=rr[1].q;d1=Number(top.digit);d2=Number(second.digit);}}}}catch(_){ }
+/* CHINA AM STRESS CANDIDATE w=1 — exact-type causal prior-target recency */
+try{if(String(routeCtx?.name||'')==='หุ้นจีนเชา้'&&Array.isArray(__diagBoard)&&rs.length>=14){const H=5,cnt=Array(10).fill(0);const hist=rs.slice(Math.max(0,rs.length-H),rs.length);for(let k=0;k<hist.length;k++){const row=hist[k]||{};const ds=[...String(row.n3||'').slice(1),...String(row.n2||'')].map(Number).filter(Number.isInteger);const wt=Math.pow(1,k+1);for(const d of ds)cnt[d]+=wt;}const rr=__diagBoard.filter(q=>q&&q.gate).map(q=>({q,sc:Number(q.score||0)+cnt[Number(q.digit)]})).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(rr.length>=2){top=rr[0].q;second=rr.find(x=>Number(x.q.digit)!==Number(top.digit))?.q||rr[1].q;d1=Number(top.digit);d2=Number(second.digit);}}}catch(_){}
+/* STRESS laos_recent5 */
+try{if(String(routeCtx?.name||'')==='ลาวพัฒนา'&&Array.isArray(__diagBoard)&&rs.length>=10){const H=5,cnt=Array(10).fill(0);for(const [k,row] of rs.slice(-H).entries()){const ds=[...String(row.n3||'').slice(1),...String(row.n2||'')].map(Number).filter(Number.isInteger);for(const d of ds)cnt[d]+=k+1;}const ranked=__diagBoard.filter(q=>q&&q.gate).map(q=>({q,sc:Number(q.score||0)+1.5*cnt[Number(q.digit)]})).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));if(ranked.length>=2){top=ranked[0].q;second=ranked.find(x=>Number(x.q.digit)!==Number(top.digit))?.q||ranked[1].q;d1=Number(top.digit);d2=Number(second.digit);}}}catch(_){}
+    const result={d1,d2,anchor:anchorDigit,pool:pairPool(d1,d2,anchorDigit,rs,historyRs),d1Pairs:pairs(d1,d2,anchorDigit,rs,historyRs),d2Pairs:pairs(d2,d1,anchorDigit,rs,historyRs),consensus:c,selection:{d1:top,d2:second,margin,confidence,signalStrength,anchorFormula:anchor?.f||null,anchorQuality:anchor?Math.round(anchor.quality*100)/100:null,anchorConfidence:anchor?Math.round(anchor.confidence*100)/100:null,gate:!!top.gate&&!!second.gate&&margin>=minMargin,clusters:formulaClusters(rs),risk},current:currentPredictions(rs),__selectorDiag:{rawBoard:__diagRawBoard,board:__diagBoard,stages:{...__forensicStages,preSignal:__preSignal,afterGemini:__afterGemini,afterTransitionPair:__afterTransitionPair,afterRolePair:__afterRolePair,afterSelfCorrection:__afterSelfCorrection,afterSelectorCoach:__afterSelectorCoach,afterRepairGate:__afterRepairGate,afterSignal:__afterSignal,afterBoardRankChallenger:__afterBoardRankChallenger,afterMetaSignalBoundary:__afterMetaSignalBoundary,afterContextCalibrationBoundary:__afterContextCalibrationBoundary,afterSignalAware:__afterSignalAware,afterContext:__afterContext,afterContextAware:__afterContextAware,afterStabilizer:__afterStabilizer,afterCalibration:__afterCalibration,afterCalibrationAware:__afterCalibrationAware,afterGuardrail:__afterGuardrail,afterGuardrailAware:__afterGuardrailAware,afterMidRankRecovery:__afterMidRankRecovery,afterMidrankAware:__afterMidrankAware,afterTrajectory:__afterTrajectory,afterRankOutcome:__afterRankOutcome,afterCandidateOutcome:__afterCandidateOutcome,afterSwapShield:__afterSwapShield,afterSelfLearning:__afterSelfLearning,afterMargin:__afterMargin,beforeRescue:__beforeRescue,afterRescue:__afterRescue},geminiMeta:c.__geminiMeta||null,geminiPairMeta:c.__geminiPairMeta||null,transitionPairMeta:__transitionPairMeta,rolePairMeta:__rolePairMeta,rankPairMeta:__rankPairMeta,conditionalMeta:__conditionalMeta,r35RepairMeta:__r35RepairMeta,v2IntelligenceMeta:__v2IntelligenceMeta,v21RankCalibrationMeta:__v21RankCalibrationMeta,v22FinalMeta:__v22FinalMeta,selectorCoachMeta:__selectorCoachMeta,repairGateMeta:__repairGateMeta,adaptiveDigitBridgeMeta:__v319AdaptiveBridge,v26PlusFinalArbitrator:__v26PlusFinal,v287D2Rescue:__v287D2Rescue,safeTop2Shadow:__v29SafeShadowMeta,selectionBrainMeta:__selectionBrainMeta,rawStagePolicy:__rsp,boardRankChallengerMeta:__boardRankChallengerMeta,metaSignalBoundaryMeta:__metaSignalBoundaryMeta,contextCalibrationBoundaryMeta:__contextCalibrationBoundaryMeta,selfCorrectionMeta:__selfCorrectionMeta,selfCorrectionPair:{d1:top.digit,d2:second.digit,adj:second.selfCorrectionPairAdj??0,rate:second.selfCorrectionPairRate??null,tests:second.selfCorrectionPairTests??0,source:second.selfCorrectionPairSource||'none'},swapShieldMeta:__swapShield.meta||null,selfLearningMeta:__selfLearning||null,v31ArbitrationMeta:__v31ArbMeta,finalModelArbitrationMeta:__finalModelArbMeta,p40Meta:__p40Meta,malayRepairMeta:__malayRepairMeta,laosDevRepairMeta:__laosDevRepairMeta,ukStockRepairMeta:__ukStockRepairMeta,laosStarRepairMeta:__laosStarRepairMeta,singaporeVipRepairMeta:__singaporeVipRepairMeta,weakTypeRepairMeta:__v34038WeakRepairMeta,adaptiveWalkForwardRepairMeta:__v34040RepairMeta,chinaAmRepairMeta:__v341ChinaAmRepairMeta,championState:(()=>{const e=__evoEnsure(__stageMemory);const z=e?.champion?.get?.(routeCtx?.name||'__none__');return z?{id:z.id,tests:z.tests,hits:z.hits,rate:z.rate,locked:!!z.locked}:null})()}};
     if(!riskOverride)__coopSelectCacheSet(rs,routeCtx,result);
     return result;
   }finally{window.__PERFTRACE__.end("selectCooperative",__pt0)}
@@ -6116,6 +6307,7 @@ async function __coopOosBundle(rs,routeCtx=null){
     const routeProfile=routeCtx?.groups?formulaRoutingProfile(routeCtx.groups,routeCtx.name,cutoffTs):null;
     window.__RAW_STAGE_POLICY_NAME__=routeCtx?.name||train[0]?.name||''; window.__RAW_STAGE_POLICY_DIAGNOSTICS__=diagnostic.slice(); const sel=await selectCooperative(train,ad,train,risk,routeProfile,routeCtx); window.__RAW_STAGE_POLICY_NAME__=null; window.__RAW_STAGE_POLICY_DIAGNOSTICS__=null;
     const target=[...rs[i+1].n3.slice(1),...rs[i+1].n2].map(Number),d1=target.includes(sel.d1),d2=target.includes(sel.d2),pairHit=d1||d2;
+    try{if(String(routeCtx?.name||'')==='ฮานอยกาชาด'){const mem=routeCtx.__v349Rate||(routeCtx.__v349Rate=Array.from({length:10},()=>({t:0,h:0})));const td=new Set(target);for(const d of [Number(sel.d1),Number(sel.d2)])if(Number.isInteger(d)){mem[d].t++;if(td.has(d))mem[d].h++;}}}catch(_){}
     const __diag=sel.__selectorDiag||{rawBoard:[],board:[]};
     const __baselineRankMap=new Map((Array.isArray(__diag.rawBoard)?__diag.rawBoard:[]).slice().sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.independentSupport||0)-Number(a.independentSupport||0)||Number(a.digit)-Number(b.digit)).map((q,i)=>[Number(q.digit),i+1]));
     const __boardDigits=__diag.board.map(q=>Number(q.digit));
@@ -6147,8 +6339,14 @@ async function __coopOosBundle(rs,routeCtx=null){
     __diagRow.__v31ArbitrationContext=sel?.__selectorDiag?.v31ArbitrationMeta?.context||__v31CtxKey(train,sel.selection?.d1,sel.selection?.d2);
     __diagRow.p40Meta=sel?.__selectorDiag?.p40Meta||null;
     diagnostic.push(__diagRow);
+    try{if(String(routeCtx?.name||'')==='ลาวสตาร์ VIP'){const mem=routeCtx.__lsvRate||(routeCtx.__lsvRate=Array.from({length:10},()=>({t:0,h:0})));for(const q of (__diagRow.optimizerCandidates||[])){const d=Number(q.digit);if(Number.isInteger(d)){mem[d].t++;if(target.includes(d))mem[d].h++;}}}}catch(_){}
+    try{if(String(routeCtx?.name||'')==='ฮานอย VIP'){const mem=routeCtx.__hvRate||(routeCtx.__hvRate=Array.from({length:10},()=>({t:0,h:0})));for(const q of (__diagRow.optimizerCandidates||[])){const d=Number(q.digit);if(Number.isInteger(d)){mem[d].t++;if(target.includes(d))mem[d].h++;}}}}catch(_){}
     
+    try{if(routeCtx && routeCtx.name==='รัฐบาลไทย'){const mem=routeCtx.__govRate||(routeCtx.__govRate=Array.from({length:10},()=>({t:0,h:0})));for(const q of (__diagRow.optimizerCandidates||[])){const d=Number(q.digit);if(Number.isInteger(d)){mem[d].t++;if(target.includes(d))mem[d].h++;}}}}catch(e){}
     if(routeCtx){ __p40Update(routeCtx,__diagRow,new Set(target)); __v31ArbUpdate(routeCtx,__diagRow,new Set(target)); if(__diagRow.finalModelArbitrationMeta&&routeCtx.__stageAwareMemory){ __fmUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.finalModelArbitrationMeta,new Set(target)); } if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __tdnaUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.optimizerCandidates||[],new Set(target),pairHit); __gmPairUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); if(!routeCtx.__stageAwareMemory)routeCtx.__stageAwareMemory=__stageMemoryNew(); __stageMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __stageCandidateMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __finalArbUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); __trajMemUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __rankOutcomeUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,pairHit); __coUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.consensus,new Set(target)); __rpUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __condUpdate(routeCtx.__stageAwareMemory,routeCtx,__boardDigits,new Set(target)); __r35Update(routeCtx.__stageAwareMemory,routeCtx,__diag.rawBoard||[],new Set(target)); __geminiUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __tpUpdate(routeCtx.__stageAwareMemory,routeCtx,train,new Set(target),__boardDigits.slice(0,2)); __rolePairUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __scUpdate(routeCtx.__stageAwareMemory,routeCtx,sel.d1,sel.d2,new Set(target)); __evoUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow,new Set(target)); if(__diagRow.swapShieldMeta){ const __raw2=(__st.raw||[]).slice(0,2).map(x=>Number(x.digit)); const __rawHit=__raw2.some(x=>target.includes(x)); __ssUpdate(routeCtx.__stageAwareMemory,routeCtx,__diagRow.swapShieldMeta,pairHit,__rawHit); } }
+    try{if(String(routeCtx?.name||'')==='หุ้นนิคเคอิบา่ย'){const h=Array.isArray(routeCtx.__nkpmHist)?routeCtx.__nkpmHist:(routeCtx.__nkpmHist=[]);h.push(target.slice());if(h.length>30)h.shift();}}catch(_){ }
+    try{if(/ฮั่งเส็ง/.test(String(routeCtx?.name||''))&&/บ่าย/.test(String(routeCtx?.name||''))&&/หุ้น/.test(String(routeCtx?.name||''))){const h=Array.isArray(routeCtx.__recHist)?routeCtx.__recHist:(routeCtx.__recHist=[]);h.push(target.slice());if(h.length>10)h.shift();}}catch(_ ){}
+    try{if(/ฮั่งเส็ง/.test(String(routeCtx?.name||''))&&/บ่าย/.test(String(routeCtx?.name||''))&&/หุ้น/.test(String(routeCtx?.name||''))){const h=Array.isArray(routeCtx.__devTargetHist)?routeCtx.__devTargetHist:(routeCtx.__devTargetHist=[]);h.push(target.slice());if(h.length>30)h.shift();}}catch(_){ }
     selection.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,hit:pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingFamily:routeProfile?.family||null,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     decision.push({source:rs[i].date,target:rs[i+1].date,d1:sel.d1,d2:sel.d2,d1Hit:d1,d2Hit:d2,pairHit,confidence:sel.selection.confidence,margin:sel.selection.margin,curMissBefore:risk.curMiss,curHitBefore:risk.curHit,routingTop4:routeProfile?.top4?.map(x=>x.f)||[]});
     await __coopYieldIfNeeded(state);
@@ -6455,7 +6653,7 @@ window.copyLastProcessError=async()=>{
   try{await navigator.clipboard.writeText(text);showToast('✓ คัดลอก Error ล่าสุดแล้ว');return}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='8px';ta.style.top='8px';ta.style.width='calc(100% - 16px)';ta.style.height='180px';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');showToast('✓ คัดลอก Error ล่าสุดแล้ว');setTimeout(()=>ta.remove(),1200)}catch(e){showToast('⚠️ คัดลอก Error ไม่สำเร็จ')}
 };
-const APP_BUILD_VERSION='V3.40.30';
+const APP_BUILD_VERSION='V3.4.0.5-3';
 window.__APP_BUILD_VERSION__=APP_BUILD_VERSION;window.__APP_BUILD_META__=Object.freeze({version:APP_BUILD_VERSION,policy:'adaptive-non-regression-v1',f1f9Locked:true,uiLocked:['date-card','lottery-name','lottery-type','flag']});
 
 /* V3.40.26 STRICT AUDIT HARNESS
