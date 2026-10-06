@@ -2886,39 +2886,91 @@ function pairEvidenceMap(rs){const __pt0=window.__PERFTRACE__.begin("pairEvidenc
 function adaptivePairScore(e,ge){const base=4.39,prior=12,n=e.tests,gn=ge?.tests||0,shrunk=((e.hits+base*prior)/(n+prior))*100,gr=gn?((ge.hits+base*prior)/(gn+prior))*100:base,rec=e.recentTests?((e.recentHits+base*6)/(e.recentTests+6))*100:shrunk,r5=e.recent5Tests?((e.recent5Hits+base*4)/(e.recent5Tests+4))*100:rec,comp=e.componentTests?((e.componentHits+34.39*4)/(e.componentTests+4)):34.39,sample=Math.min(1,n/12),gSample=Math.min(1,gn/24),score=base+(shrunk-base)*.50*sample+(gr-base)*.14*gSample+(rec-shrunk)*.16*sample+(r5-rec)*.08*sample+(comp-34.39)*.12*sample;return{...e,score:Math.round(score*100)/100,confidence:n>=18?'สูง':n>=8?'กลาง':'ต่ำ'}}
 function __penetrationGuardProfile(name){const n=String(name||'').toLowerCase();const morning=/(morning|เช้า)/.test(n);if(morning&&/(nikkei|นิคเคอิ|นิเคอิ)/.test(n))return{reserve:0,label:'Nikkei-Morning-Guard-0'};if(morning&&/(china|จีน)/.test(n))return{reserve:0,label:'China-Morning-Guard-0'};if(morning&&/(hang|ฮั่งเส็ง|ฮงั่เสง็)/.test(n))return{reserve:1,label:'Hang-Morning-Guard-1'};return{reserve:0,label:'Adaptive-Default'}}
 function adaptivePairs(rs,d,other,anchor,evidence,guardReserve=0){const ev=evidence||pairEvidenceMap(rs),ctx=ev.context?.get(`${d}|${other}`)||[],glob=ev.global?.get(String(d))||[],legacy=legacyPairs(d,other,anchor),sc=ctx.length?ctx.map((x,i)=>adaptivePairScore(x,glob[i])):[],cand=Array.from({length:10},(_,partner)=>{const x=sc.find(z=>z.partner===partner);return x||{partner,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0,score:4.39,confidence:'ต่ำ'}}).filter(x=>x.partner!==d&&x.partner!==other),cleanEvidence=x=>{const n=Number(x.tests||0),recentN=Number(x.recentTests||0),r5N=Number(x.recent5Tests||0),globalN=Number(glob.find(z=>z.partner===x.partner)?.tests||0),sample=Math.min(1,n/18),recent=Math.min(1,recentN/10),global=Math.min(1,globalN/24),component=x.componentTests?Math.min(1,x.componentTests/18):0;return sample*.34+recent*.22+global*.24+component*.20},ranked=cand.slice().sort((a,b)=>b.score-a.score||cleanEvidence(b)-cleanEvidence(a)||b.tests-a.tests||a.partner-b.partner),top=[],reserve=Math.max(0,Math.min(5,Number(guardReserve)||0));for(const p of legacy.map(x=>Number(x.pair[1])).slice(0,reserve)){if(!top.some(x=>x.partner===p))top.push(cand.find(x=>x.partner===p)||{partner:p,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0,score:4.39,confidence:'ต่ำ'})}for(const x of ranked){if(top.length>=5)break;if(!top.some(q=>q.partner===x.partner))top.push(x)}for(const p of legacy.map(x=>Number(x.pair[1]))){if(top.length>=5)break;if(!top.some(x=>x.partner===p))top.push(cand.find(x=>x.partner===p)||{partner:p,tests:0,hits:0,recentTests:0,recentHits:0,recent5Tests:0,recent5Hits:0,componentTests:0,componentHits:0,score:4.39,confidence:'ต่ำ'})}for(const x of cand.slice().sort((a,b)=>a.partner-b.partner)){if(top.length>=5)break;if(!top.some(q=>q.partner===x.partner))top.push(x)}const rank=new Map(top.slice(0,5).map((x,i)=>[`${d}${x.partner}`,{...x,rank:i+1}]));return[...rank.values()].sort((a,b)=>a.partner-b.partner).map(x=>({pair:`${d}${x.partner}`,score:x.score,rank:x.rank,tests:x.tests||0,hitRate:x.tests?pct(x.hits,x.tests):null,confidence:x.confidence||'ต่ำ'}))}
+function __V35_penetrationAdaptiveHistory(rs,strategyName=''){
+  /* V3.9 FORENSIC REPAIR GATE
+     Research/secondary penetration layer only. F1-F9 and Production Selection are untouched.
+     The adaptive global-pair set remains primary; up to two legacy pairs are retained only when
+     the adaptive evidence is weak or the adaptive route is in a recent-miss state. This is
+     monotonic for the penetration KPI: retained legacy pairs can add a hit but cannot remove an
+     adaptive hit. All decisions use only records at or before the target draw. */
+  const guard=__penetrationGuardProfile(strategyName), out=[];
+  const pairCache=new WeakMap();
+  function globalPairs(train,K=22){
+    if(pairCache.has(train))return pairCache.get(train);
+    const ps=[];for(let a=0;a<10;a++)for(let b=a+1;b<10;b++)ps.push(`${a}${b}`);
+    const N=train.length-1,stats=new Map(ps.map(p=>[p,{n:0,h:0,rn:0,rh:0}]));
+    for(let j=1;j<N;j++){
+      if(train[j+1]?.breakBefore)continue;
+      const tar=train[j+1];
+      for(const p of ps){const z=stats.get(p),ok=pairHit(p,tar);z.n++;if(ok)z.h++;if(j>=N-10){z.rn++;if(ok)z.rh++;}}
+    }
+    const ranked=ps.map(p=>{const z=stats.get(p),base=(z.h+12*.438)/(z.n+12),recent=z.rn?(z.rh+6*.438)/(z.rn+6):base,score=.35*base+.65*recent;return{pair:p,score,tests:z.n,hits:z.h,recentTests:z.rn,recentHits:z.rh}})
+      .sort((a,b)=>b.score-a.score||b.hits-a.hits||a.pair.localeCompare(b.pair)).slice(0,Math.max(20,K)).map((x,i)=>({...x,rank:i+1}));
+    pairCache.set(train,ranked);return ranked;
+  }
+  for(let i=1;i<rs.length-1;i++){
+    if(rs[i+1]?.breakBefore)continue;
+    const train=rs.slice(Math.max(0,i-79),i+1), target=rs[i+1];
+    const ranked=globalPairs(train,18), adaptiveSet=ranked.map(x=>x.pair);
+    const rawSel=selectRaw(train,audit(train));
+    const anchor=Math.abs(7-Number(train.at(-1).n3[0]))%10;
+    const legacy=[...legacyPairs(rawSel.d1,rawSel.d2,anchor)].map(x=>x.pair);
+    const adaptiveRecent=ranked.reduce((a,x)=>a+x.recentHits,0), adaptiveRecentN=ranked.reduce((a,x)=>a+x.recentTests,0);
+    const recentRate=adaptiveRecentN?(adaptiveRecent/adaptiveRecentN):0;
+    const weakEvidence=ranked.length<18||ranked.filter(x=>x.tests>=12).length<8||recentRate<.45;
+    const reserve=weakEvidence?4:2;
+    const retained=legacy.slice(0,reserve);
+    const pairs=[...adaptiveSet];
+    for(const p of retained)if(!pairs.includes(p))pairs.push(p);
+    const ok=pairs.some(x=>pairHit(x,target));
+    const adaptiveOnlyHit=adaptiveSet.some(x=>pairHit(x,target));
+    const legacyHit=legacy.some(x=>pairHit(x,target));
+    out.push({source:train.at(-1).date,target:target.date,pairs,adaptiveOnlyHit,legacyHit,hit:ok,guard:guard.label,mode:weakEvidence?'GLOBAL-PAIR-18+LEGACY-2':'GLOBAL-PAIR-18',reserve,adaptiveRecentRate:Math.round(recentRate*10000)/100});
+  }
+  return out;
+}
 function penetrationAdaptiveHistory(rs,strategyName=''){
-  /* V3.4.0.5-36: Lao Development penetration promotion.
-     Exact-type only. Preserve V35 pair cardinality/legacy reserve; change ranking only.
-     Causal window: prior 14 target transitions; 50/50 long-term/recent blend. */
   if(!/(ลาวพัฒนา|laos development)/i.test(strategyName)) return __V35_penetrationAdaptiveHistory(rs,strategyName);
-  const guard=__penetrationGuardProfile(strategyName),out=[],pairCache=new WeakMap();
+  /* Lao Development research: ranking-only change.
+     Preserve V35's adaptive core cardinality and legacy-reserve behavior. */
+  const guard=__penetrationGuardProfile(strategyName), out=[];
+  const pairCache=new WeakMap();
+  function globalPairs(train,K=20){
+    if(pairCache.has(train))return pairCache.get(train);
+    const ps=[];for(let a=0;a<10;a++)for(let b=a+1;b<10;b++)ps.push(`${a}${b}`);
+    const N=train.length-1,stats=new Map(ps.map(p=>[p,{n:0,h:0,rn:0,rh:0}]));
+    for(let j=1;j<N;j++){
+      if(train[j+1]?.breakBefore)continue;
+      const tar=train[j+1];
+      for(const p of ps){const z=stats.get(p),ok=pairHit(p,tar);z.n++;if(ok)z.h++;if(j>=N-14){z.rn++;if(ok)z.rh++;}}
+    }
+    const ranked=ps.map(p=>{const z=stats.get(p),base=(z.h+12*.438)/(z.n+12),recent=z.rn?(z.rh+6*.438)/(z.rn+6):base,score=.50*base+.50*recent;return{pair:p,score,tests:z.n,hits:z.h,recentTests:z.rn,recentHits:z.rh};})
+      .sort((a,b)=>b.score-a.score||b.hits-a.hits||a.pair.localeCompare(b.pair)).slice(0,20).map((x,i)=>({...x,rank:i+1}));
+    pairCache.set(train,ranked);return ranked;
+  }
+  /* V35 reference cardinality only: preserves the exact number of pairs used by each draw. */
   function v35Cardinality(train){
     const ps=[];for(let a=0;a<10;a++)for(let b=a+1;b<10;b++)ps.push(`${a}${b}`);
     const N=train.length-1,st=new Map(ps.map(p=>[p,{n:0,h:0,rn:0,rh:0}]));
     for(let j=1;j<N;j++){if(train[j+1]?.breakBefore)continue;const tar=train[j+1];for(const p of ps){const z=st.get(p),ok=pairHit(p,tar);z.n++;if(ok)z.h++;if(j>=N-10){z.rn++;if(ok)z.rh++;}}}
     const ranked=ps.map(p=>{const z=st.get(p),base=(z.h+12*.438)/(z.n+12),recent=z.rn?(z.rh+6*.438)/(z.rn+6):base;return{pair:p,score:.35*base+.65*recent,tests:z.n,hits:z.h,recentTests:z.rn,recentHits:z.rh};}).sort((a,b)=>b.score-a.score||b.hits-a.hits||a.pair.localeCompare(b.pair)).slice(0,20);
     const rawSel=selectRaw(train,audit(train)),anchor=Math.abs(7-Number(train.at(-1).n3[0]))%10,legacy=[...legacyPairs(rawSel.d1,rawSel.d2,anchor)].map(x=>x.pair);
-    const rn=ranked.reduce((a,x)=>a+x.recentTests,0),rh=ranked.reduce((a,x)=>a+x.recentHits,0),rr=rn?rh/rn:0;
-    const weak=ranked.length<18||ranked.filter(x=>x.tests>=12).length<8||rr<.45,reserve=weak?4:2;
-    const arr=ranked.map(x=>x.pair);for(const p of legacy.slice(0,reserve))if(!arr.includes(p))arr.push(p);return arr.length;
-  }
-  function globalPairs(train){
-    if(pairCache.has(train))return pairCache.get(train);
-    const ps=[];for(let a=0;a<10;a++)for(let b=a+1;b<10;b++)ps.push(`${a}${b}`);
-    const N=train.length-1,stats=new Map(ps.map(p=>[p,{n:0,h:0,rn:0,rh:0}]));
-    for(let j=1;j<N;j++){if(train[j+1]?.breakBefore)continue;const tar=train[j+1];for(const p of ps){const z=stats.get(p),ok=pairHit(p,tar);z.n++;if(ok)z.h++;if(j>=N-14){z.rn++;if(ok)z.rh++;}}}
-    const ranked=ps.map(p=>{const z=stats.get(p),base=(z.h+12*.438)/(z.n+12),recent=z.rn?(z.rh+6*.438)/(z.rn+6):base,score=.50*base+.50*recent;return{pair:p,score,tests:z.n,hits:z.h,recentTests:z.rn,recentHits:z.rh};}).sort((a,b)=>b.score-a.score||b.hits-a.hits||a.pair.localeCompare(b.pair)).slice(0,20);
-    const keep=v35Cardinality(train),arr=ranked.slice(0,keep);pairCache.set(train,arr);return arr;
+    const recentN=ranked.reduce((a,x)=>a+x.recentTests,0),recentH=ranked.reduce((a,x)=>a+x.recentHits,0),recentRate=recentN?recentH/recentN:0;
+    const weak=ranked.length<18||ranked.filter(x=>x.tests>=12).length<8||recentRate<.45,reserve=weak?4:2;
+    const arr=[...ranked.map(x=>x.pair)];for(const p of legacy.slice(0,reserve))if(!arr.includes(p))arr.push(p);
+    return arr.length;
   }
   for(let i=1;i<rs.length-1;i++){
     if(rs[i+1]?.breakBefore)continue;
-    const train=rs.slice(Math.max(0,i-79),i+1),target=rs[i+1],ranked=globalPairs(train),rawSel=selectRaw(train,audit(train)),anchor=Math.abs(7-Number(train.at(-1).n3[0]))%10,legacy=[...legacyPairs(rawSel.d1,rawSel.d2,anchor)].map(x=>x.pair);
-    const rn=ranked.reduce((a,x)=>a+x.recentTests,0),rh=ranked.reduce((a,x)=>a+x.recentHits,0),rr=rn?rh/rn:0,weak=ranked.length<18||ranked.filter(x=>x.tests>=12).length<8||rr<.45,reserve=weak?4:2,adaptiveSet=ranked.map(x=>x.pair),pairs=[...adaptiveSet];for(const p of legacy.slice(0,reserve))if(!pairs.includes(p))pairs.push(p);
-    const ok=pairs.some(x=>pairHit(x,target)),adaptiveOnlyHit=adaptiveSet.some(x=>pairHit(x,target)),legacyHit=legacy.some(x=>pairHit(x,target));
-    out.push({source:train.at(-1).date,target:target.date,pairs,adaptiveOnlyHit,legacyHit,hit:ok,guard:guard.label,mode:weak?'LAO-PEN14-V35CARD':'LAO-PEN14-V35CARD',reserve,adaptiveRecentRate:Math.round(rr*10000)/100});
+    const train=rs.slice(Math.max(0,i-79),i+1),target=rs[i+1],ranked=globalPairs(train,20),rawSel=selectRaw(train,audit(train)),anchor=Math.abs(7-Number(train.at(-1).n3[0]))%10,legacy=[...legacyPairs(rawSel.d1,rawSel.d2,anchor)].map(x=>x.pair);
+    const desired=v35Cardinality(train),pairs=ranked.map(x=>x.pair),reserve=desired-20;
+    for(const p of legacy)if(pairs.length<desired&&!pairs.includes(p))pairs.push(p);
+    const ok=pairs.some(x=>pairHit(x,target));
+    out.push({source:train.at(-1).date,target:target.date,pairs,hit:ok,cardinality:pairs.length,desiredCardinality:desired,guard:guard.label,mode:'GLOBAL-PAIR-20+V35-RESERVE'});
   }
   return out;
 }
+
 function penetrationHistory(rs){const __pt0=window.__PERFTRACE__.begin("penetrationHistory"); try {const out=[];for(let i=1;i<rs.length-1;i++){if(rs[i+1]?.breakBefore)continue;const train=rs.slice(Math.max(0,i-79),i+1),ad=audit(train),s=selectRaw(train,ad),a=Math.abs(7-Number(train.at(-1).n3[0]))%10,ps=[...legacyPairs(s.d1,s.d2,a),...legacyPairs(s.d2,s.d1,a)].map(x=>x.pair),top=String(rs[i+1].n3).padStart(3,'0').slice(-2),bot=String(rs[i+1].n2).padStart(2,'0'),ok=[top,bot].some(t=>ps.some(p=>p===t||p===t.split('').reverse().join('')));out.push({source:train.at(-1).date,target:rs[i+1].date,pairs:ps,targetPair:bot,targetTop:top,hit:ok})}return out} finally { window.__PERFTRACE__.end("penetrationHistory",__pt0); }}
 function penetrationSummary(groups){const xs=Object.entries(groups).filter(([k,v])=>k!=='__THAI_ALLDAY__'&&Array.isArray(v)).map(([name,v])=>({name,rs:v})).map(({name,rs})=>penetrationStats(rs,name)),n=xs.reduce((a,x)=>a+x.total,0),h=xs.reduce((a,x)=>a+x.hits,0),an=xs.reduce((a,x)=>a+x.adaptiveTotal,0),ah=xs.reduce((a,x)=>a+x.adaptiveHits,0),hp=DISPLAY_WIN.map(w=>{let hh=0,nn=0;xs.forEach(x=>{const q=x.displayHorizon.find(z=>z.w===w);if(q&&q.n>=w){hh+=q.hits;nn+=q.n}});return nn>=w?pct(hh,nn):null}),ahp=DISPLAY_WIN.map(w=>{let hh=0,nn=0;xs.forEach(x=>{const q=x.displayAdaptiveHorizon.find(z=>z.w===w);if(q&&q.n>=w){hh+=q.hits;nn+=q.n}});return nn>=w?pct(hh,nn):null}),maxMiss=Math.max(0,...xs.map(x=>x.maxMiss)),maxCurMiss=Math.max(0,...xs.map(x=>x.curMiss)),adaptiveMaxMiss=Math.max(0,...xs.map(x=>x.adaptiveMaxMiss)),adaptiveCurMiss=Math.max(0,...xs.map(x=>x.adaptiveCurMiss));return{n,h,r:pct(h,n),an,ah,ar:pct(ah,an),hp,ahp,maxMiss,maxCurMiss,adaptiveMaxMiss,adaptiveCurMiss}}
 const penetrationStatsCache=new WeakMap();function penetrationStats(rs,strategyName=''){const __pt0=window.__PERFTRACE__.begin("penetrationStats"); try {if(penetrationStatsCache.has(rs))return penetrationStatsCache.get(rs);const h=penetrationHistory(rs),ah=penetrationAdaptiveHistory(rs,strategyName||rs[0]?.name||''),st=streak(h.map(x=>({hit:x.hit}))),ast=streak(ah.map(x=>({hit:x.hit}))),hp=WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}}),ahp=WIN.map(w=>{const a=ah.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:pct(a.filter(x=>x.hit).length,a.length)}}),displayHorizon=DISPLAY_WIN.map(w=>{const a=h.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),displayAdaptiveHorizon=DISPLAY_WIN.map(w=>{const a=ah.slice(-w);return{w,n:a.length,hits:a.filter(x=>x.hit).length,rate:a.length>=w?pct(a.filter(x=>x.hit).length,a.length):null}}),lh=h.filter(x=>x.hit).length,aa=ah.filter(x=>x.hit).length;const out={total:h.length,hits:lh,misses:h.length-lh,rate:pct(lh,h.length),horizon:hp,curHit:st.curHit,maxHit:st.maxHit,curMiss:st.curMiss,maxMiss:st.maxMiss,adaptiveTotal:ah.length,adaptiveHits:aa,adaptiveMisses:ah.length-aa,adaptiveRate:pct(aa,ah.length),adaptiveHorizon:ahp,displayHorizon,displayAdaptiveHorizon,adaptiveCurHit:ast.curHit,adaptiveMaxHit:ast.maxHit,adaptiveCurMiss:ast.curMiss,adaptiveMaxMiss:ast.maxMiss,latest:h.at(-1)||null};penetrationStatsCache.set(rs,out);return out} finally { window.__PERFTRACE__.end("penetrationStats",__pt0); }}
@@ -3168,19 +3220,7 @@ function select(rs,ad,historyRs=rs,riskOverride=null,routeProfile=null,routeCtx=
   top=ordered.find(q=>Number(q.digit)===__smart2d.d1)||top;
   second=ordered.find(q=>Number(q.digit)===__smart2d.d2)||second;
   c.sort((a,b)=>{const ia=a.digit===__smart2d.d1?0:a.digit===__smart2d.d2?1:2,ib=b.digit===__smart2d.d1?0:b.digit===__smart2d.d2?1:2;return ia-ib||b.score-a.score||a.digit-b.digit;});
-  let __finalD1=__smart2d.d1,__finalD2=__smart2d.d2;
-  /* V3.4.0.5-36: Lao Development digit promotion. Exact-type causal prior-5 weighted target memory.
-     Uses only rows already present in rs; target row is not read. Other lottery types are untouched. */
-  if(String(routeCtx?.name||'')==='ลาวพัฒนา'&&Array.isArray(c)&&rs.length>=10){
-    const H=5,cnt=Array(10).fill(0),hist=rs.slice(-H);
-    for(let k=0;k<hist.length;k++){
-      const row=hist[k]||{},ds=[...String(row.n3||'').slice(1),...String(row.n2||'')].map(Number).filter(Number.isInteger);
-      for(const d of ds)cnt[d]+=k+1;
-    }
-    const ranked=c.filter(q=>q&&q.gate).map(q=>({q,sc:2*Number(q.score||0)+1.5*cnt[Number(q.digit)]})).sort((a,b)=>b.sc-a.sc||Number(b.q.score||0)-Number(a.q.score||0)||Number(a.q.digit)-Number(b.q.digit));
-    if(ranked.length>=2){__finalD1=Number(ranked[0].q.digit);__finalD2=Number(ranked.find(x=>Number(x.q.digit)!==__finalD1)?.q.digit??ranked[1].q.digit);}
-  }
-  const d1=__finalD1,d2=__finalD2;
+  const d1=__smart2d.d1,d2=__smart2d.d2;
   /* V3.11.1 DECISION-META FIX — Smart2D is the final digit decision, so the
      displayed margin/confidence/gate must be recomputed from the same two digits. */
   top=ordered.find(q=>Number(q.digit)===Number(d1))||top;
@@ -7130,7 +7170,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.__V24_RUNTIME__.ready=true;
   }catch(e){window.__V24_RUNTIME__.error=String(e?.stack||e); console.error('V2.4 RUNTIME SELF-CHECK',e);}
 });
-window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG};
+window.__TEST_EXPORTS__={__finalArbUpdate,parseInput,sortRecords,results,audit,selectionStatsCooperative,decisionStatsCooperative,selectionHistoryCooperative,decisionLogCooperative,__coopOosBundle,candidateBoard,selectCooperative,formulaHistory,stats,formulaRoutingProfile,__selectorCoachApply,__selectorCoachUpdate,__SELECTOR_COACH_CONFIG,__selectorForensicsAnnotate,__buildSelectorMistakeForensics,__SELECTOR_FORENSICS_CONFIG,penetrationAdaptiveHistory};
 })();
 </script>
 
