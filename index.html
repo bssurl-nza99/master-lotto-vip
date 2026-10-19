@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V10.28 OVERALL ACCURACY ENGINE</title>
+<title>NEUTRAL • DIGIT LAB V10.29 OVERALL ACCURACY ENGINE</title>
 <style>
 :root {
   --bg: #030712;
@@ -122,16 +122,16 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V10.28 SYSTEM-WIDE ACCURACY ENGINE (100% RAW HONEST)</p>
+      <p class="sub">V10.29 SYSTEM-WIDE ACCURACY ENGINE (100% RAW HONEST)</p>
     </div>
-    <div class="badge-version">V10.28 STABLE</div>
+    <div class="badge-version">V10.29 STABLE</div>
   </header>
 
   <section class="panel">
-    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (V10.28 Overall Accuracy Engine)</h2>
+    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (V10.29 Overall Accuracy Engine)</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" type="button" onclick="processUnifiedData()">รันผลทดสอบระบบซื่อตรง (V10.28)</button>
+      <button class="btn-primary" type="button" onclick="processUnifiedData()">รันผลทดสอบระบบซื่อตรง (V10.29)</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -160,7 +160,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
     <!-- 🎯 SECTION 1: LIVE RECOMMENDATION -->
     <section class="panel" style="border: 2px solid var(--cyan);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (Adaptive V10.28)</h2>
+        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (Adaptive V10.29)</h2>
         <button class="btn-success" type="button" onclick="copyLiveTable()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางฟันธง</button>
       </div>
       <div class="table-wrap">
@@ -169,7 +169,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
             <tr>
               <th>อันดับ</th>
               <th>ประเภทหวย / ตลาด</th>
-              <th>⭐ เลขเดี่ยวฟันธง (พัฒนาพิเศษ V10.28)</th>
+              <th>⭐ เลขเดี่ยวฟันธง (พัฒนาพิเศษ V10.29)</th>
               <th>🔥 ชุดเจาะ 6 คู่ (ดิบตามสถิติ)</th>
               <th>% ชุดเจาะ (ดิบแท้)</th>
               <th>สถานะเดี่ยวล่าสุด</th>
@@ -463,7 +463,7 @@ function parseMultiMarkets(text) {
   return markets;
 }
 
-// 🧠 V10.28 SYSTEM-WIDE ENGINE (100% RAW HONEST)
+// 🧠 V10.29 REVISED SYSTEM ENGINE (HIGH-ACCURACY SINGLE DISCRIMINATOR)
 function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true, currentLossStreak = 0) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1", lockedPairs: [] };
 
@@ -479,44 +479,47 @@ function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit =
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
-  // 2. Optimized Single Digit Discriminator (V10.28)
+  // 2. Pure Statistical Discriminator for Single Digit (V10.29)
   const cand1 = topPair.d1;
   const cand2 = topPair.d2;
 
-  const getAdvancedScore = (d) => {
+  const getPureStatScore = (d) => {
     const dStr = d.toString();
     const hitsArr = subRecords.map(r => (r.top + r.low).includes(dStr));
 
-    const f1 = hitsArr.slice(0, 1).filter(Boolean).length;
-    const f3 = hitsArr.slice(0, 3).filter(Boolean).length;
+    // A. อัตราการเข้าทั้งหมด (Total Wins Rate)
+    const totalWins = hitsArr.filter(Boolean).length;
+    const overallRate = (totalWins / subRecords.length) * 100;
+
+    // B. ฟอร์มระยะสั้น (5 และ 10 งวดล่าสุด)
     const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
+    const f10 = hitsArr.slice(0, 10).filter(Boolean).length;
 
-    let posScore = 0;
-    subRecords.slice(0, 4).forEach(r => {
-      if (r.top[1] === dStr) posScore += 25; // สิบบน
-      if (r.low[1] === dStr) posScore += 25; // หน่วยล่าง
-    });
+    // C. วิเคราะห์ระยะห่าง (Gap)
+    let currentGap = 0;
+    for (let idx = 0; idx < hitsArr.length; idx++) {
+      if (hitsArr[idx]) break;
+      currentGap++;
+    }
 
-    let gaps = [], curGap = 0;
-    hitsArr.forEach(h => {
-      if (h) { gaps.push(curGap); curGap = 0; }
-      else { curGap++; }
-    });
-    let avgGap = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0) / gaps.length) : 1.0;
-    let gapBonus = (curGap >= avgGap) ? (curGap * 12) : 0;
+    // คำนวณคะแนนสุทธิ (Weight Scoring)
+    let score = 0;
+    score += overallRate * 0.40;          // ให้น้ำหนักสถิติรวม 40%
+    score += (f5 / 5) * 30;               // ให้น้ำหนักฟอร์ม 5 งวดล่าสุด 30%
+    score += (f10 / 10) * 20;             // ให้น้ำหนักฟอร์ม 10 งวดล่าสุด 20%
+    
+    // โบนัสตัวเดินต่อเนื่อง (Hot Streak) หรือ ตัวจ่อรอบออกซ้ำ
+    if (currentGap === 0) score += 10;    // กำลังมาต่อเนื่อง
+    else if (currentGap === 1) score += 5;
 
-    return (f1 * 40) + (f3 * 30) + (f5 * 15) + posScore + gapBonus;
+    return score;
   };
 
-  const score1 = getAdvancedScore(cand1);
-  const score2 = getAdvancedScore(cand2);
+  const score1 = getPureStatScore(cand1);
+  const score2 = getPureStatScore(cand2);
 
+  // ตัดสินใจเลือกเลขเดี่ยวที่มีคะแนนสถิติสูงสุดอย่างแท้จริงโดยไม่มีการสลับลักไก่
   let chosenSingle = (score1 >= score2) ? cand1 : cand2;
-
-  // Immediate Adaptive Rejection Switch
-  if (!wasPreviousHit && previousPickedSingle !== null && (previousPickedSingle === cand1 || previousPickedSingle === cand2)) {
-    chosenSingle = (previousPickedSingle === cand1) ? cand2 : cand1;
-  }
 
   // 3. Locked Pairs Generator
   const coFlowFreq = {};
@@ -936,7 +939,7 @@ function processUnifiedData() {
   let honestPairRate = totalEvaluated > 0 ? ((honestPairWins / totalEvaluated) * 100).toFixed(1) : 0;
 
   document.getElementById('topSingleVal').innerText = `เลข [ ${currentDecision.single} ]`;
-  document.getElementById('topSingleDesc').innerText = `พัฒนาพิเศษ V10.28 จากคู่แชมป์อันดับ 1 (${currentDecision.pair})`;
+  document.getElementById('topSingleDesc').innerText = `พัฒนาพิเศษ V10.29 จากคู่แชมป์อันดับ 1 (${currentDecision.pair})`;
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุดในระบบ ${topPair.coverageRate.toFixed(1)}%`;
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestSingleRate}%)`;
@@ -949,7 +952,7 @@ function processUnifiedData() {
 
 function copyLiveTable() {
   const table = document.getElementById('liveRecommendTable');
-  let textToCopy = "🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (V10.28 Overall Accuracy Engine)\n--------------------------------------------------------------------------------\n";
+  let textToCopy = "🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (V10.29 Overall Accuracy Engine)\n--------------------------------------------------------------------------------\n";
   table.querySelectorAll('tr').forEach(row => {
     let rowText = [];
     row.querySelectorAll('th, td').forEach(col => rowText.push(col.innerText.trim()));
@@ -960,7 +963,7 @@ function copyLiveTable() {
 
 function copyMasterSummary() {
   const table = document.getElementById('masterSummaryTable');
-  let textToCopy = "📊 ตารางสรุปภาพรวมทุกตลาด (Honest Raw V10.28)\n--------------------------------------------------------------------------------\n";
+  let textToCopy = "📊 ตารางสรุปภาพรวมทุกตลาด (Honest Raw V10.29)\n--------------------------------------------------------------------------------\n";
   table.querySelectorAll('tr').forEach(row => {
     let rowText = [];
     row.querySelectorAll('th, td').forEach(col => rowText.push(col.innerText.trim()));
