@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.7 TRIPLE-FILTER OPTIMIZED</title>
+<title>NEUTRAL • DIGIT LAB V9.8 DYNAMIC CONSENSUS</title>
 <style>
 :root {
   --bg: #030712;
@@ -116,9 +116,9 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.7 TRIPLE-FILTER OPTIMIZED + HONEST TRACKER</p>
+      <p class="sub">V9.8 DYNAMIC CONSENSUS ENGINE</p>
     </div>
-    <div class="badge-version">V9.7 OPTIMIZED</div>
+    <div class="badge-version">V9.8 HIGH-ACCURACY</div>
   </header>
 
   <section class="panel">
@@ -133,7 +133,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <div id="outputArea" style="display:none;">
     
     <section class="panel">
-      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (งวดปัจจุบัน - Triple Filter)</h2>
+      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (งวดปัจจุบัน - Dynamic Consensus)</h2>
       <div class="recommend-grid">
         <div class="card" style="border-left: 3px solid var(--gold);">
           <div class="card-title">⭐ เลขตัดสินเด็ดขาดตัวเดียว</div>
@@ -218,7 +218,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (เรียงตาม Triple-Filter Score)</h2>
+      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (เรียงตาม Consensus Score)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -364,19 +364,11 @@ function parseTextData(text) {
   return records;
 }
 
-// ฟังก์ชันคำนวณการตัดสินใจแบบ Triple-Filter Engine (วิเคราะห์ ณ จุดเวลานั้นจริงๆ)
+// อัลกอริทึม V9.8 Dynamic Consensus Engine
 function getDecisionAt(subRecords) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1" };
 
-  // 1. ความถี่
-  const freq = Array.from({length: 10}, (_, i) => ({digit: i, total: 0}));
-  subRecords.forEach(r => {
-    const h = parseInt(r.top[0]), tt = parseInt(r.top[1]), ut = parseInt(r.top[2]);
-    const tl = parseInt(r.low[0]), ul = parseInt(r.low[1]);
-    freq[h].total++; freq[tt].total++; freq[ut].total++; freq[tl].total++; freq[ul].total++;
-  });
-
-  // 2. คู่เด่น
+  // 1. คำนวณคู่ชนความเสถียรสูงสุด ณ จุดเวลานั้น
   const pairs = [];
   for (let i = 0; i <= 8; i++) {
     for (let j = i + 1; j <= 9; j++) {
@@ -388,7 +380,10 @@ function getDecisionAt(subRecords) {
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
-  // 3. กรองและให้คะแนนเลขเดี่ยวด้วย Triple-Filter
+  // 2. ให้คะแนนเฉพาะเลขในคู่ชนท็อป 3 เพื่อล็อกให้เลขเดี่ยวสอดคล้องกับตารางคู่ชน 80%+
+  const validCandidates = new Set([topPair.d1, topPair.d2]);
+  if (pairs.length > 1) { validCandidates.add(pairs[1].d1); validCandidates.add(pairs[1].d2); }
+
   const digits = [];
   for (let d = 0; d <= 9; d++) {
     const dStr = d.toString();
@@ -396,30 +391,35 @@ function getDecisionAt(subRecords) {
     const wins = hitsArr.filter(Boolean).length;
     const winRate = (wins / subRecords.length) * 100;
 
-    // สถิติสั้น (Form 5)
-    const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
-    
-    // ระยะห่าง (Gap)
+    // เช็กสถานะการออกติดกันงวดล่าสุด (Streak)
+    let recentStreak = 0;
+    for (let k = 0; k < hitsArr.length; k++) { if (hitsArr[k]) recentStreak++; else break; }
+
+    // เช็กสถานะการหลุดติดกัน (Loss Streak)
+    let curLossStreak = 0;
+    for (let k = 0; k < hitsArr.length; k++) { if (!hitsArr[k]) curLossStreak++; else break; }
+
+    // ระยะห่าง Gap
     let gaps = [], curG = 0;
     hitsArr.forEach(h => { if (h) { gaps.push(curG); curG = 0; } else { curG++; } });
     let avgG = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0)/gaps.length) : 0;
-    let isPending = curG > avgG;
 
-    // เช็กเงื่อนไขเลขดับ (Elimination Filter)
-    let isKill = false;
-    let curLossStreak = 0;
-    for (let k = 0; k < hitsArr.length; k++) { if (!hitsArr[k]) curLossStreak++; else break; }
-    if (winRate < 30 || curLossStreak >= 5) isKill = true;
-
-    // คำนวณคะแนน Triple Score
     let score = winRate;
-    score += (freq[d].total * 1.5); // น้ำหนักความถี่
-    score += (f5 * 6); // สถิติมโมเมนตัม 5 งวดหลังสุด
-    if (d === topPair.d1 || d === topPair.d2) score += 25; // โบนัสสอดคล้องกับชุดคู่ชน
-    if (isPending) score += 10; // โบนัสจ่อรอบ
-    if (isKill) score -= 1000; // ตัดสิทธิ์เลขดับทันที!
+    
+    // โบนัสสอดคล้องกับคู่ชนอันดับ 1 (ยึดแกนหลัก)
+    if (d === topPair.d1 || d === topPair.d2) score += 50;
+    
+    // โบนัสระยะห่างจ่อรอบกำลังดี (1-3 งวด)
+    if (curG >= 1 && curG <= Math.ceil(avgG)) score += 20;
 
-    digits.push({ digit: d, score, winRate, wins, losses: subRecords.length - wins, curLossStreak, isKill });
+    // บทลงโทษเลขซ้ำซ้อน (Overheated)
+    if (recentStreak >= 2) score -= 30; // ถ้าเพิ่งออกติดกัน 2-3 งวด ตัดคะแนนป้องกันดับ
+    if (curLossStreak >= 4 || winRate < 30) score -= 500; // ตัดสิทธิ์เลขดับเด็ดขาด
+
+    // ถ้าไม่ใช่เลขที่ติดในคู่ชนท็อป ตัดคะแนนหนัก
+    if (!validCandidates.has(d)) score -= 200;
+
+    digits.push({ digit: d, score, winRate, wins, losses: subRecords.length - wins });
   }
 
   digits.sort((a, b) => b.score - a.score);
@@ -507,19 +507,14 @@ function processData() {
     for (let i = 0; i < hits.length; i++) { if (hits[i] === isCurrentHit) currCount++; else break; }
     let currentStreakText = isCurrentHit ? `<span class="badge-win">เข้า ${currCount}</span>` : `<span class="badge-loss">หลุด ${currCount}</span>`;
     
-    let f5 = hits.slice(0, 5).filter(Boolean).length;
     let winRate = (wins / records.length) * 100;
-    let isKill = (winRate < 30 || (currCount >= 5 && !isCurrentHit));
+    let score = winRate;
+    if (d === topPair.d1 || d === topPair.d2) score += 50;
 
-    let score = winRate + (freq.find(f => f.digit === d).total * 1.5) + (f5 * 6);
-    if (d === topPair.d1 || d === topPair.d2) score += 25;
-    if (isKill) score -= 1000;
-
-    t2Data.push({ digit: d, wins, losses, winRate, score, maxWin, maxLoss, currentStatus: currentStreakText, currCount, isCurrentHit, isKill });
+    t2Data.push({ digit: d, wins, losses, winRate, score, maxWin, maxLoss, currentStatus: currentStreakText, currCount, isCurrentHit });
   }
   t2Data.sort((a, b) => b.score - a.score);
-  const finalDecisionDigit = t2Data[0].digit;
-
+  
   // 2. ประวัติย้อนหลังหน้างานจริง (Point-in-Time Honest Tracker)
   const targetTrackRecords = records.slice(0, 20).reverse();
   let t9Html = '';
@@ -563,6 +558,9 @@ function processData() {
 
   document.getElementById('t9Body').innerHTML = t9Html;
   document.getElementById('t8Body').innerHTML = t8Html;
+
+  // ดึงเลขตัดสินตัวเดียวปัจจุบันจากฟังก์ชัน Dynamic Consensus
+  const currentDecision = getDecisionAt(records);
 
   let honestRate = totalEvaluated > 0 ? ((honestSingleWins / totalEvaluated) * 100).toFixed(0) : 0;
 
@@ -663,14 +661,14 @@ function processData() {
   }
   document.getElementById('t7Body').innerHTML = t7Html;
 
-  document.getElementById('topSingleVal').innerText = `เลข [ ${finalDecisionDigit} ]`;
-  document.getElementById('topSingleDesc').innerText = `คัดกรองจากความถี่และคู่สัมพันธ์ปัจจุบัน (เข้า ${t2Data[0].winRate.toFixed(1)}%)`;
+  document.getElementById('topSingleVal').innerText = `เลข [ ${currentDecision.single} ]`;
+  document.getElementById('topSingleDesc').innerText = `ล็อกแกนกลางกับคู่ชนอันดับ 1 + ป้องกันเลขซ้ำซ้อน`;
 
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}%`;
 
-  document.getElementById('tripleLockVal').innerText = `🛡️ TRIPLE-FILTER ACTIVE`;
-  document.getElementById('tripleLockDesc').innerText = `กรองเลขดับ + อัดน้ำหนักฟอร์มสั้น + ล็อกคู่ชน`;
+  document.getElementById('tripleLockVal').innerText = `🛡️ DYNAMIC CONSENSUS ACTIVE`;
+  document.getElementById('tripleLockDesc').innerText = `คัดเฉพาะเลขคู่ชนท็อป + ดักจ่อรอบ + ตัดเลขซ้ำซ้อน`;
 
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestRate}%)`;
   document.getElementById('simDesc').innerText = `ความซื่อสัตย์หน้างานจริง (Honest Hit Rate)`;
