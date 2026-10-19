@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V10.25 PURE INTRA-PAIR ENGINE</title>
+<title>NEUTRAL • DIGIT LAB V10.26 ADAPTIVE OPTIMIZED ENGINE</title>
 <style>
 :root {
   --bg: #030712;
@@ -122,16 +122,16 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V10.25 PURE INTRA-PAIR ENGINE (100% RAW HONEST)</p>
+      <p class="sub">V10.26 ADAPTIVE OPTIMIZED ENGINE (100% RAW HONEST)</p>
     </div>
-    <div class="badge-version">V10.25 STABLE</div>
+    <div class="badge-version">V10.26 STABLE</div>
   </header>
 
   <section class="panel">
-    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (V10.25 Pure Intra-Pair Engine)</h2>
+    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (V10.26 Adaptive Engine)</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" type="button" onclick="processUnifiedData()">รันผลทดสอบระบบซื่อตรง (V10.25)</button>
+      <button class="btn-primary" type="button" onclick="processUnifiedData()">รันผลทดสอบระบบซื่อตรง (V10.26)</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -141,7 +141,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
     <!-- 🎯 SECTION 1: LIVE RECOMMENDATION & MULTI-MARKET SUMMARY -->
     <section class="panel" style="border: 2px solid var(--cyan);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (Pure Intra-Pair Filtered)</h2>
+        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (Adaptive Optimized)</h2>
         <button class="btn-success" type="button" onclick="copyLiveTable()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางฟันธง</button>
       </div>
       <div class="table-wrap">
@@ -150,7 +150,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
             <tr>
               <th>อันดับ</th>
               <th>ประเภทหวย / ตลาด</th>
-              <th>⭐ เลขเดี่ยวฟันธง (ดวลเจาะลึกเฉพาะคู่แชมป์)</th>
+              <th>⭐ เลขเดี่ยวฟันธง (ระบบปรับตัวอัจฉริยะ)</th>
               <th>🔥 ชุดเจาะ 6 คู่ (ดิบตามสถิติ)</th>
               <th>% ชุดเจาะ (ดิบแท้)</th>
               <th>สถานะเดี่ยวล่าสุด</th>
@@ -444,7 +444,7 @@ function parseMultiMarkets(text) {
   return markets;
 }
 
-// 🧠 V10.25 PURE INTRA-PAIR ENGINE (100% RAW HONEST)
+// 🧠 V10.26 ADAPTIVE OPTIMIZED ENGINE (100% RAW HONEST)
 function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true, currentLossStreak = 0) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1", lockedPairs: [] };
 
@@ -454,54 +454,53 @@ function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit =
     for (let j = i + 1; j <= 9; j++) {
       const d1 = i.toString(), d2 = j.toString();
       const hits = subRecords.filter(r => (r.top + r.low).includes(d1) || (r.top + r.low).includes(d2)).length;
-      pairs.push({ pairStr: `${i} -${j}`, d1: i, d2: j, rate: (hits / subRecords.length) * 100 });
+      pairs.push({ pairStr: `${i} - ${j}`, d1: i, d2: j, rate: (hits / subRecords.length) * 100 });
     }
   }
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
-  // 2. Pure Intra-Pair Discriminator: ดวลเฉพาะสมาชิก 2 ตัวในคู่แชมป์แบบตัดสัญญาณสะสมภาพรวมทิ้ง
+  // 2. Adaptive Intra-Pair Duel: ดวลเฉพาะสมาชิก 2 ตัวด้วยคะแนนความสดและตำแหน่งจริง
   const cand1 = topPair.d1;
   const cand2 = topPair.d2;
 
-  const getIntraPairScore = (d) => {
+  const getAdaptiveScore = (d) => {
     const dStr = d.toString();
-    
-    // ดึงประวัติย้อนหลังสั้น 5 งวดล่าสุด
-    const last5 = subRecords.slice(0, 5);
-    const last3 = subRecords.slice(0, 3);
-    const last1 = subRecords.slice(0, 1);
+    const hitsArr = subRecords.map(r => (r.top + r.low).includes(dStr));
 
-    // เช็กการปรากฏตัวสั้น
-    const hit5 = last5.filter(r => (r.top + r.low).includes(dStr)).length;
-    const hit3 = last3.filter(r => (r.top + r.low).includes(dStr)).length;
-    const hit1 = last1.filter(r => (r.top + r.low).includes(dStr)).length;
+    // น้ำหนักเน้นกรอบสั้นพิเศษ (1, 2, และ 3 งวดล่าสุด)
+    const f1 = hitsArr.slice(0, 1).filter(Boolean).length;
+    const f2 = hitsArr.slice(0, 2).filter(Boolean).length;
+    const f3 = hitsArr.slice(0, 3).filter(Boolean).length;
+    const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
 
-    // เช็กน้ำหนักตำแหน่งสิบบน / หน่วยล่าง ใน 5 งวดล่าสุด
+    // คะแนนตำแหน่งเฉพาะกิจ (สิบบน / หน่วยล่าง ใน 5 งวดล่าสุด)
     let posScore = 0;
-    last5.forEach(r => {
-      if (r.top[1] === dStr) posScore += 25; // สิบบน
-      if (r.low[1] === dStr) posScore += 25; // หน่วยล่าง
-      if (r.top[2] === dStr) posScore += 10; // หน่วยบน
-      if (r.low[0] === dStr) posScore += 10; // สิบล่าง
+    subRecords.slice(0, 5).forEach(r => {
+      if (r.top[1] === dStr) posScore += 30; // สิบบน
+      if (r.low[1] === dStr) posScore += 30; // หน่วยล่าง
     });
 
-    // ตรวจสอบจังหวะออกซ้ำติดกัน (Streak Overload Penalty)
-    let streakPenalty = (hit1 === 1 && hit3 >= 2) ? 20 : 0;
+    // ระยะห่าง Gap จ่อรอบ
+    let currentGap = 0;
+    for (let i = 0; i < hitsArr.length; i++) {
+      if (!hitsArr[i]) currentGap++;
+      else break;
+    }
 
-    // คะแนนดวลเฉพาะกิจ
-    let pureScore = (hit3 * 40) + (hit5 * 15) + posScore - streakPenalty;
-    return { digit: d, pureScore };
+    // คะแนนรวมปรับตัวตามสถานการณ์จริง
+    let adaptiveScore = (f1 * 50) + (f2 * 30) + (f3 * 20) + (f5 * 10) + posScore + (currentGap * 15);
+    return { digit: d, adaptiveScore };
   };
 
-  const score1 = getIntraPairScore(cand1);
-  const score2 = getIntraPairScore(cand2);
+  const score1 = getAdaptiveScore(cand1);
+  const score2 = getAdaptiveScore(cand2);
 
-  let chosenSingle = (score1.pureScore >= score2.pureScore) ? cand1 : cand2;
+  let chosenSingle = (score1.adaptiveScore >= score2.adaptiveScore) ? cand1 : cand2;
 
-  // Smart Circuit Breaker & Alternating Ping-Pong: หากหลุดติดต่อกัน 2 งวด ให้สลับฝั่งทันที
-  if (currentLossStreak >= 2 && previousPickedSingle === chosenSingle) {
-    chosenSingle = (chosenSingle === cand1) ? cand2 : cand1;
+  // Adaptive Circuit Breaker: ถ้างวดก่อนหน้าหลุดเป้าหมายทันที และอีกตัวมีคะแนนไล่เลี่ยกัน ให้ระบบสลับฝั่งทันทีเพื่อตัดรอบหลุดซ้ำ
+  if (!wasPreviousHit && previousPickedSingle !== null && (previousPickedSingle === cand1 || previousPickedSingle === cand2)) {
+    chosenSingle = (previousPickedSingle === cand1) ? cand2 : cand1;
   }
 
   // 3. Exponential Decay Co-Occurrence Matrix สำหรับชุดเจาะ 6 คู่
@@ -590,7 +589,20 @@ function processUnifiedData() {
       } else {
         sLossStreak++; currentLossStreak++; sWinStreak = 0;
         if (sLossStreak > sMaxLoss) sMaxLoss = sLossStreak;
-        sLastStatus = `🔴 หลุด (${sLossStreak} รอบ)`; }  lastPicked = dec.single; lastHit = singleHit;  const lpHit = checkLockedPairsHit(r, dec.lockedPairs); if (lpHit) { honestLockedPairsWins++; pWinStreak++; pLossStreak = 0; if (pWinStreak > pMaxWin) pMaxWin = pWinStreak; pLastStatus = "🟢 เข้า (ล่าสุด)"; } else { pLossStreak++; pWinStreak = 0; if (pLossStreak > pMaxLoss) pMaxLoss = pLossStreak; pLastStatus = `🔴 หลุด (${pLossStreak} รอบ)`;
+        sLastStatus = `🔴 หลุด (${sLossStreak} รอบ)`;
+      }
+
+      lastPicked = dec.single; lastHit = singleHit;
+
+      const lpHit = checkLockedPairsHit(r, dec.lockedPairs);
+      if (lpHit) {
+        honestLockedPairsWins++; pWinStreak++; pLossStreak = 0;
+        if (pWinStreak > pMaxWin) pMaxWin = pWinStreak;
+        pLastStatus = "🟢 เข้า (ล่าสุด)";
+      } else {
+        pLossStreak++; pWinStreak = 0;
+        if (pLossStreak > pMaxLoss) pMaxLoss = pLossStreak;
+        pLastStatus = `🔴 หลุด (${pLossStreak} รอบ)`;
       }
     });
 
@@ -636,12 +648,12 @@ function processUnifiedData() {
       <td><strong>${idx + 1}</strong></td>
       <td><span class="tag-gold">${item.name}</span></td>
       <td>${item.totalEval}</td>
-      <td>${item.sWins} /${item.totalEval}</td>
+      <td>${item.sWins} / ${item.totalEval}</td>
       <td><strong>${item.sRate.toFixed(1)}%</strong></td>
-      <td><span class="streak-s">สูงสุด:+${item.sMaxWin} | หลุดสุด:-${item.sMaxLoss} \vert{} <strong>${item.sLastStatus}</strong></span></td>
-      <td>${item.pWins} /${item.totalEval}</td>
+      <td><span class="streak-s">สูงสุด:+${item.sMaxWin} | หลุดสุด:-${item.sMaxLoss} | <strong>${item.sLastStatus}</strong></span></td>
+      <td>${item.pWins} / ${item.totalEval}</td>
       <td><strong>${item.pRate.toFixed(1)}%</strong></td>
-      <td><span class="streak-p">สูงสุด:+${item.pMaxWin} | หลุดสุด:-${item.pMaxLoss} \vert{} <strong>${item.pLastStatus}</strong></span></td>
+      <td><span class="streak-p">สูงสุด:+${item.pMaxWin} | หลุดสุด:-${item.pMaxLoss} | <strong>${item.pLastStatus}</strong></span></td>
     </tr>`;
   });
   document.getElementById('masterBody').innerHTML = masterHtml;
@@ -686,7 +698,7 @@ function processUnifiedData() {
       for (let k = 0; k < pairHits.length; k++) { if (pairHits[k].hit === isCurrentHit) currCount++; else break; }
 
       pairs.push({
-        pairStr: `${i} -${j}`, d1: i, d2: j, w5, w10, w15, wTotal,
+        pairStr: `${i} - ${j}`, d1: i, d2: j, w5, w10, w15, wTotal,
         coverageRate: (wTotal / primaryRecords.length) * 100, doubleHits, maxLoss,
         currentStatus: isCurrentHit ? `<span class="badge-win">เข้า (${currCount})</span>` : `<span class="badge-loss">หลุด (${currCount})</span>`
       });
@@ -719,7 +731,7 @@ function processUnifiedData() {
   t2Data.forEach((row, idx) => {
     let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
     let rankDisplay = idx === 0 ? '★ 1' : idx === 1 ? '2' : idx === 2 ? '3' : idx + 1;
-    t2Html += `<tr class="${rankClass}"><td><strong>${rankDisplay}</strong></td><td><span class="tag-gold">${row.digit}</span></td><td class="badge-win">${row.wins}</td><td class="badge-loss">${row.losses}</td><td>${row.winRate.toFixed(1)}\%</td><td>${row.maxWin}</td><td>${row.maxLoss}</td><td>${row.currentStatus}</td></tr>`;
+    t2Html += `<tr class="${rankClass}"><td><strong>${rankDisplay}</strong></td><td><span class="tag-gold">${row.digit}</span></td><td class="badge-win">${row.wins}</td><td class="badge-loss">${row.losses}</td><td>${row.winRate.toFixed(1)}%</td><td>${row.maxWin}</td><td>${row.maxLoss}</td><td>${row.currentStatus}</td></tr>`;
   });
   document.getElementById('t2Body').innerHTML = t2Html;
 
@@ -727,4 +739,181 @@ function processUnifiedData() {
   pairs.forEach((p, idx) => {
     let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
     let rankDisplay = idx === 0 ? '★ 1' : idx === 1 ? '2' : idx === 2 ? '3' : idx + 1;
-    t3Html += `<tr class="${rankClass}"><td><strong>
+    t3Html += `<tr class="${rankClass}"><td><strong>${rankDisplay}</strong></td><td><span class="tag-gold">${p.pairStr}</span></td><td>${p.w5}/5</td><td>${p.w10}/10</td><td>${p.w15}/15</td><td><strong>${p.wTotal}/${primaryRecords.length}</strong></td><td>${p.coverageRate.toFixed(1)}%</td><td>${p.doubleHits}</td><td>${p.maxLoss}</td><td>${p.currentStatus}</td></tr>`;
+  });
+  document.getElementById('t3Body').innerHTML = t3Html;
+
+  let t4Data = [];
+  for (let d = 0; d <= 9; d++) {
+    const digitStr = d.toString();
+    const hits = primaryRecords.map(r => (r.top.includes(digitStr) || r.low.includes(digitStr)));
+    let gaps = [], currentGap = 0, totalHits = 0;
+    hits.forEach(h => {
+      if (h) { totalHits++; gaps.push(currentGap); currentGap = 0; }
+      else { currentGap++; }
+    });
+    let avgGap = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0) / gaps.length).toFixed(1) : 0;
+    let statusText = currentGap > parseFloat(avgGap) ? `<span class="badge-win">⚡ จ่อรอบ</span>` : `<span style="color:var(--muted)">ปกติ</span>`;
+    t4Data.push({ digit: d, totalHits, avgGap, currentGap, statusText });
+  }
+  t4Data.sort((a, b) => b.currentGap - a.currentGap);
+  let t4Html = '';
+  t4Data.forEach((row, idx) => {
+    let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+    let rankDisplay = idx === 0 ? '★ 1' : idx === 1 ? '2' : idx === 2 ? '3' : idx + 1;
+    t4Html += `<tr class="${rankClass}"><td><strong>${rankDisplay}</strong></td><td><span class="tag-gold">${row.digit}</span></td><td>${row.totalHits}</td><td>${row.avgGap}</td><td><strong>${row.currentGap}</strong></td><td>${row.statusText}</td></tr>`;
+  });
+  document.getElementById('t4Body').innerHTML = t4Html;
+
+  let trios = [];
+  for (let i = 0; i <= 7; i++) {
+    for (let j = i + 1; j <= 8; j++) {
+      for (let k = j + 1; k <= 9; k++) {
+        const d1 = i.toString(), d2 = j.toString(), d3 = k.toString();
+        let trioHits = primaryRecords.map(r => (r.top + r.low).includes(d1) || (r.top + r.low).includes(d2) || (r.top + r.low).includes(d3));
+        let tTotal = trioHits.filter(Boolean).length;
+        let isCurr = trioHits[0];
+        trios.push({ trioStr: `${i}-${j}-${k}`, tTotal, rate: (tTotal / primaryRecords.length) * 100, status: isCurr ? `<span class="badge-win">เข้า</span>` : `<span class="badge-loss">หลุด</span>` });
+      }
+    }
+  }
+  trios.sort((a, b) => b.rate - a.rate);
+  let t5Html = '';
+  trios.slice(0, 15).forEach((t, idx) => {
+    let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+    let rankDisplay = idx === 0 ? '★ 1' : idx === 1 ? '2' : idx === 2 ? '3' : idx + 1;
+    t5Html += `<tr class="${rankClass}"><td><strong>${rankDisplay}</strong></td><td><span class="tag-gold">${t.trioStr}</span></td><td><strong>${t.tTotal}/${primaryRecords.length}</strong></td><td>${t.rate.toFixed(1)}%</td><td>${t.status}</td></tr>`;
+  });
+  document.getElementById('t5Body').innerHTML = t5Html;
+
+  let t6Data = [];
+  for (let d = 0; d <= 9; d++) {
+    const digitStr = d.toString();
+    const hits = primaryRecords.map(r => (r.top.includes(digitStr) || r.low.includes(digitStr)));
+    let f5 = hits.slice(0, 5).filter(Boolean).length;
+    let f10 = hits.slice(0, 10).filter(Boolean).length;
+    let momentum = f5 >= 3 ? '🔥 เด่นสั้น' : f5 <= 1 ? '❄️ พักตัว' : '⚖️ สมดุล';
+    t6Data.push({ digit: d, f5, f10, momentum });
+  }
+  t6Data.sort((a, b) => b.f10 - a.f10);
+  let t6Html = '';
+  t6Data.forEach((row, idx) => {
+    let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+    let rankDisplay = idx === 0 ? '★ 1' : idx === 1 ? '2' : idx === 2 ? '3' : idx + 1;
+    t6Html += `<tr class="${rankClass}"><td><strong>${rankDisplay}</strong></td><td><span class="tag-gold">${row.digit}</span></td><td>${row.f5}/5</td><td><strong>${row.f10}/10</strong></td><td>${row.momentum}</td><td>คงที่</td></tr>`;
+  });
+  document.getElementById('t6Body').innerHTML = t6Html;
+
+  let t7Data = [];
+  t2Data.forEach(item => {
+    let killScore = 0; let reason = '';
+    if (item.winRate < 30) { killScore += 40; reason += 'อัตราเข้าต่ำ '; }
+    if (item.currCount >= 5 && !item.isCurrentHit) { killScore += 40; reason += 'หลุดเกิน 5 งวด '; }
+    if (killScore > 0) t7Data.push({ digit: item.digit, killScore, reason: reason.trim() });
+  });
+  t7Data.sort((a, b) => b.killScore - a.killScore);
+  let t7Html = '';
+  if (t7Data.length === 0) {
+    t7Html = `<tr><td colspan="5" style="color:var(--muted)">ไม่พบเลขดับเสี่ยงสูง</td></tr>`;
+  } else {
+    t7Data.forEach((k, idx) => {
+      t7Html += `<tr><td><strong>${idx + 1}</strong></td><td><span class="tag-gold" style="color:var(--red);">${k.digit}</span></td><td><span class="badge-kill">${k.killScore}%</span></td><td>${k.reason}</td><td><strong style="color:var(--red);">ตัดทิ้ง</strong></td></tr>`;
+    });
+  }
+  document.getElementById('t7Body').innerHTML = t7Html;
+
+  const targetTrackRecords = primaryRecords.slice(0, 20).reverse();
+  let t9Html = '', t8Html = '';
+  let honestSingleWins = 0, honestPairWins = 0, totalEvaluated = targetTrackRecords.length;
+  let lastPickedSingle = null, lastWasHit = true, currentLossStreak = 0;
+
+  targetTrackRecords.forEach((r) => {
+    const originalIndex = primaryRecords.findIndex(rec => rec.top === r.top && rec.low === r.low);
+    const pastRecords = primaryRecords.slice(originalIndex + 1);
+    if (pastRecords.length < 5) return;
+
+    const pastDecision = getDecisionAt(pastRecords, lastPickedSingle, lastWasHit, currentLossStreak);
+    const fullDraw = r.top + r.low;
+    
+    const isSingleHit = fullDraw.includes(pastDecision.single.toString());
+    if (isSingleHit) {
+      honestSingleWins++;
+      currentLossStreak = 0;
+    } else {
+      currentLossStreak++;
+    }
+    const singleBadge = isSingleHit ? `<span class="badge-win">✓ เข้าเป้า</span>` : `<span class="badge-loss">✗ หลุด</span>`;
+
+    lastPickedSingle = pastDecision.single; lastWasHit = isSingleHit;
+
+    const pairParts = pastDecision.pair.split('-').map(s => s.trim());
+    const isPairHit = fullDraw.includes(pairParts[0]) || fullDraw.includes(pairParts[1]);
+    if (isPairHit) honestPairWins++;
+    const pairBadge = isPairHit ? `<span class="badge-win">✓ เข้าเป้า</span>` : `<span class="badge-loss">✗ หลุด</span>`;
+
+    t9Html += `<tr>
+      <td>${r.label || 'งวดที่'}</td>
+      <td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td>
+      <td><span class="tag-gold" style="font-size:14px; color:var(--gold);">${pastDecision.single}</span></td>
+      <td>${singleBadge}</td>
+      <td>${isSingleHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td>
+    </tr>`;
+
+    t8Html += `<tr>
+      <td>${r.label || 'งวดที่'}</td>
+      <td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td>
+      <td><span class="tag-gold">${pastDecision.pair}</span></td>
+      <td>${pairBadge}</td>
+      <td>${isPairHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td>
+    </tr>`;
+  });
+
+  document.getElementById('t9Body').innerHTML = t9Html;
+  document.getElementById('t8Body').innerHTML = t8Html;
+
+  const currentDecision = getDecisionAt(primaryRecords, lastPickedSingle, lastWasHit, currentLossStreak);
+  let honestSingleRate = totalEvaluated > 0 ? ((honestSingleWins / totalEvaluated) * 100).toFixed(1) : 0;
+  let honestPairRate = totalEvaluated > 0 ? ((honestPairWins / totalEvaluated) * 100).toFixed(1) : 0;
+
+  document.getElementById('topSingleVal').innerText = `เลข [ ${currentDecision.single} ]`;
+  document.getElementById('topSingleDesc').innerText = `ระบบปรับตัวอัจฉริยะจากคู่แชมป์อันดับ 1 (${currentDecision.pair})`;
+  document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
+  document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุดในระบบ ${topPair.coverageRate.toFixed(1)}%`;
+  document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestSingleRate}%)`;
+  document.getElementById('simDesc').innerText = `ความซื่อสัตย์เลขเดี่ยวย้อนหลัง (Honest Single Rate)`;
+  document.getElementById('pairSimVal').innerText = `${honestPairWins} / ${totalEvaluated} (${honestPairRate}%)`;
+  document.getElementById('pairSimDesc').innerText = `ความมั่นคงคู่ชนหน้างานจริง (Honest Pair Rate)`;
+
+  document.getElementById('outputArea').style.display = 'block';
+}
+
+function copyLiveTable() {
+  const table = document.getElementById('liveRecommendTable');
+  let textToCopy = "🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (V10.26 Adaptive Engine)\n--------------------------------------------------------------------------------\n";
+  table.querySelectorAll('tr').forEach(row => {
+    let rowText = [];
+    row.querySelectorAll('th, td').forEach(col => rowText.push(col.innerText.trim()));
+    textToCopy += rowText.join('\t | \t') + "\n";
+  });
+  navigator.clipboard.writeText(textToCopy).then(() => alert('คัดลอกตารางฟันธงเรียบร้อยแล้ว!'));
+}
+
+function copyMasterSummary() {
+  const table = document.getElementById('masterSummaryTable');
+  let textToCopy = "📊 ตารางสรุปภาพรวมทุกตลาด (Honest Raw V10.26)\n--------------------------------------------------------------------------------\n";
+  table.querySelectorAll('tr').forEach(row => {
+    let rowText = [];
+    row.querySelectorAll('th, td').forEach(col => rowText.push(col.innerText.trim()));
+    textToCopy += rowText.join('\t | \t') + "\n";
+  });
+  navigator.clipboard.writeText(textToCopy).then(() => alert('คัดลอกตารางสรุปเรียบร้อยแล้ว!'));
+}
+
+function clearInput() {
+  document.getElementById('rawInput').value = '';
+  document.getElementById('outputArea').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
