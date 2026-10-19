@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.2 [SINGLE-LOCK EDITION]</title>
+<title>NEUTRAL • DIGIT LAB V9.3 [REBOUND & DENSITY]</title>
 <style>
 :root {
   --bg: #030712;
@@ -128,16 +128,16 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.2 SINGLE-LOCK EDITION · ฟันธงเลขตัดสินตัวเดียวเด็ดขาด (ผ่านระบบ Safety Brake ป้องกันตัวหลุด)</p>
+      <p class="sub">V9.3 REBOUND & DENSITY EDITION · ระบบวิเคราะห์แรงเด้งกลับ + ความหนาแน่นตำแหน่งหลักฝั่งบน</p>
     </div>
-    <div class="badge-version">V9.2 ACTIVE</div>
+    <div class="badge-version">V9.3 ACTIVE</div>
   </header>
 
   <section class="panel">
     <h2>01 / ป้อนข้อมูลสถิติ</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" onclick="processData()">ประมวลผลเลขตัดสินเด็ดขาดตัวเดียว</button>
+      <button class="btn-primary" onclick="processData()">ประมวลผลระบบ Rebound & Density ขั้นสูง</button>
       <button class="btn-secondary" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -158,7 +158,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
           <div class="card-desc" id="topPairDesc">-</div>
         </div>
         <div class="card">
-          <div class="card-title">สถานะความปลอดภัย (Safety & Lock Status)</div>
+          <div class="card-title">สถานะวิเคราะห์แรงเด้งกลับ (Rebound Status)</div>
           <div class="card-value" id="tripleLockVal" style="font-size:18px; color:var(--green);">-</div>
           <div class="card-desc" id="tripleLockDesc">-</div>
         </div>
@@ -192,7 +192,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Safety Brake ป้องกันตัวหลุด)</h2>
+      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Rebound & Density)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -344,7 +344,7 @@ function processData() {
     return;
   }
 
-  // Table 1: Freq
+  // Table 1: Freq with Top Density calculation
   const freq = Array.from({length: 10}, (_, i) => ({digit: i, hundreds:0, tenTop:0, unitTop:0, tenLow:0, unitLow:0, total:0, topTotal:0}));
   records.forEach(r => {
     const h = parseInt(r.top[0]), tt = parseInt(r.top[1]), ut = parseInt(r.top[2]);
@@ -410,7 +410,21 @@ function processData() {
   }
   let simWinRate = (simWins / simTotal) * 100;
 
-  // Table 2: Digit Streak with Strict Safety Brake (Strict Anti-Error Single Output)
+  // Table 4 Calculations for Rebound Logic
+  let gapsData = {};
+  for (let d = 0; d <= 9; d++) {
+    const digitStr = d.toString();
+    const hits = records.map(r => (r.top.includes(digitStr) || r.low.includes(digitStr)));
+    let gaps = [], currentGap = 0;
+    hits.forEach(h => {
+      if (h) { gaps.push(currentGap); currentGap = 0; }
+      else { currentGap++; }
+    });
+    let avgGap = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0) / gaps.length) : 1.5;
+    gapsData[d] = { avgGap, currentGap };
+  }
+
+  // Table 2: Digit Streak with Rebound & Top Density Logic
   let t2Data = [];
   for (let d = 0; d <= 9; d++) {
     const digitStr = d.toString();
@@ -434,22 +448,27 @@ function processData() {
     for (let i = 0; i < hits.length; i++) { if (hits[i] === isCurrentHit) currCount++; else break; }
     let currentStreakText = isCurrentHit ? `<span class="badge-win">เข้า ${currCount} งวดติด</span>` : `<span class="badge-loss">หลุด ${currCount} งวดติด</span>`;
 
-    // Strict Anti-Error Rules:
-    // 1. Must belong to Top Pair to get consensus bonus
     let inTopPair = (d === topPair.d1 || d === topPair.d2);
-    let consensusBonus = inTopPair ? 15 : 0; 
-    let topDensityBonus = freq.find(f => f.digit === d).topTotal * 1.0;
+    let consensusBonus = inTopPair ? 25 : 0; 
     
-    // Safety Brake Penalty: If loss streak >= 2, heavily penalize to prevent picking cold/dropping numbers
-    let streakPenalty = (!isCurrentHit && currCount >= 2) ? 30 : 0;
+    // Top-Position Density Weighting (ยึดความหนาแน่นฝั่งบนเป็นหลัก)
+    let topObj = freq.find(f => f.digit === d);
+    let topDensityBonus = topObj ? topObj.topTotal * 2.5 : 0;
+    
+    // Rebound Bonus Logic (ถ้าอยู่ในคู่เด่นแล้วหลุดค้างเกินระยะเฉลี่ย = สภาวะอัดอั้นพร้อมเด้งกลับ)
+    let reboundBonus = 0;
+    let gInfo = gapsData[d];
+    if (inTopPair && !isCurrentHit && gInfo.currentGap >= gInfo.avgGap) {
+      reboundBonus = 20; // เพิ่มคะแนนโบนัสเด้งกลับทันที
+    }
 
-    let adjustedScore = (wins / records.length) * 100 + consensusBonus + topDensityBonus + recencyScore - streakPenalty;
+    let adjustedScore = (wins / records.length) * 100 + consensusBonus + topDensityBonus + recencyScore + reboundBonus;
 
-    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, inTopPair, currCount, isCurrentHit });
+    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, inTopPair, currCount, isCurrentHit, reboundBonus });
   }
 
   t2Data.sort((a, b) => b.adjustedScore - a.adjustedScore);
-  const finalDecisionDigit = t2Data[0].digit; // เลขตัดสินตัวเดียวเด็ดขาด
+  const finalDecisionDigit = t2Data[0].digit;
 
   let t2Html = '';
   t2Data.forEach((row, idx) => {
@@ -467,7 +486,7 @@ function processData() {
   });
   document.getElementById('t3Body').innerHTML = t3Html;
 
-  // Table 4: Gap Tracking
+  // Table 4: Gap Tracking Display
   let t4Data = [];
   for (let d = 0; d <= 9; d++) {
     const digitStr = d.toString();
@@ -485,7 +504,7 @@ function processData() {
     });
 
     let avgGap = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0) / gaps.length).toFixed(1) : 0;
-    let statusText = currentGap > parseFloat(avgGap) + 1 ? `<span class="badge-win">⚡ จ่อรอบกลับมาสูง</span>` : `<span class="badge-muted" style="color:var(--muted)">สภาวะปกติ</span>`;
+    let statusText = currentGap > parseFloat(avgGap) ? `<span class="badge-win">⚡ จ่อรอบเด้งกลับสูง</span>` : `<span class="badge-muted" style="color:var(--muted)">สภาวะปกติ</span>`;
 
     t4Data.push({ digit: d, totalHits, avgGap, currentGap, statusText });
   }
@@ -555,15 +574,14 @@ function processData() {
   });
   document.getElementById('t6Body').innerHTML = t6Html;
 
-  // Table 7: Statistical Elimination Filter
+  // Table 7: Statistical Elimination Filter (Excluding Top Pair members with High Rebound Potential)
   let t7Data = [];
   t2Data.forEach(item => {
-    let f5 = item.hits ? item.hits.slice(0, 5).filter(Boolean).length : 0;
     let killScore = 0;
     let reason = '';
 
-    if (item.winRate < 30) { killScore += 40; reason += 'อัตราเข้าภาพรวมต่ำกว่า 30% '; }
-    if (item.currCount >= 3 && !item.isCurrentHit) { killScore += 40; reason += 'หลุดติดต่อกัน 3 งวดขึ้นไป '; }
+    if (item.winRate < 30) { killScore += 50; reason += 'อัตราเข้าภาพรวมต่ำกว่า 30% '; }
+    if (item.currCount >= 5 && !item.isCurrentHit && !item.inTopPair) { killScore += 40; reason += 'หลุดยาวและไม่อยู่ในคู่เด่น '; }
 
     if (killScore > 0) {
       t7Data.push({ digit: item.digit, killScore, reason: reason.trim() || 'แนวโน้มสถิติเสี่ยงหลุด' });
@@ -588,19 +606,21 @@ function processData() {
   }
   document.getElementById('t7Body').innerHTML = t7Html;
 
-  // Safety Verification Status
+  // Status Check for Final Single
   let finalObj = t2Data.find(x => x.digit === finalDecisionDigit);
-  let safetyStatus = finalObj.isCurrentHit ? `🛡️ SAFETY VERIFIED (ฟอร์มกำลังเข้า)` : `⚠️ WATCH STREAK (ผ่านเกณฑ์ปลอดภัย)`;
+  let reboundStatusText = finalObj.reboundBonus > 0 
+    ? `⚡ REBOUND HIGH (สะสมพลังเด้งกลับสูง)` 
+    : `🔥 TOP DENSITY ACTIVE (ฐานความถี่บนแน่นสูงสุด)`;
 
   // UI Updates
   document.getElementById('topSingleVal').innerText = `เลข [ ${finalDecisionDigit} ]`;
-  document.getElementById('topSingleDesc').innerText = `ผ่านการตัดเกรดความปลอดภัยสูงสุด อัตราเข้า ${finalObj.winRate.toFixed(1)}% (${finalObj.wins}/${records.length} งวด)`;
+  document.getElementById('topSingleDesc').innerText = `ผ่านการวิเคราะห์ฐานความถี่ฝั่งบน + แรงเด้งกลับเรียบร้อย (อัตราเข้า ${finalObj.winRate.toFixed(1)}%)`;
 
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}% (${topPair.wTotal}/${records.length} งวด)`;
 
-  document.getElementById('tripleLockVal').innerText = safetyStatus;
-  document.getElementById('tripleLockDesc').innerText = `เลขตัดสิน [ ${finalDecisionDigit} ] สอดคล้องกับชุดคู่ชนอันดับ 1 และผ่านระบบ Safety Brake เรียบร้อย`;
+  document.getElementById('tripleLockVal').innerText = reboundStatusText;
+  document.getElementById('tripleLockDesc').innerText = `เลขตัดสิน [ ${finalDecisionDigit} ] เป็นหัวใจหลักในชุดคู่ชนอันดับ 1 [ ${topPair.pairStr} ]`;
 
   document.getElementById('simVal').innerText = `${simWins} / ${simTotal} งวด (${simWinRate.toFixed(0)}%)`;
   document.getElementById('simDesc').innerText = `จำลองผลย้อนหลัง 10 งวดล่าสุด`;
@@ -616,3 +636,4 @@ function clearInput() {
 
 </body>
 </html>
+
