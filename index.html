@@ -116,9 +116,9 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.5 STABLE CORE + DUAL BACKTEST TRACKER EDITION</p>
+      <p class="sub">V9.5 STABLE CORE + TOP TRACKERS FIRST</p>
     </div>
-    <div class="badge-version">V9.5 DUAL TRACKER</div>
+    <div class="badge-version">V9.5 TRACKER FIRST</div>
   </header>
 
   <section class="panel">
@@ -158,28 +158,9 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
       </div>
     </section>
 
-    <!-- ตารางที่ 8: ประวัติสะสมผลงานย้อนหลัง - ชุดคู่ชน -->
+    <!-- [ย้ายขึ้นบนสุด] ตารางที่ 9: ประวัติย้อนหลัง - เลขตัดสินเด็ดขาดตัวเดียว -->
     <section class="panel">
-      <h2>📋 ตารางที่ 8 / ประวัติสะสมผลงานย้อนหลัง - ชุดคู่ชน (Pair Tracker)</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>งวดที่ / วันที่</th>
-              <th>ผลจริง (บน-ล่าง)</th>
-              <th>คู่ชนแนะนำ</th>
-              <th>สถานะคู่ชน</th>
-              <th>ผลประเมิน</th>
-            </tr>
-          </thead>
-          <tbody id="t8Body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ตารางที่ 9: ประวัติสะสมผลงานย้อนหลัง - เลขเดี่ยวตัวเดียว (New) -->
-    <section class="panel">
-      <h2>⭐ ตารางที่ 9 / ประวัติสะสมผลงานย้อนหลัง - เลขตัดสินเด็ดขาดตัวเดียว (Single Tracker)</h2>
+      <h2>⭐ ตารางประวัติผลงานย้อนหลัง - เลขตัดสินเด็ดขาดตัวเดียว (Single Tracker)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -192,6 +173,25 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
             </tr>
           </thead>
           <tbody id="t9Body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- [ย้ายขึ้นบนสุด] ตารางที่ 8: ประวัติย้อนหลัง - ชุดคู่ชน -->
+    <section class="panel">
+      <h2>📋 ตารางประวัติผลงานย้อนหลัง - ชุดคู่ชน (Pair Tracker)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>งวดที่ / วันที่</th>
+              <th>ผลจริง (บน-ล่าง)</th>
+              <th>คู่ชนแนะนำ</th>
+              <th>สถานะคู่ชน</th>
+              <th>ผลประเมิน</th>
+            </tr>
+          </thead>
+          <tbody id="t8Body"></tbody>
         </table>
       </div>
     </section>
@@ -465,27 +465,9 @@ function processData() {
   t2Data.sort((a, b) => b.stableScore - a.stableScore);
   const finalDecisionDigit = t2Data[0].digit;
 
-  // Table 8: Tracker - คู่ชน
-  let t8Html = '';
-  const trackRecords = records.slice(0, 20).reverse(); 
-  trackRecords.forEach((r) => {
-    const fullDraw = r.top + r.low;
-    const d1 = topPair.d1.toString(), d2 = topPair.d2.toString();
-    const isPairHit = fullDraw.includes(d1) || fullDraw.includes(d2);
-    const statusBadge = isPairHit ? `<span class="badge-win">✓ เข้าเป้า</span>` : `<span class="badge-loss">✗ หลุด</span>`;
-    
-    t8Html += `<tr>
-      <td>${r.label}</td>
-      <td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td>
-      <td><span class="tag-gold">${topPair.pairStr}</span></td>
-      <td>${statusBadge}</td>
-      <td>${isPairHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td>
-    </tr>`;
-  });
-  document.getElementById('t8Body').innerHTML = t8Html;
-
-  // Table 9: Tracker - เลขเด็ดตัวเดียว (Single Tracker)
+  // Render Table 9: Single Tracker (ย้ายมาอยู่อันดับ 1 บนสุด)
   let t9Html = '';
+  const trackRecords = records.slice(0, 20).reverse();
   const singleDigitStr = finalDecisionDigit.toString();
   trackRecords.forEach((r) => {
     const fullDraw = r.top + r.low;
@@ -501,6 +483,24 @@ function processData() {
     </tr>`;
   });
   document.getElementById('t9Body').innerHTML = t9Html;
+
+  // Render Table 8: Pair Tracker
+  let t8Html = '';
+  trackRecords.forEach((r) => {
+    const fullDraw = r.top + r.low;
+    const d1 = topPair.d1.toString(), d2 = topPair.d2.toString();
+    const isPairHit = fullDraw.includes(d1) || fullDraw.includes(d2);
+    const statusBadge = isPairHit ? `<span class="badge-win">✓ เข้าเป้า</span>` : `<span class="badge-loss">✗ หลุด</span>`;
+    
+    t8Html += `<tr>
+      <td>${r.label}</td>
+      <td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td>
+      <td><span class="tag-gold">${topPair.pairStr}</span></td>
+      <td>${statusBadge}</td>
+      <td>${isPairHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td>
+    </tr>`;
+  });
+  document.getElementById('t8Body').innerHTML = t8Html;
 
   let t2Html = '';
   t2Data.forEach((row, idx) => {
