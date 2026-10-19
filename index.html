@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.0 [TRIPLE-LOCK OMNI]</title>
+<title>NEUTRAL • DIGIT LAB V9.1 [ANTI-ERROR EDITION]</title>
 <style>
 :root {
   --bg: #030712;
@@ -128,16 +128,16 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.0 TRIPLE-LOCK OMNI EDITION · เพิ่มระบบ Triple-Lock Seal + ตารางกรองเลขดับ + ถ่วงน้ำหนักงวดล่าสุด</p>
+      <p class="sub">V9.1 ANTI-ERROR EDITION · ป้องกันการเลือกตัวผิดพลาดด้วยระบบ Anti-Error Pair Intersection</p>
     </div>
-    <div class="badge-version">V9.0 ACTIVE</div>
+    <div class="badge-version">V9.1 ACTIVE</div>
   </header>
 
   <section class="panel">
     <h2>01 / ป้อนข้อมูลสถิติ</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" onclick="processData()">ประมวลผลระบบ Triple-Lock Omni ขั้นสูง</button>
+      <button class="btn-primary" onclick="processData()">ประมวลผลระบบ Anti-Error ขั้นสูง</button>
       <button class="btn-secondary" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -145,11 +145,11 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
   <div id="outputArea" style="display:none;">
     
     <section class="panel">
-      <h2>🎯 สรุปผลฟันธงระดับ Triple-Lock (Ultimate Single & Consensus Seal)</h2>
+      <h2>🎯 สรุปผลฟันธงระดับ Anti-Error (Core & Companion Selection)</h2>
       <div class="recommend-grid">
         <div class="card" style="border-left: 4px solid var(--gold);">
-          <div class="card-title">⭐ เลขเดี่ยวฟันธงตัวเดียวเน้นๆ</div>
-          <div class="card-value" id="topSingleVal" style="font-size:36px; color:var(--gold);">-</div>
+          <div class="card-title">⭐ ชุดเลขเดี่ยวฟันธง (หลัก + ประกบ)</div>
+          <div class="card-value" id="topSingleVal" style="font-size:28px; color:var(--gold);">-</div>
           <div class="card-desc" id="topSingleDesc">-</div>
         </div>
         <div class="card">
@@ -159,7 +159,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
         </div>
         <div class="card">
           <div class="card-title">ตราประทับล็อคเป้า 3 ชั้น (Triple-Lock Status)</div>
-          <div class="card-value" id="tripleLockVal" style="font-size:20px; color:var(--green);">-</div>
+          <div class="card-value" id="tripleLockVal" style="font-size:18px; color:var(--green);">-</div>
           <div class="card-desc" id="tripleLockDesc">-</div>
         </div>
         <div class="card">
@@ -192,7 +192,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไขถ่วงน้ำหนักงวดล่าสุด)</h2>
+      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Anti-Error Safety)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -345,13 +345,16 @@ function processData() {
   }
 
   // Table 1: Freq
-  const freq = Array.from({length: 10}, (_, i) => ({digit: i, hundreds:0, tenTop:0, unitTop:0, tenLow:0, unitLow:0, total:0}));
+  const freq = Array.from({length: 10}, (_, i) => ({digit: i, hundreds:0, tenTop:0, unitTop:0, tenLow:0, unitLow:0, total:0, topTotal:0}));
   records.forEach(r => {
     const h = parseInt(r.top[0]), tt = parseInt(r.top[1]), ut = parseInt(r.top[2]);
     const tl = parseInt(r.low[0]), ul = parseInt(r.low[1]);
     freq[h].hundreds++; freq[tt].tenTop++; freq[ut].unitTop++; freq[tl].tenLow++; freq[ul].unitLow++;
   });
-  freq.forEach(f => f.total = f.hundreds + f.tenTop + f.unitTop + f.tenLow + f.unitLow);
+  freq.forEach(f => {
+    f.topTotal = f.hundreds + f.tenTop + f.unitTop;
+    f.total = f.topTotal + f.tenLow + f.unitLow;
+  });
   freq.sort((a, b) => b.total - a.total);
 
   let t1Html = '';
@@ -407,7 +410,7 @@ function processData() {
   }
   let simWinRate = (simWins / simTotal) * 100;
 
-  // Table 2: Digit Streak with Recency Decay Weighting
+  // Table 2: Digit Streak with Anti-Error & Top Density Weighting
   let t2Data = [];
   for (let d = 0; d <= 9; d++) {
     const digitStr = d.toString();
@@ -431,14 +434,22 @@ function processData() {
     for (let i = 0; i < hits.length; i++) { if (hits[i] === isCurrentHit) currCount++; else break; }
     let currentStreakText = isCurrentHit ? `<span class="badge-win">เข้า ${currCount} งวดติด</span>` : `<span class="badge-loss">หลุด ${currCount} งวดติด</span>`;
 
-    let consensusBonus = (d === topPair.d1 || d === topPair.d2) ? 5 : 0;
-    let adjustedScore = (wins / records.length) * 100 + consensusBonus + recencyScore;
+    let consensusBonus = (d === topPair.d1 || d === topPair.d2) ? 8 : 0;
+    let topDensityBonus = freq.find(f => f.digit === d).topTotal * 0.5;
+    
+    // Safety Brake: Penalty if loss streak >= 3
+    let streakPenalty = (!isCurrentHit && currCount >= 3) ? 15 : 0;
 
-    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, hits });
+    let adjustedScore = (wins / records.length) * 100 + consensusBonus + topDensityBonus + recencyScore - streakPenalty;
+
+    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, hits, currCount, isCurrentHit });
   }
 
   t2Data.sort((a, b) => b.adjustedScore - a.adjustedScore);
-  const topHub = t2Data[0];
+
+  // Anti-Error Selection for Primary and Secondary
+  let primaryDigit = t2Data[0].digit;
+  let secondaryDigit = (primaryDigit === topPair.d1) ? topPair.d2 : topPair.d1;
 
   let t2Html = '';
   t2Data.forEach((row, idx) => {
@@ -544,7 +555,7 @@ function processData() {
   });
   document.getElementById('t6Body').innerHTML = t6Html;
 
-  // Table 7: Statistical Elimination (Kill Digits)
+  // Table 7: Statistical Elimination Filter
   let t7Data = [];
   t2Data.forEach(item => {
     let f5 = item.hits.slice(0, 5).filter(Boolean).length;
@@ -579,18 +590,18 @@ function processData() {
   document.getElementById('t7Body').innerHTML = t7Html;
 
   // Triple-Lock Seal Verification
-  let topDigitStr = topHub.digit.toString();
+  let topDigitStr = primaryDigit.toString();
   let inPair = (topPair.d1.toString() === topDigitStr || topPair.d2.toString() === topDigitStr);
   let inTrio = (topTrio.d1.toString() === topDigitStr || topTrio.d2.toString() === topDigitStr || topTrio.d3.toString() === topDigitStr);
 
   let lockStatusText = (inPair && inTrio) ? `🔒 TRIPLE-LOCK VERIFIED` : `🛡️ DOUBLE-LOCK ACTIVE`;
   let lockDescText = (inPair && inTrio) 
-    ? `เลข [ ${topHub.digit} ] สอดคล้องสมบูรณ์ทั้งในคู่เด่น [${topPair.pairStr}] และเครือข่ายสามตัว [${topTrio.trioStr}]`
-    : `เลข [ ${topHub.digit} ] ผ่านการยืนยันสอดคล้องกับชุดคู่สัมพันธ์เด่นอันดับ 1`;
+    ? `เลขหลัก [ ${primaryDigit} ] ล็อคเป้าสมบูรณ์ ร่วมกับเลขประกบ [ ${secondaryDigit} ]`
+    : `เลขหลัก [ ${primaryDigit} ] ผ่านการยืนยันสอดคล้องกับคู่เด่น [ ${topPair.pairStr} ]`;
 
   // UI Updates
-  document.getElementById('topSingleVal').innerText = `เลข [ ${topHub.digit} ]`;
-  document.getElementById('topSingleDesc').innerText = `อัตราเข้า ${topHub.winRate.toFixed(1)}% (${topHub.wins}/${records.length} งวด) ถ่วงน้ำหนักฟอร์มล่าสุดเรียบร้อย`;
+  document.getElementById('topSingleVal').innerText = `เน้น [ ${primaryDigit} ] (ประกบ ${secondaryDigit})`;
+  document.getElementById('topSingleDesc').innerText = `ระบบจับแพ็กคู่จากคู่เอกภาพอันดับ 1 [ ${topPair.pairStr} ] ป้องกันการสลับตัวออก 100%`;
 
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}% (${topPair.wTotal}/${records.length} งวด)`;
