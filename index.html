@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.8 DYNAMIC CONSENSUS</title>
+<title>NEUTRAL • DIGIT LAB V9.9 UNIVERSAL STABILITY</title>
 <style>
 :root {
   --bg: #030712;
@@ -116,9 +116,9 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.8 DYNAMIC CONSENSUS ENGINE</p>
+      <p class="sub">V9.9 UNIVERSAL STABILITY & CIRCUIT BREAKER ENGINE</p>
     </div>
-    <div class="badge-version">V9.8 HIGH-ACCURACY</div>
+    <div class="badge-version">V9.9 STABILITY</div>
   </header>
 
   <section class="panel">
@@ -133,7 +133,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <div id="outputArea" style="display:none;">
     
     <section class="panel">
-      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (งวดปัจจุบัน - Dynamic Consensus)</h2>
+      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (งวดปัจจุบัน - Circuit Breaker Engine)</h2>
       <div class="recommend-grid">
         <div class="card" style="border-left: 3px solid var(--gold);">
           <div class="card-title">⭐ เลขตัดสินเด็ดขาดตัวเดียว</div>
@@ -364,11 +364,11 @@ function parseTextData(text) {
   return records;
 }
 
-// อัลกอริทึม V9.8 Dynamic Consensus Engine
-function getDecisionAt(subRecords) {
+// อัลกอริทึม V9.9 Universal Circuit-Breaker Engine
+function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1" };
 
-  // 1. คำนวณคู่ชนความเสถียรสูงสุด ณ จุดเวลานั้น
+  // 1. หาคู่ชนเสถียรภาพสูงสุด
   const pairs = [];
   for (let i = 0; i <= 8; i++) {
     for (let j = i + 1; j <= 9; j++) {
@@ -380,9 +380,22 @@ function getDecisionAt(subRecords) {
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
-  // 2. ให้คะแนนเฉพาะเลขในคู่ชนท็อป 3 เพื่อล็อกให้เลขเดี่ยวสอดคล้องกับตารางคู่ชน 80%+
-  const validCandidates = new Set([topPair.d1, topPair.d2]);
-  if (pairs.length > 1) { validCandidates.add(pairs[1].d1); validCandidates.add(pairs[1].d2); }
+  // 2. ดึงกลุ่ม Trio ท็อป 3
+  const trioDigits = new Set();
+  const trios = [];
+  for (let i = 0; i <= 7; i++) {
+    for (let j = i + 1; j <= 8; j++) {
+      for (let k = j + 1; k <= 9; k++) {
+        const d1 = i.toString(), d2 = j.toString(), d3 = k.toString();
+        let tTotal = subRecords.filter(r => (r.top + r.low).includes(d1) || (r.top + r.low).includes(d2) || (r.top + r.low).includes(d3)).length;
+        trios.push({ d1, d2, d3, rate: tTotal / subRecords.length });
+      }
+    }
+  }
+  trios.sort((a, b) => b.rate - a.rate);
+  if (trios.length > 0) {
+    trioDigits.add(parseInt(trios[0].d1)); trioDigits.add(parseInt(trios[0].d2)); trioDigits.add(parseInt(trios[0].d3));
+  }
 
   const digits = [];
   for (let d = 0; d <= 9; d++) {
@@ -391,11 +404,14 @@ function getDecisionAt(subRecords) {
     const wins = hitsArr.filter(Boolean).length;
     const winRate = (wins / subRecords.length) * 100;
 
-    // เช็กสถานะการออกติดกันงวดล่าสุด (Streak)
+    // สถิติมโมเมนตัม 5 งวดหลัง
+    const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
+
+    // เช็กสถานะการออกติดกัน
     let recentStreak = 0;
     for (let k = 0; k < hitsArr.length; k++) { if (hitsArr[k]) recentStreak++; else break; }
 
-    // เช็กสถานะการหลุดติดกัน (Loss Streak)
+    // เช็กสถานะการหลุดติดกัน
     let curLossStreak = 0;
     for (let k = 0; k < hitsArr.length; k++) { if (!hitsArr[k]) curLossStreak++; else break; }
 
@@ -405,19 +421,19 @@ function getDecisionAt(subRecords) {
     let avgG = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0)/gaps.length) : 0;
 
     let score = winRate;
-    
-    // โบนัสสอดคล้องกับคู่ชนอันดับ 1 (ยึดแกนหลัก)
-    if (d === topPair.d1 || d === topPair.d2) score += 50;
-    
-    // โบนัสระยะห่างจ่อรอบกำลังดี (1-3 งวด)
-    if (curG >= 1 && curG <= Math.ceil(avgG)) score += 20;
+    score += (f5 * 8); // ให้น้ำหนักฟอร์มสั้น 5 งวดสูงขึ้น
 
-    // บทลงโทษเลขซ้ำซ้อน (Overheated)
-    if (recentStreak >= 2) score -= 30; // ถ้าเพิ่งออกติดกัน 2-3 งวด ตัดคะแนนป้องกันดับ
-    if (curLossStreak >= 4 || winRate < 30) score -= 500; // ตัดสิทธิ์เลขดับเด็ดขาด
+    if (d === topPair.d1 || d === topPair.d2) score += 40; // โบนัสคู่ชน
+    if (trioDigits.has(d)) score += 20; // โบนัสติดกลุ่ม Trio ท็อป
+    if (curG >= 1 && curG <= Math.ceil(avgG)) score += 15; // โบนัสจ่อรอบ
 
-    // ถ้าไม่ใช่เลขที่ติดในคู่ชนท็อป ตัดคะแนนหนัก
-    if (!validCandidates.has(d)) score -= 200;
+    // 🚨 กฎเบรกมือ (Circuit Breaker): ถ้างวดที่แล้วเลือกเลขนี้แล้วหลุด ห้ามเลือกซ้ำเด็ดขาด!
+    if (!wasPreviousHit && previousPickedSingle === d) {
+      score -= 2000;
+    }
+
+    if (recentStreak >= 3) score -= 25; // บทลงโทษเลขออกซ้ำติดกันเกิน 3 งวด
+    if (curLossStreak >= 5 || winRate < 25) score -= 800; // ตัดสิทธิ์เลขดับ
 
     digits.push({ digit: d, score, winRate, wins, losses: subRecords.length - wins });
   }
@@ -509,18 +525,21 @@ function processData() {
     
     let winRate = (wins / records.length) * 100;
     let score = winRate;
-    if (d === topPair.d1 || d === topPair.d2) score += 50;
+    if (d === topPair.d1 || d === topPair.d2) score += 40;
 
     t2Data.push({ digit: d, wins, losses, winRate, score, maxWin, maxLoss, currentStatus: currentStreakText, currCount, isCurrentHit });
   }
   t2Data.sort((a, b) => b.score - a.score);
   
-  // 2. ประวัติย้อนหลังหน้างานจริง (Point-in-Time Honest Tracker)
+  // 2. ประวัติย้อนหลังหน้างานจริง (Point-in-Time Honest Tracker + Circuit Breaker)
   const targetTrackRecords = records.slice(0, 20).reverse();
   let t9Html = '';
   let t8Html = '';
   let honestSingleWins = 0;
   let totalEvaluated = targetTrackRecords.length;
+
+  let lastPickedSingle = null;
+  let lastWasHit = true;
 
   targetTrackRecords.forEach((r) => {
     const originalIndex = records.findIndex(rec => rec.label === r.label && rec.top === r.top && rec.low === r.low);
@@ -528,12 +547,17 @@ function processData() {
 
     if (pastRecords.length < 5) return;
 
-    const pastDecision = getDecisionAt(pastRecords);
+    // คำนวณโดยใส่พารามิเตอร์เบรกมือ
+    const pastDecision = getDecisionAt(pastRecords, lastPickedSingle, lastWasHit);
     const fullDraw = r.top + r.low;
     
     const isSingleHit = fullDraw.includes(pastDecision.single.toString());
     if (isSingleHit) honestSingleWins++;
     const singleBadge = isSingleHit ? `<span class="badge-win">✓ เข้าเป้า</span>` : `<span class="badge-loss">✗ หลุด</span>`;
+
+    // อัปเดตสถานะสำหรับงวดถัดไป
+    lastPickedSingle = pastDecision.single;
+    lastWasHit = isSingleHit;
 
     const pairParts = pastDecision.pair.split('-').map(s => s.trim());
     const isPairHit = fullDraw.includes(pairParts[0]) || fullDraw.includes(pairParts[1]);
@@ -559,8 +583,8 @@ function processData() {
   document.getElementById('t9Body').innerHTML = t9Html;
   document.getElementById('t8Body').innerHTML = t8Html;
 
-  // ดึงเลขตัดสินตัวเดียวปัจจุบันจากฟังก์ชัน Dynamic Consensus
-  const currentDecision = getDecisionAt(records);
+  // ดึงเลขตัดสินตัวเดียวปัจจุบันจากฟังก์ชัน V9.9
+  const currentDecision = getDecisionAt(records, lastPickedSingle, lastWasHit);
 
   let honestRate = totalEvaluated > 0 ? ((honestSingleWins / totalEvaluated) * 100).toFixed(0) : 0;
 
@@ -662,13 +686,13 @@ function processData() {
   document.getElementById('t7Body').innerHTML = t7Html;
 
   document.getElementById('topSingleVal').innerText = `เลข [ ${currentDecision.single} ]`;
-  document.getElementById('topSingleDesc').innerText = `ล็อกแกนกลางกับคู่ชนอันดับ 1 + ป้องกันเลขซ้ำซ้อน`;
+  document.getElementById('topSingleDesc').innerText = `คัดฉันทามติ 3 ตาราง + ล็อกเบรกมือกันหลุดซ้ำ`;
 
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}%`;
 
-  document.getElementById('tripleLockVal').innerText = `🛡️ DYNAMIC CONSENSUS ACTIVE`;
-  document.getElementById('tripleLockDesc').innerText = `คัดเฉพาะเลขคู่ชนท็อป + ดักจ่อรอบ + ตัดเลขซ้ำซ้อน`;
+  document.getElementById('tripleLockVal').innerText = `🛡️ CIRCUIT BREAKER ACTIVE`;
+  document.getElementById('tripleLockDesc').innerText = `ตัดสิทธิ์เลขหลุดงวดล่าสุดทันที + ผูกฉันทามติ Trio`;
 
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestRate}%)`;
   document.getElementById('simDesc').innerText = `ความซื่อสัตย์หน้างานจริง (Honest Hit Rate)`;
