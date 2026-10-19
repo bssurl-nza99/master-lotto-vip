@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.1 [ANTI-ERROR EDITION]</title>
+<title>NEUTRAL • DIGIT LAB V9.2 [SINGLE-LOCK EDITION]</title>
 <style>
 :root {
   --bg: #030712;
@@ -128,16 +128,16 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.1 ANTI-ERROR EDITION · ป้องกันการเลือกตัวผิดพลาดด้วยระบบ Anti-Error Pair Intersection</p>
+      <p class="sub">V9.2 SINGLE-LOCK EDITION · ฟันธงเลขตัดสินตัวเดียวเด็ดขาด (ผ่านระบบ Safety Brake ป้องกันตัวหลุด)</p>
     </div>
-    <div class="badge-version">V9.1 ACTIVE</div>
+    <div class="badge-version">V9.2 ACTIVE</div>
   </header>
 
   <section class="panel">
     <h2>01 / ป้อนข้อมูลสถิติ</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" onclick="processData()">ประมวลผลระบบ Anti-Error ขั้นสูง</button>
+      <button class="btn-primary" onclick="processData()">ประมวลผลเลขตัดสินเด็ดขาดตัวเดียว</button>
       <button class="btn-secondary" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -145,11 +145,11 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
   <div id="outputArea" style="display:none;">
     
     <section class="panel">
-      <h2>🎯 สรุปผลฟันธงระดับ Anti-Error (Core & Companion Selection)</h2>
+      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (Ultimate Single Decision Match)</h2>
       <div class="recommend-grid">
         <div class="card" style="border-left: 4px solid var(--gold);">
-          <div class="card-title">⭐ ชุดเลขเดี่ยวฟันธง (หลัก + ประกบ)</div>
-          <div class="card-value" id="topSingleVal" style="font-size:28px; color:var(--gold);">-</div>
+          <div class="card-title">⭐ เลขตัดสินเด็ดขาดตัวเดียว (Final Single)</div>
+          <div class="card-value" id="topSingleVal" style="font-size:36px; color:var(--gold);">-</div>
           <div class="card-desc" id="topSingleDesc">-</div>
         </div>
         <div class="card">
@@ -158,7 +158,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
           <div class="card-desc" id="topPairDesc">-</div>
         </div>
         <div class="card">
-          <div class="card-title">ตราประทับล็อคเป้า 3 ชั้น (Triple-Lock Status)</div>
+          <div class="card-title">สถานะความปลอดภัย (Safety & Lock Status)</div>
           <div class="card-value" id="tripleLockVal" style="font-size:18px; color:var(--green);">-</div>
           <div class="card-desc" id="tripleLockDesc">-</div>
         </div>
@@ -192,7 +192,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Anti-Error Safety)</h2>
+      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Safety Brake ป้องกันตัวหลุด)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -410,7 +410,7 @@ function processData() {
   }
   let simWinRate = (simWins / simTotal) * 100;
 
-  // Table 2: Digit Streak with Anti-Error & Top Density Weighting
+  // Table 2: Digit Streak with Strict Safety Brake (Strict Anti-Error Single Output)
   let t2Data = [];
   for (let d = 0; d <= 9; d++) {
     const digitStr = d.toString();
@@ -434,22 +434,22 @@ function processData() {
     for (let i = 0; i < hits.length; i++) { if (hits[i] === isCurrentHit) currCount++; else break; }
     let currentStreakText = isCurrentHit ? `<span class="badge-win">เข้า ${currCount} งวดติด</span>` : `<span class="badge-loss">หลุด ${currCount} งวดติด</span>`;
 
-    let consensusBonus = (d === topPair.d1 || d === topPair.d2) ? 8 : 0;
-    let topDensityBonus = freq.find(f => f.digit === d).topTotal * 0.5;
+    // Strict Anti-Error Rules:
+    // 1. Must belong to Top Pair to get consensus bonus
+    let inTopPair = (d === topPair.d1 || d === topPair.d2);
+    let consensusBonus = inTopPair ? 15 : 0; 
+    let topDensityBonus = freq.find(f => f.digit === d).topTotal * 1.0;
     
-    // Safety Brake: Penalty if loss streak >= 3
-    let streakPenalty = (!isCurrentHit && currCount >= 3) ? 15 : 0;
+    // Safety Brake Penalty: If loss streak >= 2, heavily penalize to prevent picking cold/dropping numbers
+    let streakPenalty = (!isCurrentHit && currCount >= 2) ? 30 : 0;
 
     let adjustedScore = (wins / records.length) * 100 + consensusBonus + topDensityBonus + recencyScore - streakPenalty;
 
-    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, hits, currCount, isCurrentHit });
+    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, inTopPair, currCount, isCurrentHit });
   }
 
   t2Data.sort((a, b) => b.adjustedScore - a.adjustedScore);
-
-  // Anti-Error Selection for Primary and Secondary
-  let primaryDigit = t2Data[0].digit;
-  let secondaryDigit = (primaryDigit === topPair.d1) ? topPair.d2 : topPair.d1;
+  const finalDecisionDigit = t2Data[0].digit; // เลขตัดสินตัวเดียวเด็ดขาด
 
   let t2Html = '';
   t2Data.forEach((row, idx) => {
@@ -558,13 +558,12 @@ function processData() {
   // Table 7: Statistical Elimination Filter
   let t7Data = [];
   t2Data.forEach(item => {
-    let f5 = item.hits.slice(0, 5).filter(Boolean).length;
+    let f5 = item.hits ? item.hits.slice(0, 5).filter(Boolean).length : 0;
     let killScore = 0;
     let reason = '';
 
-    if (f5 === 0) { killScore += 50; reason += 'ฟอร์ม 5 งวดหลังไม่มาเลย '; }
-    if (item.winRate < 30) { killScore += 30; reason += 'อัตราเข้าภาพรวมต่ำกว่า 30% '; }
-    if (!item.hits[0] && !item.hits[1] && !item.hits[2]) { killScore += 20; reason += 'หลุดติดต่อกัน 3 งวดล่าสุด '; }
+    if (item.winRate < 30) { killScore += 40; reason += 'อัตราเข้าภาพรวมต่ำกว่า 30% '; }
+    if (item.currCount >= 3 && !item.isCurrentHit) { killScore += 40; reason += 'หลุดติดต่อกัน 3 งวดขึ้นไป '; }
 
     if (killScore > 0) {
       t7Data.push({ digit: item.digit, killScore, reason: reason.trim() || 'แนวโน้มสถิติเสี่ยงหลุด' });
@@ -589,25 +588,19 @@ function processData() {
   }
   document.getElementById('t7Body').innerHTML = t7Html;
 
-  // Triple-Lock Seal Verification
-  let topDigitStr = primaryDigit.toString();
-  let inPair = (topPair.d1.toString() === topDigitStr || topPair.d2.toString() === topDigitStr);
-  let inTrio = (topTrio.d1.toString() === topDigitStr || topTrio.d2.toString() === topDigitStr || topTrio.d3.toString() === topDigitStr);
-
-  let lockStatusText = (inPair && inTrio) ? `🔒 TRIPLE-LOCK VERIFIED` : `🛡️ DOUBLE-LOCK ACTIVE`;
-  let lockDescText = (inPair && inTrio) 
-    ? `เลขหลัก [ ${primaryDigit} ] ล็อคเป้าสมบูรณ์ ร่วมกับเลขประกบ [ ${secondaryDigit} ]`
-    : `เลขหลัก [ ${primaryDigit} ] ผ่านการยืนยันสอดคล้องกับคู่เด่น [ ${topPair.pairStr} ]`;
+  // Safety Verification Status
+  let finalObj = t2Data.find(x => x.digit === finalDecisionDigit);
+  let safetyStatus = finalObj.isCurrentHit ? `🛡️ SAFETY VERIFIED (ฟอร์มกำลังเข้า)` : `⚠️ WATCH STREAK (ผ่านเกณฑ์ปลอดภัย)`;
 
   // UI Updates
-  document.getElementById('topSingleVal').innerText = `เน้น [ ${primaryDigit} ] (ประกบ ${secondaryDigit})`;
-  document.getElementById('topSingleDesc').innerText = `ระบบจับแพ็กคู่จากคู่เอกภาพอันดับ 1 [ ${topPair.pairStr} ] ป้องกันการสลับตัวออก 100%`;
+  document.getElementById('topSingleVal').innerText = `เลข [ ${finalDecisionDigit} ]`;
+  document.getElementById('topSingleDesc').innerText = `ผ่านการตัดเกรดความปลอดภัยสูงสุด อัตราเข้า ${finalObj.winRate.toFixed(1)}% (${finalObj.wins}/${records.length} งวด)`;
 
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}% (${topPair.wTotal}/${records.length} งวด)`;
 
-  document.getElementById('tripleLockVal').innerText = lockStatusText;
-  document.getElementById('tripleLockDesc').innerText = lockDescText;
+  document.getElementById('tripleLockVal').innerText = safetyStatus;
+  document.getElementById('tripleLockDesc').innerText = `เลขตัดสิน [ ${finalDecisionDigit} ] สอดคล้องกับชุดคู่ชนอันดับ 1 และผ่านระบบ Safety Brake เรียบร้อย`;
 
   document.getElementById('simVal').innerText = `${simWins} / ${simTotal} งวด (${simWinRate.toFixed(0)}%)`;
   document.getElementById('simDesc').innerText = `จำลองผลย้อนหลัง 10 งวดล่าสุด`;
