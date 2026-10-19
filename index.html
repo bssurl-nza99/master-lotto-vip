@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V10.20 PRECISION SINGLE-ANCHOR ENGINE</title>
+<title>NEUTRAL • DIGIT LAB V10.21 PRECISION DUEL-ANCHOR ENGINE</title>
 <style>
 :root {
   --bg: #030712;
@@ -122,16 +122,16 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V10.20 PRECISION SINGLE-ANCHOR ENGINE (100% RAW HONEST)</p>
+      <p class="sub">V10.21 PRECISION DUEL-ANCHOR ENGINE (100% RAW HONEST)</p>
     </div>
-    <div class="badge-version">V10.20 STABLE</div>
+    <div class="badge-version">V10.21 STABLE</div>
   </header>
 
   <section class="panel">
-    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (V10.20 Precision Honest Engine)</h2>
+    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (V10.21 Precision Duel Engine)</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" type="button" onclick="processUnifiedData()">รันผลทดสอบระบบซื่อตรง (V10.20)</button>
+      <button class="btn-primary" type="button" onclick="processUnifiedData()">รันผลทดสอบระบบซื่อตรง (V10.21)</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -141,7 +141,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
     <!-- 🎯 SECTION 1: LIVE RECOMMENDATION & MULTI-MARKET SUMMARY -->
     <section class="panel" style="border: 2px solid var(--cyan);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (Precision Single-Anchor)</h2>
+        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (Precision Duel-Anchor)</h2>
         <button class="btn-success" type="button" onclick="copyLiveTable()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางฟันธง</button>
       </div>
       <div class="table-wrap">
@@ -150,7 +150,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
             <tr>
               <th>อันดับ</th>
               <th>ประเภทหวย / ตลาด</th>
-              <th>⭐ เลขเดี่ยวฟันธง (คัดจากคู่แชมป์)</th>
+              <th>⭐ เลขเดี่ยวฟันธง (ดวลเฉพาะคู่แชมป์)</th>
               <th>🔥 ชุดเจาะ 6 คู่ (ดิบตามสถิติ)</th>
               <th>% ชุดเจาะ (ดิบแท้)</th>
               <th>สถานะเดี่ยวล่าสุด</th>
@@ -444,11 +444,11 @@ function parseMultiMarkets(text) {
   return markets;
 }
 
-// 🧠 V10.20 PRECISION SINGLE-ANCHOR ENGINE (100% RAW HONEST)
+// 🧠 V10.21 PRECISION DUEL-ANCHOR ENGINE (100% RAW HONEST)
 function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true, currentLossStreak = 0) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1", lockedPairs: [] };
 
-  // 1. ค้นหาคู่สัมพันธ์อันดับ 1 (Top Pair) เป็นฐานราก
+  // 1. ค้นหาคู่สัมพันธ์อันดับ 1 (Top Pair) เป็นฐานรากความมั่นคง
   const pairs = [];
   for (let i = 0; i <= 8; i++) {
     for (let j = i + 1; j <= 9; j++) {
@@ -460,17 +460,17 @@ function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit =
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
-  // 2. Precision Discriminator: เปรียบเทียบเฉพาะสมาชิกสองตัวในคู่แชมป์ (Top Pair) อย่างละเอียด
+  // 2. Intra-Pair 1-on-1 Duel: นำเฉพาะสมาชิกสองตัวในคู่แชมป์มาดวลสถิติเชิงลึกตัดเชือกกันโดยตรง
   const cand1 = topPair.d1;
   const cand2 = topPair.d2;
 
-  const getDetailStats = (d) => {
+  const getDuelScore = (d) => {
     const dStr = d.toString();
     const hitsArr = subRecords.map(r => (r.top + r.low).includes(dStr));
     const wins = hitsArr.filter(Boolean).length;
     const winRate = (wins / subRecords.length) * 100;
-    const f3 = hitsArr.slice(0, 3).filter(Boolean).length;
-    const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
+    const f3 = hitsArr.slice(0, 3).filter(Boolean).length; // แรงส่ง 3 งวดล่าสุด
+    const f5 = hitsArr.slice(0, 5).filter(Boolean).length; // แรงส่ง 5 งวดล่าสุด
     
     // คำนวณระยะห่างการออกซ้ำ (Gap) ปัจจุบัน
     let currentGap = 0;
@@ -478,19 +478,19 @@ function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit =
       if (!hitsArr[i]) currentGap++;
       else break;
     }
-    
-    // Precision Score เฉพาะกิจภายในคู่แชมป์
-    let score = winRate + (f5 * 12) + (f3 * 18) + (currentGap * 5);
-    return { digit: d, score, currentGap, f3, f5 };
+
+    // คะแนนดวลเฉพาะกิจ (เน้นจับจังหวะความสดและแรงส่งระยะสั้น เพื่อลดความผิดพลาดในการเลือกตัวเดี่ยว)
+    let duelScore = winRate + (f3 * 25) + (f5 * 15) + (currentGap * 8);
+    return { digit: d, duelScore };
   };
 
-  const stat1 = getDetailStats(cand1);
-  const stat2 = getDetailStats(cand2);
+  const score1 = getDuelScore(cand1);
+  const score2 = getDuelScore(cand2);
 
-  // เลือกตัวที่มีคะแนนความพร้อมสูงสุดระหว่างสองตัวในคู่แชมป์
-  let chosenSingle = (stat1.score >= stat2.score) ? cand1 : cand2;
+  // เลือกตัวที่มีคะแนนดวลชนะเลิศ
+  let chosenSingle = (score1.duelScore >= score2.duelScore) ? cand1 : cand2;
 
-  // Smart Circuit Breaker & Alternating Ping-Pong: ถ้าหลุดติดต่อกันครบ 2 งวด บังคับสลับไปใช้อีกตัวในคู่แชมป์ทันที
+  // Circuit Breaker & Alternating Ping-Pong: ถ้าเลขเดี่ยวหลุดติดต่อกันครบ 2 งวด บังคับสลับไปใช้อีกตัวในคู่แชมป์ทันทีเพื่อล้างตา
   if (currentLossStreak >= 2 && previousPickedSingle === chosenSingle) {
     chosenSingle = (chosenSingle === cand1) ? cand2 : cand1;
   }
@@ -624,7 +624,7 @@ function processUnifiedData() {
       <td><span class="tag-gold">${item.name}</span></td>
       <td><span class="pick-single">⭐ [ ${item.singlePick} ]</span></td>
       <td><span class="pick-pairs">🔥 ${item.lockedPairs}</span></td>
-      <td><strong>${item.sRate.toFixed(1)}%</strong></td>
+      <td><strong>${item.lpRate.toFixed(1)}%</strong></td>
       <td><strong>${item.sStatus}</strong></td>
       <td><strong>${item.pStatus}</strong></td>
     </tr>`;
@@ -868,7 +868,7 @@ function processUnifiedData() {
   let honestPairRate = totalEvaluated > 0 ? ((honestPairWins / totalEvaluated) * 100).toFixed(1) : 0;
 
   document.getElementById('topSingleVal').innerText = `เลข [ ${currentDecision.single} ]`;
-  document.getElementById('topSingleDesc').innerText = `คัดเลือกเฉียบคมจากคู่แชมป์อันดับ 1 (${currentDecision.pair})`;
+  document.getElementById('topSingleDesc').innerText = `ผ่านการดวลตัวต่อตัวจากคู่แชมป์อันดับ 1 (${currentDecision.pair})`;
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุดในระบบ ${topPair.coverageRate.toFixed(1)}%`;
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestSingleRate}%)`;
@@ -881,7 +881,7 @@ function processUnifiedData() {
 
 function copyLiveTable() {
   const table = document.getElementById('liveRecommendTable');
-  let textToCopy = "🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (V10.20 Precision)\n--------------------------------------------------------------------------------\n";
+  let textToCopy = "🎯 ตารางฟันธงเลขเด่น & ชุดเจาะ 6 คู่ (V10.21 Duel)\n--------------------------------------------------------------------------------\n";
   table.querySelectorAll('tr').forEach(row => {
     let rowText = [];
     row.querySelectorAll('th, td').forEach(col => rowText.push(col.innerText.trim()));
@@ -892,7 +892,7 @@ function copyLiveTable() {
 
 function copyMasterSummary() {
   const table = document.getElementById('masterSummaryTable');
-  let textToCopy = "📊 ตารางสรุปภาพรวมทุกตลาด (Honest Raw V10.20)\n--------------------------------------------------------------------------------\n";
+  let textToCopy = "📊 ตารางสรุปภาพรวมทุกตลาด (Honest Raw V10.21)\n--------------------------------------------------------------------------------\n";
   table.querySelectorAll('tr').forEach(row => {
     let rowText = [];
     row.querySelectorAll('th, td').forEach(col => rowText.push(col.innerText.trim()));
