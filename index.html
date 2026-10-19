@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V10.5 SINGLE-TABLE STREAK ENGINE</title>
+<title>NEUTRAL • DIGIT LAB V10.7 LIVE RECOMMENDATION ENGINE</title>
 <style>
 :root {
   --bg: #030712;
@@ -26,7 +26,7 @@ body {
   padding: 16px 12px;
   min-height: 100vh;
 }
-main { max-width: 1250px; margin: auto; }
+main { max-width: 1400px; margin: auto; }
 header { 
   margin-bottom: 20px; 
   border-bottom: 1px solid var(--panel-border); 
@@ -99,9 +99,11 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
 .rank-2 { background: rgba(192, 132, 252, 0.1) !important; border-left: 3px solid var(--purple); }
 .rank-3 { background: rgba(56, 189, 248, 0.08) !important; border-left: 3px solid var(--cyan); }
 
-.badge-win { color: var(--green); font-weight: bold; }
 .tag-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: 700; }
-.streak-badge { background: rgba(56, 189, 248, 0.1); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.2); padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+.pick-single { font-size: 14px; font-weight: 800; color: var(--cyan); background: rgba(56,189,248,0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3); }
+.pick-pair { font-size: 13px; font-weight: 700; color: var(--gold); background: rgba(251,191,36,0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(251,191,36,0.3); }
+.streak-s { color: var(--cyan); font-family: monospace; }
+.streak-p { color: var(--gold); font-family: monospace; }
 </style>
 </head>
 <body>
@@ -110,28 +112,53 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V10.5 SINGLE-TABLE STREAK & PERCENTAGE ENGINE</p>
+      <p class="sub">V10.7 LIVE RECOMMENDATION & SEPARATED STREAK ENGINE</p>
     </div>
-    <div class="badge-version">V10.5 STABLE</div>
+    <div class="badge-version">V10.7 STABLE</div>
   </header>
 
   <section class="panel">
     <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (Batch Process)</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" type="button" onclick="processBatchData()">รันผลทดสอบและวิเคราะห์สถิติตารางเดียวจบ</button>
+      <button class="btn-primary" type="button" onclick="processBatchData()">รันผลทดสอบและแสดงเลขฟันธงงวดล่าสุด</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
 
   <div id="outputArea" style="display:none;">
-    <!-- 🌐 MASTER SUMMARY TABLE (ALL IN ONE) -->
+    
+    <!-- 🎯 LIVE RECOMMENDATION TABLE (ตารางฟันธงงวดล่าสุดสำหรับนำไปเล่น) -->
+    <section class="panel" style="border: 2px solid var(--cyan);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+        <h2 style="margin:0;">🎯 ตารางฟันธงเลขเด่นงวดล่าสุด (Live Pick for Next Draw)</h2>
+        <button class="btn-success" type="button" onclick="copyLiveTable()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางฟันธง</button>
+      </div>
+      <p class="sub" style="margin-bottom: 10px;">สรุปเลขเดี่ยวตัวเดียวและคู่ชนที่ระบบประมวลผลแนะนำให้ใช้สำหรับงวดถัดไปของแต่ละตลาด</p>
+      <div class="table-wrap">
+        <table id="liveRecommendTable">
+          <thead>
+            <tr>
+              <th>อันดับ</th>
+              <th>ประเภทหวย / ตลาด</th>
+              <th>⭐ เลขเดี่ยวฟันธงงวดนี้</th>
+              <th>📋 คู่ชนเสถียรภาพงวดนี้</th>
+              <th>สถานะเดี่ยวล่าสุด</th>
+              <th>สถานะคู่ล่าสุด</th>
+            </tr>
+          </thead>
+          <tbody id="liveBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 🌐 MASTER SUMMARY TABLE (SEPARATED STREAKS) -->
     <section class="panel" style="border: 2px solid var(--gold);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-        <h2 style="margin:0;">📊 ตารางสรุปภาพรวมครบจบในตารางเดียว (Percentages & Streak Analysis)</h2>
+        <h2 style="margin:0;">📊 ตารางสรุปภาพรวมแยกสถิติเดี่ยวและคู่ชัดเจน (Separated Analysis)</h2>
         <button class="btn-success" type="button" onclick="copyMasterSummary()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางสรุป</button>
       </div>
-      <p class="sub" style="margin-bottom: 10px;">รวมเปอร์เซ็นต์เลขเดี่ยว คู่ชน พร้อมสถิติการเข้าสูงสุด หลุดสูงสุด และสถานะรอบล่าสุดไว้ครบถ้วน</p>
+      <p class="sub" style="margin-bottom: 10px;">แยกสถิติการเข้าสูงสุด, หลุดสูงสุด และสถานะล่าสุด ระหว่าง "เลขเดี่ยว" และ "คู่ชน" ออกจากกันอย่างเด็ดขาด</p>
       <div class="table-wrap">
         <table id="masterSummaryTable">
           <thead>
@@ -140,18 +167,18 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
               <th>ประเภทหวย / ตลาด</th>
               <th>งวด</th>
               <th>เลขเดี่ยว (เข้า/ทั้งหมด)</th>
-              <th>% เลขเดี่ยว</th>
+              <th>% เดี่ยว</th>
+              <th>เดี่ยว: สูงสุด/หลุด/สถานะล่าสุด</th>
               <th>คู่ชน (เข้า/ทั้งหมด)</th>
               <th>% คู่ชน</th>
-              <th>เข้าติดสูงสุด</th>
-              <th>หลุดติดสูงสุด</th>
-              <th>สถานะล่าสุด</th>
+              <th>คู่: สูงสุด/หลุด/สถานะล่าสุด</th>
             </tr>
           </thead>
           <tbody id="masterBody"></tbody>
         </table>
       </div>
     </section>
+
   </div>
 </main>
 
@@ -230,6 +257,7 @@ function processBatchData() {
   }
 
   const masterSummaryData = [];
+  const liveRecommendData = [];
 
   markets.forEach((m) => {
     const records = m.records;
@@ -243,12 +271,11 @@ function processBatchData() {
     let lastPicked = null;
     let lastHit = true;
 
-    // คำนวณ Streak เชิงลึก
-    let currentWinStreak = 0;
-    let maxWinStreak = 0;
-    let currentLossStreak = 0;
-    let maxLossStreak = 0;
-    let lastResultStatus = "เข้า";
+    let sWinStreak = 0, sMaxWin = 0, sLossStreak = 0, sMaxLoss = 0;
+    let sLastStatus = "🟢 เข้า (ล่าสุด)";
+
+    let pWinStreak = 0, pMaxWin = 0, pLossStreak = 0, pMaxLoss = 0;
+    let pLastStatus = "🟢 เข้า (ล่าสุด)";
 
     targetTrackRecords.forEach(r => {
       const origIdx = records.findIndex(rec => rec.top === r.top && rec.low === r.low);
@@ -261,22 +288,34 @@ function processBatchData() {
       const singleHit = full.includes(dec.single.toString());
       if (singleHit) {
         honestSingleWins++;
-        currentWinStreak++;
-        currentLossStreak = 0;
-        if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
-        lastResultStatus = "🟢 เข้า (ล่าสุด)";
+        sWinStreak++;
+        sLossStreak = 0;
+        if (sWinStreak > sMaxWin) sMaxWin = sWinStreak;
+        sLastStatus = "🟢 เข้า (ล่าสุด)";
       } else {
-        currentLossStreak++;
-        currentWinStreak = 0;
-        if (currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
-        lastResultStatus = `🔴 หลุด (${currentLossStreak} รอบ)`;
+        sLossStreak++;
+        sWinStreak = 0;
+        if (sLossStreak > sMaxLoss) sMaxLoss = sLossStreak;
+        sLastStatus = `🔴 หลุด (${sLossStreak} รอบ)`;
       }
 
       lastPicked = dec.single;
       lastHit = singleHit;
 
       const pParts = dec.pair.split('-').map(s => s.trim());
-      if (full.includes(pParts[0]) || full.includes(pParts[1])) honestPairWins++;
+      const pairHit = full.includes(pParts[0]) || full.includes(pParts[1]);
+      if (pairHit) {
+        honestPairWins++;
+        pWinStreak++;
+        pLossStreak = 0;
+        if (pWinStreak > pMaxWin) pMaxWin = pWinStreak;
+        pLastStatus = "🟢 เข้า (ล่าสุด)";
+      } else {
+        pLossStreak++;
+        pWinStreak = 0;
+        if (pLossStreak > pMaxLoss) pMaxLoss = pLossStreak;
+        pLastStatus = `🔴 หลุด (${pLossStreak} รอบ)`;
+      }
     });
 
     let rawSRate = totalEval > 0 ? (honestSingleWins / totalEval) * 100 : 50;
@@ -290,11 +329,21 @@ function processBatchData() {
       totalEval,
       sWins: honestSingleWins,
       sRate: normalizedSRate,
+      sMaxWin, sMaxLoss, sLastStatus,
       pWins: honestPairWins,
       pRate: normalizedPRate,
-      maxWinStreak,
-      maxLossStreak,
-      lastResultStatus
+      pMaxWin, pMaxLoss, pLastStatus
+    });
+
+    // คำนวณเลขฟันธงงวดล่าสุด (Live Pick จากข้อมูลทั้งหมดที่มี)
+    const liveDec = getDecisionAt(records, lastPicked, lastHit);
+    liveRecommendData.push({
+      name: m.name,
+      singlePick: liveDec.single,
+      pairPick: liveDec.pair,
+      sStatus: sLastStatus,
+      pStatus: pLastStatus,
+      sRate: normalizedSRate
     });
   });
 
@@ -303,6 +352,23 @@ function processBatchData() {
     return;
   }
 
+  // Render ตารางฟันธงงวดล่าสุด
+  let liveHtml = '';
+  liveRecommendData.sort((a, b) => b.sRate - a.sRate);
+  liveRecommendData.forEach((item, idx) => {
+    let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+    liveHtml += `<tr class="${rankClass}">
+      <td><strong>${idx + 1}</strong></td>
+      <td><span class="tag-gold">${item.name}</span></td>
+      <td><span class="pick-single">⭐ [ ${item.singlePick} ]</span></td>
+      <td><span class="pick-pair">📋 [ ${item.pairPick} ]</span></td>
+      <td><strong>${item.sStatus}</strong></td>
+      <td><strong>${item.pStatus}</strong></td>
+    </tr>`;
+  });
+  document.getElementById('liveBody').innerHTML = liveHtml;
+
+  // Render ตารางสรุปภาพรวม
   let masterHtml = '';
   masterSummaryData.sort((a, b) => b.sRate - a.sRate);
   masterSummaryData.forEach((item, idx) => {
@@ -313,20 +379,40 @@ function processBatchData() {
       <td>${item.totalEval}</td>
       <td>${item.sWins} / ${item.totalEval}</td>
       <td><strong>${item.sRate.toFixed(0)}%</strong></td>
+      <td><span class="streak-s">สูงสุด:+${item.sMaxWin} | หลุดสุด:-${item.sMaxLoss} | <strong>${item.sLastStatus}</strong></span></td>
       <td>${item.pWins} / ${item.totalEval}</td>
       <td><strong>${item.pRate.toFixed(0)}%</strong></td>
-      <td><span class="streak-badge" style="color:var(--green)">+${item.maxWinStreak} งวด</span></td>
-      <td><span class="streak-badge" style="color:var(--red)">-${item.maxLossStreak} งวด</span></td>
-      <td><strong>${item.lastResultStatus}</strong></td>
+      <td><span class="streak-p">สูงสุด:+${item.pMaxWin} | หลุดสุด:-${item.pMaxLoss} | <strong>${item.pLastStatus}</strong></span></td>
     </tr>`;
   });
   document.getElementById('masterBody').innerHTML = masterHtml;
+
   document.getElementById('outputArea').style.display = 'block';
+}
+
+function copyLiveTable() {
+  const table = document.getElementById('liveRecommendTable');
+  let textToCopy = "🎯 ตารางฟันธงเลขเด่นงวดล่าสุด (Live Pick for Next Draw)\n";
+  textToCopy +="--------------------------------------------------------------------------------\n";
+  
+  const rows = table.querySelectorAll('tr');
+  rows.forEach(row => {
+    const cols = row.querySelectorAll('th, td');
+    let rowText = [];
+    cols.forEach(col => rowText.push(col.innerText.trim()));
+    textToCopy += rowText.join('\t | \t') + "\n";
+  });
+
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    alert('คัดลอกตารางฟันธงเรียบร้อยแล้ว!');
+  }).catch(err => {
+    alert('เกิดข้อผิดพลาด: ' + err);
+  });
 }
 
 function copyMasterSummary() {
   const table = document.getElementById('masterSummaryTable');
-  let textToCopy = "📊 ตารางสรุปภาพรวมครบจบในตารางเดียว (Percentages & Streak Analysis)\n";
+  let textToCopy = "📊 ตารางสรุปภาพรวมแยกสถิติเดี่ยวและคู่ชัดเจน (Separated Analysis)\n";
   textToCopy +="--------------------------------------------------------------------------------\n";
   
   const rows = table.querySelectorAll('tr');
