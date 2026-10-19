@@ -100,7 +100,6 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
 .rank-3 { background: rgba(56, 189, 248, 0.08) !important; border-left: 3px solid var(--cyan); }
 
 .badge-win { color: var(--green); font-weight: bold; }
-.badge-loss { color: var(--red); font-weight: bold; }
 .tag-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
 
 .recommend-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
@@ -123,10 +122,10 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   </header>
 
   <section class="panel">
-    <h2>01 / ป้อนข้อมูลสถิติ (รองรับทุกตลาด คั่นด้วยบรรทัดว่าง)</h2>
-    <textarea id="rawInput" placeholder="วางข้อมูลสถิติทั้งหมดที่นี่..."></textarea>
+    <h2>01 / วางข้อมูลสถิติเพื่อรันผลทดสอบ (Batch Process)</h2>
+    <textarea id="rawInput" placeholder="วางข้อมูลสถิติจากไฟล์ PDF ที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" type="button" onclick="processBatchData()">รันผลทดสอบและเกลี่ยค่ากลาง (Batch Process)</button>
+      <button class="btn-primary" type="button" onclick="processBatchData()">รันผลทดสอบและเกลี่ยค่ากลาง</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -147,25 +146,25 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
           <div class="card-desc" id="topPairDesc">-</div>
         </div>
         <div class="card">
-          <div class="card-title">อัตราซื่อสัตย์เลขเดี่ยว (Normalized Single)</div>
+          <div class="card-title">อัตราเลขเดี่ยว (Normalized Single)</div>
           <div class="card-value" id="simVal" style="color:var(--cyan);">-</div>
-          <div class="card-desc" id="simDesc">ล็อกเป้าอยู่ในกรอบ 40% - 55%</div>
+          <div class="card-desc">ควบคุมให้อยู่ในกรอบมาตรฐาน 40% - 55%</div>
         </div>
         <div class="card">
           <div class="card-title">อัตราความมั่นคงคู่ชน (Normalized Pair)</div>
           <div class="card-value" id="pairSimVal" style="color:var(--green);">-</div>
-          <div class="card-desc" id="pairSimDesc">ล็อกเป้าอยู่ในกรอบ 70% - 82%</div>
+          <div class="card-desc">ควบคุมให้อยู่ในกรอบมาตรฐาน 70% - 82%</div>
         </div>
       </div>
     </section>
 
-    <!-- 🌐 MASTER SUMMARY TABLE (ตารางสรุปภาพรวมทุกตลาด พร้อมปุ่มก๊อปปี้) -->
+    <!-- 🌐 MASTER SUMMARY TABLE -->
     <section class="panel" style="border: 2px solid var(--gold);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
         <h2 style="margin:0;">📊 ตารางสรุปผลภาพรวมทุกประเภทหวย (Normalized Center Band)</h2>
-        <button class="btn-success" type="button" onclick="copyMasterSummary()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางสรุปเท่านั้น</button>
+        <button class="btn-success" type="button" onclick="copyMasterSummary()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางสรุป</button>
       </div>
-      <p class="sub" style="margin-bottom: 10px;">ตารางนี้ถูกเกลี่ยค่าให้อยู่ในกรอบมาตรฐานกลาง เพื่อป้องกันตัวเลขโดดเดดหรือร่วงหลุดโลก</p>
+      <p class="sub" style="margin-bottom: 10px;">ทุกตลาดถูกปรับจูนให้อยู่ในกรอบกลางมาตรฐานเดียวกัน ไม่มีตลาดไหนพุ่งหลุดหรือดิ่งเหว</p>
       <div class="table-wrap">
         <table id="masterSummaryTable">
           <thead>
@@ -177,7 +176,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
               <th>Normalized Single (%)</th>
               <th>คู่ชน (เข้า/ทั้งหมด)</th>
               <th>Normalized Pair (%)</th>
-              <th>สถานะเกรดเสถียรภาพ</th>
+              <th>สถานะเสถียรภาพ</th>
             </tr>
           </thead>
           <tbody id="masterBody"></tbody>
@@ -239,7 +238,6 @@ function parseMultiMarkets(text) {
   return markets;
 }
 
-// ระบบ V10.3 Normalized Decision Engine (บีบค่าเข้าสู่ Center Band)
 function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1" };
 
@@ -285,7 +283,7 @@ function processBatchData() {
 
   markets.forEach((m) => {
     const records = m.records;
-    if (records.length < 3) return; // ยืดหยุ่นรองรับข้อมูลสั้น
+    if (records.length < 3) return;
 
     const targetTrackRecords = records.slice(0, 20).reverse();
     let honestSingleWins = 0;
@@ -315,10 +313,8 @@ function processBatchData() {
     let rawSRate = totalEval > 0 ? (honestSingleWins / totalEval) * 100 : 50;
     let rawPRate = totalEval > 0 ? (honestPairWins / totalEval) * 100 : 75;
 
-    // 🛡️ Normalized Dampening Function (ดึงค่าเพดานและพื้นให้เข้าหา Center Band)
-    // ล็อกเลขเดี่ยวให้อยู่ระหว่าง 40% - 55%
+    // 🛡️ Normalized Dampening: ล็อกเลขเดี่ยวไว้ที่ 40% - 55% และคู่ชนไว้ที่ 70% - 82%
     let normalizedSRate = Math.min(55, Math.max(40, rawSRate * 0.7 + 15));
-    // ล็อกคู่ชนให้อยู่ระหว่าง 70% - 82%
     let normalizedPRate = Math.min(82, Math.max(70, rawPRate * 0.6 + 28));
 
     masterSummaryData.push({
@@ -406,9 +402,7 @@ function renderMainDashboard(records) {
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPairs[0].str} ]`;
   document.getElementById('topPairDesc').innerText = `คู่ชนเสถียรภาพสูงสุด`;
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEval} (${normS}%)`;
-  document.getElementById('simDesc').innerText = `ล็อกอยู่ในกรอบมาตรฐาน 40-55%`;
   document.getElementById('pairSimVal').innerText = `${honestPairWins} / ${totalEval} (${normP}%)`;
-  document.getElementById('pairSimDesc').innerText = `ล็อกอยู่ในกรอบมาตรฐาน 70-82%`;
 }
 
 function copyMasterSummary() {
@@ -425,7 +419,7 @@ function copyMasterSummary() {
   });
 
   navigator.clipboard.writeText(textToCopy).then(() => {
-    alert('คัดลอกตารางสรุปผลเรียบร้อยแล้ว! นำมาวางส่งให้ผมตรวจได้เลยครับ');
+    alert('คัดลอกตารางสรุปผลเรียบร้อยแล้ว!');
   }).catch(err => {
     alert('เกิดข้อผิดพลาด: ' + err);
   });
