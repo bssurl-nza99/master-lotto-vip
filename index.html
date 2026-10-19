@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.6 HONEST POINT-IN-TIME TRACKER</title>
+<title>NEUTRAL • DIGIT LAB V9.7 TRIPLE-FILTER OPTIMIZED</title>
 <style>
 :root {
   --bg: #030712;
@@ -116,9 +116,9 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.6 HONEST POINT-IN-TIME TRACKER EDITION</p>
+      <p class="sub">V9.7 TRIPLE-FILTER OPTIMIZED + HONEST TRACKER</p>
     </div>
-    <div class="badge-version">V9.6 HONEST</div>
+    <div class="badge-version">V9.7 OPTIMIZED</div>
   </header>
 
   <section class="panel">
@@ -130,10 +130,10 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
     </div>
   </section>
 
-  <div id="outputArea" style="display:none;" >
+  <div id="outputArea" style="display:none;">
     
     <section class="panel">
-      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (งวดปัจจุบัน)</h2>
+      <h2>🎯 ฟันธงเลขตัดสินตัวเดียว (งวดปัจจุบัน - Triple Filter)</h2>
       <div class="recommend-grid">
         <div class="card" style="border-left: 3px solid var(--gold);">
           <div class="card-title">⭐ เลขตัดสินเด็ดขาดตัวเดียว</div>
@@ -218,7 +218,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข</h2>
+      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (เรียงตาม Triple-Filter Score)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -364,10 +364,11 @@ function parseTextData(text) {
   return records;
 }
 
-// ฟังก์ชันคำนวณการตัดสินใจจากข้อมูลอดีตอย่างแท้จริง (Point-in-Time Engine)
+// ฟังก์ชันคำนวณการตัดสินใจแบบ Triple-Filter Engine (วิเคราะห์ ณ จุดเวลานั้นจริงๆ)
 function getDecisionAt(subRecords) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1" };
 
+  // 1. ความถี่
   const freq = Array.from({length: 10}, (_, i) => ({digit: i, total: 0}));
   subRecords.forEach(r => {
     const h = parseInt(r.top[0]), tt = parseInt(r.top[1]), ut = parseInt(r.top[2]);
@@ -375,6 +376,7 @@ function getDecisionAt(subRecords) {
     freq[h].total++; freq[tt].total++; freq[ut].total++; freq[tl].total++; freq[ul].total++;
   });
 
+  // 2. คู่เด่น
   const pairs = [];
   for (let i = 0; i <= 8; i++) {
     for (let j = i + 1; j <= 9; j++) {
@@ -386,16 +388,42 @@ function getDecisionAt(subRecords) {
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
+  // 3. กรองและให้คะแนนเลขเดี่ยวด้วย Triple-Filter
   const digits = [];
   for (let d = 0; d <= 9; d++) {
     const dStr = d.toString();
-    const wins = subRecords.filter(r => (r.top + r.low).includes(dStr)).length;
-    const inPair = (d === topPair.d1 || d === topPair.d2) ? 10 : 0;
-    const score = (wins / subRecords.length) * 100 + inPair + (freq[d].total * 1.5);
-    digits.push({ digit: d, score });
-  }
-  digits.sort((a, b) => b.score - a.score);
+    const hitsArr = subRecords.map(r => (r.top + r.low).includes(dStr));
+    const wins = hitsArr.filter(Boolean).length;
+    const winRate = (wins / subRecords.length) * 100;
 
+    // สถิติสั้น (Form 5)
+    const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
+    
+    // ระยะห่าง (Gap)
+    let gaps = [], curG = 0;
+    hitsArr.forEach(h => { if (h) { gaps.push(curG); curG = 0; } else { curG++; } });
+    let avgG = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0)/gaps.length) : 0;
+    let isPending = curG > avgG;
+
+    // เช็กเงื่อนไขเลขดับ (Elimination Filter)
+    let isKill = false;
+    let curLossStreak = 0;
+    for (let k = 0; k < hitsArr.length; k++) { if (!hitsArr[k]) curLossStreak++; else break; }
+    if (winRate < 30 || curLossStreak >= 5) isKill = true;
+
+    // คำนวณคะแนน Triple Score
+    let score = winRate;
+    score += (freq[d].total * 1.5); // น้ำหนักความถี่
+    score += (f5 * 6); // สถิติมโมเมนตัม 5 งวดหลังสุด
+    if (d === topPair.d1 || d === topPair.d2) score += 25; // โบนัสสอดคล้องกับชุดคู่ชน
+    if (isPending) score += 10; // โบนัสจ่อรอบ
+    if (isKill) score -= 1000; // ตัดสิทธิ์เลขดับทันที!
+
+    digits.push({ digit: d, score, winRate, wins, losses: subRecords.length - wins, curLossStreak, isKill });
+  }
+
+  digits.sort((a, b) => b.score - a.score);
+  
   return { single: digits[0].digit, pair: topPair.pairStr };
 }
 
@@ -408,7 +436,7 @@ function processData() {
     return;
   }
 
-  // 1. ภาพรวมปัจจุบัน (ตารางล่างสุด)
+  // 1. ภาพรวมปัจจุบัน
   const freq = Array.from({length: 10}, (_, i) => ({digit: i, hundreds:0, tenTop:0, unitTop:0, tenLow:0, unitLow:0, total:0, topTotal:0}));
   records.forEach(r => {
     const h = parseInt(r.top[0]), tt = parseInt(r.top[1]), ut = parseInt(r.top[2]);
@@ -478,17 +506,21 @@ function processData() {
     let currCount = 0;
     for (let i = 0; i < hits.length; i++) { if (hits[i] === isCurrentHit) currCount++; else break; }
     let currentStreakText = isCurrentHit ? `<span class="badge-win">เข้า ${currCount}</span>` : `<span class="badge-loss">หลุด ${currCount}</span>`;
-    let inTopPair = (d === topPair.d1 || d === topPair.d2);
-    let consensusBonus = inTopPair ? 20 : 0; 
-    let freqObj = freq.find(f => f.digit === d);
-    let totalFreqScore = freqObj ? freqObj.total * 1.5 : 0;
-    let stableScore = (wins / records.length) * 100 + consensusBonus + totalFreqScore;
-    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, stableScore, maxWin, maxLoss, currentStatus: currentStreakText, inTopPair, currCount, isCurrentHit });
+    
+    let f5 = hits.slice(0, 5).filter(Boolean).length;
+    let winRate = (wins / records.length) * 100;
+    let isKill = (winRate < 30 || (currCount >= 5 && !isCurrentHit));
+
+    let score = winRate + (freq.find(f => f.digit === d).total * 1.5) + (f5 * 6);
+    if (d === topPair.d1 || d === topPair.d2) score += 25;
+    if (isKill) score -= 1000;
+
+    t2Data.push({ digit: d, wins, losses, winRate, score, maxWin, maxLoss, currentStatus: currentStreakText, currCount, isCurrentHit, isKill });
   }
-  t2Data.sort((a, b) => b.stableScore - a.stableScore);
+  t2Data.sort((a, b) => b.score - a.score);
   const finalDecisionDigit = t2Data[0].digit;
 
-  // 2. ประวัติหน้างานจริง (Point-in-Time Honest Tracker บนสุด)
+  // 2. ประวัติย้อนหลังหน้างานจริง (Point-in-Time Honest Tracker)
   const targetTrackRecords = records.slice(0, 20).reverse();
   let t9Html = '';
   let t8Html = '';
@@ -637,8 +669,8 @@ function processData() {
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
   document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}%`;
 
-  document.getElementById('tripleLockVal').innerText = `🛡️ POINT-IN-TIME LOCKED`;
-  document.getElementById('tripleLockDesc').innerText = `ระบบบันทึกผลหน้างานจริง ไม่เปลี่ยนย้อนหลัง`;
+  document.getElementById('tripleLockVal').innerText = `🛡️ TRIPLE-FILTER ACTIVE`;
+  document.getElementById('tripleLockDesc').innerText = `กรองเลขดับ + อัดน้ำหนักฟอร์มสั้น + ล็อกคู่ชน`;
 
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestRate}%)`;
   document.getElementById('simDesc').innerText = `ความซื่อสัตย์หน้างานจริง (Honest Hit Rate)`;
