@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.3 [REBOUND & DENSITY]</title>
+<title>NEUTRAL • DIGIT LAB V9.4 [MOMENTUM HYBRID]</title>
 <style>
 :root {
   --bg: #030712;
@@ -128,16 +128,16 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.3 REBOUND & DENSITY EDITION · ระบบวิเคราะห์แรงเด้งกลับ + ความหนาแน่นตำแหน่งหลักฝั่งบน</p>
+      <p class="sub">V9.4 MOMENTUM HYBRID EDITION · ถ่วงน้ำหนักเน้นฟอร์มสั้น 5 งวดล่าสุด + ป้องกันติดกับดักสถิติยาว</p>
     </div>
-    <div class="badge-version">V9.3 ACTIVE</div>
+    <div class="badge-version">V9.4 ACTIVE</div>
   </header>
 
   <section class="panel">
     <h2>01 / ป้อนข้อมูลสถิติ</h2>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" onclick="processData()">ประมวลผลระบบ Rebound & Density ขั้นสูง</button>
+      <button class="btn-primary" onclick="processData()">ประมวลผลระบบ Momentum Hybrid ขั้นสูง</button>
       <button class="btn-secondary" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
@@ -153,12 +153,12 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
           <div class="card-desc" id="topSingleDesc">-</div>
         </div>
         <div class="card">
-          <div class="card-title">ชุดคู่ชนเอกภาพ (Top Consensus Pair)</div>
+          <div class="card-title">ชุดคู่ชนโมเมนตัม (Top Momentum Pair)</div>
           <div class="card-value" id="topPairVal">-</div>
           <div class="card-desc" id="topPairDesc">-</div>
         </div>
         <div class="card">
-          <div class="card-title">สถานะวิเคราะห์แรงเด้งกลับ (Rebound Status)</div>
+          <div class="card-title">สถานะความแรงระยะสั้น (Momentum Status)</div>
           <div class="card-value" id="tripleLockVal" style="font-size:18px; color:var(--green);">-</div>
           <div class="card-desc" id="tripleLockDesc">-</div>
         </div>
@@ -192,7 +192,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Rebound & Density)</h2>
+      <h2>ตารางที่ 2 / สถิติ เข้า/หลุด รายตัวเลข (ผูกเงื่อนไข Momentum Hybrid)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -213,7 +213,7 @@ tr:hover { background: rgba(56, 189, 248, 0.03); }
     </section>
 
     <section class="panel">
-      <h2>ตารางที่ 3 / สถิติเลขคู่สัมพันธ์ครบ 45 คู่ (คัดเรียงความคุ้มค่าสูงสุด)</h2>
+      <h2>ตารางที่ 3 / สถิติเลขคู่สัมพันธ์ครบ 45 คู่ (คัดเรียงด้วยน้ำหนักโมเมนตัมสั้น)</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -344,7 +344,7 @@ function processData() {
     return;
   }
 
-  // Table 1: Freq with Top Density calculation
+  // Table 1: Freq
   const freq = Array.from({length: 10}, (_, i) => ({digit: i, hundreds:0, tenTop:0, unitTop:0, tenLow:0, unitLow:0, total:0, topTotal:0}));
   records.forEach(r => {
     const h = parseInt(r.top[0]), tt = parseInt(r.top[1]), ut = parseInt(r.top[2]);
@@ -365,7 +365,7 @@ function processData() {
   });
   document.getElementById('t1Body').innerHTML = t1Html;
 
-  // Table 3: Pairs
+  // Table 3: Pairs with Momentum Short-Term Weighting (เน้นน้ำหนัก 5-10 งวดล่าสุด)
   const pairs = [];
   for (let i = 0; i <= 8; i++) {
     for (let j = i + 1; j <= 9; j++) {
@@ -388,10 +388,14 @@ function processData() {
       let currCount = 0;
       for (let k = 0; k < pairHits.length; k++) { if (pairHits[k].hit === isCurrentHit) currCount++; else break; }
 
+      // Momentum Score: ให้ความสำคัญกับ 5 งวดแรกเป็นพิเศษ
+      let momentumScore = (w5 * 4.0) + (w10 * 2.0) + wTotal;
+
       pairs.push({
         pairStr: `${i} - ${j}`,
         d1: i, d2: j,
         w5, w10, w15, wTotal,
+        momentumScore,
         coverageRate: (wTotal / records.length) * 100,
         doubleHits, maxLoss,
         pairHits,
@@ -400,7 +404,8 @@ function processData() {
     }
   }
 
-  pairs.sort((a, b) => b.coverageRate - a.coverageRate || b.w5 - a.w5);
+  // Sort pairs by Short-Term Momentum Score instead of just total coverage
+  pairs.sort((a, b) => b.momentumScore - a.momentumScore || b.w5 - a.w5);
   const topPair = pairs[0];
 
   let simWins = 0;
@@ -410,34 +415,20 @@ function processData() {
   }
   let simWinRate = (simWins / simTotal) * 100;
 
-  // Table 4 Calculations for Rebound Logic
-  let gapsData = {};
-  for (let d = 0; d <= 9; d++) {
-    const digitStr = d.toString();
-    const hits = records.map(r => (r.top.includes(digitStr) || r.low.includes(digitStr)));
-    let gaps = [], currentGap = 0;
-    hits.forEach(h => {
-      if (h) { gaps.push(currentGap); currentGap = 0; }
-      else { currentGap++; }
-    });
-    let avgGap = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0) / gaps.length) : 1.5;
-    gapsData[d] = { avgGap, currentGap };
-  }
-
-  // Table 2: Digit Streak with Rebound & Top Density Logic
+  // Table 2: Digit Streak with Short-Term Momentum Focus
   let t2Data = [];
   for (let d = 0; d <= 9; d++) {
     const digitStr = d.toString();
     const hits = records.map(r => (r.top.includes(digitStr) || r.low.includes(digitStr)));
 
     let wins = 0, losses = 0, maxWin = 0, maxLoss = 0, curW = 0, curL = 0;
-    let recencyScore = 0;
+    let shortTermScore = 0;
 
     hits.forEach((isHit, index) => {
-      let weight = index < 5 ? 2.0 : index < 10 ? 1.5 : 1.0;
+      let weight = index < 5 ? 3.0 : index < 10 ? 1.5 : 0.5; // เน้นหนัก 5 งวดแรก
       if (isHit) {
         wins++; curW++; curL = 0; if (curW > maxWin) maxWin = curW;
-        recencyScore += weight;
+        shortTermScore += weight;
       } else {
         losses++; curL++; curW = 0; if (curL > maxLoss) maxLoss = curL;
       }
@@ -449,22 +440,12 @@ function processData() {
     let currentStreakText = isCurrentHit ? `<span class="badge-win">เข้า ${currCount} งวดติด</span>` : `<span class="badge-loss">หลุด ${currCount} งวดติด</span>`;
 
     let inTopPair = (d === topPair.d1 || d === topPair.d2);
-    let consensusBonus = inTopPair ? 25 : 0; 
-    
-    // Top-Position Density Weighting (ยึดความหนาแน่นฝั่งบนเป็นหลัก)
-    let topObj = freq.find(f => f.digit === d);
-    let topDensityBonus = topObj ? topObj.topTotal * 2.5 : 0;
-    
-    // Rebound Bonus Logic (ถ้าอยู่ในคู่เด่นแล้วหลุดค้างเกินระยะเฉลี่ย = สภาวะอัดอั้นพร้อมเด้งกลับ)
-    let reboundBonus = 0;
-    let gInfo = gapsData[d];
-    if (inTopPair && !isCurrentHit && gInfo.currentGap >= gInfo.avgGap) {
-      reboundBonus = 20; // เพิ่มคะแนนโบนัสเด้งกลับทันที
-    }
+    let consensusBonus = inTopPair ? 30 : 0; 
+    let f5Bonus = hits.slice(0, 5).filter(Boolean).length * 15; // โบนัสฟอร์ม 5 งวดหลังสุดแบบเน้นๆ
 
-    let adjustedScore = (wins / records.length) * 100 + consensusBonus + topDensityBonus + recencyScore + reboundBonus;
+    let adjustedScore = (wins / records.length) * 100 + consensusBonus + f5Bonus + shortTermScore;
 
-    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, inTopPair, currCount, isCurrentHit, reboundBonus });
+    t2Data.push({ digit: d, wins, losses, winRate: (wins / records.length) * 100, adjustedScore, maxWin, maxLoss, currentStatus: currentStreakText, inTopPair, currCount, isCurrentHit, f5: hits.slice(0, 5).filter(Boolean).length });
   }
 
   t2Data.sort((a, b) => b.adjustedScore - a.adjustedScore);
@@ -486,7 +467,7 @@ function processData() {
   });
   document.getElementById('t3Body').innerHTML = t3Html;
 
-  // Table 4: Gap Tracking Display
+  // Table 4: Gap Tracking
   let t4Data = [];
   for (let d = 0; d <= 9; d++) {
     const digitStr = d.toString();
@@ -528,19 +509,21 @@ function processData() {
           const full = r.top + r.low;
           return (full.includes(d1) || full.includes(d2) || full.includes(d3));
         });
+        let t5 = trioHits.slice(0, 5).filter(Boolean).length;
         let tTotal = trioHits.filter(Boolean).length;
         let isCurr = trioHits[0];
         trios.push({
           trioStr: `${i} - ${j} - ${k}`,
           d1: i, d2: j, d3: k,
           tTotal,
+          score: t5 * 3 + tTotal,
           rate: (tTotal / records.length) * 100,
           status: isCurr ? `<span class="badge-win">เข้าเป้า</span>` : `<span class="badge-loss">หลุด</span>`
         });
       }
     }
   }
-  trios.sort((a, b) => b.rate - a.rate);
+  trios.sort((a, b) => b.score - a.score);
   const topTrio = trios[0];
 
   let t5Html = '';
@@ -574,14 +557,13 @@ function processData() {
   });
   document.getElementById('t6Body').innerHTML = t6Html;
 
-  // Table 7: Statistical Elimination Filter (Excluding Top Pair members with High Rebound Potential)
+  // Table 7: Statistical Elimination Filter
   let t7Data = [];
   t2Data.forEach(item => {
     let killScore = 0;
     let reason = '';
-
-    if (item.winRate < 30) { killScore += 50; reason += 'อัตราเข้าภาพรวมต่ำกว่า 30% '; }
-    if (item.currCount >= 5 && !item.isCurrentHit && !item.inTopPair) { killScore += 40; reason += 'หลุดยาวและไม่อยู่ในคู่เด่น '; }
+    if (item.f5 === 0) { killScore += 50; reason += 'ฟอร์ม 5 งวดหลังไม่ออกเลย '; }
+    if (item.winRate < 35 && item.f5 <= 1) { killScore += 40; reason += 'โมเมนตัมระยะสั้นตกต่ำ '; }
 
     if (killScore > 0) {
       t7Data.push({ digit: item.digit, killScore, reason: reason.trim() || 'แนวโน้มสถิติเสี่ยงหลุด' });
@@ -606,21 +588,18 @@ function processData() {
   }
   document.getElementById('t7Body').innerHTML = t7Html;
 
-  // Status Check for Final Single
   let finalObj = t2Data.find(x => x.digit === finalDecisionDigit);
-  let reboundStatusText = finalObj.reboundBonus > 0 
-    ? `⚡ REBOUND HIGH (สะสมพลังเด้งกลับสูง)` 
-    : `🔥 TOP DENSITY ACTIVE (ฐานความถี่บนแน่นสูงสุด)`;
+  let momentumStatusText = `🔥 SHORT-TERM MOMENTUM ACTIVE (เกาะกระแส 5 งวดล่าสุด)`;
 
   // UI Updates
   document.getElementById('topSingleVal').innerText = `เลข [ ${finalDecisionDigit} ]`;
-  document.getElementById('topSingleDesc').innerText = `ผ่านการวิเคราะห์ฐานความถี่ฝั่งบน + แรงเด้งกลับเรียบร้อย (อัตราเข้า ${finalObj.winRate.toFixed(1)}%)`;
+  document.getElementById('topSingleDesc').innerText = `คัดกรองด้วยน้ำหนักโมเมนตัม 5 งวดล่าสุด (ฟอร์ม 5 งวดออก ${finalObj.f5} ครั้ง)`;
 
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
-  document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPair.coverageRate.toFixed(1)}% (${topPair.wTotal}/${records.length} งวด)`;
+  document.getElementById('topPairDesc').innerText = `คู่โมเมนตัมสูงสุด (เข้า ${topPair.w5}/5 งวดล่าสุด)`;
 
-  document.getElementById('tripleLockVal').innerText = reboundStatusText;
-  document.getElementById('tripleLockDesc').innerText = `เลขตัดสิน [ ${finalDecisionDigit} ] เป็นหัวใจหลักในชุดคู่ชนอันดับ 1 [ ${topPair.pairStr} ]`;
+  document.getElementById('tripleLockVal').innerText = momentumStatusText;
+  document.getElementById('tripleLockDesc').innerText = `เลขตัดสิน [ ${finalDecisionDigit} ] สอดคล้องกับคู่โมเมนตัมอันดับ 1 [ ${topPair.pairStr} ]`;
 
   document.getElementById('simVal').innerText = `${simWins} / ${simTotal} งวด (${simWinRate.toFixed(0)}%)`;
   document.getElementById('simDesc').innerText = `จำลองผลย้อนหลัง 10 งวดล่าสุด`;
@@ -636,4 +615,3 @@ function clearInput() {
 
 </body>
 </html>
-
