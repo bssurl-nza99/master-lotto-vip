@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V10.0 STANDARD (SINGLE FIRST)</title>
+<title>NEUTRAL • DIGIT LAB V10.1 SMART GATEKEEPER</title>
 <style>
 :root {
   --bg: #030712;
@@ -41,9 +41,9 @@ h1 { font-size: 20px; color: var(--cyan); margin: 0 0 4px 0; letter-spacing: 0.0
 p.sub { margin: 0; color: var(--muted); font-size: 12px; }
 
 .badge-version {
-  background: rgba(251, 191, 36, 0.15);
-  border: 1px solid var(--gold);
-  color: var(--gold);
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 10px;
@@ -117,9 +117,9 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V10.0 STANDARD ENGINE (SINGLE FIRST UI)</p>
+      <p class="sub">V10.1 SMART GATEKEEPER EDITION</p>
     </div>
-    <div class="badge-version">V10.0 STANDARD</div>
+    <div class="badge-version">V10.1 OPTIMIZED</div>
   </header>
 
   <section class="panel">
@@ -134,15 +134,13 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <div id="outputArea" style="display:none;">
     
     <section class="panel">
-      <h2>🎯 ฟันธงศูนย์กลางการตัดสินใจ (งวดปัจจุบัน)</h2>
+      <h2>🎯 ฟันธงศูนย์กลางการตัดสินใจ (งวดปัจจุบัน - Smart Gatekeeper)</h2>
       <div class="recommend-grid">
-        <!-- เอาเลขเดี่ยวขึ้นมาก่อน -->
         <div class="card" style="border-left: 3px solid var(--cyan);">
-          <div class="card-title">⭐ เลขเดี่ยวคัดท้ายตัดสิน (เน้นหลัก)</div>
+          <div class="card-title">⭐ เลขเดี่ยวคัดท้ายตัดสิน (ผ่าน Gatekeeper)</div>
           <div class="card-value" id="topSingleVal" style="font-size:26px; color:var(--cyan);">-</div>
           <div class="card-desc" id="topSingleDesc">-</div>
         </div>
-        <!-- เอาชุดคู่ชนมาไว้รองลงมา -->
         <div class="card" style="border-left: 3px solid var(--gold);">
           <div class="card-title">📋 ชุดคู่ชนเสถียรภาพ (เสริมความมั่นคง)</div>
           <div class="card-value" id="topPairVal" style="font-size:26px; color:var(--gold);">-</div>
@@ -161,7 +159,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
       </div>
     </section>
 
-    <!-- ตารางพิสูจน์ความจริง: Honest Single Tracker (เอาขึ้นบนสุด) -->
+    <!-- ตารางพิสูจน์ความจริง: Honest Single Tracker -->
     <section class="panel">
       <h2>⭐ ตารางพิสูจน์ความจริง - เลขเดี่ยว (Honest Single Point-in-Time)</h2>
       <div class="table-wrap">
@@ -180,7 +178,7 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
       </div>
     </section>
 
-    <!-- ตารางพิสูจน์ความจริง: Honest Pair Tracker (ไว้รองลงมา) -->
+    <!-- ตารางพิสูจน์ความจริง: Honest Pair Tracker -->
     <section class="panel">
       <h2>📋 ตารางพิสูจน์ความจริง - ชุดคู่ชน (Honest Pair Point-in-Time)</h2>
       <div class="table-wrap">
@@ -367,9 +365,11 @@ function parseTextData(text) {
   return records;
 }
 
+// อัลกอริทึม V10.1 Smart Gatekeeper Decision Engine
 function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1" };
 
+  // 1. คำนวณคู่ชนเสถียรภาพ
   const pairs = [];
   for (let i = 0; i <= 8; i++) {
     for (let j = i + 1; j <= 9; j++) {
@@ -381,24 +381,44 @@ function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit =
   pairs.sort((a, b) => b.rate - a.rate);
   const topPair = pairs.length > 0 ? pairs[0] : { pairStr: "0 - 1", d1: 0, d2: 1 };
 
+  // 2. ให้คะแนนพื้นฐานแต่ละตัวเลข
   const digits = [];
   for (let d = 0; d <= 9; d++) {
     const dStr = d.toString();
     const hitsArr = subRecords.map(r => (r.top + r.low).includes(dStr));
     const wins = hitsArr.filter(Boolean).length;
     const winRate = (wins / subRecords.length) * 100;
+    
+    // ฟอร์ม 5 งวดหลัง (Momentum)
     const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
+
+    // คำนวณระยะห่าง Gap ปัจจุบัน
+    let gaps = [], curG = 0;
+    hitsArr.forEach(h => { if (h) { gaps.push(curG); curG = 0; } else { curG++; } });
+    let avgG = gaps.length > 0 ? (gaps.reduce((a,b)=>a+b,0)/gaps.length) : 0;
 
     let curLossStreak = 0;
     for (let k = 0; k < hitsArr.length; k++) { if (!hitsArr[k]) curLossStreak++; else break; }
 
-    let score = winRate + (f5 * 6);
-    if (d === topPair.d1 || d === topPair.d2) score += 60;
+    let score = winRate + (f5 * 8); // น้ำหนักฟอร์มสั้น
 
-    if (!wasPreviousHit && previousPickedSingle === d) score -= 1500;
-    if (curLossStreak >= 5 || winRate < 25) score -= 800;
+    // ผูกกับคู่ชนหลัก
+    if (d === topPair.d1 || d === topPair.d2) score += 50;
 
-    digits.push({ digit: d, score, winRate, wins, losses: subRecords.length - wins });
+    // 🛡️ Smart Gatekeeper Rules (กฎกรองชั้นสุดท้าย โดยไม่อิงสูตรคณิตศาสตร์ซับซ้อน)
+    // Rule 1: ห้ามเลือกเลขที่อยู่ในช่วงพักตัวจัดๆ (ออกน้อยกว่า 1 ครั้งใน 5 งวดหลัง)
+    let isCoolingDown = (f5 <= 1);
+    if (isCoolingDown) score -= 300;
+
+    // Rule 2: ให้โบนัสเลขที่กำลังจ่อรอบออก (Gap ใกล้หรือเกินค่าเฉลี่ย)
+    let isPending = (curG >= Math.floor(avgG));
+    if (isPending) score += 25;
+
+    // Rule 3: เบรกมือกันหลุดซ้ำ
+    if (!wasPreviousHit && previousPickedSingle === d) score -= 2000;
+    if (curLossStreak >= 5 || winRate < 25) score -= 1000;
+
+    digits.push({ digit: d, score, winRate, wins, f5, isCoolingDown, isPending });
   }
 
   digits.sort((a, b) => b.score - a.score);
@@ -487,7 +507,7 @@ function processData() {
     
     let winRate = (wins / records.length) * 100;
     let score = winRate;
-    if (d === topPair.d1 || d === topPair.d2) score += 60;
+    if (d === topPair.d1 || d === topPair.d2) score += 50;
 
     t2Data.push({ digit: d, wins, losses, winRate, score, maxWin, maxLoss, currentStatus: currentStreakText, currCount, isCurrentHit });
   }
@@ -601,7 +621,8 @@ function processData() {
     }
   }
   trios.sort((a, b) => b.rate - a.rate);
-  let t5Html = '';
+  let t5Html = '{}';
+  t5Html = '';
   trios.slice(0, 15).forEach((t, idx) => {
     let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
     let rankDisplay = idx === 0 ? '★ 1' : idx === 1 ? '2' : idx === 2 ? '3' : idx + 1;
@@ -647,10 +668,10 @@ function processData() {
   document.getElementById('t7Body').innerHTML = t7Html;
 
   document.getElementById('topSingleVal').innerText = `เลข [ ${currentDecision.single} ]`;
-  document.getElementById('topSingleDesc').innerText = `คัดท้ายจากคู่ชนอันดับ 1 + ล็อกเบรกมือตัดหลุดซ้ำ`;
+  document.getElementById('topSingleDesc').innerText = `ผ่านการกรอง Momentum + ดักจ่อรอบ (Smart Gatekeeper)`;
 
-  document.getElementById('topPairVal').innerText = `คู่ [ ${topPair.pairStr} ]`;
-  document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุดในระบบ ${topPair.coverageRate.toFixed(1)}%`;
+  document.getElementById('topPairVal').innerText = `คู่ [ ${currentDecision.pair} ]`;
+  document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุดในระบบ (${topPair.coverageRate.toFixed(1)}%)`;
 
   document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEvaluated} (${honestSingleRate}%)`;
   document.getElementById('simDesc').innerText = `ความซื่อสัตย์เลขเดี่ยวย้อนหลัง (Honest Single Rate)`;
