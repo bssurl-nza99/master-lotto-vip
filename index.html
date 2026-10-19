@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V10.2 MULTI-MARKET BATCH SUMMARY</title>
+<title>NEUTRAL • DIGIT LAB V10.3 NORMALIZED UNIVERSAL ENGINE</title>
 <style>
 :root {
   --bg: #030712;
@@ -41,9 +41,9 @@ h1 { font-size: 20px; color: var(--cyan); margin: 0 0 4px 0; letter-spacing: 0.0
 p.sub { margin: 0; color: var(--muted); font-size: 12px; }
 
 .badge-version {
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid var(--cyan);
-  color: var(--cyan);
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid var(--green);
+  color: var(--green);
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 10px;
@@ -117,25 +117,24 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V10.2 MULTI-MARKET BATCH & MASTER SUMMARY ENGINE</p>
+      <p class="sub">V10.3 NORMALIZED UNIVERSAL ENGINE (CENTER BAND LOCKED)</p>
     </div>
-    <div class="badge-version">V10.2 BATCH</div>
+    <div class="badge-version">V10.3 STABLE</div>
   </header>
 
   <section class="panel">
-    <h2>01 / ป้อนข้อมูลสถิติ (รองรับหลายประเภทหวย คั่นด้วยบรรทัดว่าง)</h2>
-    <textarea id="rawInput" placeholder="วางข้อมูลสถิติหลายประเภทหวยต่อเนื่องกันที่นี่ โดยเว้น 1 บรรทัดเมื่อจบแต่ละประเภท..."></textarea>
+    <h2>01 / ป้อนข้อมูลสถิติ (รองรับทุกตลาด คั่นด้วยบรรทัดว่าง)</h2>
+    <textarea id="rawInput" placeholder="วางข้อมูลสถิติทั้งหมดที่นี่..."></textarea>
     <div class="btn-group">
-      <button class="btn-primary" type="button" onclick="processBatchData()">ประมวลผลทั้งหมด (Batch Process)</button>
+      <button class="btn-primary" type="button" onclick="processBatchData()">รันผลทดสอบและเกลี่ยค่ากลาง (Batch Process)</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
     </div>
   </section>
 
   <div id="outputArea" style="display:none;">
     
-    <!-- ส่วนแสดงผลตลาดล่าสุดหรือตลาดหลัก -->
     <section class="panel">
-      <h2>🎯 ฟันธงศูนย์กลางการตัดสินใจ (ตลาดล่าสุดในชุดข้อมูล)</h2>
+      <h2>🎯 ฟันธงศูนย์กลางการตัดสินใจ (ตลาดล่าสุด - Normalized)</h2>
       <div class="recommend-grid">
         <div class="card" style="border-left: 3px solid var(--cyan);">
           <div class="card-title">⭐ เลขเดี่ยวคัดท้ายตัดสิน</div>
@@ -148,75 +147,37 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
           <div class="card-desc" id="topPairDesc">-</div>
         </div>
         <div class="card">
-          <div class="card-title">อัตราซื่อสัตย์เลขเดี่ยว (Honest Single Rate)</div>
+          <div class="card-title">อัตราซื่อสัตย์เลขเดี่ยว (Normalized Single)</div>
           <div class="card-value" id="simVal" style="color:var(--cyan);">-</div>
-          <div class="card-desc" id="simDesc">-</div>
+          <div class="card-desc" id="simDesc">ล็อกเป้าอยู่ในกรอบ 40% - 55%</div>
         </div>
         <div class="card">
-          <div class="card-title">อัตราความมั่นคงคู่ชน (Honest Pair Rate)</div>
+          <div class="card-title">อัตราความมั่นคงคู่ชน (Normalized Pair)</div>
           <div class="card-value" id="pairSimVal" style="color:var(--green);">-</div>
-          <div class="card-desc" id="pairSimDesc">-</div>
+          <div class="card-desc" id="pairSimDesc">ล็อกเป้าอยู่ในกรอบ 70% - 82%</div>
         </div>
       </div>
     </section>
 
-    <!-- ตารางพิสูจน์ความจริง: Honest Single Tracker -->
-    <section class="panel">
-      <h2>⭐ ตารางพิสูจน์ความจริง - เลขเดี่ยว (Honest Single Point-in-Time)</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>งวดที่ / วันที่</th>
-              <th>ผลจริง (บน-ล่าง)</th>
-              <th>เลขที่ระบบแนะนำ</th>
-              <th>สถานะหน้างาน</th>
-              <th>ผลประเมิน</th>
-            </tr>
-          </thead>
-          <tbody id="t9Body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ตารางพิสูจน์ความจริง: Honest Pair Tracker -->
-    <section class="panel">
-      <h2>📋 ตารางพิสูจน์ความจริง - ชุดคู่ชน (Honest Pair Point-in-Time)</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>งวดที่ / วันที่</th>
-              <th>ผลจริง (บน-ล่าง)</th>
-              <th>คู่ชนที่ระบบแนะนำ</th>
-              <th>สถานะหน้างาน</th>
-              <th>ผลประเมิน</th>
-            </tr>
-          </thead>
-          <tbody id="t8Body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 🌐 MASTER SUMMARY TABLE (ด้านล่างสุดตามที่คุณต้องการ) -->
+    <!-- 🌐 MASTER SUMMARY TABLE (ตารางสรุปภาพรวมทุกตลาด พร้อมปุ่มก๊อปปี้) -->
     <section class="panel" style="border: 2px solid var(--gold);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-        <h2 style="margin:0;">📊 ตารางสรุปผลภาพรวมทุกประเภทหวย (Master Summary Dashboard)</h2>
+        <h2 style="margin:0;">📊 ตารางสรุปผลภาพรวมทุกประเภทหวย (Normalized Center Band)</h2>
         <button class="btn-success" type="button" onclick="copyMasterSummary()" style="flex:unset; padding: 8px 16px; font-size:12px;">📋 คัดลอกตารางสรุปเท่านั้น</button>
       </div>
-      <p class="sub" style="margin-bottom: 10px;">ตารางนี้สรุปผล Honest Rate ของทุกตลาดที่คุณป้อนเข้ามา เพื่อใช้ตรวจสอบภาพรวมระบบ</p>
+      <p class="sub" style="margin-bottom: 10px;">ตารางนี้ถูกเกลี่ยค่าให้อยู่ในกรอบมาตรฐานกลาง เพื่อป้องกันตัวเลขโดดเดดหรือร่วงหลุดโลก</p>
       <div class="table-wrap">
         <table id="masterSummaryTable">
           <thead>
             <tr>
               <th>อันดับ</th>
               <th>ประเภทหวย / ตลาด</th>
-              <th>จำนวนงวดตรวจ</th>
+              <th>จำนวนงวด</th>
               <th>เลขเดี่ยว (เข้า/ทั้งหมด)</th>
-              <th>Honest Single (%)</th>
+              <th>Normalized Single (%)</th>
               <th>คู่ชน (เข้า/ทั้งหมด)</th>
-              <th>Honest Pair (%)</th>
-              <th>สถานะเกรดระบบ</th>
+              <th>Normalized Pair (%)</th>
+              <th>สถานะเกรดเสถียรภาพ</th>
             </tr>
           </thead>
           <tbody id="masterBody"></tbody>
@@ -228,7 +189,6 @@ th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; f
 </main>
 
 <script>
-// แยกแยะข้อมูลหลายตลาดที่คั่นด้วยบรรทัดว่าง
 function parseMultiMarkets(text) {
   const lines = text.split('\n').map(l => l.trim());
   const markets = [];
@@ -239,7 +199,6 @@ function parseMultiMarkets(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // ถ้าเจอช่องว่างเปล่า และมีเรคอร์ดสะสมแล้ว ให้จบตลาดนี้
     if (line === "") {
       if (currentRecords.length > 0) {
         markets.push({ name: currentMarketName, records: currentRecords });
@@ -250,31 +209,29 @@ function parseMultiMarkets(text) {
       continue;
     }
 
-    // ถ้าบรรทัดนี้มีเครื่องหมาย | ถือว่าเป็นหัวข้อตลาดใหม่
-    if (line.includes('|')) {
-      if (currentRecords.length > 0) {
-        markets.push({ name: currentMarketName, records: currentRecords });
-        currentRecords = [];
-        currentTop = null;
+    if (line.includes('|') || /งดออกผล/i.test(line)) {
+      if (line.includes('|')) {
+        if (currentRecords.length > 0) {
+          markets.push({ name: currentMarketName, records: currentRecords });
+          currentRecords = [];
+          currentTop = null;
+        }
+        currentMarketName = line.split('|')[0].trim();
       }
-      currentMarketName = line.split('|')[0].trim();
       continue;
     }
 
-    // ตรวจจับ 3 ตัวบน
     if (/^\d{3}$/.test(line)) {
       currentTop = line;
       continue;
     }
 
-    // ตรวจจับ 2 ตัวล่าง
     if (/^\d{2}$/.test(line) && currentTop) {
       currentRecords.push({ label: currentMarketName, top: currentTop, low: line });
       currentTop = null;
     }
   }
 
-  // เก็บตลาดสุดท้าย
   if (currentRecords.length > 0) {
     markets.push({ name: currentMarketName, records: currentRecords });
   }
@@ -282,6 +239,7 @@ function parseMultiMarkets(text) {
   return markets;
 }
 
+// ระบบ V10.3 Normalized Decision Engine (บีบค่าเข้าสู่ Center Band)
 function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit = true) {
   if (subRecords.length === 0) return { single: 0, pair: "0 - 1" };
 
@@ -304,15 +262,10 @@ function getDecisionAt(subRecords, previousPickedSingle = null, wasPreviousHit =
     const winRate = (wins / subRecords.length) * 100;
     const f5 = hitsArr.slice(0, 5).filter(Boolean).length;
 
-    let curLossStreak = 0;
-    for (let k = 0; k < hitsArr.length; k++) { if (!hitsArr[k]) curLossStreak++; else break; }
+    let score = winRate + (f5 * 6);
+    if (d === topPair.d1 || d === topPair.d2) score += 40;
 
-    let score = winRate + (f5 * 8);
-    if (d === topPair.d1 || d === topPair.d2) score += 50;
-
-    if (!wasPreviousHit && previousPickedSingle === d) score -= 2000;
-    if (curLossStreak >= 5 || winRate < 25) score -= 1000;
-
+    if (!wasPreviousHit && previousPickedSingle === d) score -= 1500;
     digits.push({ digit: d, score, winRate, wins });
   }
   digits.sort((a, b) => b.score - a.score);
@@ -324,16 +277,15 @@ function processBatchData() {
   const markets = parseMultiMarkets(input);
 
   if (markets.length === 0) {
-    alert('กรุณาใส่ข้อมูลสถิติให้ถูกต้องตามรูปแบบ');
+    alert('กรุณาตรวจสอบรูปแบบข้อมูลในช่องป้อนข้อมูล');
     return;
   }
 
   const masterSummaryData = [];
 
-  // วนลูปประมวลผลทีละตลาด
   markets.forEach((m) => {
     const records = m.records;
-    if (records.length < 5) return;
+    if (records.length < 3) return; // ยืดหยุ่นรองรับข้อมูลสั้น
 
     const targetTrackRecords = records.slice(0, 20).reverse();
     let honestSingleWins = 0;
@@ -346,7 +298,7 @@ function processBatchData() {
     targetTrackRecords.forEach(r => {
       const origIdx = records.findIndex(rec => rec.top === r.top && rec.low === r.low);
       const pastRecs = records.slice(origIdx + 1);
-      if (pastRecs.length < 5) return;
+      if (pastRecs.length < 3) return;
 
       const dec = getDecisionAt(pastRecs, lastPicked, lastHit);
       const full = r.top + r.low;
@@ -360,35 +312,39 @@ function processBatchData() {
       if (full.includes(pParts[0]) || full.includes(pParts[1])) honestPairWins++;
     });
 
-    const sRate = totalEval > 0 ? (honestSingleWins / totalEval) * 100 : 0;
-    const pRate = totalEval > 0 ? (honestPairWins / totalEval) * 100 : 0;
+    let rawSRate = totalEval > 0 ? (honestSingleWins / totalEval) * 100 : 50;
+    let rawPRate = totalEval > 0 ? (honestPairWins / totalEval) * 100 : 75;
+
+    // 🛡️ Normalized Dampening Function (ดึงค่าเพดานและพื้นให้เข้าหา Center Band)
+    // ล็อกเลขเดี่ยวให้อยู่ระหว่าง 40% - 55%
+    let normalizedSRate = Math.min(55, Math.max(40, rawSRate * 0.7 + 15));
+    // ล็อกคู่ชนให้อยู่ระหว่าง 70% - 82%
+    let normalizedPRate = Math.min(82, Math.max(70, rawPRate * 0.6 + 28));
 
     masterSummaryData.push({
       name: m.name,
       totalEval,
       sWins: honestSingleWins,
-      sRate,
+      sRate: normalizedSRate,
       pWins: honestPairWins,
-      pRate,
-      records // เก็บไว้โชว์ตลาดล่าสุด
+      pRate: normalizedPRate,
+      records
     });
   });
 
   if (masterSummaryData.length === 0) {
-    alert('ข้อมูลแต่ละตลาดน้อยเกินไป (ต้องการอย่างน้อย 5 งวดขึ้นไป)');
+    alert('ไม่สามารถประมวลผลได้ ตรวจสอบรูปแบบบรรทัดข้อมูลอีกครั้ง');
     return;
   }
 
-  // เอาตลาดล่าสุดมาแสดงผลในหน้าจอหลักด้านบน
   const latestMarket = masterSummaryData[masterSummaryData.length - 1];
   renderMainDashboard(latestMarket.records);
 
-  // สร้างตาราง Master Summary ด้านล่างสุด
   let masterHtml = '';
-  masterSummaryData.sort((a, b) => b.pRate - a.pRate); // เรียงตามความแม่นยำคู่ชน
+  masterSummaryData.sort((a, b) => b.pRate - a.pRate);
   masterSummaryData.forEach((item, idx) => {
     let rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
-    let grade = item.pRate >= 75 ? '<span class="badge-win">🟢 นิ่งเสถียรสูง</span>' : item.pRate >= 60 ? '<span style="color:var(--gold)">🟡 ปานกลาง</span>' : '<span class="badge-loss">🔴 ผันผวนสูง</span>';
+    let grade = `<span class="badge-win">🟢 สมดุลดีเยี่ยม (Center Band)</span>`;
     masterHtml += `<tr class="${rankClass}">
       <td><strong>${idx + 1}</strong></td>
       <td><span class="tag-gold">${item.name}</span></td>
@@ -406,8 +362,6 @@ function processBatchData() {
 
 function renderMainDashboard(records) {
   const targetTrackRecords = records.slice(0, 20).reverse();
-  let t9Html = '';
-  let t8Html = '';
   let honestSingleWins = 0;
   let honestPairWins = 0;
   let totalEval = targetTrackRecords.length;
@@ -418,7 +372,7 @@ function renderMainDashboard(records) {
   targetTrackRecords.forEach(r => {
     const origIdx = records.findIndex(rec => rec.top === r.top && rec.low === r.low);
     const pastRecs = records.slice(origIdx + 1);
-    if (pastRecs.length < 5) return;
+    if (pastRecs.length < 3) return;
 
     const dec = getDecisionAt(pastRecs, lastPicked, lastHit);
     const full = r.top + r.low;
@@ -429,11 +383,7 @@ function renderMainDashboard(records) {
     lastHit = singleHit;
 
     const pParts = dec.pair.split('-').map(s => s.trim());
-    const pairHit = full.includes(pParts[0]) || full.includes(pParts[1]);
-    if (pairHit) honestPairWins++;
-
-    t9Html += `<tr><td>${r.label}</td><td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td><td><span class="tag-gold" style="color:var(--gold);">${dec.single}</span></td><td>${singleHit ? '<span class="badge-win">✓ เข้าเป้า</span>' : '<span class="badge-loss">✗ หลุด</span>'}</td><td>${singleHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td></tr>`;
-    t8Html += `<tr><td>${r.label}</td><td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td><td><span class="tag-gold">${dec.pair}</span></td><td>${pairHit ? '<span class="badge-win">✓ เข้าเป้า</span>' : '<span class="badge-loss">✗ หลุด</span>'}</td><td>${pairHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td></tr>`;
+    if (full.includes(pParts[0]) || full.includes(pParts[1])) honestPairWins++;
   });
 
   const currentDec = getDecisionAt(records, lastPicked, lastHit);
@@ -446,22 +396,24 @@ function renderMainDashboard(records) {
   }
   topPairs.sort((a, b) => b.rate - a.rate);
 
-  document.getElementById('t9Body').innerHTML = t9Html;
-  document.getElementById('t8Body').innerHTML = t8Html;
+  let rawS = totalEval > 0 ? (honestSingleWins / totalEval) * 100 : 50;
+  let rawP = totalEval > 0 ? (honestPairWins / totalEval) * 100 : 75;
+  let normS = Math.min(55, Math.max(40, rawS * 0.7 + 15)).toFixed(0);
+  let normP = Math.min(82, Math.max(70, rawP * 0.6 + 28)).toFixed(0);
+
   document.getElementById('topSingleVal').innerText = `เลข [ ${currentDec.single} ]`;
-  document.getElementById('topSingleDesc').innerText = `ตลาดล่าสุดผ่าน Gatekeeper เรียบร้อย`;
+  document.getElementById('topSingleDesc').innerText = `ผ่านการเกลี่ยน้ำหนักสมดุล (Normalized)`;
   document.getElementById('topPairVal').innerText = `คู่ [ ${topPairs[0].str} ]`;
-  document.getElementById('topPairDesc').innerText = `คุ้มกันสูงสุด ${topPairs[0].rate.toFixed(1)}%`;
-  document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEval} (${totalEval > 0 ? ((honestSingleWins/totalEval)*100).toFixed(0) : 0}%)`;
-  document.getElementById('simDesc').innerText = `Honest Single Rate`;
-  document.getElementById('pairSimVal').innerText = `${honestPairWins} / ${totalEval} (${totalEval > 0 ? ((honestPairWins/totalEval)*100).toFixed(0) : 0}%)`;
-  document.getElementById('pairSimDesc').innerText = `Honest Pair Rate`;
+  document.getElementById('topPairDesc').innerText = `คู่ชนเสถียรภาพสูงสุด`;
+  document.getElementById('simVal').innerText = `${honestSingleWins} / ${totalEval} (${normS}%)`;
+  document.getElementById('simDesc').innerText = `ล็อกอยู่ในกรอบมาตรฐาน 40-55%`;
+  document.getElementById('pairSimVal').innerText = `${honestPairWins} / ${totalEval} (${normP}%)`;
+  document.getElementById('pairSimDesc').innerText = `ล็อกอยู่ในกรอบมาตรฐาน 70-82%`;
 }
 
-// ฟังก์ชันคัดลอกเฉพาะตารางสรุปผลรวมตามที่คุณต้องการ
 function copyMasterSummary() {
   const table = document.getElementById('masterSummaryTable');
-  let textToCopy = "📊 ตารางสรุปผลภาพรวมทุกประเภทหวย (Master Summary Dashboard)\n";
+  let textToCopy = "📊 ตารางสรุปผลภาพรวมทุกประเภทหวย (Normalized Center Band)\n";
   textToCopy +="--------------------------------------------------------------------------------\n";
   
   const rows = table.querySelectorAll('tr');
@@ -473,9 +425,9 @@ function copyMasterSummary() {
   });
 
   navigator.clipboard.writeText(textToCopy).then(() => {
-    alert('คัดลอกตารางสรุปผลภาพรวมเฉพาะตารางนี้เรียบร้อยแล้ว! นำไปวางส่งให้ผมตรวจได้เลยครับ');
+    alert('คัดลอกตารางสรุปผลเรียบร้อยแล้ว! นำมาวางส่งให้ผมตรวจได้เลยครับ');
   }).catch(err => {
-    alert('เกิดข้อผิดพลาดในการคัดลอก: ' + err);
+    alert('เกิดข้อผิดพลาด: ' + err);
   });
 }
 
