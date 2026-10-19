@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEUTRAL • DIGIT LAB V9.5 STABLE CORE</title>
+<title>NEUTRAL • DIGIT LAB V9.5 STABLE CORE + TRACKER</title>
 <style>
 :root {
   --bg: #030712;
@@ -91,7 +91,7 @@ button {
 .table-wrap { overflow-x: auto; margin-top: 10px; border: 1px solid var(--panel-border); border-radius: 8px; background: rgba(2, 6, 23, 0.5); }
 table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; }
 th, td { padding: 10px; border-bottom: 1px solid rgba(30, 41, 59, 0.6); white-space: nowrap; }
-th { background: rgba(30, 41, 59, 0.9); color: #94a3b8; font-weight: 600; font-size: 11px; }
+th { background: rgba(30, 41, 59, 0.9); color: var(--muted); font-weight: 600; font-size: 11px; }
 
 .rank-1 { background: rgba(251, 191, 36, 0.15) !important; border-left: 3px solid var(--gold); }
 .rank-2 { background: rgba(192, 132, 252, 0.1) !important; border-left: 3px solid var(--purple); }
@@ -116,14 +116,14 @@ th { background: rgba(30, 41, 59, 0.9); color: #94a3b8; font-weight: 600; font-s
   <header>
     <div>
       <h1>NEUTRAL • DIGIT LAB</h1>
-      <p class="sub">V9.5 STABLE CORE EDITION · เสถียรภาพสูงสุด รองรับมือถือ</p>
+      <p class="sub">V9.5 STABLE CORE + BACKTEST TRACKER EDITION</p>
     </div>
-    <div class="badge-version">V9.5 STABLE</div>
+    <div class="badge-version">V9.5 TRACKER</div>
   </header>
 
   <section class="panel">
     <h2>01 / ป้อนข้อมูลสถิติ</h2>
-    <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
+    <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่ (รองรับรูปแบบ ชื่อ | วันที่ / สามตัว / สองตัว)..."></textarea>
     <div class="btn-group">
       <button class="btn-primary" type="button" onclick="processData()">ประมวลผลระบบ</button>
       <button class="btn-secondary" type="button" onclick="clearInput()">ล้างข้อมูล</button>
@@ -155,6 +155,25 @@ th { background: rgba(30, 41, 59, 0.9); color: #94a3b8; font-weight: 600; font-s
           <div class="card-value" id="simVal" style="color:var(--cyan);">-</div>
           <div class="card-desc" id="simDesc">-</div>
         </div>
+      </div>
+    </section>
+
+    <!-- ตารางที่ 8: ประวัติสะสมผลงานย้อนหลัง (New Tracker) -->
+    <section class="panel">
+      <h2>📋 ตารางที่ 8 / ประวัติสะสมผลงานย้อนหลัง (Cumulative Backtest Tracker)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>งวดที่ / วันที่</th>
+              <th>ผลจริง (บน-ล่าง)</th>
+              <th>คู่ชนแนะนำ</th>
+              <th>สถานะคู่ชน</th>
+              <th>สถานะภาพรวม</th>
+            </tr>
+          </thead>
+          <tbody id="t8Body"></tbody>
+        </table>
       </div>
     </section>
 
@@ -304,10 +323,12 @@ th { background: rgba(30, 41, 59, 0.9); color: #94a3b8; font-weight: 600; font-s
 function parseTextData(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const records = [];
+  let currentLabel = "งวดที่";
   let currentTop = null;
 
   for (let line of lines) {
     if (line.includes('|') || /งดออกผล/i.test(line)) {
+      currentLabel = line;
       currentTop = null;
       continue;
     }
@@ -316,8 +337,9 @@ function parseTextData(text) {
       continue;
     }
     if (/^\d{2}$/.test(line) && currentTop) {
-      records.push({ top: currentTop, low: line });
+      records.push({ label: currentLabel, top: currentTop, low: line });
       currentTop = null;
+      currentLabel = "งวดที่";
     }
   }
   return records;
@@ -388,6 +410,26 @@ function processData() {
 
   pairs.sort((a, b) => b.coverageRate - a.coverageRate || b.w5 - a.w5);
   const topPair = pairs[0];
+
+  // Table 8: Cumulative Backtest Tracker Generator (ประวัติย้อนหลังจากอดีตถึงปัจจุบัน)
+  let t8Html = '';
+  // แสดงผลย้อนหลัง 15 งวดล่าสุด (จากงวดเก่ามางวดใหม่ หรือเรียงตามลำดับข้อมูล)
+  const trackRecords = records.slice(0, 20).reverse(); 
+  trackRecords.forEach((r, idx) => {
+    const fullDraw = r.top + r.low;
+    const d1 = topPair.d1.toString(), d2 = topPair.d2.toString();
+    const isPairHit = fullDraw.includes(d1) || fullDraw.includes(d2);
+    const statusBadge = isPairHit ? `<span class="badge-win">✓ เข้าเป้า</span>` : `<span class="badge-loss">✗ หลุด</span>`;
+    
+    t8Html += `<tr>
+      <td>${r.label}</td>
+      <td><strong style="color:var(--cyan);">${r.top}</strong> - ${r.low}</td>
+      <td><span class="tag-gold">${topPair.pairStr}</span></td>
+      <td>${statusBadge}</td>
+      <td>${isPairHit ? 'ผ่าน' : 'ไม่ผ่าน'}</td>
+    </tr>`;
+  });
+  document.getElementById('t8Body').innerHTML = t8Html;
 
   let simWins = 0;
   let simTotal = Math.min(10, records.length);
