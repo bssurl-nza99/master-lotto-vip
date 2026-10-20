@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (Strict Walk-forward)</title>
+  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (Strict Walk-forward v2.2)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Kanit -->
@@ -13,14 +13,13 @@
   <style>
     body {
       font-family: 'Kanit', sans-serif;
-      font-size: 0.82rem; /* Reduced scale by ~20-25% */
+      font-size: 0.82rem;
       background-color: #0f172a;
       color: #f8fafc;
     }
     .table-horizontal {
       white-space: nowrap !important;
     }
-    /* Ranking Colors */
     .rank-1 {
       background-color: rgba(16, 185, 129, 0.25) !important;
       border-left: 4px solid #10b981 !important;
@@ -33,7 +32,6 @@
       background-color: rgba(110, 231, 183, 0.08) !important;
       border-left: 4px solid #6ee7b7 !important;
     }
-    /* Custom Scrollbar for wide tables */
     ::-webkit-scrollbar {
       height: 6px;
       width: 6px;
@@ -56,9 +54,9 @@
       <div>
         <h1 class="text-base font-bold text-emerald-400 flex items-center gap-2">
           <i data-lucide="calculator" class="w-5 h-5"></i>
-          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย
+          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v2.2)
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% (Walk-forward Strict Rule - ห้ามเห็นอนาคต)</p>
+        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | ข้ามวันหยุดอัตโนมัติ | จัดเรียงตารางตามอันดับผลงาน</p>
       </div>
       <div id="lotteryInfo" class="text-right hidden sm:block">
         <span id="lotteryNameTag" class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">
@@ -72,22 +70,22 @@
       <div class="flex justify-between items-center">
         <label for="rawData" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
           <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
-          วางข้อมูลสถิติดิบ (อดีต -> ปัจจุบัน หรือ ปัจจุบัน -> อดีต)
+          วางข้อมูลสถิติดิบ (รองรับ "งดออกผล" และทุกประเภทหวย)
         </label>
-        <span class="text-[11px] text-slate-400">รองรับรูปแบบ ลาวพัฒนา / ลาวประตูชัย / หวยอื่นๆ</span>
+        <span class="text-[11px] text-slate-400">ระบบกรองวันหยุดอัตโนมัติ</span>
       </div>
 
       <textarea id="rawData" rows="7" 
         class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500 transition placeholder-slate-600"
         placeholder="วางข้อมูลสถิติที่นี่ เช่น:
-ลาวประตูชัย | 20 ต.ค. 69
-351
-19
-ลาวประตูชัย | 19 ต.ค. 69
-520
-30"></textarea>
+หุ้นนิคเคอิเช้า | 20 ต.ค. 69
+235
+35
+หุ้นนิคเคอิเช้า | 12 ต.ค. 69
+งดออกผล
+งดออกผล"></textarea>
 
-      <!-- Action Buttons (Process Left, Clear Right on same row) -->
+      <!-- Action Buttons -->
       <div class="flex justify-between items-center gap-3 pt-1">
         <button id="btnProcess" onclick="processData()" 
           class="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
@@ -103,12 +101,11 @@
       </div>
     </section>
 
-    <!-- Results Section (Hidden by default) -->
+    <!-- Results Section -->
     <div id="resultsContainer" class="space-y-4 hidden">
 
-      <!-- TOP SUMMARY CARD: Best Single Digit & Final Target -->
+      <!-- TOP SUMMARY CARD -->
       <section class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <!-- Target Recommended Digit -->
         <div class="bg-gradient-to-br from-slate-800 to-emerald-950 border border-emerald-500/40 rounded-xl p-4 shadow-xl flex items-center justify-between">
           <div>
             <div class="text-xs text-emerald-400 font-medium flex items-center gap-1">
@@ -124,16 +121,15 @@
           </div>
         </div>
 
-        <!-- Quick Summary Metrics -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg flex flex-col justify-between">
-          <span class="text-xs text-slate-400">สถิติรวมที่วิเคราะห์</span>
+          <span class="text-xs text-slate-400">สถิติรวมที่วิเคราะห์ (ไม่รวมงดออกผล)</span>
           <div class="flex items-baseline gap-2 mt-1">
             <span id="totalDrawsParsed" class="text-2xl font-bold text-slate-100">0</span>
             <span class="text-xs text-slate-400">งวด</span>
           </div>
           <div class="text-[11px] text-slate-400 mt-2 border-t border-slate-700/50 pt-1.5 flex justify-between">
             <span>งวดล่าสุด: <strong id="latestDate" class="text-slate-200">-</strong></span>
-            <span>หวย: <strong id="lotteryTypeDetected" class="text-slate-200">-</strong></span>
+            <span>ประเภท: <strong id="lotteryTypeDetected" class="text-slate-200">-</strong></span>
           </div>
         </div>
 
@@ -150,14 +146,14 @@
         </div>
       </section>
 
-      <!-- SECTION: Correlated Pair Analysis (คู่เลขสัมพันธ์ 1-8, 1-6) -->
+      <!-- SECTION: Correlated Pair Analysis -->
       <section class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
         <div class="flex items-center justify-between">
           <h2 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
             <i data-lucide="link-2" class="w-4 h-4"></i>
-            สูตรวิเคราะห์คู่เลขสัมพันธ์ (Correlated Pair & Rebound Trend)
+            สูตรวิเคราะห์คู่เลขสัมพันธ์ (สิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง | ไม่นับหลักร้อย)
           </h2>
-          <span class="text-[10px] text-slate-400">ค้นหาคู่เลขซัพพอร์ตสลับกันมา (เช่น 1-8, 1-6)</span>
+          <span class="text-[10px] text-slate-400">เรียงจากอันดับ 1 (เสถียรสุด) ลงไป</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -171,7 +167,7 @@
                 <th class="p-2">เข้าสูงสุดติดกัน</th>
                 <th class="p-2">หลุดสูงสุดติดกัน</th>
                 <th class="p-2">สถานะปัจจุบัน</th>
-                <th class="p-2">แนวโน้มงวดถัดไป (Rebound %)</th>
+                <th class="p-2">แนวโน้ม / โอกาสกลับมา (%)</th>
               </tr>
             </thead>
             <tbody id="pairAnalysisBody" class="divide-y divide-slate-700/50 text-slate-200">
@@ -181,20 +177,21 @@
         </div>
       </section>
 
-      <!-- SECTION: Digits 0-9 Position Analysis (วิเคราะห์รายหลัก + สถิติหลุดเข้า) -->
+      <!-- SECTION: Digits 0-9 Position Analysis (Sorted by Rank) -->
       <section class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
         <div class="flex justify-between items-center">
           <h2 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
             <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-400"></i>
-            สถิติตัวเลข 0-9 รายหลัก ( Position & Streak Matrix )
+            สถิติตัวเลข 0-9 รายหลัก (เรียงตามลำดับอันดับที่ออกมากที่สุดไปน้อยที่สุด)
           </h2>
-          <span class="text-[10px] text-slate-400">จัดอันดับ 1 (เขียว) | 2 (เขียวอ่อน) | 3 (เขียวจาง)</span>
+          <span class="text-[10px] text-slate-400">อันดับ 1 (เขียว) | 2 (เขียวอ่อน) | 3 (เขียวจาง)</span>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs table-horizontal">
             <thead>
               <tr class="bg-slate-900/80 text-slate-400 border-b border-slate-700">
+                <th class="p-2">อันดับ</th>
                 <th class="p-2">ตัวเลข</th>
                 <th class="p-2">ออกทั้งหมด (ครั้ง)</th>
                 <th class="p-2">สถิติหลักร้อย</th>
@@ -216,19 +213,14 @@
 
       <!-- SECTION: Cross-Window Consistency & Hit/Miss Matrix -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        
-        <!-- Consistency Windows -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2 lg:col-span-1">
           <h2 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
             <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
             Cross-Window Consistency
           </h2>
-          <div class="space-y-2 pt-1 text-xs" id="windowConsistencyContainer">
-            <!-- JS Injected -->
-          </div>
+          <div class="space-y-2 pt-1 text-xs" id="windowConsistencyContainer"></div>
         </div>
 
-        <!-- Hit/Miss Matrix Table (Strict Backtest) -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2 lg:col-span-2">
           <div class="flex justify-between items-center">
             <h2 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -249,13 +241,10 @@
                   <th class="p-2">ตำแหน่งที่เข้า</th>
                 </tr>
               </thead>
-              <tbody id="hitMissMatrixBody" class="divide-y divide-slate-700/50 text-slate-200">
-                <!-- JS Injected -->
-              </tbody>
+              <tbody id="hitMissMatrixBody" class="divide-y divide-slate-700/50 text-slate-200"></tbody>
             </table>
           </div>
         </div>
-
       </section>
 
     </div>
@@ -263,13 +252,9 @@
   </div>
 
   <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
-
-    // Global State Data
     let parsedDraws = [];
 
-    // Main Parse & Process Function
     function processData() {
       const rawText = document.getElementById('rawData').value.trim();
       if (!rawText) {
@@ -278,29 +263,21 @@
       }
 
       parsedDraws = parseRawData(rawText);
-
       if (parsedDraws.length === 0) {
-        alert('ไม่สามารถอ่านข้อมูลได้ กรุณาตรวจสอบรูปแบบข้อความ');
+        alert('ไม่สามารถอ่านข้อมูลได้ หรือข้อมูลทุกงวดเป็น "งดออกผล"');
         return;
       }
 
-      // Ensure Chronological Order (Oldest -> Newest)
-      // If user pasted Newest first, reverse it.
       parsedDraws = sortDrawsChronologically(parsedDraws);
 
-      // Render Results
       document.getElementById('resultsContainer').classList.remove('hidden');
-      
       renderSummaryInfo();
       renderPairAnalysis();
       renderDigitStatsTable();
       renderHitMissMatrix();
-
-      // Refresh icons
       lucide.createIcons();
     }
 
-    // Clear Button Logic
     function clearData() {
       document.getElementById('rawData').value = '';
       document.getElementById('resultsContainer').classList.add('hidden');
@@ -308,29 +285,34 @@
       parsedDraws = [];
     }
 
-    // Parsing Logic strictly reading pattern
     function parseRawData(text) {
       const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       const results = [];
-      
       let i = 0;
       while (i < lines.length) {
         const line = lines[i];
-        
-        // Match Pattern: Name | Date
         if (line.includes('|')) {
           const parts = line.split('|');
           const lotName = parts[0].trim();
           const lotDate = parts[1] ? parts[1].trim() : '';
           
-          // Next lines should be 3 digits (Top) and 2 digits (Bottom)
           let top3 = '';
           let bot2 = '';
           
-          if (i + 1 < lines.length && /^\d{3}$/.test(lines[i + 1])) {
-            top3 = lines[i + 1];
-            i++;
+          if (i + 1 < lines.length) {
+            const nextLine = lines[i + 1];
+            if (nextLine.includes('งดออกผล')) {
+              i += 2;
+              while (i < lines.length && lines[i].includes('งดออกผล')) {
+                i++;
+              }
+              continue;
+            } else if (/^\d{3}$/.test(nextLine)) {
+              top3 = nextLine;
+              i++;
+            }
           }
+          
           if (i + 1 < lines.length && /^\d{2}$/.test(lines[i + 1])) {
             bot2 = lines[i + 1];
             i++;
@@ -342,12 +324,13 @@
               date: lotDate,
               top3: top3,
               bot2: bot2,
-              h: parseInt(top3[0]), // Hundreds
-              tTop: parseInt(top3[1]), // Tens Top
-              uTop: parseInt(top3[2]), // Units Top
-              tBot: parseInt(bot2[0]), // Tens Bot
-              uBot: parseInt(bot2[1]), // Units Bot
-              allDigits: [parseInt(top3[0]), parseInt(top3[1]), parseInt(top3[2]), parseInt(bot2[0]), parseInt(bot2[1])]
+              h: parseInt(top3[0]),
+              tTop: parseInt(top3[1]),
+              uTop: parseInt(top3[2]),
+              tBot: parseInt(bot2[0]),
+              uBot: parseInt(bot2[1]),
+              allDigits: [parseInt(top3[0]), parseInt(top3[1]), parseInt(top3[2]), parseInt(bot2[0]), parseInt(bot2[1])],
+              pairDigits: [parseInt(top3[1]), parseInt(top3[2]), parseInt(bot2[0]), parseInt(bot2[1])]
             });
           }
         }
@@ -356,13 +339,10 @@
       return results;
     }
 
-    // Sort Chronologically (Oldest -> Newest)
     function sortDrawsChronologically(draws) {
-      // Create a shallow copy and return
       return [...draws].reverse(); 
     }
 
-    // Render Summary Info
     function renderSummaryInfo() {
       const total = parsedDraws.length;
       const latest = parsedDraws[total - 1];
@@ -372,40 +352,29 @@
       document.getElementById('lotteryTypeDetected').innerText = latest ? latest.name : '-';
       document.getElementById('lotteryNameTag').innerText = latest ? `${latest.name} (${total} งวด)` : 'ไม่ระบุ';
 
-      // Predict Best Single Digit (0-9) using Walk-Forward (Only past data up to latest)
       const bestDigitInfo = calculateBestSingleDigit(parsedDraws);
       document.getElementById('bestSingleDigit').innerText = bestDigitInfo.digit;
       document.getElementById('bestDigitScore').innerText = `Score: ${bestDigitInfo.score}%`;
       document.getElementById('bestDigitReason').innerText = bestDigitInfo.reason;
     }
 
-    // Smart Multi-Factor Scoring Algorithm for Single Best Digit
     function calculateBestSingleDigit(draws) {
       if (draws.length === 0) return { digit: '?', score: 0, reason: '-' };
-
       const scores = Array(10).fill(0);
-      const totalDraws = draws.length;
 
-      // Factor 1: Frequency Weight (30%)
       const freq = Array(10).fill(0);
       draws.forEach(d => {
         d.allDigits.forEach(num => freq[num]++);
       });
       const maxFreq = Math.max(...freq) || 1;
-      freq.forEach((f, num) => {
-        scores[num] += (f / maxFreq) * 30;
-      });
+      freq.forEach((f, num) => { scores[num] += (f / maxFreq) * 30; });
 
-      // Factor 2: Recency Trend (25%) - Last 5 draws
       const recentDraws = draws.slice(-5);
       recentDraws.forEach((d, idx) => {
         const weight = (idx + 1) * 2;
-        d.allDigits.forEach(num => {
-          scores[num] += weight;
-        });
+        d.allDigits.forEach(num => { scores[num] += weight; });
       });
 
-      // Factor 3: Streak Momentum & Rebound (25%)
       for (let num = 0; num <= 9; num++) {
         let lastSeenIndex = -1;
         for (let i = draws.length - 1; i >= 0; i--) {
@@ -415,12 +384,9 @@
           }
         }
         const gap = lastSeenIndex === -1 ? draws.length : (draws.length - 1 - lastSeenIndex);
-        if (gap === 1 || gap === 2) {
-          scores[num] += 20; // High probability rebound zone
-        }
+        if (gap === 1 || gap === 2) { scores[num] += 20; }
       }
 
-      // Find Max Score Digit
       let bestDigit = 0;
       let maxScore = -1;
       for (let num = 0; num <= 9; num++) {
@@ -431,34 +397,27 @@
       }
 
       const normalizedScore = Math.min(99, Math.round((maxScore / 60) * 100));
-
       return {
         digit: bestDigit,
         score: normalizedScore,
-        reason: `คะแนนมาจากความถี่สะสม, แนวโน้ม 5 งวดล่าสุด และจังหวะรอบเลขวนซ้ำ`
+        reason: `คำนวณจากความถี่สะสม, แนวโน้ม 5 งวดล่าสุด และจังหวะรอบเลขวนซ้ำ`
       };
     }
 
-    // Render Correlated Pairs (1-8, 1-6 etc.)
     function renderPairAnalysis() {
       const tbody = document.getElementById('pairAnalysisBody');
       tbody.innerHTML = '';
-
-      // Test all unique pairs 0-9
       const pairStats = [];
 
       for (let d1 = 0; d1 <= 9; d1++) {
         for (let d2 = d1 + 1; d2 <= 9; d2++) {
-          let hits = 0;
-          let misses = 0;
-          let currentMiss = 0;
-          let maxMiss = 0;
-          let currentHit = 0;
-          let maxHit = 0;
+          let hits = 0, misses = 0;
+          let currentMiss = 0, maxMiss = 0;
+          let currentHit = 0, maxHit = 0;
 
           parsedDraws.forEach(draw => {
-            const hasD1 = draw.allDigits.includes(d1);
-            const hasD2 = draw.allDigits.includes(d2);
+            const hasD1 = draw.pairDigits.includes(d1);
+            const hasD2 = draw.pairDigits.includes(d2);
 
             if (hasD1 || hasD2) {
               hits++;
@@ -476,32 +435,31 @@
           const total = parsedDraws.length;
           const hitRate = Math.round((hits / total) * 100);
 
-          // Calculate Rebound % if current miss equals or near max miss
+          let trendStatus = '';
           let reboundProb = 50;
-          if (currentMiss > 0 && currentMiss >= maxMiss - 1) {
-            reboundProb = Math.min(95, 75 + (currentMiss * 10));
-          } else if (currentHit > 0) {
-            reboundProb = Math.max(30, 60 - (currentHit * 5));
+
+          if (currentMiss > 0 && currentMiss >= maxMiss) {
+            trendStatus = `<span class="text-amber-400 font-bold">🔥 มีโอกาสกลับมาสูง (หลุดชนสถิติสูงสุด ${currentMiss} งวด)</span>`;
+            reboundProb = 90;
+          } else if (currentMiss > 0) {
+            trendStatus = `<span class="text-rose-400">กำลังหลุด (${currentMiss} งวด)</span>`;
+            reboundProb = 60 + (currentMiss * 5);
+          } else if (currentHit >= 3) {
+            trendStatus = `<span class="text-emerald-400 font-semibold">🌟 กำลังร้อนแรง (เข้าติดกัน ${currentHit} งวด)</span>`;
+            reboundProb = 80;
+          } else {
+            trendStatus = `<span class="text-slate-300">เสถียรปกติ</span>`;
+            reboundProb = 70;
           }
 
           pairStats.push({
             pair: `${d1} ↔ ${d2}`,
-            hits,
-            misses,
-            maxHit,
-            maxMiss,
-            currentMiss,
-            currentHit,
-            hitRate,
-            reboundProb
+            hits, misses, maxHit, maxMiss, currentMiss, currentHit, hitRate, trendStatus, reboundProb
           });
         }
       }
 
-      // Sort pairs by Hit Rate descending
       pairStats.sort((a, b) => b.hitRate - a.hitRate);
-
-      // Take Top 5 Pairs
       const topPairs = pairStats.slice(0, 5);
 
       topPairs.forEach((item, index) => {
@@ -510,45 +468,30 @@
         else if (index === 1) rankClass = 'rank-2';
         else if (index === 2) rankClass = 'rank-3';
 
-        const statusText = item.currentMiss > 0 
-          ? `<span class="text-rose-400">หลุดมาแล้ว ${item.currentMiss} งวด</span>`
-          : `<span class="text-emerald-400">เข้าติดต่อกัน ${item.currentHit} งวด</span>`;
-
         const tr = document.createElement('tr');
         tr.className = `${rankClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
-          <td class="p-2 font-bold">${index + 1}</td>
-          <td class="p-2 font-bold text-amber-300">${item.pair}</td>
+          <td class="p-2 font-bold">${index + 1} ${index === 0 ? '🏆' : ''}</td>
+          <td class="p-2 font-bold text-amber-300 text-sm">${item.pair}</td>
           <td class="p-2 text-emerald-400 font-semibold">${item.hits}</td>
           <td class="p-2 text-rose-400">${item.misses}</td>
           <td class="p-2 text-emerald-300">${item.maxHit} งวด</td>
           <td class="p-2 text-amber-400">${item.maxMiss} งวด</td>
-          <td class="p-2">${statusText}</td>
+          <td class="p-2">${item.trendStatus}</td>
           <td class="p-2 font-bold text-emerald-400">${item.reboundProb}%</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // Render Digits 0-9 Position Performance Table
     function renderDigitStatsTable() {
       const tbody = document.getElementById('digitStatsBody');
       tbody.innerHTML = '';
-
       const digitData = [];
 
       for (let digit = 0; digit <= 9; digit++) {
-        let countAll = 0;
-        let countH = 0;
-        let countTTop = 0;
-        let countUTop = 0;
-        let countTBot = 0;
-        let countUBot = 0;
-
-        let currentMiss = 0;
-        let maxMiss = 0;
-        let currentHit = 0;
-        let maxHit = 0;
+        let countAll = 0, countH = 0, countTTop = 0, countUTop = 0, countTBot = 0, countUBot = 0;
+        let currentMiss = 0, maxMiss = 0, currentHit = 0, maxHit = 0;
 
         parsedDraws.forEach(draw => {
           const inDraw = draw.allDigits.includes(digit);
@@ -571,31 +514,15 @@
         });
 
         digitData.push({
-          digit,
-          countAll,
-          countH,
-          countTTop,
-          countUTop,
-          countTBot,
-          countUBot,
-          maxHit,
-          maxMiss,
-          currentMiss,
-          currentHit
+          digit, countAll, countH, countTTop, countUTop, countTBot, countUBot, maxHit, maxMiss, currentMiss, currentHit
         });
       }
 
-      // Sort by countAll descending for ranking
-      const sortedByCount = [...digitData].sort((a, b) => b.countAll - a.countAll);
-      
-      // Map ranks
-      const rankMap = {};
-      sortedByCount.forEach((item, index) => {
-        rankMap[item.digit] = index + 1;
-      });
+      // Sort by total occurrences descending (Rank ordering)
+      digitData.sort((a, b) => b.countAll - a.countAll);
 
-      digitData.forEach(item => {
-        const rank = rankMap[item.digit];
+      digitData.forEach((item, index) => {
+        const rank = index + 1;
         let rankClass = '';
         if (rank === 1) rankClass = 'rank-1';
         else if (rank === 2) rankClass = 'rank-2';
@@ -608,11 +535,11 @@
         const tr = document.createElement('tr');
         tr.className = `${rankClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
+          <td class="p-2 font-bold text-amber-300">อันดับ ${rank}</td>
           <td class="p-2 font-bold text-slate-100 flex items-center gap-1.5">
-            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-200 flex items-center justify-center text-[11px]">${item.digit}</span>
-            ${rank <= 3 ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900/80 text-emerald-300">อันดับ ${rank}</span>` : ''}
+            <span class="w-6 h-6 rounded-full bg-slate-700 text-slate-100 flex items-center justify-center font-bold text-xs shadow-inner border border-slate-600">${item.digit}</span>
           </td>
-          <td class="p-2 font-bold text-emerald-400">${item.countAll}</td>
+          <td class="p-2 font-bold text-emerald-400 text-sm">${item.countAll}</td>
           <td class="p-2 text-slate-300">${item.countH}</td>
           <td class="p-2 text-slate-300">${item.countTTop}</td>
           <td class="p-2 text-slate-300">${item.countUTop}</td>
@@ -626,7 +553,6 @@
       });
     }
 
-    // Render Hit/Miss Matrix & Consistency Windows
     function renderHitMissMatrix() {
       const tbody = document.getElementById('hitMissMatrixBody');
       tbody.innerHTML = '';
@@ -634,24 +560,13 @@
       let totalHits = 0;
       let currentMissStreak = 0;
       let maxMissStreak = 0;
-
-      // Walk-forward Backtest Simulation
       const matrixRows = [];
 
       for (let i = 0; i < parsedDraws.length; i++) {
         const currentDraw = parsedDraws[i];
-        
-        // Strict Rule: Prediction for current draw uses ONLY draws before 'i'
         const historyDraws = parsedDraws.slice(0, i);
         
-        let predictedDigit = null;
-        if (historyDraws.length > 0) {
-          predictedDigit = calculateBestSingleDigit(historyDraws).digit;
-        } else {
-          // First draw baseline
-          predictedDigit = currentDraw.h;
-        }
-
+        let predictedDigit = historyDraws.length > 0 ? calculateBestSingleDigit(historyDraws).digit : currentDraw.h;
         const isHit = currentDraw.allDigits.includes(predictedDigit);
         
         if (isHit) {
@@ -662,7 +577,6 @@
           maxMissStreak = Math.max(maxMissStreak, currentMissStreak);
         }
 
-        // Detect positions matched
         const matchedPositions = [];
         if (currentDraw.h === predictedDigit) matchedPositions.push('ร้อย');
         if (currentDraw.tTop === predictedDigit) matchedPositions.push('สิบบน');
@@ -679,13 +593,11 @@
         });
       }
 
-      // Update Summary UI
       const hitRate = Math.round((totalHits / parsedDraws.length) * 100) || 0;
       document.getElementById('overallAccuracy').innerText = `${hitRate}%`;
       document.getElementById('currentMissStreak').innerText = currentMissStreak;
       document.getElementById('maxMissStreak').innerText = maxMissStreak;
 
-      // Render Matrix Table (Show Newest First for readability)
       [...matrixRows].reverse().forEach(row => {
         const tr = document.createElement('tr');
         tr.className = row.isHit ? 'bg-emerald-950/20 hover:bg-emerald-900/30' : 'bg-rose-950/20 hover:bg-rose-900/30';
@@ -699,11 +611,9 @@
         tbody.appendChild(tr);
       });
 
-      // Render Consistency Windows
       renderWindowConsistency(matrixRows);
     }
 
-    // Render Consistency Across Windows (Last 5, 10, 20 draws)
     function renderWindowConsistency(matrixRows) {
       const container = document.getElementById('windowConsistencyContainer');
       container.innerHTML = '';
