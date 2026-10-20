@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.4 Smart Consensus)</title>
+  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.5 Smart Consensus - Updated)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Kanit -->
@@ -53,7 +53,7 @@
       <div>
         <h1 class="text-base font-bold text-emerald-400 flex items-center gap-2">
           <i data-lucide="calculator" class="w-5 h-5"></i>
-          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.4 Smart Consensus)
+          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.5 Smart Consensus)
         </h1>
         <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | ป้องกันความเสี่ยงด้วย Smart Consensus Engine</p>
       </div>
@@ -449,9 +449,9 @@
       return [...draws].reverse(); 
     }
 
-    // SMART CONSENSUS ENGINE (v3.4)
+    // SMART CONSENSUS ENGINE (v3.5)
     function calculateBestSingleDigit(draws) {
-      if (draws.length === 0) return { digit: '?', microDigit: '?', score: 0, scores: [] };
+      if (draws.length === 0) return { digit: '?', microDigit: '?', score: 0, scores: [], rankedDigits: [] };
 
       const scores = Array(10).fill(0);
 
@@ -482,17 +482,12 @@
         }
       }
 
-      // Find Global Best
-      let globalBest = 0;
-      let maxScore = -1;
-      for (let num = 0; num <= 9; num++) {
-        if (scores[num] > maxScore) {
-          maxScore = scores[num];
-          globalBest = num;
-        }
-      }
+      // Rank all digits 0-9
+      const rankedDigits = [...Array(10).keys()].sort((a, b) => scores[b] - scores[a]);
 
-      // Find Micro-Trend Best (Consensus check)
+      const globalBest = rankedDigits[0];
+
+      // Find Micro-Trend Best
       const microScores = Array(10).fill(0);
       slice5.forEach(d => d.pairDigits.forEach(n => microScores[n] += 20));
       let microBest = 0;
@@ -504,13 +499,14 @@
         }
       }
 
-      const normalizedScore = Math.min(99, Math.round((maxScore / 100) * 100));
+      const normalizedScore = Math.min(99, Math.round((scores[globalBest] / 100) * 100));
 
       return {
         digit: globalBest,
         microDigit: microBest,
         score: normalizedScore,
-        scores: scores
+        scores: scores,
+        rankedDigits: rankedDigits
       };
     }
 
@@ -563,7 +559,8 @@
         deadContainer.innerHTML = `<span class="text-xs text-slate-400">ไม่มีเลขดับเด่นชัด</span>`;
       } else {
         topDead.forEach(item => {
-          const div = document.createElement('div');
+          const div = document.append ? document.createElement('div') : null;
+          if (!div) return;
           div.className = 'flex items-center gap-2 bg-rose-950/60 border border-rose-800 px-2.5 py-1 rounded-lg text-xs';
           div.innerHTML = `
             <span class="w-5 h-5 rounded-full bg-rose-600 text-white font-bold flex items-center justify-center text-[11px]">${item.digit}</span>
@@ -573,11 +570,23 @@
         });
       }
 
+      // UPDATED LOGIC: การ์ด 4 ใบสำหรับชุดจับคู่แนะนำ
+      const rank = res.rankedDigits;
+      const best1 = rank[0];
+      const best2 = rank[1];
+      const win6 = rank.slice(0, 6).join(' - ');
+      
+      // เลือกตัวกันที่ไม่ซ้ำกับ best1
+      let guardDigit = rank[2];
+      if (res.microDigit !== best1) {
+        guardDigit = res.microDigit;
+      }
+
       const combos = [
-        { label: 'รูดเด่น (หลัก + กระแสสั้น)', val: `${res.digit} - ${res.microDigit}` },
-        { label: 'วิ่งตัวหลัก', val: `${res.digit}` },
-        { label: 'วิน 3 ตัวบน', val: `${res.digit}${res.microDigit}${(res.digit + 1) % 10}` },
-        { label: 'วิ่งเสริมกระแสสั้น', val: `${res.microDigit}` }
+        { label: 'เด่น 2 ตัว (รูด/เจาะ)', val: `${best1} - ${best2}` },
+        { label: 'วิ่งตัวเดียว (สายรูดเดี่ยว)', val: `${best1}` },
+        { label: 'ชุดวิน 6 ตัว (บน-ล่าง)', val: `${win6}` },
+        { label: 'ตัวกัน / แทรกกระแสสั้น', val: `${guardDigit}` }
       ];
 
       combos.forEach(c => {
@@ -702,6 +711,7 @@
       });
     }
 
+    // FIXED: โค้ดคำนวณสถิติเข้าสูงสุด/หลุดสูงสุด สำหรับตารางคู่สัมพันธ์
     function renderPairAnalysis() {
       const tbody = document.getElementById('pairAnalysisBody');
       tbody.innerHTML = '';
@@ -710,11 +720,50 @@
       for (let d1 = 0; d1 <= 9; d1++) {
         for (let d2 = d1 + 1; d2 <= 9; d2++) {
           let hits = 0, misses = 0;
+          let currentMiss = 0, maxMiss = 0;
+          let currentHit = 0, maxHit = 0;
+
           parsedDraws.forEach(draw => {
-            if (draw.pairDigits.includes(d1) || draw.pairDigits.includes(d2)) hits++;
-            else misses++;
+            const hasD1 = draw.pairDigits.includes(d1);
+            const hasD2 = draw.pairDigits.includes(d2);
+
+            if (hasD1 || hasD2) {
+              hits++;
+              currentHit++;
+              maxHit = Math.max(maxHit, currentHit);
+              currentMiss = 0;
+            } else {
+              misses++;
+              currentMiss++;
+              maxMiss = Math.max(maxMiss, currentMiss);
+              currentHit = 0;
+            }
           });
-          pairStats.push({ pair: `${d1} ↔ ${d2}`, hits, misses, hitRate: Math.round((hits / parsedDraws.length) * 100) });
+
+          const total = parsedDraws.length;
+          const hitRate = Math.round((hits / total) * 100);
+
+          let trendStatus = '';
+          let reboundProb = 50;
+
+          if (currentMiss > 0 && currentMiss >= maxMiss) {
+            trendStatus = `<span class="text-amber-400 font-bold">🔥 ชนสถิติหลุด (${currentMiss} งวด)</span>`;
+            reboundProb = 90;
+          } else if (currentMiss > 0) {
+            trendStatus = `<span class="text-rose-400">หลุด ${currentMiss} งวด</span>`;
+            reboundProb = 60 + (currentMiss * 5);
+          } else if (currentHit >= 3) {
+            trendStatus = `<span class="text-emerald-400 font-semibold">🌟 ร้อนแรง (${currentHit} งวด)</span>`;
+            reboundProb = 80;
+          } else {
+            trendStatus = `<span class="text-slate-300">เสถียร</span>`;
+            reboundProb = 70;
+          }
+
+          pairStats.push({
+            pair: `${d1} ↔ ${d2}`,
+            hits, misses, maxHit, maxMiss, currentMiss, currentHit, hitRate, trendStatus, reboundProb
+          });
         }
       }
 
@@ -725,17 +774,18 @@
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
           <td class="p-2 font-bold text-amber-300">${item.pair}</td>
-          <td class="p-2 text-emerald-400">${item.hits}</td>
+          <td class="p-2 text-emerald-400 font-semibold">${item.hits}</td>
           <td class="p-2 text-rose-400">${item.misses}</td>
-          <td class="p-2">-</td>
-          <td class="p-2">-</td>
-          <td class="p-2 text-slate-300">เสถียร</td>
-          <td class="p-2 font-bold text-emerald-400">${item.hitRate}%</td>
+          <td class="p-2 text-emerald-300 font-semibold">${item.maxHit}</td>
+          <td class="p-2 text-amber-400 font-semibold">${item.maxMiss}</td>
+          <td class="p-2">${item.trendStatus}</td>
+          <td class="p-2 font-bold text-emerald-400">${item.reboundProb}%</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
+    // FIXED: โค้ดคำนวณสถิติเข้าสูงสุด/หลุดสูงสุด สำหรับตารางสถิติตัวเลข 0-9 รายหลัก
     function renderDigitStatsTable() {
       const tbody = document.getElementById('digitStatsBody');
       tbody.innerHTML = '';
@@ -743,20 +793,40 @@
 
       for (let digit = 0; digit <= 9; digit++) {
         let countAll = 0, countH = 0, countTTop = 0, countUTop = 0, countTBot = 0, countUBot = 0;
+        let currentMiss = 0, maxMiss = 0, currentHit = 0, maxHit = 0;
+
         parsedDraws.forEach(draw => {
-          if (draw.allDigits.includes(digit)) countAll++;
+          const inDraw = draw.allDigits.includes(digit);
           if (draw.h === digit) countH++;
           if (draw.tTop === digit) countTTop++;
           if (draw.uTop === digit) countUTop++;
           if (draw.tBot === digit) countTBot++;
           if (draw.uBot === digit) countUBot++;
+
+          if (inDraw) {
+            countAll++;
+            currentHit++;
+            maxHit = Math.max(maxHit, currentHit);
+            currentMiss = 0;
+          } else {
+            currentMiss++;
+            maxMiss = Math.max(maxMiss, currentMiss);
+            currentHit = 0;
+          }
         });
-        digitData.push({ digit, countAll, countH, countTTop, countUTop, countTBot, countUBot });
+
+        digitData.push({
+          digit, countAll, countH, countTTop, countUTop, countTBot, countUBot, maxHit, maxMiss, currentMiss, currentHit
+        });
       }
 
       digitData.sort((a, b) => b.countAll - a.countAll);
       digitData.forEach((item, index) => {
         const colorClass = `color-scale-${index + 1}`;
+        const statusText = item.currentMiss > 0 
+          ? `<span class="text-rose-400">หลุด ${item.currentMiss} งวด</span>`
+          : `<span class="text-emerald-400">เข้า ${item.currentHit} งวด</span>`;
+
         const tr = document.createElement('tr');
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
@@ -767,9 +837,9 @@
           <td class="p-2 text-slate-300">${item.countUTop}</td>
           <td class="p-2 text-slate-300">${item.countTBot}</td>
           <td class="p-2 text-slate-300">${item.countUBot}</td>
-          <td class="p-2">-</td>
-          <td class="p-2">-</td>
-          <td class="p-2 text-slate-300">ปกติ</td>
+          <td class="p-2 text-emerald-300 font-semibold">${item.maxHit}</td>
+          <td class="p-2 text-amber-400 font-semibold">${item.maxMiss}</td>
+          <td class="p-2">${statusText}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -779,6 +849,7 @@
       const tbody = document.getElementById('hitMissMatrixBody');
       tbody.innerHTML = '';
       let totalHits = 0;
+      let currentMissStreak = 0;
       const matrixRows = [];
 
       for (let i = 0; i < parsedDraws.length; i++) {
@@ -786,7 +857,13 @@
         const historyDraws = parsedDraws.slice(0, i);
         let predictedDigit = historyDraws.length > 0 ? calculateBestSingleDigit(historyDraws).digit : currentDraw.h;
         const isHit = currentDraw.allDigits.includes(predictedDigit);
-        if (isHit) totalHits++;
+        
+        if (isHit) {
+          totalHits++;
+          currentMissStreak = 0;
+        } else {
+          currentMissStreak++;
+        }
 
         matrixRows.push({
           date: currentDraw.date,
@@ -799,10 +876,11 @@
 
       const hitRate = Math.round((totalHits / parsedDraws.length) * 100) || 0;
       document.getElementById('overallAccuracy').innerText = `${hitRate}%`;
+      document.getElementById('currentMissStreak').innerText = currentMissStreak;
 
       [...matrixRows].reverse().forEach(row => {
         const tr = document.createElement('tr');
-        tr.className = row.isHit ? 'bg-emerald-950/20' : 'bg-rose-950/20';
+        tr.className = row.isHit ? 'bg-emerald-950/20 hover:bg-emerald-900/30' : 'bg-rose-950/20 hover:bg-rose-900/30';
         tr.innerHTML = `
           <td class="p-2 text-slate-300">${row.date}</td>
           <td class="p-2 font-mono font-bold text-slate-100">${row.actual}</td>
