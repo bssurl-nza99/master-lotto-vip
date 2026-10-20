@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.5 Smart Consensus - Updated)</title>
+  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.6 Top 5 Win Sets)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Kanit -->
@@ -53,9 +53,9 @@
       <div>
         <h1 class="text-base font-bold text-emerald-400 flex items-center gap-2">
           <i data-lucide="calculator" class="w-5 h-5"></i>
-          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.5 Smart Consensus)
+          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.6 Win Sets Engine)
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | ป้องกันความเสี่ยงด้วย Smart Consensus Engine</p>
+        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | เพิ่มตารางวิเคราะห์ Top 5 ชุดวินแม่นยำสูง</p>
       </div>
       <div id="lotteryInfo" class="text-right hidden sm:block">
         <span id="lotteryNameTag" class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">
@@ -155,6 +155,36 @@
             ชุดจับคู่แนะนำ (ผสาน Micro-Trend)
           </h2>
           <div id="smartCombosContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
+        </div>
+      </section>
+
+      <!-- NEW: TOP 5 WIN SETS MATRIX -->
+      <section class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+            <i data-lucide="grid" class="w-4 h-4"></i>
+            ตารางจัดอันดับ 5 ชุดวินอัจฉริยะ (Top 5 Win Sets Matrix)
+          </h2>
+          <span class="text-[10px] text-slate-400">วิน 6 ตัว บน-ล่าง (วัดสถิติจริงย้อนหลัง)</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs table-horizontal">
+            <thead>
+              <tr class="bg-slate-900/80 text-slate-400 border-b border-slate-700">
+                <th class="p-2">อันดับ</th>
+                <th class="p-2">ชุดวิน 6 ตัว</th>
+                <th class="p-2">สายสูตร/แนวทาง</th>
+                <th class="p-2">เข้า</th>
+                <th class="p-2">หลุด</th>
+                <th class="p-2">เข้าสูงสุด</th>
+                <th class="p-2">หลุดสูงสุด</th>
+                <th class="p-2">สถานะปัจจุบัน</th>
+                <th class="p-2">โอกาส (%)</th>
+              </tr>
+            </thead>
+            <tbody id="winSetsBody" class="divide-y divide-slate-700/50 text-slate-200"></tbody>
+          </table>
         </div>
       </section>
 
@@ -349,6 +379,7 @@
 
         renderSummaryInfo();
         renderDeadDigitsAndCombos();
+        renderWinSetsMatrix(); // RENEDER NEW TOP 5 WIN SETS
         renderDayPatternAnalysis();
         renderMultiWindowMatrix();
         renderPairAnalysis();
@@ -449,25 +480,22 @@
       return [...draws].reverse(); 
     }
 
-    // SMART CONSENSUS ENGINE (v3.5)
+    // SMART CONSENSUS ENGINE (v3.6)
     function calculateBestSingleDigit(draws) {
       if (draws.length === 0) return { digit: '?', microDigit: '?', score: 0, scores: [], rankedDigits: [] };
 
       const scores = Array(10).fill(0);
 
-      // 1. Global Frequency & Position Score (Weight 40%)
       const freq = Array(10).fill(0);
       draws.forEach(d => d.allDigits.forEach(num => freq[num]++));
       const maxFreq = Math.max(...freq) || 1;
       freq.forEach((f, num) => { scores[num] += (f / maxFreq) * 40; });
 
-      // 2. Short-term Micro-Trend Score (3 & 5 draws boost - Weight 35%)
       const slice3 = draws.slice(-3);
       const slice5 = draws.slice(-5);
       slice3.forEach(d => d.pairDigits.forEach(num => { scores[num] += 12; }));
       slice5.forEach(d => d.pairDigits.forEach(num => { scores[num] += 6; }));
 
-      // 3. Rebound & Gap Bonus (Weight 25%)
       for (let num = 0; num <= 9; num++) {
         let lastSeenIndex = -1;
         for (let i = draws.length - 1; i >= 0; i--) {
@@ -478,16 +506,13 @@
         }
         const gap = lastSeenIndex === -1 ? draws.length : (draws.length - 1 - lastSeenIndex);
         if (gap >= 3 && gap <= 5) {
-          scores[num] += 25; // Sweet spot for rebound
+          scores[num] += 25;
         }
       }
 
-      // Rank all digits 0-9
       const rankedDigits = [...Array(10).keys()].sort((a, b) => scores[b] - scores[a]);
-
       const globalBest = rankedDigits[0];
 
-      // Find Micro-Trend Best
       const microScores = Array(10).fill(0);
       slice5.forEach(d => d.pairDigits.forEach(n => microScores[n] += 20));
       let microBest = 0;
@@ -559,8 +584,7 @@
         deadContainer.innerHTML = `<span class="text-xs text-slate-400">ไม่มีเลขดับเด่นชัด</span>`;
       } else {
         topDead.forEach(item => {
-          const div = document.append ? document.createElement('div') : null;
-          if (!div) return;
+          const div = document.createElement('div');
           div.className = 'flex items-center gap-2 bg-rose-950/60 border border-rose-800 px-2.5 py-1 rounded-lg text-xs';
           div.innerHTML = `
             <span class="w-5 h-5 rounded-full bg-rose-600 text-white font-bold flex items-center justify-center text-[11px]">${item.digit}</span>
@@ -570,13 +594,11 @@
         });
       }
 
-      // UPDATED LOGIC: การ์ด 4 ใบสำหรับชุดจับคู่แนะนำ
       const rank = res.rankedDigits;
       const best1 = rank[0];
       const best2 = rank[1];
       const win6 = rank.slice(0, 6).join(' - ');
       
-      // เลือกตัวกันที่ไม่ซ้ำกับ best1
       let guardDigit = rank[2];
       if (res.microDigit !== best1) {
         guardDigit = res.microDigit;
@@ -597,6 +619,97 @@
           <span class="text-base font-black text-amber-300 font-mono">${c.val}</span>
         `;
         comboContainer.appendChild(div);
+      });
+    }
+
+    // NEW FUNCTION: คำนวณและแสดงผล Top 5 ชุดวินแม่นยำสูง
+    function renderWinSetsMatrix() {
+      const tbody = document.getElementById('winSetsBody');
+      tbody.innerHTML = '';
+
+      if (parsedDraws.length === 0) return;
+
+      const res = calculateBestSingleDigit(parsedDraws);
+      const r = res.rankedDigits;
+
+      // สร้าง 5 ชุดวินกลยุทธ์ต่างกัน
+      const winCandidates = [
+        { name: 'สายแข็งเน้นสถิติหลัก', digits: [r[0], r[1], r[2], r[3], r[4], r[5]] },
+        { name: 'สายกระแสสั้นพุ่งแรง', digits: [res.microDigit, r[0], r[1], r[2], r[3], r[4]].filter((v, i, a) => a.indexOf(v) === i).concat(r).slice(0, 6) },
+        { name: 'สายดักเลขดีดกลับ', digits: [r[0], r[1], r[2], r[3], r[8], r[9]] },
+        { name: 'สายสมดุลย์ บน-ล่าง', digits: [r[0], r[1], r[3], r[4], r[5], r[6]] },
+        { name: 'สายป้องกันความเสี่ยง', digits: [r[1], r[2], r[3], r[4], r[5], r[6]] }
+      ];
+
+      const winSetStats = [];
+
+      winCandidates.forEach((cand, idx) => {
+        let hits = 0, misses = 0;
+        let currentHit = 0, maxHit = 0;
+        let currentMiss = 0, maxMiss = 0;
+
+        parsedDraws.forEach(draw => {
+          // เช็กว่าเลขในผลหวย (บน/ล่าง) มีอย่างน้อย 2 ตัวอยู่ในชุดวินหรือไม่
+          const matchedCount = draw.allDigits.filter(d => cand.digits.includes(d)).length;
+          const isHit = matchedCount >= 2; 
+
+          if (isHit) {
+            hits++;
+            currentHit++;
+            maxHit = Math.max(maxHit, currentHit);
+            currentMiss = 0;
+          } else {
+            misses++;
+            currentMiss++;
+            maxMiss = Math.max(maxMiss, currentMiss);
+            currentHit = 0;
+          }
+        });
+
+        const hitRate = Math.round((hits / parsedDraws.length) * 100);
+        let statusText = '';
+        let chance = 70;
+
+        if (currentMiss >= maxMiss && currentMiss > 0) {
+          statusText = `<span class="text-amber-400 font-bold">🔥 ชนสถิติหลุด (รอดีดกลับ)</span>`;
+          chance = 90;
+        } else if (currentHit >= 3) {
+          statusText = `<span class="text-emerald-400 font-bold">🌟 ร้อนแรง (${currentHit} งวดติด)</span>`;
+          chance = 85;
+        } else if (currentMiss > 0) {
+          statusText = `<span class="text-rose-400">หลุด ${currentMiss} งวด</span>`;
+          chance = 60 + (currentMiss * 5);
+        } else {
+          statusText = `<span class="text-emerald-300">เข้า ${currentHit} งวดติด</span>`;
+          chance = 75;
+        }
+
+        winSetStats.push({
+          rankName: `อันดับ ${idx + 1}`,
+          name: cand.name,
+          winStr: cand.digits.join(' - '),
+          hits, misses, maxHit, maxMiss, currentMiss, currentHit, hitRate, statusText, chance
+        });
+      });
+
+      winSetStats.sort((a, b) => b.hitRate - a.hitRate);
+
+      winSetStats.forEach((item, index) => {
+        const colorClass = `color-scale-${index + 1}`;
+        const tr = document.createElement('tr');
+        tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
+        tr.innerHTML = `
+          <td class="p-2 font-bold text-emerald-400">#${index + 1}</td>
+          <td class="p-2 font-mono font-bold text-amber-300 text-sm">${item.winStr}</td>
+          <td class="p-2 text-slate-300 font-medium">${item.name}</td>
+          <td class="p-2 text-emerald-400 font-semibold">${item.hits}</td>
+          <td class="p-2 text-rose-400">${item.misses}</td>
+          <td class="p-2 text-emerald-300 font-semibold">${item.maxHit}</td>
+          <td class="p-2 text-amber-400 font-semibold">${item.maxMiss}</td>
+          <td class="p-2">${item.statusText}</td>
+          <td class="p-2 font-bold text-emerald-400">${item.chance}%</td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
@@ -711,7 +824,6 @@
       });
     }
 
-    // FIXED: โค้ดคำนวณสถิติเข้าสูงสุด/หลุดสูงสุด สำหรับตารางคู่สัมพันธ์
     function renderPairAnalysis() {
       const tbody = document.getElementById('pairAnalysisBody');
       tbody.innerHTML = '';
@@ -785,7 +897,6 @@
       });
     }
 
-    // FIXED: โค้ดคำนวณสถิติเข้าสูงสุด/หลุดสูงสุด สำหรับตารางสถิติตัวเลข 0-9 รายหลัก
     function renderDigitStatsTable() {
       const tbody = document.getElementById('digitStatsBody');
       tbody.innerHTML = '';
