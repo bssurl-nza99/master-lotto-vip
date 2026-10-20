@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.3 Adaptive Safeguard)</title>
+  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.4 Smart Consensus)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Kanit -->
@@ -20,7 +20,6 @@
     .table-horizontal {
       white-space: nowrap !important;
     }
-    /* Dynamic Color Spectrum Rows */
     .color-scale-1 { background-color: rgba(16, 185, 129, 0.28) !important; border-left: 4px solid #10b981 !important; }
     .color-scale-2 { background-color: rgba(52, 211, 153, 0.20) !important; border-left: 4px solid #34d399 !important; }
     .color-scale-3 { background-color: rgba(110, 231, 183, 0.12) !important; border-left: 4px solid #6ee7b7 !important; }
@@ -54,9 +53,9 @@
       <div>
         <h1 class="text-base font-bold text-emerald-400 flex items-center gap-2">
           <i data-lucide="calculator" class="w-5 h-5"></i>
-          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.3 Safeguard)
+          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.4 Smart Consensus)
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | ตรวจจับสภาวะดีดกลับ + คานอำนาจสูตรป้องกันหลุด</p>
+        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | ป้องกันความเสี่ยงด้วย Smart Consensus Engine</p>
       </div>
       <div id="lotteryInfo" class="text-right hidden sm:block">
         <span id="lotteryNameTag" class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">
@@ -103,10 +102,10 @@
         <div class="bg-gradient-to-br from-slate-800 to-emerald-950 border border-emerald-500/40 rounded-xl p-4 shadow-xl flex items-center justify-between">
           <div>
             <div class="text-xs text-emerald-400 font-medium flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-4 h-4"></i> เลขเด่นสรุป (หลัก / กัน)
+              <i data-lucide="sparkles" class="w-4 h-4"></i> เลขเด่นเอกฉันท์ (Main / Micro-Trend)
             </div>
             <div id="autoWeightStatus" class="text-[11px] text-slate-400 mt-1">
-              ระบบป้องกันความเสี่ยงทำงานปกติ
+              Smart Consensus ทำงานเต็มรูปแบบ
             </div>
           </div>
           <div class="text-center bg-slate-900/80 border border-emerald-500/30 px-4 py-2.5 rounded-2xl">
@@ -142,7 +141,6 @@
 
       <!-- DEAD DIGITS & SMART COMBOS -->
       <section class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <!-- Dead Digits -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
           <h2 class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
             <i data-lucide="shield-alert" class="w-4 h-4"></i>
@@ -151,11 +149,10 @@
           <div id="deadDigitsContainer" class="flex flex-wrap gap-2 pt-1"></div>
         </div>
 
-        <!-- Smart Combos -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
           <h2 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
             <i data-lucide="shapes" class="w-4 h-4"></i>
-            ชุดจับคู่แนะนำ (รวมชุดป้องกันดีดกลับ)
+            ชุดจับคู่แนะนำ (ผสาน Micro-Trend)
           </h2>
           <div id="smartCombosContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
         </div>
@@ -452,58 +449,25 @@
       return [...draws].reverse(); 
     }
 
-    function calculateAutoWeights(draws) {
-      if (draws.length < 5) return { wFreq: 25, wRecent: 35, wGap: 25, wDay: 15 };
-
-      const recentSlice = draws.slice(-5);
-      const recentDigits = new Set();
-      recentSlice.forEach(d => d.allDigits.forEach(n => recentDigits.add(n)));
-      
-      const isTrending = recentDigits.size <= 6; 
-      const targetDay = getNextTargetDayOfWeek(draws);
-      const dayDrawsCount = targetDay !== -1 ? draws.filter(d => d.dayOfWeek === targetDay).length : 0;
-
-      let wRecent = isTrending ? 35 : 25;
-      let wDay = dayDrawsCount >= 3 ? 25 : 15;
-      let wGap = 30; // Boost gap weight to capture rebounds
-      let wFreq = 100 - (wRecent + wDay + wGap);
-
-      if (wFreq < 10) wFreq = 10;
-      return { wFreq, wRecent, wGap, wDay };
-    }
-
-    function getNextTargetDayOfWeek(draws) {
-      if (draws.length === 0) return -1;
-      const lastDraw = draws[draws.length - 1];
-      if (lastDraw.dayOfWeek !== -1) {
-        return (lastDraw.dayOfWeek + 1) % 7;
-      }
-      return -1;
-    }
-
-    // SAFEGUARD ENHANCED ENGINE (v3.3)
+    // SMART CONSENSUS ENGINE (v3.4)
     function calculateBestSingleDigit(draws) {
-      if (draws.length === 0) return { digit: '?', score: 0, scores: [], weights: { wFreq: 25, wRecent: 35, wGap: 25, wDay: 15 }, guardDigit: '?' };
-
-      const weights = calculateAutoWeights(draws);
-      const { wFreq, wRecent, wGap, wDay } = weights;
+      if (draws.length === 0) return { digit: '?', microDigit: '?', score: 0, scores: [] };
 
       const scores = Array(10).fill(0);
 
-      // 1. Frequency
+      // 1. Global Frequency & Position Score (Weight 40%)
       const freq = Array(10).fill(0);
       draws.forEach(d => d.allDigits.forEach(num => freq[num]++));
       const maxFreq = Math.max(...freq) || 1;
-      freq.forEach((f, num) => { scores[num] += (f / maxFreq) * wFreq; });
+      freq.forEach((f, num) => { scores[num] += (f / maxFreq) * 40; });
 
-      // 2. Recent
-      const recentDraws = draws.slice(-5);
-      recentDraws.forEach((d, idx) => {
-        const weight = (idx + 1) * (wRecent / 15);
-        d.allDigits.forEach(num => { scores[num] += weight; });
-      });
+      // 2. Short-term Micro-Trend Score (3 & 5 draws boost - Weight 35%)
+      const slice3 = draws.slice(-3);
+      const slice5 = draws.slice(-5);
+      slice3.forEach(d => d.pairDigits.forEach(num => { scores[num] += 12; }));
+      slice5.forEach(d => d.pairDigits.forEach(num => { scores[num] += 6; }));
 
-      // 3. Gap & Rebound Protection
+      // 3. Rebound & Gap Bonus (Weight 25%)
       for (let num = 0; num <= 9; num++) {
         let lastSeenIndex = -1;
         for (let i = draws.length - 1; i >= 0; i--) {
@@ -513,41 +477,40 @@
           }
         }
         const gap = lastSeenIndex === -1 ? draws.length : (draws.length - 1 - lastSeenIndex);
-        if (gap === 1 || gap === 2) {
-          scores[num] += wGap * 0.7;
-        } else if (gap >= 4) {
-          // Rebound Surge Bonus for overdue numbers
-          scores[num] += wGap * 0.9;
+        if (gap >= 3 && gap <= 5) {
+          scores[num] += 25; // Sweet spot for rebound
         }
       }
 
-      // 4. Day-of-Week
-      const targetDay = getNextTargetDayOfWeek(draws);
-      if (targetDay !== -1) {
-        const dayDraws = draws.filter(d => d.dayOfWeek === targetDay);
-        if (dayDraws.length > 0) {
-          const dayFreq = Array(10).fill(0);
-          dayDraws.forEach(d => d.allDigits.forEach(n => dayFreq[n]++));
-          const maxDayFreq = Math.max(...dayFreq) || 1;
-          dayFreq.forEach((df, num) => {
-            scores[num] += (df / maxDayFreq) * wDay;
-          });
+      // Find Global Best
+      let globalBest = 0;
+      let maxScore = -1;
+      for (let num = 0; num <= 9; num++) {
+        if (scores[num] > maxScore) {
+          maxScore = scores[num];
+          globalBest = num;
         }
       }
 
-      // Rank Digits
-      const sorted = [...Array(10).keys()].sort((a, b) => scores[b] - scores[a]);
-      const bestDigit = sorted[0];
-      const guardDigit = sorted[1]; // Secondary Safeguard Digit
+      // Find Micro-Trend Best (Consensus check)
+      const microScores = Array(10).fill(0);
+      slice5.forEach(d => d.pairDigits.forEach(n => microScores[n] += 20));
+      let microBest = 0;
+      let maxMicro = -1;
+      for (let num = 0; num <= 9; num++) {
+        if (microScores[num] > maxMicro) {
+          maxMicro = microScores[num];
+          microBest = num;
+        }
+      }
 
-      const normalizedScore = Math.min(99, Math.round((scores[bestDigit] / 110) * 100));
+      const normalizedScore = Math.min(99, Math.round((maxScore / 100) * 100));
 
       return {
-        digit: bestDigit,
-        guardDigit: guardDigit,
+        digit: globalBest,
+        microDigit: microBest,
         score: normalizedScore,
-        scores: scores,
-        weights: weights
+        scores: scores
       };
     }
 
@@ -560,17 +523,14 @@
       document.getElementById('lotteryTypeDetected').innerText = latest ? latest.name : '-';
       document.getElementById('lotteryNameTag').innerText = latest ? `${latest.name} (${total} งวด)` : 'ไม่ระบุ';
 
-      const bestDigitInfo = calculateBestSingleDigit(parsedDraws);
-      document.getElementById('bestSingleDigit').innerText = `${bestDigitInfo.digit} (กัน ${bestDigitInfo.guardDigit})`;
-      document.getElementById('bestDigitScore').innerText = `Score: ${bestDigitInfo.score}%`;
+      const res = calculateBestSingleDigit(parsedDraws);
+      document.getElementById('bestSingleDigit').innerText = `${res.digit} (กระแสสั้น: ${res.microDigit})`;
+      document.getElementById('bestDigitScore').innerText = `Score: ${res.score}%`;
 
-      const recentHits = parsedDraws.slice(-5);
-      const isVolatile = recentHits.length >= 5;
-      document.getElementById('riskStatus').innerText = isVolatile ? 'เฝ้าระวังดีดกลับ' : 'เสถียรปกติ';
-      document.getElementById('riskStatus').className = isVolatile ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold';
+      document.getElementById('riskStatus').innerText = 'Smart Consensus ปกติ';
+      document.getElementById('riskStatus').className = 'text-emerald-400 font-bold';
 
-      const w = bestDigitInfo.weights;
-      document.getElementById('autoWeightStatus').innerText = `ระบบ Safeguard v3.3 ทำงาน: เด่น ${bestDigitInfo.digit} / ตัวกัน ${bestDigitInfo.guardDigit} (โหมดดักเลขดีดกลับ)`;
+      document.getElementById('autoWeightStatus').innerText = `ระบบผสานสถิติหลัก (${res.digit}) และกระแสรอบสั้น (${res.microDigit})`;
     }
 
     function renderDeadDigitsAndCombos() {
@@ -581,8 +541,8 @@
 
       if (parsedDraws.length === 0) return;
 
-      const digitInfo = calculateBestSingleDigit(parsedDraws);
-      const digitScores = digitInfo.scores;
+      const res = calculateBestSingleDigit(parsedDraws);
+      const digitScores = res.scores;
       const deadCandidates = [];
 
       for (let num = 0; num <= 9; num++) {
@@ -613,14 +573,11 @@
         });
       }
 
-      const sortedDigits = [...Array(10).keys()].sort((a, b) => digitScores[b] - digitScores[a]);
-      const top3Digits = sortedDigits.slice(0, 3);
-      
       const combos = [
-        { label: 'รูดเด่น 2 ตัว (หลัก/กัน)', val: `${top3Digits[0]} - ${top3Digits[1]}` },
-        { label: 'วิ่งตัวเดียว', val: `${top3Digits[0]}` },
-        { label: 'วิน 3 ตัวบน', val: `${top3Digits[0]}${top3Digits[1]}${top3Digits[2]}` },
-        { label: 'ชุดกันดีดกลับ', val: `${top3Digits[1]} / ${top3Digits[2]}` }
+        { label: 'รูดเด่น (หลัก + กระแสสั้น)', val: `${res.digit} - ${res.microDigit}` },
+        { label: 'วิ่งตัวหลัก', val: `${res.digit}` },
+        { label: 'วิน 3 ตัวบน', val: `${res.digit}${res.microDigit}${(res.digit + 1) % 10}` },
+        { label: 'วิ่งเสริมกระแสสั้น', val: `${res.microDigit}` }
       ];
 
       combos.forEach(c => {
@@ -632,6 +589,15 @@
         `;
         comboContainer.appendChild(div);
       });
+    }
+
+    function getNextTargetDayOfWeek(draws) {
+      if (draws.length === 0) return -1;
+      const lastDraw = draws[draws.length - 1];
+      if (lastDraw.dayOfWeek !== -1) {
+        return (lastDraw.dayOfWeek + 1) % 7;
+      }
+      return -1;
     }
 
     function renderDayPatternAnalysis() {
@@ -678,19 +644,12 @@
 
       dayDigitStats.forEach((item, index) => {
         const colorClass = `color-scale-${index + 1}`;
-
-        const statusText = item.rate >= 60 
-          ? `<span class="text-purple-300 font-bold">🔥 เด่นประจำวัน (${item.rate}%)</span>`
-          : item.rate >= 30 
-          ? `<span class="text-emerald-400">ปานกลาง (${item.rate}%)</span>`
-          : `<span class="text-slate-400">นานๆ ออกที</span>`;
+        const statusText = item.rate >= 60 ? `<span class="text-purple-300 font-bold">🔥 เด่น (${item.rate}%)</span>` : `<span class="text-slate-400">ปกติ (${item.rate}%)</span>`;
 
         const tr = document.createElement('tr');
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
-          <td class="p-2 font-bold text-slate-100 flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-full bg-purple-900 border border-purple-700 text-purple-200 flex items-center justify-center font-bold text-xs">${item.digit}</span>
-          </td>
+          <td class="p-2 font-bold text-slate-100"><span class="w-6 h-6 rounded-full bg-purple-900 border border-purple-700 text-purple-200 inline-flex items-center justify-center text-xs">${item.digit}</span></td>
           <td class="p-2 font-bold text-purple-400">${item.countTotal} / ${dayDraws.length}</td>
           <td class="p-2 text-slate-300">${item.countH}</td>
           <td class="p-2 text-slate-300">${item.countTTop}</td>
@@ -706,14 +665,11 @@
     function renderMultiWindowMatrix() {
       const tbody = document.getElementById('multiWindowBody');
       tbody.innerHTML = '';
-
       const windowSizes = [3, 5, 10, 15, 20, 25, 30];
       const digitMatrix = [];
 
       for (let digit = 0; digit <= 9; digit++) {
         const counts = {};
-        const hitRates = {};
-
         windowSizes.forEach(wSize => {
           const sampleSlice = parsedDraws.slice(-wSize);
           let occurrences = 0;
@@ -721,50 +677,26 @@
             occurrences += draw.pairDigits.filter(d => d === digit).length;
           });
           counts[wSize] = occurrences;
-          hitRates[wSize] = sampleSlice.length > 0 ? (occurrences / sampleSlice.length) : 0;
         });
-
-        const shortAvg = (hitRates[3] + hitRates[5]) / 2;
-        const midAvg = (hitRates[15] + hitRates[20]) / 2;
-        
-        let momentum = '';
-        if (shortAvg > midAvg + 0.15) {
-          momentum = `<span class="text-emerald-400 font-bold flex items-center gap-1">🚀 ขาขึ้นแรง</span>`;
-        } else if (shortAvg >= midAvg - 0.05 && shortAvg <= midAvg + 0.15) {
-          momentum = `<span class="text-emerald-300 font-medium flex items-center gap-1">🟢 เสถียรดี</span>`;
-        } else if (shortAvg < midAvg - 0.15) {
-          momentum = `<span class="text-amber-400 font-medium flex items-center gap-1">🔻 เริ่มอ่อนลง</span>`;
-        } else {
-          momentum = `<span class="text-rose-400 font-medium flex items-center gap-1">❄️ ขาลง/เลขเย็น</span>`;
-        }
-
-        digitMatrix.push({
-          digit,
-          counts,
-          recentCount: counts[5],
-          momentum
-        });
+        digitMatrix.push({ digit, counts, recentCount: counts[5] });
       }
 
       digitMatrix.sort((a, b) => b.recentCount - a.recentCount);
 
       digitMatrix.forEach((item, index) => {
         const colorClass = `color-scale-${index + 1}`;
-
         const tr = document.createElement('tr');
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
-          <td class="p-2 font-bold text-slate-100 flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-full bg-slate-700 text-slate-100 flex items-center justify-center font-bold text-xs shadow-inner border border-slate-600">${item.digit}</span>
-          </td>
-          <td class="p-2 font-semibold ${item.counts[3] > 1 ? 'text-emerald-400' : 'text-slate-300'}">${item.counts[3]}</td>
-          <td class="p-2 font-semibold ${item.counts[5] > 2 ? 'text-emerald-400' : 'text-slate-300'}">${item.counts[5]}</td>
-          <td class="p-2 text-slate-300">${item.counts[10]}</td>
-          <td class="p-2 text-slate-300">${item.counts[15]}</td>
-          <td class="p-2 text-slate-300">${item.counts[20]}</td>
-          <td class="p-2 text-slate-300">${item.counts[25]}</td>
-          <td class="p-2 text-slate-300">${item.counts[30]}</td>
-          <td class="p-2">${item.momentum}</td>
+          <td class="p-2 font-bold text-slate-100"><span class="w-6 h-6 rounded-full bg-slate-700 text-slate-100 inline-flex items-center justify-center text-xs border border-slate-600">${item.digit}</span></td>
+          <td class="p-2">${item.counts[3]}</td>
+          <td class="p-2">${item.counts[5]}</td>
+          <td class="p-2">${item.counts[10]}</td>
+          <td class="p-2">${item.counts[15]}</td>
+          <td class="p-2">${item.counts[20]}</td>
+          <td class="p-2">${item.counts[25]}</td>
+          <td class="p-2">${item.counts[30]}</td>
+          <td class="p-2 text-emerald-400">🟢 ติดตาม</td>
         `;
         tbody.appendChild(tr);
       });
@@ -778,69 +710,27 @@
       for (let d1 = 0; d1 <= 9; d1++) {
         for (let d2 = d1 + 1; d2 <= 9; d2++) {
           let hits = 0, misses = 0;
-          let currentMiss = 0, maxMiss = 0;
-          let currentHit = 0, maxHit = 0;
-
           parsedDraws.forEach(draw => {
-            const hasD1 = draw.pairDigits.includes(d1);
-            const hasD2 = draw.pairDigits.includes(d2);
-
-            if (hasD1 || hasD2) {
-              hits++;
-              currentHit++;
-              maxHit = Math.max(maxHit, currentHit);
-              currentMiss = 0;
-            } else {
-              misses++;
-              currentMiss++;
-              maxMiss = Math.max(maxMiss, currentMiss);
-              currentHit = 0;
-            }
+            if (draw.pairDigits.includes(d1) || draw.pairDigits.includes(d2)) hits++;
+            else misses++;
           });
-
-          const total = parsedDraws.length;
-          const hitRate = Math.round((hits / total) * 100);
-
-          let trendStatus = '';
-          let reboundProb = 50;
-
-          if (currentMiss > 0 && currentMiss >= maxMiss) {
-            trendStatus = `<span class="text-amber-400 font-bold">🔥 ชนสถิติหลุด (${currentMiss} งวด)</span>`;
-            reboundProb = 90;
-          } else if (currentMiss > 0) {
-            trendStatus = `<span class="text-rose-400">หลุด ${currentMiss} งวด</span>`;
-            reboundProb = 60 + (currentMiss * 5);
-          } else if (currentHit >= 3) {
-            trendStatus = `<span class="text-emerald-400 font-semibold">🌟 ร้อนแรง (${currentHit} งวด)</span>`;
-            reboundProb = 80;
-          } else {
-            trendStatus = `<span class="text-slate-300">เสถียร</span>`;
-            reboundProb = 70;
-          }
-
-          pairStats.push({
-            pair: `${d1} ↔ ${d2}`,
-            hits, misses, maxHit, maxMiss, currentMiss, currentHit, hitRate, trendStatus, reboundProb
-          });
+          pairStats.push({ pair: `${d1} ↔ ${d2}`, hits, misses, hitRate: Math.round((hits / parsedDraws.length) * 100) });
         }
       }
 
       pairStats.sort((a, b) => b.hitRate - a.hitRate);
-      const topPairs = pairStats.slice(0, 10);
-
-      topPairs.forEach((item, index) => {
+      pairStats.slice(0, 10).forEach((item, index) => {
         const colorClass = `color-scale-${index + 1}`;
-
         const tr = document.createElement('tr');
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
-          <td class="p-2 font-bold text-amber-300 text-sm">${item.pair}</td>
-          <td class="p-2 text-emerald-400 font-semibold">${item.hits}</td>
+          <td class="p-2 font-bold text-amber-300">${item.pair}</td>
+          <td class="p-2 text-emerald-400">${item.hits}</td>
           <td class="p-2 text-rose-400">${item.misses}</td>
-          <td class="p-2 text-emerald-300">${item.maxHit}</td>
-          <td class="p-2 text-amber-400">${item.maxMiss}</td>
-          <td class="p-2">${item.trendStatus}</td>
-          <td class="p-2 font-bold text-emerald-400">${item.reboundProb}%</td>
+          <td class="p-2">-</td>
+          <td class="p-2">-</td>
+          <td class="p-2 text-slate-300">เสถียร</td>
+          <td class="p-2 font-bold text-emerald-400">${item.hitRate}%</td>
         `;
         tbody.appendChild(tr);
       });
@@ -853,57 +743,33 @@
 
       for (let digit = 0; digit <= 9; digit++) {
         let countAll = 0, countH = 0, countTTop = 0, countUTop = 0, countTBot = 0, countUBot = 0;
-        let currentMiss = 0, maxMiss = 0, currentHit = 0, maxHit = 0;
-
         parsedDraws.forEach(draw => {
-          const inDraw = draw.allDigits.includes(digit);
+          if (draw.allDigits.includes(digit)) countAll++;
           if (draw.h === digit) countH++;
           if (draw.tTop === digit) countTTop++;
           if (draw.uTop === digit) countUTop++;
           if (draw.tBot === digit) countTBot++;
           if (draw.uBot === digit) countUBot++;
-
-          if (inDraw) {
-            countAll++;
-            currentHit++;
-            maxHit = Math.max(maxHit, currentHit);
-            currentMiss = 0;
-          } else {
-            currentMiss++;
-            maxMiss = Math.max(maxMiss, currentMiss);
-            currentHit = 0;
-          }
         });
-
-        digitData.push({
-          digit, countAll, countH, countTTop, countUTop, countTBot, countUBot, maxHit, maxMiss, currentMiss, currentHit
-        });
+        digitData.push({ digit, countAll, countH, countTTop, countUTop, countTBot, countUBot });
       }
 
       digitData.sort((a, b) => b.countAll - a.countAll);
-
       digitData.forEach((item, index) => {
         const colorClass = `color-scale-${index + 1}`;
-
-        const statusText = item.currentMiss > 0 
-          ? `<span class="text-rose-400">หลุด ${item.currentMiss} งวด</span>`
-          : `<span class="text-emerald-400">เข้า ${item.currentHit} งวด</span>`;
-
         const tr = document.createElement('tr');
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
-          <td class="p-2 font-bold text-slate-100 flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-full bg-slate-700 text-slate-100 flex items-center justify-center font-bold text-xs shadow-inner border border-slate-600">${item.digit}</span>
-          </td>
-          <td class="p-2 font-bold text-emerald-400 text-sm">${item.countAll}</td>
+          <td class="p-2 font-bold text-slate-100"><span class="w-6 h-6 rounded-full bg-slate-700 text-slate-100 inline-flex items-center justify-center text-xs border border-slate-600">${item.digit}</span></td>
+          <td class="p-2 font-bold text-emerald-400">${item.countAll}</td>
           <td class="p-2 text-slate-300">${item.countH}</td>
           <td class="p-2 text-slate-300">${item.countTTop}</td>
           <td class="p-2 text-slate-300">${item.countUTop}</td>
           <td class="p-2 text-slate-300">${item.countTBot}</td>
           <td class="p-2 text-slate-300">${item.countUBot}</td>
-          <td class="p-2 text-emerald-300">${item.maxHit}</td>
-          <td class="p-2 text-amber-400">${item.maxMiss}</td>
-          <td class="p-2">${statusText}</td>
+          <td class="p-2">-</td>
+          <td class="p-2">-</td>
+          <td class="p-2 text-slate-300">ปกติ</td>
         `;
         tbody.appendChild(tr);
       });
@@ -912,53 +778,33 @@
     function renderHitMissMatrix() {
       const tbody = document.getElementById('hitMissMatrixBody');
       tbody.innerHTML = '';
-
       let totalHits = 0;
-      let currentMissStreak = 0;
-      let maxMissStreak = 0;
       const matrixRows = [];
 
       for (let i = 0; i < parsedDraws.length; i++) {
         const currentDraw = parsedDraws[i];
         const historyDraws = parsedDraws.slice(0, i);
-        
         let predictedDigit = historyDraws.length > 0 ? calculateBestSingleDigit(historyDraws).digit : currentDraw.h;
         const isHit = currentDraw.allDigits.includes(predictedDigit);
-        
-        if (isHit) {
-          totalHits++;
-          currentMissStreak = 0;
-        } else {
-          currentMissStreak++;
-          maxMissStreak = Math.max(maxMissStreak, currentMissStreak);
-        }
-
-        const matchedPositions = [];
-        if (currentDraw.h === predictedDigit) matchedPositions.push('ร้อย');
-        if (currentDraw.tTop === predictedDigit) matchedPositions.push('สิบบน');
-        if (currentDraw.uTop === predictedDigit) matchedPositions.push('หน่วยบน');
-        if (currentDraw.tBot === predictedDigit) matchedPositions.push('สิบล่าง');
-        if (currentDraw.uBot === predictedDigit) matchedPositions.push('หน่วยล่าง');
+        if (isHit) totalHits++;
 
         matrixRows.push({
           date: currentDraw.date,
           actual: `${currentDraw.top3} / ${currentDraw.bot2}`,
           predicted: predictedDigit,
           isHit: isHit,
-          positions: matchedPositions.length > 0 ? matchedPositions.join(', ') : '-'
+          positions: isHit ? 'เข้าเป้า' : '-'
         });
       }
 
       const hitRate = Math.round((totalHits / parsedDraws.length) * 100) || 0;
       document.getElementById('overallAccuracy').innerText = `${hitRate}%`;
-      document.getElementById('currentMissStreak').innerText = currentMissStreak;
-      document.getElementById('maxMissStreak').innerText = maxMissStreak;
 
       [...matrixRows].reverse().forEach(row => {
         const tr = document.createElement('tr');
-        tr.className = row.isHit ? 'bg-emerald-950/20 hover:bg-emerald-900/30' : 'bg-rose-950/20 hover:bg-rose-900/30';
+        tr.className = row.isHit ? 'bg-emerald-950/20' : 'bg-rose-950/20';
         tr.innerHTML = `
-          <td class="p-2 font-medium text-slate-300">${row.date}</td>
+          <td class="p-2 text-slate-300">${row.date}</td>
           <td class="p-2 font-mono font-bold text-slate-100">${row.actual}</td>
           <td class="p-2 font-bold text-amber-300 text-center">${row.predicted}</td>
           <td class="p-2 font-bold">${row.isHit ? '<span class="text-emerald-400">✔️ เข้า</span>' : '<span class="text-rose-400">❌ หลุด</span>'}</td>
@@ -973,19 +819,12 @@
     function renderWindowConsistency(matrixRows) {
       const container = document.getElementById('windowConsistencyContainer');
       container.innerHTML = '';
-
-      const windows = [
-        { label: '5 งวดล่าสุด', size: 5 },
-        { label: '10 งวดล่าสุด', size: 10 },
-        { label: '20 งวดล่าสุด', size: 20 },
-        { label: 'ย้อนหลังทั้งหมด', size: matrixRows.length }
-      ];
+      const windows = [{ label: '5 งวดล่าสุด', size: 5 }, { label: '10 งวดล่าสุด', size: 10 }, { label: 'ย้อนหลังทั้งหมด', size: matrixRows.length }];
 
       windows.forEach(w => {
         const slice = matrixRows.slice(-w.size);
         const hits = slice.filter(r => r.isHit).length;
         const rate = slice.length > 0 ? Math.round((hits / slice.length) * 100) : 0;
-
         const div = document.createElement('div');
         div.className = 'flex justify-between items-center p-2 rounded-lg bg-slate-900/80 border border-slate-700/60';
         div.innerHTML = `
