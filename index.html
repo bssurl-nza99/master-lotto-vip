@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติตัวเลข v10.1 (Conditional Target-Pairs Precision Engine)</title>
+    <title>ระบบวิเคราะห์สถิติตัวเลข v10.2 (Master-Synced Batch Target Pairs Engine)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fonts -->
@@ -88,13 +88,13 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 class="text-base sm:text-lg font-bold tracking-tight gold-gradient-text">ระบบวิเคราะห์สถิติตัวเลข (Conditional Precision Engine)</h1>
-                        <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">v10.1 Pro Master</span>
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight gold-gradient-text">ระบบวิเคราะห์สถิติตัวเลข (Master-Synced Batch Engine)</h1>
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">v10.2 Pro Master</span>
                     </div>
                     <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                        <span>King-Locked Target Pairs + Conditional Target-Pairs Hit Rate Matrix</span>
+                        <span>King-Locked Batch Target Pairs + Consolidated Conditional Hit Rate</span>
                         <span class="text-slate-600">•</span>
-                        <span id="headerStatusBadge" class="text-emerald-400 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ตรวจสอบประสิทธิภาพเลขเจาะเมื่อเด่นเข้าเป้า</span>
+                        <span id="headerStatusBadge" class="text-emerald-400 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ระบบชุดคู่เจาะรวมชุดและวัดผลสถิติแบบกระชับ</span>
                     </p>
                 </div>
             </div>
@@ -107,7 +107,7 @@
                 </div>
                 <button onclick="processData()" class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg emerald-glow transition-all cursor-pointer">
                     <i data-lucide="zap" class="w-4 h-4 fill-current"></i>
-                    <span>รันประมวลผลระบบเงื่อนไขพิเศษ</span>
+                    <span>รันประมวลผลระบบทั้งหมด</span>
                 </button>
             </div>
         </header>
@@ -116,7 +116,7 @@
         <section class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
             <div class="flex items-center justify-between">
                 <label for="rawInput" class="text-xs sm:text-sm font-semibold text-slate-200 flex items-center gap-2">
-                    <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> วางข้อมูลสถิติดิบ (ระบบจะคำนวณสถิติเลขเจาะเฉพาะงวดที่เลขเด่นเข้าเป้าอัตโนมัติ)
+                    <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> วางข้อมูลสถิติดิบ (คู่เจาะล็อกเลขเด่น + แสดงผลแบบแพ็กเกจรวมชุดไม่รกตา)
                 </label>
                 <div class="flex items-center gap-2">
                     <button onclick="clearData()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-800/80 rounded-xl transition-colors border border-slate-700 flex items-center gap-1 cursor-pointer">
@@ -127,7 +127,7 @@
             <textarea id="rawInput" rows="6" class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl p-3 text-xs sm:text-sm font-mono text-slate-200 focus:outline-none focus:border-emerald-500 transition-all custom-scrollbar placeholder:text-slate-600 leading-relaxed shadow-inner" placeholder="วางข้อมูลสถิติย้อนหลังที่นี่..."></textarea>
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 pt-1">
                 <span id="optimizationStatus" class="flex items-center gap-1 text-emerald-400 font-medium">
-                    <i data-lucide="cpu" class="w-3.5 h-3.5"></i> พร้อมรัน Conditional Precision Engine
+                    <i data-lucide="cpu" class="w-3.5 h-3.5"></i> พร้อมรัน Batch Target Pairs Engine
                 </span>
                 <span id="parsingStatus" class="font-medium text-slate-400">รอการประมวลผล...</span>
             </div>
@@ -226,32 +226,38 @@
                 </div>
             </section>
 
-            <!-- King-Locked Target Pairs Engine (6 คู่เจาะต้องมีเลขเด่นเสมอ) -->
+            <!-- King-Locked Batch Target Pairs (แสดงผลคู่เจาะแบบแพ็กเกจรวมชุด บรรทัดเดียวง่ายต่อการมอง) -->
             <section class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3 emerald-glow">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div>
                         <h3 class="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-2">
                             <i data-lucide="crosshair" class="w-4 h-4 text-amber-400"></i>
-                            ตาราง 6 คู่เจาะเน้นๆ ประจำงวด (King-Locked Target Pairs)
+                            ชุด 6 คู่เจาะเน้นๆ ประจำงวด (King-Locked Batch View)
                         </h3>
-                        <p class="text-[11px] text-slate-400 mt-0.5">ทุกคู่เจาะถูกบังคับล็อกให้มีเลขเด่นกษัตริย์เป็นแกนหลัก พร้อมคัดกรองจากทุกโมดูลและแทร็กสถิติ (%) จริง</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">ทุกคู่เจาะมีเลขเด่นกษัตริย์เป็นแกนหลัก แสดงผลแบบแพ็กเกจรวมชุดต่อเนื่อง อ่านง่าย ไม่รกตา</p>
                     </div>
-                    <span class="px-3 py-1 bg-amber-500/10 text-xs text-amber-300 rounded-xl border border-amber-500/30 font-bold w-fit">King-Locked Top 6</span>
+                    <span class="px-3 py-1 bg-amber-500/10 text-xs text-amber-300 rounded-xl border border-amber-500/30 font-bold w-fit">Batch Package</span>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="targetPairsContainer">
-                    <!-- Dynamic Rendered King-Locked Target Pairs -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-center">
+                    <div class="text-xs text-slate-400 mb-1">ชุดคู่เจาะ 6 คู่ (พร้อมลุยประจำงวด):</div>
+                    <div id="batchPairsDisplay" class="text-2xl sm:text-3xl font-black text-amber-300 font-mono tracking-widest my-2">
+                        -
+                    </div>
+                    <div id="batchPairsDetails" class="text-xs text-slate-400 mt-1">
+                        -
+                    </div>
                 </div>
             </section>
 
-            <!-- NEW TABLE: Conditional Target Pairs Hit-Rate Matrix (วัดผลเลขเจาะเฉพาะงวดที่เลขเด่นเข้า) -->
+            <!-- NEW CONSOLIDATED TABLE: Conditional Batch Target Pairs Hit Rate Matrix (วัดผลภาพรวมชุดคู่เจาะเฉพาะงวดที่เด่นเข้า) -->
             <section class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3 border border-amber-500/30">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div>
                         <h3 class="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-2">
                             <i data-lucide="target" class="w-4 h-4 text-amber-400"></i>
-                            ตารางสถิติพิเศษ: ประสิทธิภาพเลขเจาะเมื่อ "เลขเด่นเข้าเป้า" เท่านั้น (Conditional Target Pairs Analysis)
+                            ตารางสถิติพิเศษ: ประสิทธิภาพ "ชุดคู่เจาะรวมชุด" เมื่อเลขเด่นเข้าเป้า (Consolidated Conditional Hit Rate)
                         </h3>
-                        <p class="text-[11px] text-slate-400 mt-0.5">วัดความแม่นยำเฉพาะงวดที่เลขเด่น (King Digit) ถูกต้อง เพื่อดูว่าเมื่อเด่นมาแล้ว คู่เจาะทำงานได้มีประสิทธิภาพแค่ไหน</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">วัดผลรวบยอดว่าเมื่อเลขเด่นเข้าเป้า ในงวดเหล่านั้น ชุดคู่เจาะแพ็กเกจนี้พาเข้าเป้าไปกี่งวด คิดเป็นกี่เปอร์เซ็นต์ (%)</p>
                     </div>
                     <span id="conditionalSummaryBadge" class="px-3 py-1 bg-emerald-500/10 text-xs text-emerald-400 rounded-xl border border-emerald-500/20 font-bold w-fit">King Hits: 0 งวด</span>
                 </div>
@@ -259,14 +265,13 @@
                     <table class="w-full text-left border-collapse text-xs sm:text-sm table-horizontal">
                         <thead>
                             <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/60">
-                                <th class="p-2.5 font-semibold">อันดับคู่เจาะ</th>
-                                <th class="p-2.5 font-semibold text-center">คู่เลขเจาะ (แกนเด่น)</th>
-                                <th class="p-2.5 font-semibold text-center">เข้าเป้า (เฉพาะงวดที่เด่นเข้า)</th>
-                                <th class="p-2.5 font-semibold text-center">จำนวนงวดที่เด่นเข้าทั้งหมด</th>
-                                <th class="p-2.5 font-semibold text-right">ประสิทธิภาพ (Conditional Hit Rate %)</th>
+                                <th class="p-2.5 font-semibold">รายการประเมิน</th>
+                                <th class="p-2.5 font-semibold text-center">จำนวนงวดที่เข้าเป้า</th>
+                                <th class="p-2.5 font-semibold text-center">ฐานจำนวนงวดทั้งหมด</th>
+                                <th class="p-2.5 font-semibold text-right">ประสิทธิภาพ (Hit Rate %)</th>
                             </tr>
                         </thead>
-                        <tbody id="conditionalPairsBody" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+                        <tbody id="conditionalConsolidatedBody" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
                     </table>
                 </div>
             </section>
@@ -557,31 +562,31 @@
     </div>
 
     <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 text-center text-xs text-slate-500 space-y-1">
-        <p>ระบบวิเคราะห์สถิติตัวเลข v10.1 (Conditional Target-Pairs Precision Engine)</p>
-        <p class="text-[11px] text-slate-600">เพิ่มตารางวิเคราะห์สถิติตัวเลขเจาะเฉพาะงวดที่เลขเด่นเข้าเป้า (Conditional Hit-Rate)</p>
+        <p>ระบบวิเคราะห์สถิติตัวเลข v10.2 (Master-Synced Batch Target Pairs Engine)</p>
+        <p class="text-[11px] text-slate-600">ชุดคู่เจาะรวมชุดแบบแพ็กเกจ + ตารางวัดผลสถิติภาพรวมเมื่อเลขเด่นเข้าเป้า</p>
     </footer>
 
-    <!-- JavaScript Engine with Conditional Target Pairs Analysis -->
+    <!-- JavaScript Engine with Batch Target Pairs & Consolidated Conditional Hit-Rate -->
     <script>
         let parsedDraws = [];
         let lotteryTitle = "ไม่ระบุ";
         let optimalWeights = { w1: 15, w2: 20, w3: 15, w4: 15, w5: 15, w6: 20 };
 
-        const defaultRawInput = `หุ้นดาวโจนส์ | 14 ต.ค. 69
-148
-62
-หุ้นดาวโจนส์ | 13 ต.ค. 69
-010
-45
-หุ้นดาวโจนส์ | 12 ต.ค. 69
-055
-60
-หุ้นดาวโจนส์ | 9 ต.ค. 69
-495
-31
-หุ้นดาวโจนส์ | 8 ต.ค. 69
-164
-77`;
+        const defaultRawInput = `นิคเคอิ VIP บ่าย | 18 ต.ค. 69
+331
+57
+นิคเคอิ VIP บ่าย | 17 ต.ค. 69
+957
+15
+นิคเคอิ VIP บ่าย | 16 ต.ค. 69
+180
+83
+นิคเคอิ VIP บ่าย | 15 ต.ค. 69
+874
+64
+นิคเคอิ VIP บ่าย | 14 ต.ค. 69
+688
+27`;
 
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('rawInput').value = defaultRawInput;
@@ -792,7 +797,7 @@
                 return;
             }
 
-            document.getElementById('optimizationStatus').innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> ประมวลผล Conditional Precision Engine สำเร็จ`;
+            document.getElementById('optimizationStatus').innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> ประมวลผล Batch Engine สำเร็จ`;
 
             optimalWeights = runRealTimeOptimizer(parsedDraws);
             document.getElementById('optimizedWeightsDisplay').innerText = `W1:${optimalWeights.w1}%, W2:${optimalWeights.w2}%, W3:${optimalWeights.w3}%, W4:${optimalWeights.w4}%, W5:${optimalWeights.w5}%, W6:${optimalWeights.w6}%`;
@@ -830,11 +835,11 @@
             
             renderKingCard(latestCouncil.kingDigit, latestCouncil, totalHits, masterResults, maxHitStreak, maxMissStreak, bestWinSetArray);
             
-            // Render King-Locked Target Pairs
-            const topPairs = renderKingLockedTargetPairs(parsedDraws, latestCouncil.scores, latestCouncil.kingDigit);
+            // Render King-Locked Batch Target Pairs (แสดงผลแบบรวมชุดแพ็กเกจ)
+            const topPairs = renderKingLockedBatchPairs(parsedDraws, latestCouncil.scores, latestCouncil.kingDigit);
             
-            // NEW: Render Conditional Target Pairs Table (เฉพาะงวดที่เลขเด่นเข้า)
-            renderConditionalTargetPairsTable(parsedDraws, masterResults, topPairs);
+            // NEW: Render Consolidated Conditional Hit Rate Table (วัดผลภาพรวมเมื่อเลขเด่นเข้า)
+            renderConsolidatedConditionalTable(parsedDraws, masterResults, topPairs);
             
             // Render High/Low and Even/Odd Tables
             renderHighLowAndEvenOddTables(parsedDraws);
@@ -872,7 +877,7 @@
                 gateBadge.className = "text-xs text-emerald-400 font-semibold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20";
                 gateBadge.innerHTML = "🟢 ความมั่นใจสูง (High Confidence)";
                 headerBadge.className = "text-emerald-400 flex items-center gap-1";
-                headerBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ระบบเงื่อนไขพิเศษพร้อมใช้งาน`;
+                headerBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ชุดคู่เจาะแบบแพ็กเกจพร้อมใช้งาน`;
             }
 
             const pairSecond = (kingDigit + 1) % 10;
@@ -882,8 +887,8 @@
             document.getElementById('recWin6').innerText = bestWinSetArray.join(" ");
         }
 
-        // King-Locked Target Pairs (คืนค่ารายการคู่เจาะเพื่อนำไปใช้คำนวณต่อ)
-        function renderKingLockedTargetPairs(draws, currentScores, kingDigit) {
+        // King-Locked Batch Pairs (แสดงผลคู่เจาะแบบแพ็กเกจรวมชุด บรรทัดเดียว)
+        function renderKingLockedBatchPairs(draws, currentScores, kingDigit) {
             let digitRanking = [];
             for (let d = 0; d < 10; d++) {
                 if (d === kingDigit) continue;
@@ -898,7 +903,7 @@
                 let b = Math.max(kingDigit, partner);
                 let pairStr = `${a}${b}`;
                 if (!pairs.some(p => p.pairStr === pairStr)) {
-                    pairs.push({ pairStr, d1: a, d2: b, score: item.score });
+                    pairs.push({ pairStr, d1: a, d2: b });
                 }
             });
 
@@ -910,48 +915,24 @@
                     let b = Math.max(kingDigit, partner);
                     let pairStr = `${a}${b}`;
                     if (!pairs.some(p => p.pairStr === pairStr)) {
-                        pairs.push({ pairStr, d1: a, d2: b, score: 10 });
+                        pairs.push({ pairStr, d1: a, d2: b });
                     }
                 }
                 counter++;
             }
 
-            pairs.forEach(p => {
-                let hits = 0;
-                draws.forEach(draw => {
-                    let allStr = draw.topStr + draw.botStr;
-                    if (allStr.includes(p.d1.toString()) && allStr.includes(p.d2.toString())) {
-                        hits++;
-                    }
-                });
-                p.hits = hits;
-                p.hitRatePct = Math.round((hits / draws.length) * 100);
-            });
+            const top6 = pairs.slice(0, 6);
+            // สร้างสตริงแพ็กเกจรวมชุด เช่น "46 24 49 04 14 34"
+            const batchString = top6.map(p => `${p.d1}${p.d2}`).join('  -  ');
+            
+            document.getElementById('batchPairsDisplay').innerText = batchString;
+            document.getElementById('batchPairsDetails').innerHTML = `แกนหลักเลขเด่น: <span class="text-amber-400 font-bold font-mono">${kingDigit}</span> | จับคู่ 6 ชุดเน้นๆ (รวมตัวกลับ)`;
 
-            const container = document.getElementById('targetPairsContainer');
-            container.innerHTML = '';
-
-            pairs.slice(0, 6).forEach((p, idx) => {
-                const div = document.createElement('div');
-                div.className = "bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-center flex flex-col justify-between hover:border-amber-500/50 transition-all";
-                div.innerHTML = `
-                    <div class="text-[10px] text-amber-400 font-medium mb-1">คู่เจาะกษัตริย์ #${idx + 1}</div>
-                    <div class="text-xl font-black text-amber-300 font-mono tracking-widest my-1">${p.d1}-${p.d2}</div>
-                    <div class="text-[10px] text-slate-400">กลับ: <span class="text-slate-200 font-mono font-bold">${p.d2}${p.d1}</span></div>
-                    <div class="mt-2 pt-2 border-t border-slate-900 flex items-center justify-between text-[10px]">
-                        <span class="text-slate-400">เข้า: ${p.hits}/${draws.length}</span>
-                        <span class="text-emerald-400 font-bold font-mono">${p.hitRatePct}%</span>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-
-            return pairs.slice(0, 6);
+            return top6;
         }
 
-        // NEW: Render Conditional Target Pairs Table (คำนวณเปอร์เซ็นต์เฉพาะงวดที่เลขเด่นเข้าเป้า)
-        function renderConditionalTargetPairsTable(draws, masterResults, topPairs) {
-            // กรองเฉพาะงวดที่ King Digit เข้าเป้า (isHit === true)
+        // NEW: Render Consolidated Conditional Table (วัดผลภาพรวมแพ็กเกจคู่เจาะเมื่อเลขเด่นเข้า)
+        function renderConsolidatedConditionalTable(draws, masterResults, topPairs) {
             const kingHitDrawsIndices = [];
             masterResults.forEach((res, idx) => {
                 if (res.isHit) {
@@ -962,37 +943,39 @@
             const totalKingHits = kingHitDrawsIndices.length;
             document.getElementById('conditionalSummaryBadge').innerText = `King Hits: ${totalKingHits} งวด (จาก ${draws.length} งวด)`;
 
-            const tbody = document.getElementById('conditionalPairsBody');
+            const tbody = document.getElementById('conditionalConsolidatedBody');
             tbody.innerHTML = '';
 
             if (totalKingHits === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">ยังไม่มีงวดที่เลขเด่นเข้าเป้าในชุดข้อมูลนี้</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">ยังไม่มีงวดที่เลขเด่นเข้าเป้าในชุดข้อมูลนี้</td></tr>`;
                 return;
             }
 
-            topPairs.forEach((p, idx) => {
-                let conditionalHits = 0;
-                kingHitDrawsIndices.forEach(drawIdx => {
-                    const draw = draws[drawIdx];
-                    let allStr = draw.topStr + draw.botStr;
+            // คำนวณว่าในงวดที่ King เข้า มีงวดไหนที่ "ชุดแพ็กเกจคู่เจาะ" พาเข้าเป้าอย่างน้อย 1 คู่บ้าง
+            let batchPackageHits = 0;
+            kingHitDrawsIndices.forEach(drawIdx => {
+                const draw = draws[drawIdx];
+                let allStr = draw.topStr + draw.botStr;
+                let matchedAny = false;
+                topPairs.forEach(p => {
                     if (allStr.includes(p.d1.toString()) && allStr.includes(p.d2.toString())) {
-                        conditionalHits++;
+                        matchedAny = true;
                     }
                 });
-
-                let conditionalPct = Math.round((conditionalHits / totalKingHits) * 100);
-
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/40 transition-colors";
-                tr.innerHTML = `
-                    <td class="p-2.5 font-bold text-amber-400">#${idx + 1}</td>
-                    <td class="p-2.5 text-center font-mono font-black text-amber-300 text-base">${p.d1} - ${p.d2} <span class="text-xs text-slate-400 font-normal">(กลับ: ${p.d2}${p.d1})</span></td>
-                    <td class="p-2.5 text-center text-emerald-400 font-bold">${conditionalHits} งวด</td>
-                    <td class="p-2.5 text-center text-slate-300 font-semibold">${totalKingHits} งวด</td>
-                    <td class="p-2.5 text-right font-bold text-emerald-400 font-mono text-base">${conditionalPct}%</td>
-                `;
-                tbody.appendChild(tr);
+                if (matchedAny) batchPackageHits++;
             });
+
+            let consolidatedPct = Math.round((batchPackageHits / totalKingHits) * 100);
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-800/40 transition-colors";
+            tr.innerHTML = `
+                <td class="p-2.5 font-bold text-amber-300">🎯 ภาพรวมชุดคู่เจาะแพ็กเกจ 6 คู่</td>
+                <td class="p-2.5 text-center text-emerald-400 font-bold text-base">${batchPackageHits} งวด</td>
+                <td class="p-2.5 text-center text-slate-300 font-semibold">${totalKingHits} งวด</td>
+                <td class="p-2.5 text-right font-bold text-emerald-400 font-mono text-lg">${consolidatedPct}%</td>
+            `;
+            tbody.appendChild(tr);
         }
 
         // Intelligent Win-Sets Selector
