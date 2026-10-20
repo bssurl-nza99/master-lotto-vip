@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.6 Top 5 Win Sets)</title>
+  <title>ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.7 Clean Win Sets)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Kanit -->
@@ -53,9 +53,9 @@
       <div>
         <h1 class="text-base font-bold text-emerald-400 flex items-center gap-2">
           <i data-lucide="calculator" class="w-5 h-5"></i>
-          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.6 Win Sets Engine)
+          ระบบวิเคราะห์สถิติตัวเลข & คำนวณหวย (v3.7 Clean Win Sets)
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | เพิ่มตารางวิเคราะห์ Top 5 ชุดวินแม่นยำสูง</p>
+        <p class="text-xs text-slate-400 mt-0.5">ระบบซื่อสัตย์ 100% | ชุดวินเรียงตัวเลขน้อยไปมาก สะอาดตา ไร้ขีดคั่น</p>
       </div>
       <div id="lotteryInfo" class="text-right hidden sm:block">
         <span id="lotteryNameTag" class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">
@@ -78,7 +78,6 @@
         class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500 transition placeholder-slate-600"
         placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
 
-      <!-- Action Buttons -->
       <div class="flex justify-between items-center gap-3 pt-1">
         <button id="btnProcess" onclick="processData()" 
           class="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
@@ -152,20 +151,20 @@
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
           <h2 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
             <i data-lucide="shapes" class="w-4 h-4"></i>
-            ชุดจับคู่แนะนำ (ผสาน Micro-Trend)
+            ชุดจับคู่แนะนำ (สะอาดตา ไร้ขีดคั่น)
           </h2>
           <div id="smartCombosContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
         </div>
       </section>
 
-      <!-- NEW: TOP 5 WIN SETS MATRIX -->
+      <!-- TOP 5 WIN SETS MATRIX (CLEAN SORTED FORMAT) -->
       <section class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg space-y-2">
         <div class="flex items-center justify-between">
           <h2 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
             <i data-lucide="grid" class="w-4 h-4"></i>
             ตารางจัดอันดับ 5 ชุดวินอัจฉริยะ (Top 5 Win Sets Matrix)
           </h2>
-          <span class="text-[10px] text-slate-400">วิน 6 ตัว บน-ล่าง (วัดสถิติจริงย้อนหลัง)</span>
+          <span class="text-[10px] text-slate-400">วิน 6 ตัว เรียงน้อยไปมาก สะอาดตา</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -173,7 +172,7 @@
             <thead>
               <tr class="bg-slate-900/80 text-slate-400 border-b border-slate-700">
                 <th class="p-2">อันดับ</th>
-                <th class="p-2">ชุดวิน 6 ตัว</th>
+                <th class="p-2">ชุดวิน 6 ตัว (เรียงน้อยไปมาก)</th>
                 <th class="p-2">สายสูตร/แนวทาง</th>
                 <th class="p-2">เข้า</th>
                 <th class="p-2">หลุด</th>
@@ -379,7 +378,7 @@
 
         renderSummaryInfo();
         renderDeadDigitsAndCombos();
-        renderWinSetsMatrix(); // RENEDER NEW TOP 5 WIN SETS
+        renderWinSetsMatrix();
         renderDayPatternAnalysis();
         renderMultiWindowMatrix();
         renderPairAnalysis();
@@ -480,12 +479,10 @@
       return [...draws].reverse(); 
     }
 
-    // SMART CONSENSUS ENGINE (v3.6)
     function calculateBestSingleDigit(draws) {
       if (draws.length === 0) return { digit: '?', microDigit: '?', score: 0, scores: [], rankedDigits: [] };
 
       const scores = Array(10).fill(0);
-
       const freq = Array(10).fill(0);
       draws.forEach(d => d.allDigits.forEach(num => freq[num]++));
       const maxFreq = Math.max(...freq) || 1;
@@ -597,7 +594,10 @@
       const rank = res.rankedDigits;
       const best1 = rank[0];
       const best2 = rank[1];
-      const win6 = rank.slice(0, 6).join(' - ');
+      
+      // ชุดวิน 6 ตัว เรียงจากน้อยไปมากแบบไม่มีขีดคั่น
+      const win6Array = rank.slice(0, 6).sort((a, b) => a - b);
+      const win6Str = win6Array.join(' ');
       
       let guardDigit = rank[2];
       if (res.microDigit !== best1) {
@@ -605,9 +605,9 @@
       }
 
       const combos = [
-        { label: 'เด่น 2 ตัว (รูด/เจาะ)', val: `${best1} - ${best2}` },
+        { label: 'เด่น 2 ตัว (รูด/เจาะ)', val: `${best1}  ${best2}` },
         { label: 'วิ่งตัวเดียว (สายรูดเดี่ยว)', val: `${best1}` },
-        { label: 'ชุดวิน 6 ตัว (บน-ล่าง)', val: `${win6}` },
+        { label: 'ชุดวิน 6 ตัว (เรียงน้อย-มาก)', val: `${win6Str}` },
         { label: 'ตัวกัน / แทรกกระแสสั้น', val: `${guardDigit}` }
       ];
 
@@ -622,7 +622,7 @@
       });
     }
 
-    // NEW FUNCTION: คำนวณและแสดงผล Top 5 ชุดวินแม่นยำสูง
+    // FUNCTION: Top 5 Win Sets เรียงตัวเลขจากน้อยไปมาก สะอาดตา ไร้ขีดคั่น
     function renderWinSetsMatrix() {
       const tbody = document.getElementById('winSetsBody');
       tbody.innerHTML = '';
@@ -632,8 +632,7 @@
       const res = calculateBestSingleDigit(parsedDraws);
       const r = res.rankedDigits;
 
-      // สร้าง 5 ชุดวินกลยุทธ์ต่างกัน
-      const winCandidates = [
+      const rawCandidates = [
         { name: 'สายแข็งเน้นสถิติหลัก', digits: [r[0], r[1], r[2], r[3], r[4], r[5]] },
         { name: 'สายกระแสสั้นพุ่งแรง', digits: [res.microDigit, r[0], r[1], r[2], r[3], r[4]].filter((v, i, a) => a.indexOf(v) === i).concat(r).slice(0, 6) },
         { name: 'สายดักเลขดีดกลับ', digits: [r[0], r[1], r[2], r[3], r[8], r[9]] },
@@ -643,14 +642,23 @@
 
       const winSetStats = [];
 
-      winCandidates.forEach((cand, idx) => {
+      rawCandidates.forEach((cand, idx) => {
+        // จัดเรียงตัวเลขชุดวินจากน้อยไปมาก และตัดตัวซ้ำ
+        const sortedDigits = [...new Set(cand.digits)].sort((a, b) => a - b).slice(0, 6);
+        while(sortedDigits.length < 6) {
+          // เผื่อกรณีตัวเลขไม่ครบ 6 ตัว ให้เติมเลขที่เหลือ
+          for(let d=0; d<=9; d++) {
+            if(!sortedDigits.includes(d)) { sortedDigits.push(d); break; }
+          }
+          sortedDigits.sort((a,b)=>a-b);
+        }
+
         let hits = 0, misses = 0;
         let currentHit = 0, maxHit = 0;
         let currentMiss = 0, maxMiss = 0;
 
         parsedDraws.forEach(draw => {
-          // เช็กว่าเลขในผลหวย (บน/ล่าง) มีอย่างน้อย 2 ตัวอยู่ในชุดวินหรือไม่
-          const matchedCount = draw.allDigits.filter(d => cand.digits.includes(d)).length;
+          const matchedCount = draw.allDigits.filter(d => sortedDigits.includes(d)).length;
           const isHit = matchedCount >= 2; 
 
           if (isHit) {
@@ -685,9 +693,8 @@
         }
 
         winSetStats.push({
-          rankName: `อันดับ ${idx + 1}`,
           name: cand.name,
-          winStr: cand.digits.join(' - '),
+          winStr: sortedDigits.join('  '), // เว้นวรรคสะอาดตา ไร้ขีดคั่น
           hits, misses, maxHit, maxMiss, currentMiss, currentHit, hitRate, statusText, chance
         });
       });
@@ -700,7 +707,7 @@
         tr.className = `${colorClass} hover:bg-slate-700/30 transition`;
         tr.innerHTML = `
           <td class="p-2 font-bold text-emerald-400">#${index + 1}</td>
-          <td class="p-2 font-mono font-bold text-amber-300 text-sm">${item.winStr}</td>
+          <td class="p-2 font-mono font-bold text-amber-300 text-sm tracking-widest">${item.winStr}</td>
           <td class="p-2 text-slate-300 font-medium">${item.name}</td>
           <td class="p-2 text-emerald-400 font-semibold">${item.hits}</td>
           <td class="p-2 text-rose-400">${item.misses}</td>
