@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Production Master Engine</title>
+<title>เศรษฐีเงินล้าน · Production Master 2.0 Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -546,16 +546,16 @@ table.audit-table th {
       <div class="logo">เศรษฐี</div>
       <div>
         <b>เศรษฐีเงินล้าน Master</b>
-        <small>Smart PDF Parser Engine · Production</small>
+        <small>Smart PDF Parser Engine · Production 2.0</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION 2.0 EDITION</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลข้อมูลสถิติจริงเต็มพิกัด 100% ปราศจากบั๊กและจุดโหว่ พร้อมระบบถ่วงดุล DNA และ Veto ที่สมบูรณ์แบบที่สุด</p>
+    <p>ประมวลผลข้อมูลสถิติจริงเต็มพิกัด พร้อมระบบ Dynamic Volatility Veto และชะลอการหลุดต่อเนื่องอย่างไร้รอยต่อ</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -570,7 +570,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระดับโปรดักชั่น
+        <span>⚡</span> ประมวลผลระดับโปรดักชั่น 2.0
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -823,14 +823,14 @@ function analyzeTrendMomentum(records) {
 
     let shortPct = shortRange.length > 0 ? (shortHits / shortRange.length) * 100 : 0;
     let midPct = midRange.length > 0 ? (midHits / midRange.length) * 100 : 0;
-    let stabilityScore = Math.round((shortPct * 0.4) + (midPct * 0.4) + (totalRate * 0.2));
+    let stabilityScore = Math.round((shortPct * 0.45) + (midPct * 0.35) + (totalRate * 0.20));
 
     let trendLabel = 'เสถียรปกติ';
     if(shortPct >= 60 && midPct >= 40) trendLabel = '🔥 พุ่งแรง (Hot)';
     else if(shortPct === 0 && midPct === 0) trendLabel = '❄️ แผ่ว (Cold)';
     else if(shortPct >= 40) trendLabel = '⚡ กำลังเดิน';
 
-    momentumData.push({ digit: d, shortHits: `${shortHits}/${shortRange.length}`, midHits: `${midHits}/${midRange.length}`, longHits: `${longHits}/${longRange.length}`, stabilityIndex: `${stabilityScore}%`, trendLabel: trendLabel, rawBonus: stabilityScore });
+    momentumData.push({ digit: d, shortHits: `${shortHits}/${shortRange.length}`, midHits: `${midHits}/${midRange.length}`, longHits: `${longHits}/${longRange.length}`, stabilityIndex: `${stabilityScore}%`, trendLabel: trendLabel, rawBonus: stabilityScore, shortPct: shortPct });
   }
   return momentumData;
 }
@@ -898,9 +898,8 @@ function analyzeAdaptiveWeightOptimizer(records) {
     { name: 'Profile Gamma (Balanced Pure Math)', freqWeight: 0.30, gapWeight: 0.30, mathWeight: 0.40, backtestHitRate: '79.8%' }
   ];
   let adaptiveBonuses = Array(10).fill(5);
-  // ใช้ระบบถ่วงน้ำหนักข้อมูลล่าสุดเพื่อเพิ่มความแม่นยำระดับโปรดักชั่น
   records.slice(0, Math.min(10, records.length)).forEach((r, idx) => {
-    let weight = idx < 5 ? 2.0 : 1.0;
+    let weight = idx < 5 ? 2.2 : 1.0;
     (r.top3 + r.bottom2).split('').forEach(d => {
       adaptiveBonuses[parseInt(d)] += weight;
     });
@@ -940,7 +939,15 @@ function calculateGeniusDnaScores(records) {
     scores[parts[0]] += 10; scores[parts[1]] += 10;
   });
 
-  momentumData.forEach(m => { scores[m.digit] += (m.rawBonus * 0.10); });
+  momentumData.forEach(m => { 
+    scores[m.digit] += (m.rawBonus * 0.10); 
+    // Dynamic Volatility Veto: ปรับลดคะแนนลงหากระยะสั้นแผ่วผิดปกติเพื่อลดการหลุดติดต่อกัน
+    if(m.shortPct === 0) {
+      vetoPenalty[m.digit] += 15;
+      statusText[m.digit] = 'สัญญาณหลอก (ระยะสั้นแผ่ว)';
+    }
+  });
+
   mathData.forEach(m => { scores[m.digit] += (m.purityScore * 0.10); });
   for(let d=0; d<=9; d++) { scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; }
 
@@ -1248,7 +1255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลระดับโปรดักชั่นสำเร็จ');
+      showToast('ประมวลผลระดับโปรดักชั่น 2.0 สำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1266,7 +1273,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-Production.png`;
+    link.download = `card-${lotteryName}-Production2.0.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพระดับมืออาชีพสำเร็จ!');
@@ -1277,7 +1284,7 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Production Mode)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Production 2.0 Mode)</div>`;
   let cardIndex = 0;
 
   for (const [type, rows] of Object.entries(parsedData)) {
