@@ -1165,11 +1165,12 @@ function analyzeSumMatrix(records) {
   return { top2Sum: topTop2[0], top3Sum: topTop3[0] };
 }
 
-function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
+// 🎯 ISOLATED THAI STOCK SPECIAL PAIR GENERATOR: ฝังสูตรลับ 10 ปี (แกนหลักหน่วยล่างรอบเที่ยง + Proximity Weighting 6 อันดับ)
+function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits, lotteryType, targetRecord) {
   const pairFreqMap = {};
   activeRecords.forEach(r => {
-    const top2 = r.top3.slice(-2), bot2 = r.bottom2;
-    [top2, bot2].forEach(p => {
+    const top2 = r.top3.slice(-2);
+    [top2].forEach(p => {
       if (p.length === 2) {
         pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
         let rev = p.split('').reverse().join('');
@@ -1177,6 +1178,23 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
       }
     });
   });
+
+  let isThaiStock = lotteryType.includes('ไทย') || lotteryType.includes('เช้า') || lotteryType.includes('เที่ยง') || lotteryType.includes('บ่าย') || lotteryType.includes('เย็น') || lotteryType.includes('ทั้งวัน') || lotteryType.includes('บนตรงๆ');
+  
+  let proximityAllowedDigits = [];
+  if (isThaiStock) {
+    let middayBot2 = "00";
+    if (targetRecord && targetRecord.sessions && targetRecord.sessions.noon && targetRecord.sessions.noon.bottom2) {
+      middayBot2 = targetRecord.sessions.noon.bottom2;
+    } else if (activeRecords.length > 0) {
+      middayBot2 = activeRecords[0].bottom2 || "00";
+    }
+    let unitDigit = parseInt(middayBot2[1] || middayBot2[0] || '0');
+    for (let step = 0; step < 6; step++) {
+      let val = (unitDigit - step + 10) % 10;
+      if (!proximityAllowedDigits.includes(val)) proximityAllowedDigits.push(val);
+    }
+  }
 
   let getFilteredCandidates = (mainDigit) => {
     let cands = [];
@@ -1186,7 +1204,16 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
       let baseScore = pairFreqMap[pStr] || 0;
       let inWinArray = winDigits.includes(mainDigit) && winDigits.includes(i);
       let synergyBonus = inWinArray ? 6 : 0;
-      cands.push({ pair: pStr, score: baseScore + synergyBonus });
+      
+      let proximityBonus = 0;
+      if (isThaiStock && proximityAllowedDigits.length > 0) {
+        let idx = proximityAllowedDigits.indexOf(i);
+        if (idx !== -1) {
+          proximityBonus = (6 - idx) * 4;
+        }
+      }
+
+      cands.push({ pair: pStr, score: baseScore + synergyBonus + proximityBonus });
     }
     cands.sort((a, b) => b.score - a.score);
     return cands.slice(0, 5);
@@ -1218,7 +1245,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   const d2 = masterScores[1].digit;
 
   const winArrayData = generateCoOccurrenceWinArray(activeRecords);
-  const structuredPairs = generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winArrayData.winDigits);
+  const structuredPairs = generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winArrayData.winDigits, lotteryType, activeRecords[0]);
   const displayedPairs = structuredPairs.map(p => p.pair);
 
   const auditPairs = [...displayedPairs];
@@ -1239,12 +1266,41 @@ function analyzeLotteryRecords(records, lotteryType) {
     let isDigitHit = false;
     let isPairHit = false;
 
-    // 🛠️ ตรวจสอบเงื่อนไขพิเศษสำหรับ "หุ้นไทย ทั้งวัน" และ "หุ้นไทย บนตรงๆ" ที่วัดผลจาก 4 รอบ (เช้า, เที่ยง, บ่าย, เย็น) ขอแค่รอบใดรอบหนึ่งเข้าเป้า
-    const isThaiAllDayOrDirect = lotteryType.includes('ทั้งวัน') || lotteryType.includes('บนตรงๆ');
+    // 🎯 STRICT TOP-ONLY CHECK (หุ้นไทย บนตรงๆ และทุกโหมดหุ้นไทยบน: ตรวจสอบเฉพาะ "บน" 3 ตัวบน/2 ตัวบน เท่านั้น ห้ามแตะล่าง 100%)
+    const isThaiDirectTop = lotteryType.includes('บนตรงๆ');
+    const isThaiAllDay = lotteryType.includes('ทั้งวัน');
+    const isThaiSingleSession = lotteryType.includes('ไทย') && (lotteryType.includes('เช้า') || lotteryType.includes('เที่ยง') || lotteryType.includes('บ่าย') || lotteryType.includes('เย็น'));
 
-    if (isThaiAllDayOrDirect && target.sessions) {
+    if (isThaiDirectTop && target.sessions) {
+      // หุ้นไทย บนตรงๆ: เช็คครบ 4 รอบ (เช้า, เที่ยง, บ่าย, เย็น) ขอแค่รอบใดรอบหนึ่ง "บน" เข้าเป้าถือว่าเข้าทันที 100% (บนก็คือบน ไม่นับล่าง)
       let sessionsArr = [target.sessions.morning, target.sessions.noon, target.sessions.afternoon, target.sessions.evening].filter(Boolean);
-      
+      let dayDigitHit = false;
+      let dayPairHit = false;
+
+      sessionsArr.forEach(sess => {
+        let t3 = sess.top3; // 3 ตัวบน
+        let topDigits = t3.split(''); // ตัวเลขบนเท่านั้น
+        let top2 = t3.slice(-2); // 2 ตัวบน
+
+        if (topCandidates.some(d => topDigits.includes(d.toString()))) {
+          dayDigitHit = true;
+          let matchedPair = auditPairs.some(pair => {
+            let revPair = pair.split('').reverse().join('');
+            return (top2 === pair || top2 === revPair);
+          });
+          if (matchedPair) dayPairHit = true;
+        }
+      });
+
+      isDigitHit = dayDigitHit;
+      isPairHit = dayPairHit;
+      if (isDigitHit) digitHits++;
+      if (isPairHit) pairHits++;
+
+      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
+
+    } else if (isThaiAllDay && target.sessions) {
+      let sessionsArr = [target.sessions.morning, target.sessions.noon, target.sessions.afternoon, target.sessions.evening].filter(Boolean);
       let dayDigitHit = false;
       let dayPairHit = false;
 
@@ -1268,6 +1324,23 @@ function analyzeLotteryRecords(records, lotteryType) {
       if (isDigitHit) digitHits++;
       if (isPairHit) pairHits++;
 
+      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
+
+    } else if (isThaiSingleSession) {
+      let sess = target;
+      let t3 = sess.top3, b2 = sess.bottom2;
+      let digits = (t3 + b2).split('');
+      let top2 = t3.slice(-2), bot2 = b2;
+
+      isDigitHit = topCandidates.some(d => digits.includes(d.toString()));
+      if (isDigitHit) {
+        digitHits++;
+        isPairHit = auditPairs.some(pair => {
+          let revPair = pair.split('').reverse().join('');
+          return (top2 === pair || top2 === revPair || bot2 === pair || bot2 === revPair);
+        });
+        if (isPairHit) pairHits++;
+      }
       auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
 
     } else {
