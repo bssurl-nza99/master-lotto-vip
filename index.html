@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY ULTIMATE MASTER ENGINE V5.3.0</title>
+<title>ทรัพย์นำโชค · AI LOTTERY ULTIMATE MASTER ENGINE V5.5.0</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -312,11 +312,15 @@ body {
   line-height: 1;
 }
 
+/* 🛡️ เพิ่มสไตล์เส้นขีดฆ่าขนาดกำลังพอดี ป้องกัน Facebook AI */
 .card-lottery-name {
   font-size: 0.85rem;
   font-weight: 800;
   color: #322c23;
   letter-spacing: -0.2px;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(198, 40, 40, 0.75);
 }
 
 .hero-digits-wrap {
@@ -538,16 +542,16 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V5.3.0 Ultimate Engine</small>
+        <small>Smart PDF Parser V5.5.0 Anti-FB Engine</small>
       </div>
     </div>
-    <div class="pill">ULTIMATE MASTER V5.3</div>
+    <div class="pill">ULTIMATE MASTER V5.5</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">V5.3.0 PURE MATHEMATICAL & MOMENTUM SYNCE-ENGINE</div>
-    <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะครบถ้วน <em>(บูรณาการคณิตศาสตร์บริสุทธิ์)</em></h1>
-    <p>รวมตารางวิเคราะห์ครบทุกมิติ พร้อมระบบประมวลผลความแม่นยำสูง ซื่อสัตย์ 100%</p>
+    <div class="hero-tag">V5.5.0 ANTI-FB SYSTEM & 12 TABLES</div>
+    <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะครบถ้วน <em>(เพิ่มเส้นขีดป้องกันนโยบาย)</em></h1>
+    <p>ระบบป้องกัน AI ตรวจจับชื่อหวย พร้อม 12 ตารางวิเคราะห์แม่นยำสูง ซื่อสัตย์ 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -558,7 +562,7 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;ลาวประตูชัย | 21 ต.ค. 69&#10;470&#10;62&#10;&#10;ลาวประตูชัย | 20 ต.ค. 69&#10;351&#10;19"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;ดาวโจนส์ VIP | 19 ต.ค. 69&#10;451&#10;40&#10;&#10;ดาวโจนส์ VIP | 18 ต.ค. 69&#10;489&#10;61"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
@@ -575,21 +579,21 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `ลาวประตูชัย | 21 ต.ค. 69
-470
-62
-ลาวประตูชัย | 20 ต.ค. 69
-351
-19
-ลาวประตูชัย | 19 ต.ค. 69
-520
-30
-ลาวประตูชัย | 18 ต.ค. 69
-362
-70
-ลาวประตูชัย | 17 ต.ค. 69
-822
-31`;
+const SAMPLE_PDF_DATA = `ดาวโจนส์ VIP | 19 ต.ค. 69
+451
+40
+ดาวโจนส์ VIP | 18 ต.ค. 69
+489
+61
+ดาวโจนส์ VIP | 17 ต.ค. 69
+240
+72
+ดาวโจนส์ VIP | 16 ต.ค. 69
+179
+10
+ดาวโจนส์ VIP | 15 ต.ค. 69
+264
+59`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦',
@@ -614,6 +618,89 @@ const FLAG_MAP = {
   'DEFAULT': '🎯'
 };
 
+const THAI_MONTHS = {
+  'ม.ค.': 0, 'ก.พ.': 1, 'มี.ค.': 2, 'เม.ย.': 3, 'พ.ค.': 4, 'มิ.ย.': 5,
+  'ก.ค.': 6, 'ส.ค.': 7, 'ก.ย.': 8, 'ต.ค.': 9, 'พ.ย.': 10, 'ธ.ค.': 11
+};
+
+const THAI_MONTHS_ARR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function parseThaiDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return new Date();
+  const parts = dateStr.trim().split(' ');
+  if (parts.length >= 3) {
+    const day = parseInt(parts[0], 10);
+    const month = THAI_MONTHS[parts[1]] !== undefined ? THAI_MONTHS[parts[1]] : 0;
+    let year = parseInt(parts[2], 10);
+    if (year < 2500) year += 2543;
+    const gregorianYear = year - 543;
+    return new Date(gregorianYear, month, day);
+  }
+  return new Date();
+}
+
+function formatThaiDate(dateObj) {
+  const day = dateObj.getDate();
+  const monthStr = THAI_MONTHS_ARR[dateObj.getMonth()];
+  const thaiYear = (dateObj.getFullYear() + 543) % 100;
+  return `${day} ${monthStr} ${thaiYear}`;
+}
+
+function calculateNextDrawDate(lotteryType, lastDateStr) {
+  let dateObj = parseThaiDate(lastDateStr);
+  let name = lotteryType.trim();
+
+  if (name.includes('รัฐบาลไทย') || name.includes('รัฐบาล')) {
+    let day = dateObj.getDate();
+    let month = dateObj.getMonth();
+    let year = dateObj.getFullYear();
+    if (day < 16) {
+      dateObj = new Date(year, month, 16);
+    } else {
+      dateObj = new Date(year, month + 1, 1);
+    }
+    return formatThaiDate(dateObj);
+  }
+
+  if (name.includes('มาเลย์')) {
+    do {
+      dateObj.setDate(dateObj.getDate() + 1);
+    } while (![3, 6, 0].includes(dateObj.getDay()));
+    return formatThaiDate(dateObj);
+  }
+
+  if (name.includes('ดาวโจนส์') && !name.includes('VIP') && !name.includes('สตาร์') && !name.includes('V')) {
+    do {
+      dateObj.setDate(dateObj.getDate() + 1);
+    } while ([0, 1].includes(dateObj.getDay()));
+    return formatThaiDate(dateObj);
+  }
+
+  if (name.includes('ลาวพัฒนา')) {
+    do {
+      dateObj.setDate(dateObj.getDate() + 1);
+    } while ([0, 6].includes(dateObj.getDay()));
+    return formatThaiDate(dateObj);
+  }
+
+  const isNormalStock = (
+    (name.includes('นิคเคอิ') || name.includes('จีน') || name.includes('ฮั่งเส็ง') || 
+     name.includes('ไต้หวัน') || name.includes('เกาหลี') || name.includes('สิงคโปร์') || 
+     name.includes('รัสเซีย') || name.includes('เยอรมัน') || name.includes('อังกฤษ')) &&
+    !name.includes('VIP') && !name.includes('V')
+  );
+
+  if (isNormalStock) {
+    do {
+      dateObj.setDate(dateObj.getDate() + 1);
+    } while ([0, 6].includes(dateObj.getDay()));
+    return formatThaiDate(dateObj);
+  }
+
+  dateObj.setDate(dateObj.getDate() + 1);
+  return formatThaiDate(dateObj);
+}
+
 function getFlag(typeName) {
   for (const key in FLAG_MAP) {
     if (typeName.includes(key)) return FLAG_MAP[key];
@@ -637,7 +724,8 @@ function formatDisplayName(rawName) {
   }
   if (name.includes('ดาวโจนส์')) {
     if (name.includes('VIP')) return name.replace(/VIP/gi, 'V');
-    if (!name.includes('ปกติ') && !name.includes('V')) return 'ดาวโจนส์ ปกติ';
+    if (name.includes('สตาร์')) return name.replace(/สตาร์/gi, 'Star');
+    if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';
     return name;
   }
   if (name.includes('รัฐบาลไทย') || name.includes('มาเลย์')) return name;
@@ -743,7 +831,6 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-// ⏳ ตารางที่ 7: ระยะเว้นช่วง (Gap & Omission Tracker)
 function analyzeGapTracker(records) {
   let gapMap = {};
   for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
@@ -761,7 +848,6 @@ function analyzeGapTracker(records) {
   return gapMap;
 }
 
-// 📈 ตารางที่ 11: วิเคราะห์กระแสความแรง & ความเสถียร
 function analyzeTrendMomentum(records) {
   let momentumData = [];
 
@@ -806,14 +892,11 @@ function analyzeTrendMomentum(records) {
   return momentumData;
 }
 
-// 📐 ตารางที่ 12 ใหม่: ดัชนีคณิตศาสตร์บริสุทธิ์ (Pure Mathematical Formulas: Markov, Poisson, Modulo, Cycle)
 function analyzePureMathematics(records) {
   let mathResults = [];
 
   for(let d=0; d<=9; d++) {
     let dStr = d.toString();
-    
-    // 1. Markov Chain Transition Probability (ความน่าจะเป็นเปลี่ยนผ่าน)
     let markovTransitions = 0;
     let totalPrevOccurrences = 0;
     for(let i=0; i<records.length-1; i++) {
@@ -826,21 +909,17 @@ function analyzePureMathematics(records) {
     }
     let markovScore = totalPrevOccurrences > 0 ? Math.round((markovTransitions / totalPrevOccurrences) * 100) : 50;
 
-    // 2. Poisson Distribution Probability (การแจกแจงปัวซอง)
     let totalHits = 0;
     records.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) totalHits++; });
     let lambda = records.length > 0 ? totalHits / records.length : 0.5;
     let poissonScore = Math.min(100, Math.round(Math.exp(-lambda) * Math.pow(lambda, 1) * 100 * 5) + 30);
 
-    // 3. Modulo & Remainder Pattern Score (เลขคณิตโมดูลาร์)
     let modHits = 0;
     records.forEach(r => {
       let sumVal = parseInt(r.top3[1]) + parseInt(r.top3[2]);
       if(sumVal % 3 === (d % 3)) modHits++;
     });
     let moduloScore = records.length > 0 ? Math.round((modHits / records.length) * 100) : 50;
-
-    // 4. Composite Math Purity Score (คะแนนความบริสุทธิ์รวม)
     let purityScore = Math.round((markovScore * 0.35) + (poissonScore * 0.35) + (moduloScore * 0.30));
 
     mathResults.push({
@@ -855,7 +934,6 @@ function analyzePureMathematics(records) {
   return mathResults;
 }
 
-// 🤝 ตารางที่ 4: คู่สัมพันธ์ Gap-Boosted Buddy Pairs
 function analyzeCorrelationPairs(records, gapData) {
   let pairsList = [];
   for(let a=0; a<=9; a++) {
@@ -890,7 +968,6 @@ function analyzeCorrelationPairs(records, gapData) {
   return pairResults.slice(0, 5);
 }
 
-// 🧬 ตารางที่ 10: ดัชนี DNA Scoreboard & Veto Engine (เชื่อมโยง Momentum และ Pure Math)
 function calculateGeniusDnaScores(records) {
   let gapData = analyzeGapTracker(records);
   let buddyPairs = analyzeCorrelationPairs(records, gapData);
@@ -924,7 +1001,6 @@ function calculateGeniusDnaScores(records) {
     scores[parts[1]] += 10;
   });
 
-  // บูสต์พลังจาก Momentum และ Pure Math
   momentumData.forEach(m => { scores[m.digit] += (m.rawBonus * 0.10); });
   mathData.forEach(m => { scores[m.digit] += (m.purityScore * 0.10); });
 
@@ -960,7 +1036,6 @@ function calculateGeniusDnaScores(records) {
   return finalScores;
 }
 
-// 🎯 ตารางที่ 9: ชุดเลขวิน 6 ตัวจับคู่จริง Co-Occurrence
 function generateCoOccurrenceWinArray(records) {
   let pairCoOccur = {};
   records.forEach(r => {
@@ -1000,7 +1075,6 @@ function generateCoOccurrenceWinArray(records) {
   return { winDigits, hits, total, winCoverageRate };
 }
 
-// 🧮 ตารางที่ 2: ความถี่รวม 0-9
 function analyzeOverallFrequency(records) {
   let counts = Array(10).fill(0);
   let winStreaks = Array(10).fill(0);
@@ -1037,7 +1111,6 @@ function analyzeOverallFrequency(records) {
   }));
 }
 
-// 📊 ตารางที่ 3: สถิติแยกรายหลัก (ร้อย, สิบ, หน่วย)
 function analyzePositionBreakdown(records) {
   let pos = {};
   for(let d=0; d<=9; d++) {
@@ -1063,7 +1136,6 @@ function analyzePositionBreakdown(records) {
   return pos;
 }
 
-// 📈 ตารางที่ 5: คู่-คี่ & สูง-ต่ำ
 function analyzeOddEvenHighLow(records) {
   let evenCount = 0, oddCount = 0, highCount = 0, lowCount = 0;
   let total = records.length;
@@ -1082,7 +1154,6 @@ function analyzeOddEvenHighLow(records) {
   };
 }
 
-// 🧩 ตารางที่ 6: กลุ่มพิเศษ เบิ้ล / หาม / พี่น้อง
 function analyzeSpecialPatterns(records) {
   let doubleCount = 0, harmCount = 0, sisterCount = 0;
   let total = records.length;
@@ -1103,7 +1174,6 @@ function analyzeSpecialPatterns(records) {
   };
 }
 
-// 🔢 ตารางที่ 8: ผลรวมแต้ม Sum Digit Matrix
 function analyzeSumMatrix(records) {
   let top2Sums = {}, top3Sums = {};
   records.forEach(r => {
@@ -1123,7 +1193,6 @@ function analyzeSumMatrix(records) {
   };
 }
 
-// 🎯 ฟังก์ชันสกัดชุดเจาะการ์ด (ตัดเลขเบิ้ล & ตัดคู่ D1-D2 ออกจากโควต้าการ์ด 100%)
 function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
   const pairFreqMap = {};
   activeRecords.forEach(r => {
@@ -1170,7 +1239,7 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
   return result;
 }
 
-function analyzeLotteryRecords(records) {
+function analyzeLotteryRecords(records, lotteryType) {
   const activeRecords = records.slice(0, 30);
   const total = activeRecords.length;
   if (total === 0) return null;
@@ -1250,10 +1319,13 @@ function analyzeLotteryRecords(records) {
     pct: `${pairWinRate}%`
   }));
 
+  const latestRecordedDate = rows[0] ? rows[0].date : '';
+  const nextDrawDate = calculateNextDrawDate(lotteryType, latestRecordedDate);
+
   return {
     total, digitWinRate, pairWinRate, digitHits, pairHits, evalCount, d1, d2,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
-    freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults
+    freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, nextDrawDate
   };
 }
 
@@ -1337,21 +1409,20 @@ function renderResults(parsedData) {
 
   let cardIndex = 0;
   for (const [type, rows] of Object.entries(parsedData)) {
-    const res = analyzeLotteryRecords(rows);
+    const res = analyzeLotteryRecords(rows, type);
     if (!res) continue;
 
     const flag = getFlag(type);
-    const latestDate = rows[0] ? rows[0].date : 'ล่าสุด';
     const cardUniqueId = `predictionCard_${cardIndex++}`;
 
     html += `
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
-            <span>✦</span> ทรัพย์นำโชค V5.3 <span>✦</span>
+            <span>✦</span> ทรัพย์นำโชค V5.5 <span>✦</span>
           </div>
           <div class="card-top-bar">
-            <span class="card-date">${latestDate}</span>
+            <span class="card-date">งวดถัดไป: ${res.nextDrawDate}</span>
             <div class="card-title-group">
               <span class="card-flag">${flag}</span>
               <span class="card-lottery-name">${type}</span>
