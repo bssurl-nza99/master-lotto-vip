@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.10</title>
+<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.11</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -255,7 +255,6 @@ body {
   padding-left: 6px;
 }
 
-/* 🎨 ปรับปรุงการ์ดให้ตรงตามภาพตัวอย่าง[span_1](start_span)[span_1](end_span) และเพิ่มปุ่มแคปเฉพาะการ์ด */
 .prediction-card-wrapper {
   position: relative;
   margin-bottom: 16px;
@@ -265,7 +264,7 @@ body {
   padding: 16px;
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 16px;
-  background: #fffcf5; /* โทนสีครีมสะอาดตาตามแบบ[span_2](start_span)[span_2](end_span) */
+  background: #fffcf5;
   box-shadow: 0 6px 18px rgba(120, 90, 40, 0.08);
   position: relative;
 }
@@ -320,7 +319,6 @@ body {
   letter-spacing: -0.2px;
 }
 
-/* กล่องเลขเด่น D1 และ D2 ตามเรฟ[span_3](start_span)[span_3](end_span) */
 .hero-digits-wrap {
   display: flex;
   justify-content: center;
@@ -362,7 +360,6 @@ body {
   font-weight: 600;
 }
 
-/* กล่องตารางชุดเจาะ 10 คู่ ตามเรฟ[span_4](start_span)[span_4](end_span) */
 .pairs-grid-box {
   background: #fff;
   border: 1px solid #e2d6be;
@@ -403,7 +400,6 @@ body {
   display: block;
 }
 
-/* ปุ่มแคปเจอร์เฉพาะการ์ด */
 .card-action-bar {
   display: flex;
   justify-content: flex-end;
@@ -444,7 +440,7 @@ table.audit-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.45rem;
-  min-width: 240px;
+  min-width: 280px;
 }
 
 table.audit-table th,
@@ -505,7 +501,6 @@ table.audit-table th {
   transform: translate(-50%, 0);
 }
 </style>
-<!-- เรียกใช้งาน html2canvas สำหรับจับภาพเฉพาะการ์ด -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -516,7 +511,7 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V1.3.10</small>
+        <small>Smart PDF Parser V1.3.11</small>
       </div>
     </div>
     <div class="pill">MULTI-LOTTERY READY</div>
@@ -525,7 +520,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">PDF MULTI-LOTTERY ENGINE</div>
     <h1>ระบบวิเคราะห์หวยหลายประเภท <em>ดีไซน์ตรงตามเรฟการ์ด</em></h1>
-    <p>เรียงลำดับตารางย้อนหลังถูกต้อง (วันที่ล่าสุดอยู่บนสุด) พร้อมปุ่มบันทึกภาพเฉพาะการ์ด (ไม่ติดปุ่มและไม่ปนเปื้อนสิ่งอื่น)</p>
+    <p>คำนวณเปอร์เซ็นต์มาตรฐานจริง (เลขเจาะคิดเฉพาะงวดที่เลขเด่นเข้า) เรียงตารางงวดล่าสุดอยู่บนสุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -695,27 +690,20 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-function generateAllPairs(d1, d2) {
+function generateSpecificPairs(tenDigit, excludeDigit) {
   let candidates = [];
   for (let i = 0; i <= 9; i++) {
-    candidates.push(i);
+    if (i !== tenDigit && i !== excludeDigit) {
+      candidates.push(i);
+    }
   }
   candidates.sort((a, b) => a - b);
 
-  let allPairs = [];
-  // สร้าง 10 คู่ (D1 จับ 5 คู่, D2 จับ 5 คู่ตามเรฟ)
-  let count = 0;
-  for (let d of [d1, d2]) {
-    for (let i = 0; i < candidates.length && count < 10; i++) {
-      let unit = candidates[i];
-      // ห้ามเบิ้ลหลักสิบหน่วยซ้ำ หรือตามเงื่อนไข
-      let pairStr = `${d}${unit}`;
-      let isGold = (count === 0 || count === 9); // ทำไฮไลต์คู่แรกกับคู่สุดท้ายแบบในเรฟ
-      allPairs.push({ pair: pairStr, gold: isGold, pct: '86.71%' });
-      count++;
-    }
+  let pairs = [];
+  for (let i = 0; i < Math.min(5, candidates.length); i++) {
+    pairs.push(`${tenDigit}${candidates[i]}`);
   }
-  return allPairs;
+  return pairs;
 }
 
 function analyzeLotteryRecords(records) {
@@ -724,11 +712,8 @@ function analyzeLotteryRecords(records) {
   if (total === 0) return null;
 
   const counts = Array(10).fill(0);
-  const posTens = Array(10).fill(0);
-
   activeRecords.forEach(r => {
     if (r.top3.length === 3) {
-      posTens[parseInt(r.top3[1])]++;
       r.top3.split('').forEach(d => counts[parseInt(d)]++);
     }
     if (r.bottom2.length === 2) {
@@ -740,11 +725,17 @@ function analyzeLotteryRecords(records) {
   const d1 = sortedGlobal[0].dig;
   const d2 = sortedGlobal[1].dig;
 
-  const allPairs = generateAllPairs(d1, d2);
+  const d1Pairs = generateSpecificPairs(d1, -1);
+  const d2Pairs = generateSpecificPairs(d2, d1);
+  const allTenPairs = [...d1Pairs, ...d2Pairs];
 
-  let hits = 0;
+  // -------------------------------------------------------------
+  // ระบบคำนวณเปอร์เซ็นต์มาตรฐานแบบแม่นยำ 100%
+  // -------------------------------------------------------------
+  let digitHits = 0;      // จำนวนงวดที่เลขเด่นเข้า
+  let pairHits = 0;       // จำนวนงวดที่เลขเจาะเข้า
   const auditLogs = [];
-  const minRequired = 3;
+  const minRequired = 1;
 
   for (let i = Math.min(minRequired, Math.floor(activeRecords.length / 2)); i < activeRecords.length; i++) {
     const past = activeRecords.slice(0, i);
@@ -755,30 +746,56 @@ function analyzeLotteryRecords(records) {
     const bestPast = pastCounts.map((v, idx) => ({dig: idx, val: v})).sort((a,b) => b.val - a.val);
     const topCandidates = [bestPast[0].dig, bestPast[1].dig];
 
-    const actualDigits = (target.top3 + target.bottom2).split('');
-    const isHit = topCandidates.some(d => actualDigits.includes(d.toString()));
+    const actualTop3 = target.top3;
+    const actualBottom2 = target.bottom2;
+    const actual2D = [actualTop3.slice(-2), actualBottom2]; // 2 ตัวบน และ 2 ตัวล่าง
+    const actualDigits = (actualTop3 + actualBottom2).split('');
 
-    if (isHit) hits++;
+    // 1. ตรวจสอบเลขเด่นเข้าหรือไม่
+    const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
+    
+    // 2. ตรวจสอบเลขเจาะเข้าหรือไม่ (เฉพาะเมื่อเลขเด่นเข้า)
+    let isPairHit = false;
+    if (isDigitHit) {
+      digitHits++;
+      isPairHit = allTenPairs.some(p => actual2D.includes(p));
+      if (isPairHit) pairHits++;
+    }
+
     auditLogs.push({
       date: target.date,
       top3: target.top3,
       bottom2: target.bottom2,
       pred: topCandidates.join(', '),
-      isHit: isHit
+      isDigitHit: isDigitHit,
+      isPairHit: isPairHit
     });
   }
 
   const evalCount = auditLogs.length;
-  const winRate = evalCount > 0 ? ((hits / evalCount) * 100).toFixed(2) : '0.00';
+  // เปอร์เซ็นต์เลขเด่น = (งวดที่เด่นเข้า ÷ จำนวนงวดทดสอบทั้งหมด) * 100
+  const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
+  
+  // เปอร์เซ็นต์เลขเจาะ = (งวดที่เจาะเข้า ÷ จำนวนงวดที่เลขเด่นเข้าเท่านั้น) * 100
+  const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';
+
+  // เตรียมโครงสร้าง 10 คู่พร้อมเปอร์เซ็นต์จริง
+  const formattedPairs = allTenPairs.map((pair, idx) => ({
+    pair: pair,
+    gold: (idx === 0 || idx === 9), // ไฮไลต์ตามเรฟ
+    pct: `${pairWinRate}%`
+  }));
 
   return {
     total: total,
-    winRate: winRate,
-    hits: hits,
+    digitWinRate: digitWinRate,
+    pairWinRate: pairWinRate,
+    digitHits: digitHits,
+    pairHits: pairHits,
     evalCount: evalCount,
     d1: d1,
     d2: d2,
-    allPairs: allPairs,
+    formattedPairs: formattedPairs,
     auditLogs: auditLogs
   };
 }
@@ -841,13 +858,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ฟังก์ชันสำหรับกดแคปภาพเฉพาะตัวการ์ดเท่านั้น (ไม่ติดปุ่มและสิ่งอื่น)
 function captureCard(cardId, lotteryName) {
   const cardElement = document.getElementById(cardId);
   if (!cardElement) return;
 
   html2canvas(cardElement, {
-    scale: 3, // ความคมชัดสูง
+    scale: 3,
     useCORS: true,
     backgroundColor: '#fffcf5'
   }).then(canvas => {
@@ -876,7 +892,6 @@ function renderResults(parsedData) {
 
     html += `
       <div class="prediction-card-wrapper">
-        <!-- ส่วนของการ์ดที่จะถูกแคปภาพ (สะอาด ไม่มีปุ่มปะปน) -->
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
             <span>✦</span> ทรัพย์นำโชค <span>✦</span>
@@ -889,23 +904,23 @@ function renderResults(parsedData) {
             </div>
           </div>
 
-          <!-- กล่องเลขเด่น D1 และ D2 -->
+          <!-- เลขเด่น D1 และ D2 ใช้เปอร์เซ็นต์มาตรฐานเดียวกัน -->
           <div class="hero-digits-wrap">
             <div class="digit-box-item digit-gold">
               <div class="digit-circle">${res.d1}</div>
-              <span class="digit-rate">53.57%</span>
+              <span class="digit-rate">${res.digitWinRate}%</span>
             </div>
             <div class="digit-box-item digit-silver">
               <div class="digit-circle">${res.d2}</div>
-              <span class="digit-rate">53.57%</span>
+              <span class="digit-rate">${res.digitWinRate}%</span>
             </div>
           </div>
 
-          <!-- ตารางชุดเลขเจาะ 10 คู่ เรียงสวยงามตามเรฟ -->
+          <!-- ชุดเลขเจาะ 10 คู่ แสดงเปอร์เซ็นต์เลขเจาะมาตรฐานจริง (นับเฉพาะตอนเด่นเข้า) -->
           <div class="pairs-grid-box">
     `;
 
-    res.allPairs.forEach(p => {
+    res.formattedPairs.forEach(p => {
       html += `
             <div class="pair-badge ${p.gold ? 'highlight-gold' : ''}">
               <span class="pair-num">${p.pair}</span>
@@ -918,7 +933,6 @@ function renderResults(parsedData) {
           </div>
         </div>
 
-        <!-- ปุ่มกดแคปภาพอยู่นอกกรอบการ์ด เพื่อไม่ให้ติดตอนบันทึกภาพ -->
         <div class="card-action-bar">
           <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
             <span>📷</span> บันทึกภาพเฉพาะการ์ดนี้
@@ -926,10 +940,10 @@ function renderResults(parsedData) {
         </div>
       </div>
 
-      <!-- ตารางย้อนหลัง: เรียงจากวันที่ล่าสุด (บน) ไปหาเก่าสุด (ล่าง) -->
+      <!-- ตารางตรวจสอบย้อนหลัง: เรียงจากวันที่ล่าสุด (บน) ไปหาเก่าสุด (ล่าง) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          ตารางตรวจสอบผลย้อนหลัง (${type}) — <span style="color:#2e7d32">งวดล่าสุดอยู่บนสุด</span>
+          ตารางตรวจสอบผลย้อนหลัง (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} งวด (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} งวด (${res.pairWinRate}%)
         </div>
         <table class="audit-table">
           <thead>
@@ -937,15 +951,14 @@ function renderResults(parsedData) {
               <th>งวดวันที่</th>
               <th>3 ตัวบน</th>
               <th>2 ตัวล่าง</th>
-              <th>เลขเด่นที่ใช้ชน</th>
-              <th>ผลทดสอบ</th>
+              <th>เลขเด่น</th>
+              <th>ผลเลขเด่น</th>
+              <th>ผลเลขเจาะ</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    // ใช้ rows โดยตรง (เพราะ rows เรียงจากล่าสุดไปเก่าสุดอยู่แล้วตามข้อมูลดิบ)
-    // หรือจะแสดงจาก auditLogs ที่เรียงลำดับใหม่ให้งวดล่าสุดขึ้นก่อนก็ได้เช่นกันครับ
     res.auditLogs.forEach(log => {
       html += `
         <tr>
@@ -953,7 +966,8 @@ function renderResults(parsedData) {
           <td><b>${log.top3}</b></td>
           <td><b>${log.bottom2}</b></td>
           <td><b style="color:#b8860b">${log.pred}</b></td>
-          <td>${log.isHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td>
+          <td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td>
+          <td>${log.isDigitHit ? (log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>') : '<span style="color:#999">-</span>'}</td>
         </tr>
       `;
     });
