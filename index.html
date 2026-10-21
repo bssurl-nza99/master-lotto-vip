@@ -555,7 +555,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">เศรษฐีเงินล้าน · TRANSCENDENT LEVEL 999+</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลเหนือชั้นด้วย Multi-Scale Ensemble Window Bagging และ Dynamic Volatility Veto พร้อมระบบจัดมาตรฐานชื่อหุ้นถูกต้อง 100%</p>
+    <p>รองรับหุ้นไทยครบทุกรอบ (เช้า, เที่ยง, บ่าย, เย็น, ทั้งวัน, หุ้นไทย บนตรงๆ) พร้อมตารางวิเคราะห์ครบถ้วน 13 ตารางอย่างไร้รอยต่อ</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -566,7 +566,7 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นนิเคอิเช้า | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นนิเคอิเช้า | 19 ต.ค. 69&#10;603&#10;38"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นไทยเช้า | 21 ต.ค. 69&#10;295&#10;01&#10;&#10;หุ้นไทยเที่ยง | 21 ต.ค. 69&#10;845&#10;49"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
@@ -583,36 +583,31 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `หุ้นนิเคอิเช้า | 20 ต.ค. 69
-588
-85
-หุ้นนิเคอิเช้า | 19 ต.ค. 69
-603
-38
-หุ้นนิเคอิเช้า | 16 ต.ค. 69
-241
-28
-หุ้นนิเคอิเช้า | 15 ต.ค. 69
-769
-21
-หุ้นนิเคอิเช้า | 14 ต.ค. 69
-148
-62
-หุ้นนิเคอิเช้า | 13 ต.ค. 69
-010
-45
-หุ้นนิเคอิเช้า | 12 ต.ค. 69
-055
-60
-หุ้นนิเคอิเช้า | 9 ต.ค. 69
-495
-31
-หุ้นนิเคอิเช้า | 8 ต.ค. 69
-164
-77
-หุ้นนิเคอิเช้า | 7 ต.ค. 69
-987
-41`;
+const SAMPLE_PDF_DATA = `หุ้นไทยเช้า | 21 ต.ค. 69
+295
+01
+หุ้นไทยเที่ยง | 21 ต.ค. 69
+845
+49
+หุ้นไทยบ่าย | 21 ต.ค. 69
+047
+47
+หุ้นไทยเย็น | 21 ต.ค. 69
+209
+15
+
+หุ้นไทยเช้า | 20 ต.ค. 69
+012
+40
+หุ้นไทยเที่ยง | 20 ต.ค. 69
+377
+95
+หุ้นไทยบ่าย | 20 ต.ค. 69
+866
+06
+หุ้นไทยเย็น | 20 ต.ค. 69
+994
+78`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦', 'ล.': '🇱🇦',
@@ -684,22 +679,18 @@ function getFlag(typeName) {
   return '🎯';
 }
 
-// 🛠️ AUDITED & FIXED: มาตรฐานชื่อหุ้นไทย (แก้ "นิคเคอิ" -> "นิเคอิ" และจัดรูปแบบ "ชื่อหุ้น ปกติ เช้า" ตามกำหนด)
+// 🛠️ AUDITED & FIXED: จัดรูปแบบชื่อหุ้นไทยทุกรอบ (เช้า, เที่ยง, บ่าย, เย็น, ทั้งวัน, บนตรงๆ) พร้อมรักษาความสะอาดของการ์ด
 function formatDisplayName(rawName) {
   let name = rawName.trim();
-  // ตัดตัวเลขนำหน้าขยะ (เช่น "62ไต้หวัน V" หรือ "15หุ้นนิเคอิเช้า")
   name = name.replace(/^\d+\s*/, '').trim();
   name = name.replace(/^หุ้น\s*/, '').trim();
 
-  // แก้คำว่า นิคเคอิ เป็น นิเคอิ ที่คนไทยนิยมเรียก
   name = name.replace(/นิคเคอิ/g, 'นิเคอิ');
 
-  // ตรวจสอบกลุ่มหุ้นหลักที่ต้องเติมคำว่า "ปกติ" (นิเคอิ, จีน, ฮั่งเส็ง, ไต้หวัน, เกาหลี, รัสเซีย, เยอรมัน, อังกฤษ, สิงคโปร์)
   const standardStocks = ['นิเคอิ', 'จีน', 'ฮั่งเส็ง', 'ไต้หวัน', 'เกาหลี', 'รัสเซีย', 'เยอรมัน', 'อังกฤษ', 'สิงคโปร์'];
   
   for (const stock of standardStocks) {
     if (name.includes(stock)) {
-      // ตรวจสอบว่าเป็นรอบ VIP หรือ V หรือไม่
       let isVip = name.includes('VIP') || name.includes('V');
       let session = '';
       if (name.includes('เช้า')) session = 'เช้า';
@@ -717,6 +708,17 @@ function formatDisplayName(rawName) {
         return `${stock} ปกติ`;
       }
     }
+  }
+
+  // 🇹🇭 จัดการชื่อหุ้นไทยเฉพาะรอบและโหมดพิเศษ
+  if (name.includes('ไทย')) {
+    if (name.includes('เช้า')) return 'หุ้นไทย เช้า';
+    if (name.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
+    if (name.includes('บ่าย')) return 'หุ้นไทย บ่าย';
+    if (name.includes('เย็น')) return 'หุ้นไทย เย็น';
+    if (name.includes('ทั้งวัน')) return 'หุ้นไทย ทั้งวัน';
+    if (name.includes('บนตรงๆ') || name.includes('บนตรง')) return 'หุ้นไทย บนตรงๆ';
+    return 'หุ้นไทย เช้า'; // ค่าเริ่มต้นหากไม่ระบุรอบ
   }
 
   if (name.startsWith('ลาว')) {
@@ -764,10 +766,11 @@ function showToast(msg) {
   }
 }
 
+// 🔄 SMART PARSER ENGINE: รองรับหุ้นไทย 4 รอบ แยกแยะลำดับเวลา เช้า -> เที่ยง -> บ่าย -> เย็น และสร้างโหมด "หุ้นไทย ทั้งวัน" ให้อัตโนมัติ
 function parsePDFText(rawText) {
   if (!rawText || typeof rawText !== 'string') return {};
   const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
-  const grouped = {};
+  const rawGrouped = {};
 
   blocks.forEach((block) => {
     const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -788,13 +791,13 @@ function parsePDFText(rawText) {
         currentDate = parts[1] || 'ไม่ระบุวันที่';
         pendingTop3 = null;
         let formattedKey = formatDisplayName(currentLottery);
-        if (!grouped[formattedKey]) grouped[formattedKey] = [];
+        if (!rawGrouped[formattedKey]) rawGrouped[formattedKey] = [];
         continue;
       }
       if (!currentLottery && !/^\d+$/.test(line)) {
         currentLottery = line;
         let formattedKey = formatDisplayName(currentLottery);
-        if (!grouped[formattedKey]) grouped[formattedKey] = [];
+        if (!rawGrouped[formattedKey]) rawGrouped[formattedKey] = [];
         continue;
       }
       if (/^\d{3}$/.test(line)) {
@@ -803,16 +806,67 @@ function parsePDFText(rawText) {
       }
       if (/^\d{2}$/.test(line) && pendingTop3 && currentLottery) {
         let formattedKey = formatDisplayName(currentLottery);
-        if (!grouped[formattedKey]) grouped[formattedKey] = [];
-        const recordExists = grouped[formattedKey].some(r => r.date === currentDate && r.top3 === pendingTop3 && r.bottom2 === line);
+        if (!rawGrouped[formattedKey]) rawGrouped[formattedKey] = [];
+        const recordExists = rawGrouped[formattedKey].some(r => r.date === currentDate && r.top3 === pendingTop3 && r.bottom2 === line);
         if (!recordExists) {
-          grouped[formattedKey].push({ date: currentDate || `งวดที่ ${grouped[formattedKey].length + 1}`, top3: pendingTop3, bottom2: line });
+          rawGrouped[formattedKey].push({ date: currentDate || `งวดที่ ${rawGrouped[formattedKey].length + 1}`, top3: pendingTop3, bottom2: line });
         }
         pendingTop3 = null; currentDate = null;
       }
     }
   });
-  return grouped;
+
+  // 🧩 สร้างชุดข้อมูล "หุ้นไทย ทั้งวัน" และ "หุ้นไทย บนตรงๆ" จากข้อมูล 4 รอบโดยอัตโนมัติ
+  let thaiSessions = ['หุ้นไทย เช้า', 'หุ้นไทย เที่ยง', 'หุ้นไทย บ่าย', 'หุ้นไทย เย็น'];
+  let dateMap = {};
+
+  thaiSessions.forEach(sess => {
+    if (rawGrouped[sess]) {
+      rawGrouped[sess].forEach(rec => {
+        if (!dateMap[rec.date]) dateMap[rec.date] = { morning: null, noon: null, afternoon: null, evening: null };
+        if (sess.includes('เช้า')) dateMap[rec.date].morning = rec;
+        if (sess.includes('เที่ยง')) dateMap[rec.date].noon = rec;
+        if (sess.includes('บ่าย')) dateMap[rec.date].afternoon = rec;
+        if (sess.includes('เย็น')) dateMap[rec.date].evening = rec;
+      });
+    }
+  });
+
+  let allDayRecords = [];
+  let directTopRecords = [];
+
+  for (let date in dateMap) {
+    let dObj = dateMap[date];
+    // ถ้ามีรอบเช้า ให้ดึงหลักสิบบน (ตัวเลขตำแหน่งที่ 1 ของ 3 ตัวบน) มาใช้กับโหมด "หุ้นไทย บนตรงๆ" ตามสูตรแกนหลักสิบบนเช้า ± แต้ม
+    if (dObj.morning && dObj.morning.top3) {
+      let tensDigit = parseInt(dObj.morning.top3[1] || '0');
+      // แตกแต้ม ±2 ได้ 5 ตัว (เช่น tens-2, tens-1, tens, tens+1, tens+2)
+      let cands = [
+        (tensDigit - 2 + 10) % 10,
+        (tensDigit - 1 + 10) % 10,
+        tensDigit,
+        (tensDigit + 1) % 10,
+        (tensDigit + 2) % 10
+      ];
+      // จำลองบันทึกสำหรับตาราง Audit
+      directTopRecords.push({ date: date, top3: dObj.morning.top3, bottom2: dObj.morning.bottom2, cands: cands });
+    }
+
+    // รวบรวมข้อมูลสำหรับ "หุ้นไทย ทั้งวัน" (เช็คผลแบบ OR ทั้ง 4 รอบ)
+    let representativeRec = dObj.morning || dObj.noon || dObj.afternoon || dObj.evening;
+    if (representativeRec) {
+      allDayRecords.push({ date: date, top3: representativeRec.top3, bottom2: representativeRec.bottom2, sessions: dObj });
+    }
+  }
+
+  if (allDayRecords.length > 0) {
+    rawGrouped['หุ้นไทย ทั้งวัน'] = allDayRecords;
+  }
+  if (directTopRecords.length > 0) {
+    rawGrouped['หุ้นไทย บนตรงๆ'] = directTopRecords;
+  }
+
+  return rawGrouped;
 }
 
 function analyzeGapTracker(records) {
