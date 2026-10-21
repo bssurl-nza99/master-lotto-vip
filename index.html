@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY ULTIMATE MASTER ENGINE V5.1.0</title>
+<title>ทรัพย์นำโชค · AI LOTTERY ULTIMATE MASTER ENGINE V5.2.0</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -168,6 +168,7 @@ body {
   resize: vertical;
   padding: 8px;
   border: 1px solid var(--line-soft);
+  border-radius: 99px;
   border-radius: 9px;
   background: #fff;
   color: var(--text-dark);
@@ -538,16 +539,16 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V5.1.0 Optimized Master</small>
+        <small>Smart PDF Parser V5.2.0 Momentum Engine</small>
       </div>
     </div>
-    <div class="pill">OPTIMIZED MASTER V5.1</div>
+    <div class="pill">ULTIMATE MASTER V5.2</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">V5.1.0 QUOTA-OPTIMIZED & CHRONO-STABLE ENGINE</div>
-    <h1>ระบบรวบรวมครบถ้วน 11 ตาราง <em>(สกัดชุดเจาะการ์ดขั้นสูง & เสถียร 100%)</em></h1>
-    <p>ตัดเลขเบิ้ลและคู่ D1-D2 ออกจากการ์ดแสดงผล เพิ่มโควต้าตัวเจาะรอง ปรับลำดับเวลา Audit Log นิ่งเสถียร ซื่อสัตย์ 100%</p>
+    <div class="hero-tag">V5.2.0 TREND MOMENTUM & STABILITY ENGINE</div>
+    <h1>ระบบรวบรวมครบถ้วน 11 ตาราง <em>(วิเคราะห์กระแสระยะสั้น-กลาง-ยาว)</em></h1>
+    <p>วัดความแรงกระแสและดัชนีความเสถียร 0–9 เพิ่มโควต้าตัวเจาะรอง ปรับลำดับเวลา Audit Log นิ่งเสถียร ซื่อสัตย์ 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -761,6 +762,58 @@ function analyzeGapTracker(records) {
   return gapMap;
 }
 
+// 📈 ตารางที่ 11 ใหม่: วิเคราะห์กระแสความแรง & ความเสถียร (Short, Mid, Long Momentum & Stability)
+function analyzeTrendMomentum(records) {
+  let momentumData = [];
+
+  for(let d=0; d<=9; d++) {
+    let dStr = d.toString();
+    
+    // ระยะสั้น (3-5 งวดล่าสุด)
+    let shortRange = records.slice(0, 5);
+    let shortHits = 0;
+    shortRange.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) shortHits++; });
+
+    // ระยะกลาง (6-10 งวดล่าสุด)
+    let midRange = records.slice(5, 10);
+    let midHits = 0;
+    midRange.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) midHits++; });
+
+    // ระยะยาว (11-20 งวดล่าสุด)
+    let longRange = records.slice(10, 20);
+    let longHits = 0;
+    longRange.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) longHits++; });
+
+    // สถิติสะสมภาพรวม 1-30 งวด (ความเสถียร)
+    let totalHits = 0;
+    records.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) totalHits++; });
+    let totalRate = records.length > 0 ? (totalHits / records.length) * 100 : 0;
+
+    // คำนวณความเสถียร (Stability Score): ยิ่งระยะสั้นและกลางเดินดีต่อเนื่อง สกอร์ยิ่งสูง
+    let shortPct = (shortHits / 5) * 100;
+    let midPct = (midHits / 5) * 100;
+    let stabilityScore = Math.round((shortPct * 0.4) + (midPct * 0.4) + (totalRate * 0.2));
+
+    let trendLabel = 'เสถียรปกติ';
+    if(shortPct >= 60 && midPct >= 40) trendLabel = '🔥 กระแสพุ่งแรง (Hot)';
+    else if(shortPct === 0 && midPct === 0) trendLabel = '❄️ แผ่วลง (Cold)';
+    else if(shortPct >= 40) trendLabel = '⚡ กำลังติดเครื่อง';
+
+    momentumData.push({
+      digit: d,
+      shortHits: `${shortHits}/5`,
+      midHits: `${midHits}/5`,
+      longHits: `${longHits}/10`,
+      totalHits: totalHits,
+      stabilityIndex: `${stabilityScore}%`,
+      trendLabel: trendLabel,
+      rawBonus: stabilityScore
+    });
+  }
+
+  return momentumData;
+}
+
 // 🤝 ตารางที่ 4: คู่สัมพันธ์ Gap-Boosted Buddy Pairs
 function analyzeCorrelationPairs(records, gapData) {
   let pairsList = [];
@@ -796,10 +849,11 @@ function analyzeCorrelationPairs(records, gapData) {
   return pairResults.slice(0, 5);
 }
 
-// 🧬 ตารางที่ 10: ดัชนี DNA Scoreboard & Veto Engine
+// 🧬 ตารางที่ 10: ดัชนี DNA Scoreboard & Veto Engine (เชื่อมโยง Momentum Score)
 function calculateGeniusDnaScores(records) {
   let gapData = analyzeGapTracker(records);
   let buddyPairs = analyzeCorrelationPairs(records, gapData);
+  let momentumData = analyzeTrendMomentum(records);
 
   let scores = Array(10).fill(0);
   let vetoPenalty = Array(10).fill(0);
@@ -826,6 +880,11 @@ function calculateGeniusDnaScores(records) {
     let parts = bp.pair.split(' & ').map(Number);
     scores[parts[0]] += 10;
     scores[parts[1]] += 10;
+  });
+
+  // 🔗 เชื่อมโยงโบนัสความแรงกระแส (Momentum Synergy) เข้าสู่อัลกอริทึม DNA
+  momentumData.forEach(m => {
+    scores[m.digit] += (m.rawBonus * 0.15); // บูสต์พลังจากความเสถียรและกระแส
   });
 
   for(let d=0; d<=9; d++) {
@@ -1041,10 +1100,7 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
   let getFilteredCandidates = (mainDigit) => {
     let cands = [];
     for (let i = 0; i <= 9; i++) {
-      // 🛑 กฎข้อที่ 1: ตัดเลขเบิ้ลทิ้ง (i === mainDigit)
-      // 🛑 กฎข้อที่ 2: ตัดคู่ D1-D2 ออกจากโควต้าการ์ด (i === d1 || i === d2)
-      if (i === mainDigit || i === d1 || i === d2) continue;
-      
+      if (i === mainDigit || i === d1 || i === d2) continue; // ตัดเบิ้ล & ตัด D1-D2
       let pStr = `${mainDigit}${i}`;
       let baseScore = pairFreqMap[pStr] || 0;
       let inWinArray = winDigits.includes(mainDigit) && winDigits.includes(i);
@@ -1052,7 +1108,7 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
       cands.push({ pair: pStr, score: baseScore + synergyBonus });
     }
     cands.sort((a, b) => b.score - a.score);
-    return cands.slice(0, 5); // ดึง 5 คู่ดีที่สุดฝั่ง D1 และ D2 รวมเป็น 10 คู่
+    return cands.slice(0, 5);
   };
 
   let d1Selected = getFilteredCandidates(d1);
@@ -1083,12 +1139,9 @@ function analyzeLotteryRecords(records) {
   const d2 = masterScores[1].digit;
 
   const winArrayData = generateCoOccurrenceWinArray(activeRecords);
-  
-  // สกัดคู่เจาะ 10 คู่สำหรับการ์ดแสดงผล (ตัดเบิ้ล & ตัดคู่ D1-D2)
   const structuredPairs = generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winArrayData.winDigits);
   const displayedPairs = structuredPairs.map(p => p.pair);
 
-  // 🎯 สร้างชุดตรวจ Audit Pairs (รวมคู่ D1-D2 เข้าไปตรวจจับย้อนหลังเพื่อความซื่อสัตย์ 100%)
   const auditPairs = [...displayedPairs];
   let crossPair1 = `${d1}${d2}`;
   let crossPair2 = `${d2}${d1}`;
@@ -1099,9 +1152,7 @@ function analyzeLotteryRecords(records) {
   let pairHits = 0;
   const auditLogs = [];
 
-  // ⏳ แก้ไขตรรกะเวลา: เรียงลำดับข้อมูลเดินหน้าจาก "อดีตไปปัจจุบัน" (Oldest ➔ Newest)
   const chronRecords = [...activeRecords].reverse();
-  
   for (let i = Math.min(1, Math.floor(chronRecords.length / 2)); i < chronRecords.length; i++) {
     const past = chronRecords.slice(0, i);
     const target = chronRecords[i];
@@ -1136,10 +1187,10 @@ function analyzeLotteryRecords(records) {
     });
   }
 
-  // พลิกตาราง Audit กลับมาเรียงจาก "ใหม่ไปเก่า" เพื่อแสดงผลออกหน้าจอให้ผู้ใช้อ่านง่าย
   auditLogs.reverse();
 
   const gapData = analyzeGapTracker(activeRecords);
+  const momentumResults = analyzeTrendMomentum(activeRecords);
   const correlationResults = analyzeCorrelationPairs(activeRecords, gapData);
   const freqResults = analyzeOverallFrequency(activeRecords);
   const posResults = analyzePositionBreakdown(activeRecords);
@@ -1160,7 +1211,7 @@ function analyzeLotteryRecords(records) {
   return {
     total, digitWinRate, pairWinRate, digitHits, pairHits, evalCount, d1, d2,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
-    freqResults, posResults, oehlResults, specialResults, sumResults, gapData
+    freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults
   };
 }
 
@@ -1240,7 +1291,7 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์ Ultimate Master Synced (V5.1.0 - ครบถ้วน 11 ตาราง)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์ Ultimate Master Synced (V5.2.0 - ครบถ้วน 11 ตาราง)</div>`;
 
   let cardIndex = 0;
   for (const [type, rows] of Object.entries(parsedData)) {
@@ -1255,7 +1306,7 @@ function renderResults(parsedData) {
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
-            <span>✦</span> ทรัพย์นำโชค V5.1 <span>✦</span>
+            <span>✦</span> ทรัพย์นำโชค V5.2 <span>✦</span>
           </div>
           <div class="card-top-bar">
             <span class="card-date">${latestDate}</span>
@@ -1499,6 +1550,36 @@ function renderResults(parsedData) {
                  (item.vetoPenalty > 0 ? `<span class="badge-warn">${item.status}</span>` : 
                  (idx === res.masterScores.length - 1 ? '<span class="badge-miss">เลขดับ / ค้างนาน</span>' : '<span class="badge-hit">ผ่านการพิสูจน์</span>')));
       html += `<tr><td><b>#${idx + 1}</b></td><td><b style="color:#b8860b">${item.digit}</b></td><td><span style="color:#78590f;font-weight:700;">${item.normalizedScore} / 100</span></td><td><span style="color:${item.vetoPenalty > 0 ? '#c62828' : '#2e7d32'};font-weight:700;">-${item.vetoPenalty}</span></td><td>เว้น ${item.gap} งวด</td><td>${badge}</td></tr>`;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 📈 ตารางที่ 11 ใหม่: วิเคราะห์กระแสความแรง & ความเสถียร (Short, Mid, Long Momentum) -->
+      <div class="summary-table-container">
+        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+          📈 ตารางที่ 11: วิเคราะห์กระแสความแรง & ความเสถียร 0–9 (${type})
+        </div>
+        <table class="audit-table">
+          <thead>
+            <tr><th>ตัวเลข</th><th>ระยะสั้น (3-5 งวด)</th><th>ระยะกลาง (6-10 งวด)</th><th>ระยะยาว (11-20 งวด)</th><th>ดัชนีความเสถียร</th><th>แนวโน้มกระแส</th></tr>
+          </thead>
+          <tbody>
+    `;
+
+    res.momentumResults.forEach(m => {
+      html += `
+        <tr>
+          <td><b style="color:#b8860b">${m.digit}</b></td>
+          <td><span style="color:#2e7d32;font-weight:700;">${m.shortHits}</span></td>
+          <td>${m.midHits}</td>
+          <td>${m.longHits}</td>
+          <td><span style="color:#b8860b;font-weight:700;">${m.stabilityIndex}</span></td>
+          <td><b>${m.trendLabel}</b></td>
+        </tr>
+      `;
     });
 
     html += `
