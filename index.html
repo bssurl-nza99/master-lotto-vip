@@ -679,12 +679,10 @@ function getFlag(typeName) {
   return '🎯';
 }
 
-// 🛠️ AUDITED & FIXED: จัดรูปแบบชื่อหุ้นไทยทุกรอบ (เช้า, เที่ยง, บ่าย, เย็น, ทั้งวัน, บนตรงๆ) พร้อมรักษาความสะอาดของการ์ด
 function formatDisplayName(rawName) {
   let name = rawName.trim();
   name = name.replace(/^\d+\s*/, '').trim();
   name = name.replace(/^หุ้น\s*/, '').trim();
-
   name = name.replace(/นิคเคอิ/g, 'นิเคอิ');
 
   const standardStocks = ['นิเคอิ', 'จีน', 'ฮั่งเส็ง', 'ไต้หวัน', 'เกาหลี', 'รัสเซีย', 'เยอรมัน', 'อังกฤษ', 'สิงคโปร์'];
@@ -710,7 +708,6 @@ function formatDisplayName(rawName) {
     }
   }
 
-  // 🇹🇭 จัดการชื่อหุ้นไทยเฉพาะรอบและโหมดพิเศษ
   if (name.includes('ไทย')) {
     if (name.includes('เช้า')) return 'หุ้นไทย เช้า';
     if (name.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
@@ -718,7 +715,7 @@ function formatDisplayName(rawName) {
     if (name.includes('เย็น')) return 'หุ้นไทย เย็น';
     if (name.includes('ทั้งวัน')) return 'หุ้นไทย ทั้งวัน';
     if (name.includes('บนตรงๆ') || name.includes('บนตรง')) return 'หุ้นไทย บนตรงๆ';
-    return 'หุ้นไทย เช้า'; // ค่าเริ่มต้นหากไม่ระบุรอบ
+    return 'หุ้นไทย เช้า';
   }
 
   if (name.startsWith('ลาว')) {
@@ -766,7 +763,6 @@ function showToast(msg) {
   }
 }
 
-// 🔄 SMART PARSER ENGINE: รองรับหุ้นไทย 4 รอบ แยกแยะลำดับเวลา เช้า -> เที่ยง -> บ่าย -> เย็น และสร้างโหมด "หุ้นไทย ทั้งวัน" ให้อัตโนมัติ
 function parsePDFText(rawText) {
   if (!rawText || typeof rawText !== 'string') return {};
   const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
@@ -816,7 +812,6 @@ function parsePDFText(rawText) {
     }
   });
 
-  // 🧩 สร้างชุดข้อมูล "หุ้นไทย ทั้งวัน" และ "หุ้นไทย บนตรงๆ" จากข้อมูล 4 รอบโดยอัตโนมัติ
   let thaiSessions = ['หุ้นไทย เช้า', 'หุ้นไทย เที่ยง', 'หุ้นไทย บ่าย', 'หุ้นไทย เย็น'];
   let dateMap = {};
 
@@ -837,10 +832,10 @@ function parsePDFText(rawText) {
 
   for (let date in dateMap) {
     let dObj = dateMap[date];
-    // ถ้ามีรอบเช้า ให้ดึงหลักสิบบน (ตัวเลขตำแหน่งที่ 1 ของ 3 ตัวบน) มาใช้กับโหมด "หุ้นไทย บนตรงๆ" ตามสูตรแกนหลักสิบบนเช้า ± แต้ม
+    let representativeRec = dObj.morning || dObj.noon || dObj.afternoon || dObj.evening;
+
     if (dObj.morning && dObj.morning.top3) {
       let tensDigit = parseInt(dObj.morning.top3[1] || '0');
-      // แตกแต้ม ±2 ได้ 5 ตัว (เช่น tens-2, tens-1, tens, tens+1, tens+2)
       let cands = [
         (tensDigit - 2 + 10) % 10,
         (tensDigit - 1 + 10) % 10,
@@ -848,12 +843,9 @@ function parsePDFText(rawText) {
         (tensDigit + 1) % 10,
         (tensDigit + 2) % 10
       ];
-      // จำลองบันทึกสำหรับตาราง Audit
-      directTopRecords.push({ date: date, top3: dObj.morning.top3, bottom2: dObj.morning.bottom2, cands: cands });
+      directTopRecords.push({ date: date, top3: representativeRec ? representativeRec.top3 : dObj.morning.top3, bottom2: representativeRec ? representativeRec.bottom2 : dObj.morning.bottom2, cands: cands, sessions: dObj });
     }
 
-    // รวบรวมข้อมูลสำหรับ "หุ้นไทย ทั้งวัน" (เช็คผลแบบ OR ทั้ง 4 รอบ)
-    let representativeRec = dObj.morning || dObj.noon || dObj.afternoon || dObj.evening;
     if (representativeRec) {
       allDayRecords.push({ date: date, top3: representativeRec.top3, bottom2: representativeRec.bottom2, sessions: dObj });
     }
@@ -1244,22 +1236,57 @@ function analyzeLotteryRecords(records, lotteryType) {
     const pastMaster = calculateGeniusDnaScores(past);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
 
-    const actualTop3 = target.top3, actualBottom2 = target.bottom2;
-    const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
-    const actualDigits = (actualTop3 + actualBottom2).split('');
-
-    const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
+    let isDigitHit = false;
     let isPairHit = false;
-    if (isDigitHit) {
-      digitHits++;
-      isPairHit = auditPairs.some(pair => {
-        const revPair = pair.split('').reverse().join('');
-        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
-      });
-      if (isPairHit) pairHits++;
-    }
 
-    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
+    // 🛠️ ตรวจสอบเงื่อนไขพิเศษสำหรับ "หุ้นไทย ทั้งวัน" และ "หุ้นไทย บนตรงๆ" ที่วัดผลจาก 4 รอบ (เช้า, เที่ยง, บ่าย, เย็น) ขอแค่รอบใดรอบหนึ่งเข้าเป้า
+    const isThaiAllDayOrDirect = lotteryType.includes('ทั้งวัน') || lotteryType.includes('บนตรงๆ');
+
+    if (isThaiAllDayOrDirect && target.sessions) {
+      let sessionsArr = [target.sessions.morning, target.sessions.noon, target.sessions.afternoon, target.sessions.evening].filter(Boolean);
+      
+      let dayDigitHit = false;
+      let dayPairHit = false;
+
+      sessionsArr.forEach(sess => {
+        let t3 = sess.top3, b2 = sess.bottom2;
+        let digits = (t3 + b2).split('');
+        let top2 = t3.slice(-2), bot2 = b2;
+
+        if (topCandidates.some(d => digits.includes(d.toString()))) {
+          dayDigitHit = true;
+          let matchedPairInSession = auditPairs.some(pair => {
+            let revPair = pair.split('').reverse().join('');
+            return (top2 === pair || top2 === revPair || bot2 === pair || bot2 === revPair);
+          });
+          if (matchedPairInSession) dayPairHit = true;
+        }
+      });
+
+      isDigitHit = dayDigitHit;
+      isPairHit = dayPairHit;
+      if (isDigitHit) digitHits++;
+      if (isPairHit) pairHits++;
+
+      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
+
+    } else {
+      const actualTop3 = target.top3, actualBottom2 = target.bottom2;
+      const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
+      const actualDigits = (actualTop3 + actualBottom2).split('');
+
+      isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
+      if (isDigitHit) {
+        digitHits++;
+        isPairHit = auditPairs.some(pair => {
+          const revPair = pair.split('').reverse().join('');
+          return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
+        });
+        if (isPairHit) pairHits++;
+      }
+
+      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
+    }
   }
 
   auditLogs.reverse();
