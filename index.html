@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.16</title>
+<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.17</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -168,6 +168,7 @@ body {
   resize: vertical;
   padding: 8px;
   border: 1px solid var(--line-soft);
+  border-radius: 99px;
   border-radius: 9px;
   background: #fff;
   color: var(--text-dark);
@@ -371,6 +372,7 @@ body {
   margin-top: 10px;
 }
 
+/* 🎨 สไตล์สีไฮไลต์ลำดับความฟิตพรีเมียม (Gold, Silver, Rose Gold) */
 .pair-badge {
   background: #fff;
   border: 1px solid #e2d6be;
@@ -379,9 +381,22 @@ body {
   text-align: center;
 }
 
-.pair-badge.highlight-gold {
-  background: linear-gradient(135deg, rgba(255,248,230,0.9), rgba(255,243,214,0.9));
-  border-color: #d4af37;
+.pair-badge.highlight-top1 {
+  background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98));
+  border: 1px solid #d4af37;
+  box-shadow: 0 2px 5px rgba(212, 175, 55, 0.15);
+}
+
+.pair-badge.highlight-top2 {
+  background: linear-gradient(135deg, rgba(245,247,250,0.98), rgba(230,235,240,0.98));
+  border: 1px solid #a8b2bc;
+  box-shadow: 0 2px 5px rgba(168, 178, 188, 0.15);
+}
+
+.pair-badge.highlight-top3 {
+  background: linear-gradient(135deg, rgba(253,242,242,0.98), rgba(248,230,230,0.98));
+  border: 1px solid #b76e79;
+  box-shadow: 0 2px 5px rgba(183, 110, 121, 0.15);
 }
 
 .pair-num {
@@ -392,6 +407,10 @@ body {
   display: block;
   margin-bottom: 2px;
 }
+
+.highlight-top1 .pair-num { color: #8a650d; }
+.highlight-top2 .pair-num { color: #4a525d; }
+.highlight-top3 .pair-num { color: #7d3f48; }
 
 .pair-pct {
   font-size: 0.35rem;
@@ -511,7 +530,7 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V1.3.16</small>
+        <small>Smart PDF Parser V1.3.17</small>
       </div>
     </div>
     <div class="pill">MULTI-LOTTERY READY</div>
@@ -520,7 +539,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">PDF MULTI-LOTTERY ENGINE</div>
     <h1>ระบบวิเคราะห์หวยหลายประเภท <em>ดีไซน์ตรงตามเรฟการ์ด</em></h1>
-    <p>ระบบวิเคราะห์ความถี่และสถิติเชิงลึกหลายมิติ (ความถี่รวม 0-9 และแยกรายหลัก) พร้อมระบบตรวจผลแบบซื่อสัตย์ 100%</p>
+    <p>วิเคราะห์ความถี่เชิงลึก พร้อมระบบจัดเกรดสีเน้นเจาะ (Gold, Silver, Rose Gold) และตรวจผลแบบซื่อสัตย์ 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -736,6 +755,7 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
+// 🎯 ฟังก์ชันสกัดชุดเจาะ 10 คู่ พร้อมการระบุเกรดความฟิต Top 1, 2, 3 แยกฝั่ง D1 และ D2
 function generateOptimizedPairs(d1, d2, activeRecords) {
   const pairFreqMap = {};
 
@@ -751,51 +771,48 @@ function generateOptimizedPairs(d1, d2, activeRecords) {
     });
   });
 
-  let candidates = [];
-  const activeDigits = [d1, d2];
+  // คัดเลือกเจาะของ D1 (5 คู่)
+  let d1Candidates = [];
+  for (let i = 0; i <= 9; i++) {
+    if (i === d1 || i === d2) continue; // ตัดเลขเด่นและคู่ไขว้
+    let pStr = `${d1}${i}`;
+    d1Candidates.push({ pair: pStr, score: pairFreqMap[pStr] || 0 });
+  }
+  d1Candidates.sort((a, b) => b.score - a.score);
+  let d1Selected = d1Candidates.slice(0, 5);
 
-  activeDigits.forEach(mainDigit => {
-    for (let i = 0; i <= 9; i++) {
-      if (activeDigits.includes(i) && (
-          (mainDigit === d1 && i === d2) || 
-          (mainDigit === d2 && i === d1) ||
-          (mainDigit === i)
-      )) {
-        continue;
-      }
+  // คัดเลือกเจาะของ D2 (5 คู่)
+  let d2Candidates = [];
+  for (let i = 0; i <= 9; i++) {
+    if (i === d1 || i === d2) continue; // ตัดเลขเด่นและคู่ไขว้
+    let pStr = `${d2}${i}`;
+    d2Candidates.push({ pair: pStr, score: pairFreqMap[pStr] || 0 });
+  }
+  d2Candidates.sort((a, b) => b.score - a.score);
+  let d2Selected = d2Candidates.slice(0, 5);
 
-      let pStr = `${mainDigit}${i}`;
-      let score = (pairFreqMap[pStr] || 0);
-      candidates.push({ pair: pStr, score: score });
-    }
+  // กำหนดระดับไฮไลต์ Top 1 (Gold), Top 2 (Silver), Top 3 (Rose Gold) ของแต่ละฝั่ง
+  let result = [];
+
+  d1Selected.forEach((item, index) => {
+    let highlight = 'normal';
+    if (index === 0) highlight = 'top1';
+    else if (index === 1) highlight = 'top2';
+    else if (index === 2) highlight = 'top3';
+    result.push({ pair: item.pair, mainDigit: d1, rank: index + 1, highlight: highlight });
   });
 
-  candidates.sort((a, b) => b.score - a.score);
+  d2Selected.forEach((item, index) => {
+    let highlight = 'normal';
+    if (index === 0) highlight = 'top1';
+    else if (index === 1) highlight = 'top2';
+    else if (index === 2) highlight = 'top3';
+    result.push({ pair: item.pair, mainDigit: d2, rank: index + 1, highlight: highlight });
+  });
 
-  let selectedPairs = [];
-  let usedMap = new Set();
-
-  for (let item of candidates) {
-    if (!usedMap.has(item.pair) && selectedPairs.length < 10) {
-      usedMap.add(item.pair);
-      selectedPairs.push(item.pair);
-    }
-  }
-
-  if (selectedPairs.length < 10) {
-    for (let d of activeDigits) {
-      for (let i = 0; i <= 9; i++) {
-        let p = `${d}${i}`;
-        if (!usedMap.has(p) && selectedPairs.length < 10) {
-          usedMap.add(p);
-          selectedPairs.push(p);
-        }
-      }
-    }
-  }
-
-  selectedPairs.sort((a, b) => parseInt(a) - parseInt(b));
-  return selectedPairs;
+  // จัดเรียงลำดับตัวเลขจากน้อยไปหามากเพื่อความสวยงามและค้นหาง่าย
+  result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
+  return result;
 }
 
 function analyzeLotteryRecords(records) {
@@ -817,7 +834,9 @@ function analyzeLotteryRecords(records) {
   const d1 = sortedGlobal[0].dig;
   const d2 = sortedGlobal[1].dig;
 
-  const displayedPairs = generateOptimizedPairs(d1, d2, activeRecords);
+  const structuredPairs = generateOptimizedPairs(d1, d2, activeRecords);
+  const displayedPairs = structuredPairs.map(p => p.pair);
+
   const auditPairs = [...displayedPairs];
   [d1, d2].forEach(d => {
     let crossPair = `${d1}${d2}`;
@@ -868,48 +887,40 @@ function analyzeLotteryRecords(records) {
     });
   }
 
-  // 🧮 คำนวณตารางมิติที่ 1 (ความถี่รวม 0-9) และตารางมิติที่ 2 (แยกรายหลัก: สิบ/หน่วย เฉพาะสิบและหน่วย ไม่นับร้อย)
+  // 🧮 คำนวณตารางมิติที่ 1 (ความถี่รวม 0-9) และตารางมิติที่ 2 (แยกรายหลัก)
   let overallStats = {};
   let positionStats = {};
   for(let d=0; d<=9; d++) {
-    overallStats[d] = { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, currentWin: 0, currentLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 };
+    overallStats[d] = { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 };
     positionStats[d] = {
-      tens: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, currentWin: 0, currentLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 },
-      units: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, currentWin: 0, currentLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 }
+      tens: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 },
+      units: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 }
     };
   }
 
-  // วนลูปตรวจสถิติย้อนหลังแต่ละงวดสำหรับตารางมิติ (เรียงจากเก่าไปใหม่เพื่อคำนวณ Streak ถูกต้อง)
   const chronologicalRecords = [...activeRecords].reverse();
   chronologicalRecords.forEach(rec => {
-    const t3 = rec.top3; // เช่น '470' -> หลักร้อย=4, หลักสิบ=7, หลักหน่วย=0
-    const b2 = rec.bottom2; // เช่น '62' -> หลักสิบ=6, หลักหน่วย=2
+    const t3 = rec.top3;
+    const b2 = rec.bottom2;
 
-    // ตำแหน่งหลักสิบ/หน่วยที่ถูกต้องตามกฎ (ไม่นับหลักร้อย)
     let validTens = [t3[1], b2[0]];
     let validUnits = [t3[2], b2[1]];
 
     for(let d=0; d<=9; d++) {
       let dStr = d.toString();
       
-      // ตรวจ Overall (อยู่ในหลักสิบหรือหน่วย บนหรือล่าง)
       let inOverall = validTens.includes(dStr) || validUnits.includes(dStr);
       let ov = overallStats[d];
       if(inOverall) {
-        ov.hits++;
-        ov.tempWin++;
-        ov.tempLoss = 0;
+        ov.hits++; ov.tempWin++; ov.tempLoss = 0;
         if(ov.tempWin > ov.maxWin) ov.maxWin = ov.tempWin;
         ov.lastStatus = 'เข้า';
       } else {
-        ov.misses++;
-        ov.tempLoss++;
-        ov.tempWin = 0;
+        ov.misses++; ov.tempLoss++; ov.tempWin = 0;
         if(ov.tempLoss > ov.maxLoss) ov.maxLoss = ov.tempLoss;
         ov.lastStatus = 'หลุด';
       }
 
-      // ตรวจแยกหลัก (หลักสิบ)
       let inTens = validTens.includes(dStr);
       let ts = positionStats[d].tens;
       if(inTens) {
@@ -922,7 +933,6 @@ function analyzeLotteryRecords(records) {
         ts.lastStatus = 'หลุด';
       }
 
-      // ตรวจแยกหลัก (หลักหน่วย)
       let inUnits = validUnits.includes(dStr);
       let un = positionStats[d].units;
       if(inUnits) {
@@ -937,7 +947,6 @@ function analyzeLotteryRecords(records) {
     }
   });
 
-  // คำนวณสถานะปัจจุบัน (Current Streak)
   for(let d=0; d<=9; d++) {
     let ov = overallStats[d];
     ov.currentStreakText = ov.lastStatus === 'เข้า' ? `เข้า (${ov.tempWin})` : (ov.lastStatus === 'หลุด' ? `หลุด (${ov.tempLoss})` : '-');
@@ -953,9 +962,9 @@ function analyzeLotteryRecords(records) {
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
   const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';
 
-  const formattedPairs = displayedPairs.map((pair, idx) => ({
-    pair: pair,
-    gold: (idx === 0 || idx === displayedPairs.length - 1),
+  const formattedPairs = structuredPairs.map(pItem => ({
+    pair: pItem.pair,
+    highlightClass: pItem.highlight === 'top1' ? 'highlight-top1' : (pItem.highlight === 'top2' ? 'highlight-top2' : (pItem.highlight === 'top3' ? 'highlight-top3' : '')),
     pct: `${pairWinRate}%`
   }));
 
@@ -1095,7 +1104,7 @@ function renderResults(parsedData) {
 
     res.formattedPairs.forEach(p => {
       html += `
-            <div class="pair-badge ${p.gold ? 'highlight-gold' : ''}">
+            <div class="pair-badge ${p.highlightClass}">
               <span class="pair-num">${p.pair}</span>
               <span class="pair-pct">${p.pct}</span>
             </div>
@@ -1210,7 +1219,6 @@ function renderResults(parsedData) {
 
     for(let d=0; d<=9; d++) {
       let pst = res.positionStats[d];
-      // แถวหลักสิบ
       html += `
         <tr>
           <td rowspan="2"><b style="color:#b8860b;font-size:0.55rem;">${d}</b></td>
@@ -1221,9 +1229,6 @@ function renderResults(parsedData) {
           <td>${pst.tens.maxLoss} งวด</td>
           <td><b>${pst.tens.currentStreakText}</b></td>
         </tr>
-      `;
-      // แถวหลักหน่วย
-      html += `
         <tr>
           <td><b>หลักหน่วย</b></td>
           <td><span style="color:#2e7d32;font-weight:700;">${pst.units.hits}</span></td>
