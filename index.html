@@ -168,6 +168,7 @@ body {
   resize: vertical;
   padding: 8px;
   border: 1px solid var(--line-soft);
+  border-radius: 99px;
   border-radius: 9px;
   background: #fff;
   color: var(--text-dark);
@@ -1165,7 +1166,7 @@ function analyzeSumMatrix(records) {
   return { top2Sum: topTop2[0], top3Sum: topTop3[0] };
 }
 
-// 🎯 ISOLATED THAI STOCK SPECIAL PAIR GENERATOR: ฝังสูตรลับ 10 ปี (แกนหลักหน่วยล่างรอบเที่ยง + Proximity Weighting 6 อันดับ)
+// ⚖️ RE-BALANCED PAIR GENERATOR: ให้สูตรลดแต้มรอบเที่ยงทำหน้าที่เป็น "ตัวหนุน/ตัวเสริม" (10-15%) และให้ 13 ตารางหลักเป็นแกนนำ
 function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits, lotteryType, targetRecord) {
   const pairFreqMap = {};
   activeRecords.forEach(r => {
@@ -1201,15 +1202,16 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits, lot
     for (let i = 0; i <= 9; i++) {
       if (i === mainDigit || i === d1 || i === d2) continue;
       let pStr = `${mainDigit}${i}`;
-      let baseScore = pairFreqMap[pStr] || 0;
+      let baseScore = (pairFreqMap[pStr] || 0) * 10; // 🌟 ขยายน้ำหนักจาก 13 ตารางสถิติเดิมเป็นหลัก
       let inWinArray = winDigits.includes(mainDigit) && winDigits.includes(i);
-      let synergyBonus = inWinArray ? 6 : 0;
+      let synergyBonus = inWinArray ? 20 : 0; // 🌟 โบนัสจาก Co-Occurrence Win Array
       
+      // ⚖️ ปรับโบนัสให้อยู่ในระดับ "ตัวหนุน/ตัวสนับสนุน" (เพียง +1 ถึง +6 คะแนน) เพื่อไม่ให้ครอบงำสถิติหลัก
       let proximityBonus = 0;
       if (isThaiStock && proximityAllowedDigits.length > 0) {
         let idx = proximityAllowedDigits.indexOf(i);
         if (idx !== -1) {
-          proximityBonus = (6 - idx) * 4;
+          proximityBonus = (6 - idx) * 1.0; 
         }
       }
 
@@ -1266,21 +1268,19 @@ function analyzeLotteryRecords(records, lotteryType) {
     let isDigitHit = false;
     let isPairHit = false;
 
-    // 🎯 STRICT TOP-ONLY CHECK (หุ้นไทย บนตรงๆ และทุกโหมดหุ้นไทยบน: ตรวจสอบเฉพาะ "บน" 3 ตัวบน/2 ตัวบน เท่านั้น ห้ามแตะล่าง 100%)
     const isThaiDirectTop = lotteryType.includes('บนตรงๆ');
     const isThaiAllDay = lotteryType.includes('ทั้งวัน');
     const isThaiSingleSession = lotteryType.includes('ไทย') && (lotteryType.includes('เช้า') || lotteryType.includes('เที่ยง') || lotteryType.includes('บ่าย') || lotteryType.includes('เย็น'));
 
     if (isThaiDirectTop && target.sessions) {
-      // หุ้นไทย บนตรงๆ: เช็คครบ 4 รอบ (เช้า, เที่ยง, บ่าย, เย็น) ขอแค่รอบใดรอบหนึ่ง "บน" เข้าเป้าถือว่าเข้าทันที 100% (บนก็คือบน ไม่นับล่าง)
       let sessionsArr = [target.sessions.morning, target.sessions.noon, target.sessions.afternoon, target.sessions.evening].filter(Boolean);
       let dayDigitHit = false;
       let dayPairHit = false;
 
       sessionsArr.forEach(sess => {
-        let t3 = sess.top3; // 3 ตัวบน
-        let topDigits = t3.split(''); // ตัวเลขบนเท่านั้น
-        let top2 = t3.slice(-2); // 2 ตัวบน
+        let t3 = sess.top3; 
+        let topDigits = t3.split(''); 
+        let top2 = t3.slice(-2); 
 
         if (topCandidates.some(d => topDigits.includes(d.toString()))) {
           dayDigitHit = true;
