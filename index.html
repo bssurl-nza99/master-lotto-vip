@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY MULTI-DIMENSIONAL ENGINE V1.6.0</title>
+<title>ทรัพย์นำโชค · AI LOTTERY MASTER ENGINE V2.0.0</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -371,7 +371,6 @@ body {
   margin-top: 10px;
 }
 
-/* 🎨 สไตล์สีไฮไลต์ลำดับความฟิตพรีเมียม (Gold, Silver, Rose Gold) */
 .pair-badge {
   background: #fff;
   border: 1px solid #e2d6be;
@@ -529,16 +528,16 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V1.6.0</small>
+        <small>Smart PDF Parser V2.0.0 Master</small>
       </div>
     </div>
-    <div class="pill">ULTIMATE ENGINE</div>
+    <div class="pill">MASTER ENGINE V2.0</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">V1.6.0 ULTIMATE MULTI-DIMENSIONAL UPGRADE</div>
-    <h1>ระบบวิเคราะห์ครบเครื่อง <em>(เพิ่มหลักร้อย, คู่/คี่, เบิ้ล/หาม/พี่น้อง)</em></h1>
-    <p>รวมตารางวิเคราะห์เชิงลึกทุกมิติ ทั้งตารางคู่สัมพันธ์ Buddy Pairs, ตารางแยกรายหลัก (ร้อย, สิบ, หน่วย), ตารางคู่-คี่ และตารางกลุ่มพิเศษแบบซื่อสัตย์ 100%</p>
+    <div class="hero-tag">V2.0.0 ULTIMATE MASTER INTEGRATION</div>
+    <h1>ระบบคัดกรองดัชนีคะแนนรวม <em>(Master Scoreboard 0-100)</em></h1>
+    <p>เชื่อมโยงสถิติครบทุกตารางมิติ (ความถี่, รายหลัก, Buddy Pairs, ระยะเว้นช่วง Gap, แต้มรวม และเลขไหล) คัดเลขเด่นที่ดีที่สุด 1, 2 และเลขดับอย่างพิถีพิถัน 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -553,7 +552,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลทุกประเภทหวยพร้อมกัน (Process)
+        <span>⚡</span> ประมวลผลและเชื่อมโยงทุกมิติพร้อมกัน (Process)
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -577,7 +576,10 @@ const SAMPLE_PDF_DATA = `ลาวประตูชัย | 21 ต.ค. 69
 30
 ลาวประตูชัย | 18 ต.ค. 69
 362
-70`;
+70
+ลาวประตูชัย | 17 ต.ค. 69
+822
+31`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦',
@@ -811,38 +813,94 @@ function analyzeCorrelationPairs(records) {
   return pairResults.slice(0, 5);
 }
 
-// 📊 ฟังก์ชันวิเคราะห์มิติต่างๆ เพิ่มเติม (คู่/คี่, เบิ้ล/หาม/พี่น้อง)
-function analyzeSpecialPatterns(records) {
-  let evenCount = 0, oddCount = 0;
-  let doubleCount = 0, harmCount = 0, sisterCount = 0;
-  let total = records.length;
+// ⏳ ฟังก์ชันวิเคราะห์ระยะเว้นช่วง (Gap & Omission Tracker)
+function analyzeGapTracker(records) {
+  let gapMap = {};
+  for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
 
-  records.forEach(r => {
-    let t3 = r.top3;
-    let b2 = r.bottom2;
-    
-    // คู่/คี่ ของ 2 ตัวบน
-    let top2 = t3.slice(-2);
-    if(parseInt(top2) % 2 === 0) evenCount++; else oddCount++;
-
-    // เบิ้ล / หาม / พี่น้อง
-    if (t3[1] === t3[2]) doubleCount++;
-    if (t3[0] === t3[2]) harmCount++;
-    
-    let d1 = parseInt(top2[0]), d2 = parseInt(top2[1]);
-    if (Math.abs(d1 - d2) === 1 || (d1 === 0 && d2 === 9) || (d1 === 9 && d2 === 0)) {
-      sisterCount++;
+  records.forEach((r, idx) => {
+    let digits = (r.top3 + r.bottom2).split('');
+    for(let d=0; d<=9; d++) {
+      let dStr = d.toString();
+      if(!gapMap[d].found) {
+        if(digits.includes(dStr)) {
+          gapMap[d].found = true;
+        } else {
+          gapMap[d].currentGap++;
+        }
+      }
     }
   });
 
+  return gapMap;
+}
+
+// 🔢 ฟังก์ชันวิเคราะห์ผลรวมแต้ม (Sum Digit Matrix)
+function analyzeSumMatrix(records) {
+  let top2Sums = {}, top3Sums = {}, bot2Sums = {};
+  records.forEach(r => {
+    let t3 = r.top3, b2 = r.bottom2;
+    let sTop3 = t3.split('').reduce((a,b) => a + parseInt(b), 0);
+    let sTop2 = parseInt(t3[1]) + parseInt(t3[2]);
+    let sBot2 = b2.split('').reduce((a,b) => a + parseInt(b), 0);
+
+    top3Sums[sTop3] = (top3Sums[sTop3] || 0) + 1;
+    top2Sums[sTop2] = (top2Sums[sTop2] || 0) + 1;
+    bot2Sums[sBot2] = (bot2Sums[sBot2] || 0) + 1;
+  });
+
+  let topTop2Sum = Object.entries(top2Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
+  let topBot2Sum = Object.entries(bot2Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
+
   return {
-    evenRate: total > 0 ? ((evenCount / total) * 100).toFixed(1) : '0.0',
-    oddRate: total > 0 ? ((oddCount / total) * 100).toFixed(1) : '0.0',
-    doubleRate: total > 0 ? ((doubleCount / total) * 100).toFixed(1) : '0.0',
-    harmRate: total > 0 ? ((harmCount / total) * 100).toFixed(1) : '0.0',
-    sisterRate: total > 0 ? ((sisterCount / total) * 100).toFixed(1) : '0.0',
-    total: total
+    top2PopularSum: topTop2Sum[0],
+    bot2PopularSum: topBot2Sum[0]
   };
+}
+
+// 🧠 ฟังก์ชัน Master Score Calculator (เชื่อมโยงทุกตาราง 0-100 คะแนน)
+function calculateMasterScores(records) {
+  let scores = Array(10).fill(0);
+  let gapData = analyzeGapTracker(records);
+
+  // 1. คะแนนความถี่รวม (30 คะแนน)
+  let counts = Array(10).fill(0);
+  records.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => counts[parseInt(d)]++));
+  let maxCount = Math.max(...counts, 1);
+  counts.forEach((c, d) => scores[d] += (c / maxCount) * 30);
+
+  // 2. คะแนนตามตำแหน่งหลัก (30 คะแนน)
+  records.forEach(r => {
+    let t3 = r.top3, b2 = r.bottom2;
+    let validTensUnits = [t3[1], t3[2], b2[0], b2[1]];
+    validTensUnits.forEach(d => scores[parseInt(d)] += 2.5);
+  });
+
+  // 3. คะแนนระยะเว้นช่วง Gap - กำลังเดินดี (20 คะแนน)
+  for(let d=0; d<=9; d++) {
+    if(gapData[d].currentGap === 0) scores[d] += 20; // ออกติดกัน
+    else if(gapData[d].currentGap === 1) scores[d] += 15;
+    else if(gapData[d].currentGap === 2) scores[d] += 10;
+  }
+
+  // 4. คะแนน Buddy Pairs (20 คะแนน)
+  let buddyPairs = analyzeCorrelationPairs(records);
+  buddyPairs.forEach(bp => {
+    let parts = bp.pair.split(' & ');
+    scores[parseInt(parts[0])] += 10;
+    scores[parseInt(parts[1])] += 10;
+  });
+
+  // ปรับให้อยู่ในสเกล 0-100
+  let maxScore = Math.max(...scores, 1);
+  let finalScores = scores.map((s, d) => ({
+    digit: d,
+    score: Math.min(100, Math.round((s / maxScore) * 100)),
+    gap: gapData[d].currentGap
+  }));
+
+  finalScores.sort((a, b) => b.score - a.score);
+  return finalScores;
 }
 
 function analyzeLotteryRecords(records) {
@@ -850,15 +908,11 @@ function analyzeLotteryRecords(records) {
   const total = activeRecords.length;
   if (total === 0) return null;
 
-  const counts = Array(10).fill(0);
-  activeRecords.forEach(r => {
-    if (r.top3.length === 3) r.top3.split('').forEach(d => counts[parseInt(d)]++);
-    if (r.bottom2.length === 2) r.bottom2.split('').forEach(d => counts[parseInt(d)]++);
-  });
-
-  const sortedGlobal = counts.map((v, i) => ({dig: i, val: v})).sort((a,b) => b.val - a.val);
-  const d1 = sortedGlobal[0].dig;
-  const d2 = sortedGlobal[1].dig;
+  // คำนวณคะแนน Master Scoreboard เชื่อมโยงทุกมิติ
+  const masterScores = calculateMasterScores(activeRecords);
+  const d1 = masterScores[0].digit; // เลขเด่น 1 (ทอง)
+  const d2 = masterScores[1].digit; // เลขเด่น 2 (เงิน)
+  const dDead = masterScores[masterScores.length - 1].digit; // เลขดับ/ค้างนาน
 
   const structuredPairs = generateOptimizedPairs(d1, d2, activeRecords);
   const displayedPairs = structuredPairs.map(p => p.pair);
@@ -879,10 +933,8 @@ function analyzeLotteryRecords(records) {
     const past = activeRecords.slice(0, i);
     const target = activeRecords[i];
     
-    const pastCounts = Array(10).fill(0);
-    past.forEach(p => (p.top3 + p.bottom2).split('').forEach(d => pastCounts[parseInt(d)]++));
-    const bestPast = pastCounts.map((v, idx) => ({dig: idx, val: v})).sort((a,b) => b.val - a.val);
-    const topCandidates = [bestPast[0].dig, bestPast[1].dig];
+    const pastMaster = calculateMasterScores(past);
+    const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
 
     const actualTop3 = target.top3;
     const actualBottom2 = target.bottom2;
@@ -912,90 +964,7 @@ function analyzeLotteryRecords(records) {
   }
 
   const correlationResults = analyzeCorrelationPairs(activeRecords);
-  const specialPatterns = analyzeSpecialPatterns(activeRecords);
-
-  // 🧮 ตารางมิติที่ 1 & 2 (เพิ่ม หลักร้อย ครบถ้วน)
-  let overallStats = {};
-  let positionStats = {};
-  for(let d=0; d<=9; d++) {
-    overallStats[d] = { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 };
-    positionStats[d] = {
-      hundreds: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 },
-      tens: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 },
-      units: { hits: 0, misses: 0, maxWin: 0, maxLoss: 0, lastStatus: null, tempWin: 0, tempLoss: 0 }
-    };
-  }
-
-  const chronologicalRecords = [...activeRecords].reverse();
-  chronologicalRecords.forEach(rec => {
-    const t3 = rec.top3;
-    const b2 = rec.bottom2;
-    let validHundreds = [t3[0]];
-    let validTens = [t3[1], b2[0]];
-    let validUnits = [t3[2], b2[1]];
-
-    for(let d=0; d<=9; d++) {
-      let dStr = d.toString();
-      let inOverall = validTens.includes(dStr) || validUnits.includes(dStr);
-      let ov = overallStats[d];
-      if(inOverall) {
-        ov.hits++; ov.tempWin++; ov.tempLoss = 0;
-        if(ov.tempWin > ov.maxWin) ov.maxWin = ov.tempWin;
-        ov.lastStatus = 'เข้า';
-      } else {
-        ov.misses++; ov.tempLoss++; ov.tempWin = 0;
-        if(ov.tempLoss > ov.maxLoss) ov.maxLoss = ov.tempLoss;
-        ov.lastStatus = 'หลุด';
-      }
-
-      let inHundreds = validHundreds.includes(dStr);
-      let hs = positionStats[d].hundreds;
-      if(inHundreds) {
-        hs.hits++; hs.tempWin++; hs.tempLoss = 0;
-        if(hs.tempWin > hs.maxWin) hs.maxWin = hs.tempWin;
-        hs.lastStatus = 'เข้า';
-      } else {
-        hs.misses++; hs.tempLoss++; hs.tempWin = 0;
-        if(hs.tempLoss > hs.maxLoss) hs.maxLoss = hs.tempLoss;
-        hs.lastStatus = 'หลุด';
-      }
-
-      let inTens = validTens.includes(dStr);
-      let ts = positionStats[d].tens;
-      if(inTens) {
-        ts.hits++; ts.tempWin++; ts.tempLoss = 0;
-        if(ts.tempWin > ts.maxWin) ts.maxWin = ts.tempWin;
-        ts.lastStatus = 'เข้า';
-      } else {
-        ts.misses++; ts.tempLoss++; ts.tempWin = 0;
-        if(ts.tempLoss > ts.maxLoss) ts.maxLoss = ts.tempLoss;
-        ts.lastStatus = 'หลุด';
-      }
-
-      let inUnits = validUnits.includes(dStr);
-      let un = positionStats[d].units;
-      if(inUnits) {
-        un.hits++; un.tempWin++; un.tempLoss = 0;
-        if(un.tempWin > un.maxWin) un.maxWin = un.tempWin;
-        un.lastStatus = 'เข้า';
-      } else {
-        un.misses++; un.tempLoss++; un.tempWin = 0;
-        if(un.tempLoss > un.maxLoss) un.maxLoss = un.tempLoss;
-        un.lastStatus = 'หลุด';
-      }
-    }
-  });
-
-  for(let d=0; d<=9; d++) {
-    let ov = overallStats[d];
-    ov.currentStreakText = ov.lastStatus === 'เข้า' ? `เข้า (${ov.tempWin})` : (ov.lastStatus === 'หลุด' ? `หลุด (${ov.tempLoss})` : '-');
-    let hs = positionStats[d].hundreds;
-    hs.currentStreakText = hs.lastStatus === 'เข้า' ? `เข้า (${hs.tempWin})` : (hs.lastStatus === 'หลุด' ? `หลุด (${hs.tempLoss})` : '-');
-    let ts = positionStats[d].tens;
-    ts.currentStreakText = ts.lastStatus === 'เข้า' ? `เข้า (${ts.tempWin})` : (ts.lastStatus === 'หลุด' ? `หลุด (${ts.tempLoss})` : '-');
-    let un = positionStats[d].units;
-    un.currentStreakText = un.lastStatus === 'เข้า' ? `เข้า (${un.tempWin})` : (un.lastStatus === 'หลุด' ? `หลุด (${un.tempLoss})` : '-');
-  }
+  const sumResults = analyzeSumMatrix(activeRecords);
 
   const evalCount = auditLogs.length;
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
@@ -1016,12 +985,12 @@ function analyzeLotteryRecords(records) {
     evalCount: evalCount,
     d1: d1,
     d2: d2,
+    dDead: dDead,
+    masterScores: masterScores,
     formattedPairs: formattedPairs,
     auditLogs: auditLogs,
-    overallStats: overallStats,
-    positionStats: positionStats,
     correlationResults: correlationResults,
-    specialPatterns: specialPatterns
+    sumResults: sumResults
   };
 }
 
@@ -1101,7 +1070,7 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์มิติขั้นสูง (V1.6.0 Ultimate)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์เชื่อมโยงมิติขั้นสูง (V2.0.0 Master Engine)</div>`;
 
   let cardIndex = 0;
   for (const [type, rows] of Object.entries(parsedData)) {
@@ -1116,7 +1085,7 @@ function renderResults(parsedData) {
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
-            <span>✦</span> ทรัพย์นำโชค V1.6.0 <span>✦</span>
+            <span>✦</span> ทรัพย์นำโชค V2.0 <span>✦</span>
           </div>
           <div class="card-top-bar">
             <span class="card-date">${latestDate}</span>
@@ -1160,6 +1129,44 @@ function renderResults(parsedData) {
         </div>
       </div>
 
+      <!-- 🏆 ตารางสรุปดัชนีคะแนนรวม Master Scoreboard (0-100 คะแนน) -->
+      <div class="summary-table-container">
+        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+          🏆 ตารางดัชนีคะแนนรวมเชื่อมโยงทุกมิติ Master Scoreboard (${type}) — เด่น 1, 2 & เลขดับ
+        </div>
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>อันดับ (Rank)</th>
+              <th>ตัวเลข</th>
+              <th>ดัชนีคะแนนรวม (Score 0-100)</th>
+              <th>ระยะเว้นช่วง (Gap)</th>
+              <th>สถานะคัดกรอง</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    res.masterScores.forEach((item, idx) => {
+      let badge = idx === 0 ? '<span class="badge-hit">เด่น 1 (Gold)</span>' : 
+                 (idx === 1 ? '<span class="badge-hit" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9;">เด่น 2 (Silver)</span>' : 
+                 (idx === res.masterScores.length - 1 ? '<span class="badge-miss">เลขดับ / ค้างนาน</span>' : '<span style="color:#888">ทั่วไป</span>'));
+      html += `
+            <tr>
+              <td><b>#${idx + 1}</b></td>
+              <td><b style="color:#b8860b;font-size:0.55rem;">${item.digit}</b></td>
+              <td><span style="color:#78590f;font-weight:700;">${item.score} / 100</span></td>
+              <td>เว้น ${item.gap} งวด</td>
+              <td>${badge}</td>
+            </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+
       <!-- 🤝 ตารางวิเคราะห์คู่สัมพันธ์ทดแทนกัน (Mutual Correlation Pairs) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
@@ -1195,44 +1202,6 @@ function renderResults(parsedData) {
         </table>
       </div>
 
-      <!-- 📊 ตารางมิติใหม่: ตารางคู่-คี่ และ กลุ่มพิเศษ (เบิ้ล/หาม/พี่น้อง) -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          📊 ตารางมิติพฤติกรรมพิเศษ: คู่-คี่ & เบิ้ล/หาม/พี่น้อง (${type})
-        </div>
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>ประเภทสภาวะ (Pattern Type)</th>
-              <th>สถิติความถี่ (%)</th>
-              <th>สถานะแนวโน้ม</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><b>เลขคู่ (Even) / เลขคี่ (Odd) บน</b></td>
-              <td>คู่ <span style="color:#2e7d32;font-weight:700;">${res.specialPatterns.evenRate}%</span> | คี่ <span style="color:#c62828;font-weight:700;">${res.specialPatterns.oddRate}%</span></td>
-              <td><span class="badge-hit">สมดุลสถิติ</span></td>
-            </tr>
-            <tr>
-              <td><b>สภาวะออก "เลขเบิ้ล"</b></td>
-              <td><span style="color:#b8860b;font-weight:700;">${res.specialPatterns.doubleRate}%</span> ของงวดทั้งหมด</td>
-              <td><span class="badge-hit">เกาะติด</span></td>
-            </tr>
-            <tr>
-              <td><b>สภาวะออก "เลขหาม"</b></td>
-              <td><span style="color:#b8860b;font-weight:700;">${res.specialPatterns.harmRate}%</span> ของงวดทั้งหมด</td>
-              <td><span class="badge-hit">เกาะติด</span></td>
-            </tr>
-            <tr>
-              <td><b>สภาวะออก "เลขพี่น้อง/เรียง"</b></td>
-              <td><span style="color:#2e7d32;font-weight:700;">${res.specialPatterns.sisterRate}%</span> ของงวดทั้งหมด</td>
-              <td><span class="badge-hit">เด่นชัด</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
       <!-- 1. ตารางตรวจสอบผลย้อนหลัง (Audit Table) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
@@ -1264,100 +1233,6 @@ function renderResults(parsedData) {
         </tr>
       `;
     });
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 2. ตารางมิติที่ 1: ตารางความถี่รวม 0-9 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          ตารางมิติที่ 1: ตารางความถี่รวมตัวเลข 0–9 (${type}) — ไม่นับหลักร้อย
-        </div>
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>ตัวเลข</th>
-              <th>เข้า (ครั้ง)</th>
-              <th>หลุด (ครั้ง)</th>
-              <th>เข้าติดต่อสูงสุด</th>
-              <th>หลุดติดต่อสูงสุด</th>
-              <th>สถานะปัจจุบัน</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    for(let d=0; d<=9; d++) {
-      let st = res.overallStats[d];
-      html += `
-        <tr>
-          <td><b style="color:#b8860b;font-size:0.55rem;">${d}</b></td>
-          <td><span style="color:#2e7d32;font-weight:700;">${st.hits}</span></td>
-          <td><span style="color:#c62828;font-weight:700;">${st.misses}</span></td>
-          <td>${st.maxWin} งวด</td>
-          <td>${st.maxLoss} งวด</td>
-          <td><b>${st.currentStreakText}</b></td>
-        </tr>
-      `;
-    }
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 3. ตารางมิติที่ 2: ตารางสถิติแยกรายหลัก 0-9 (เพิ่มหลักร้อย) -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          ตารางมิติที่ 2: ตารางสถิติแยกรายหลัก 0–9 (${type}) — ครบถ้วน (ร้อย, สิบ, หน่วย)
-        </div>
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>ตัวเลข</th>
-              <th>ตำแหน่งหลัก</th>
-              <th>เข้า (ครั้ง)</th>
-              <th>หลุด (ครั้ง)</th>
-              <th>เข้าติดสูงสุด</th>
-              <th>หลุดติดสูงสุด</th>
-              <th>สถานะปัจจุบัน</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    for(let d=0; d<=9; d++) {
-      let pst = res.positionStats[d];
-      html += `
-        <tr>
-          <td rowspan="3"><b style="color:#b8860b;font-size:0.55rem;">${d}</b></td>
-          <td><b>หลักร้อย</b></td>
-          <td><span style="color:#2e7d32;font-weight:700;">${pst.hundreds.hits}</span></td>
-          <td><span style="color:#c62828;font-weight:700;">${pst.hundreds.misses}</span></td>
-          <td>${pst.hundreds.maxWin} งวด</td>
-          <td>${pst.hundreds.maxLoss} งวด</td>
-          <td><b>${pst.hundreds.currentStreakText}</b></td>
-        </tr>
-        <tr>
-          <td><b>หลักสิบ</b></td>
-          <td><span style="color:#2e7d32;font-weight:700;">${pst.tens.hits}</span></td>
-          <td><span style="color:#c62828;font-weight:700;">${pst.tens.misses}</span></td>
-          <td>${pst.tens.maxWin} งวด</td>
-          <td>${pst.tens.maxLoss} งวด</td>
-          <td><b>${pst.tens.currentStreakText}</b></td>
-        </tr>
-        <tr>
-          <td><b>หลักหน่วย</b></td>
-          <td><span style="color:#2e7d32;font-weight:700;">${pst.units.hits}</span></td>
-          <td><span style="color:#c62828;font-weight:700;">${pst.units.misses}</span></td>
-          <td>${pst.units.maxWin} งวด</td>
-          <td>${pst.units.maxLoss} งวด</td>
-          <td><b>${pst.units.currentStreakText}</b></td>
-        </tr>
-      `;
-    }
 
     html += `
           </tbody>
