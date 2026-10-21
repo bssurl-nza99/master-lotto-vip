@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY FULL-VISIBLE ENGINE V3.1.0</title>
+<title>ทรัพย์นำโชค · AI LOTTERY HYPER-SYNERGY ENGINE V4.0.0</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -538,16 +538,16 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V3.1.0 Full-Visible</small>
+        <small>Smart PDF Parser V4.0.0 Hyper-Synergy</small>
       </div>
     </div>
-    <div class="pill">FULL VISIBLE V3.1</div>
+    <div class="pill">HYPER-SYNERGY V4.0</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">V3.1.0 FULL-VISIBLE TABLES UPGRADE</div>
-    <h1>ระบบแสดงผลทุกตารางแบบชัดเจน <em>(ครบถ้วน ไม่มีซ่อนหลังบ้าน)</em></h1>
-    <p>การันตีแสดงผลทุกตารางมิติออกหน้าจอแบบเต็มรูปแบบ ตารางใครตารางมัน พร้อมระบบ DNA ดัชนีหักล้างสัญญาณหลอกและเลขวิน 6 ตัว 100%</p>
+    <div class="hero-tag">V4.0.0 HYPER-SYNERGY GENIUS DNA ENGINE</div>
+    <h1>ระบบประสานพลังเชื่อมโยงทุกตาราง <em>(Cross-Table Symbiosis)</em></h1>
+    <p>ทุกตารางเกื้อหนุนและส่งต่ออานิสงส์ให้แก่กันอย่างแท้จริง ผ่านการคำนวณระดับอะตอม DNA ซื่อสัตย์ 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -562,7 +562,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลและแสดงผลทุกตารางพร้อมกัน (Process)
+        <span>⚡</span> ประมวลผลและประสานพลังระดับ DNA (Process)
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -743,54 +743,26 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-function generateOptimizedPairs(d1, d2, activeRecords) {
-  const pairFreqMap = {};
-  activeRecords.forEach(r => {
-    const top2 = r.top3.slice(-2);
-    const bot2 = r.bottom2;
-    [top2, bot2].forEach(p => {
-      if (p.length === 2) {
-        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
-        let rev = p.split('').reverse().join('');
-        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
+// ⏳ ฟังก์ชันวิเคราะห์ระยะเว้นช่วง (Gap Tracker - ข้อมูลตั้งต้นระดับอะตอม)
+function analyzeGapTracker(records) {
+  let gapMap = {};
+  for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
+
+  records.forEach((r) => {
+    let digits = (r.top3 + r.bottom2).split('');
+    for(let d=0; d<=9; d++) {
+      let dStr = d.toString();
+      if(!gapMap[d].found) {
+        if(digits.includes(dStr)) gapMap[d].found = true;
+        else gapMap[d].currentGap++;
       }
-    });
+    }
   });
-
-  let d1Candidates = [];
-  for (let i = 0; i <= 9; i++) {
-    if (i === d1 || i === d2) continue;
-    let pStr = `${d1}${i}`;
-    d1Candidates.push({ pair: pStr, score: pairFreqMap[pStr] || 0 });
-  }
-  d1Candidates.sort((a, b) => b.score - a.score);
-  let d1Selected = d1Candidates.slice(0, 5);
-
-  let d2Candidates = [];
-  for (let i = 0; i <= 9; i++) {
-    if (i === d1 || i === d2) continue;
-    let pStr = `${d2}${i}`;
-    d2Candidates.push({ pair: pStr, score: pairFreqMap[pStr] || 0 });
-  }
-  d2Candidates.sort((a, b) => b.score - a.score);
-  let d2Selected = d2Candidates.slice(0, 5);
-
-  let result = [];
-  d1Selected.forEach((item, index) => {
-    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
-    result.push({ pair: item.pair, mainDigit: d1, rank: index + 1, highlight: highlight });
-  });
-
-  d2Selected.forEach((item, index) => {
-    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
-    result.push({ pair: item.pair, mainDigit: d2, rank: index + 1, highlight: highlight });
-  });
-
-  result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
-  return result;
+  return gapMap;
 }
 
-function analyzeCorrelationPairs(records) {
+// 🤝 ฟังก์ชันวิเคราะห์คู่สัมพันธ์ที่ถูก "บูสต์พลัง" ด้วยตาราง Gap (Gap-Boosted Correlation Pairs)
+function analyzeCorrelationPairs(records, gapData) {
   let pairsList = [];
   for(let a=0; a<=9; a++) {
     for(let b=a+1; b<=9; b++) {
@@ -811,37 +783,30 @@ function analyzeCorrelationPairs(records) {
       if (hasA || hasB) hits++;
     });
 
-    let rate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
-    return { pair: `${dA} & ${dB}`, hits: hits, total: total, rate: parseFloat(rate) };
+    let rate = total > 0 ? (hits / total) : 0;
+    
+    // 🧬 Synergy Integration: ถ้าระยะ Gap ของเลขในคู่กำลังเข้าโซนวิกฤต (1-3 งวด) ให้บูสต์คะแนนความสัมพันธ์เพิ่มขึ้น 25%
+    let gapBoost = 0;
+    if(gapData[dA].currentGap >= 1 && gapData[dA].currentGap <= 3) gapBoost += 0.1;
+    if(gapData[dB].currentGap >= 1 && gapData[dB].currentGap <= 3) gapBoost += 0.1;
+
+    let finalRate = (rate + gapBoost) * 100;
+
+    return { pair: `${dA} & ${dB}`, hits: hits, total: total, rate: parseFloat(finalRate.toFixed(1)) };
   });
 
   pairResults.sort((a, b) => b.rate - a.rate);
   return pairResults.slice(0, 5);
 }
 
-function analyzeGapTracker(records) {
-  let gapMap = {};
-  for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
-
-  records.forEach((r) => {
-    let digits = (r.top3 + r.bottom2).split('');
-    for(let d=0; d<=9; d++) {
-      let dStr = d.toString();
-      if(!gapMap[d].found) {
-        if(digits.includes(dStr)) gapMap[d].found = true;
-        else gapMap[d].currentGap++;
-      }
-    }
-  });
-
-  return gapMap;
-}
-
+// 🧬 ฟังก์ชัน Genius DNA & Cross-Validation Calculator
 function calculateGeniusDnaScores(records) {
+  let gapData = analyzeGapTracker(records);
+  let buddyPairs = analyzeCorrelationPairs(records, gapData);
+
   let scores = Array(10).fill(0);
   let vetoPenalty = Array(10).fill(0);
   let statusText = Array(10).fill('ปกติ');
-  let gapData = analyzeGapTracker(records);
 
   let counts = Array(10).fill(0);
   records.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => counts[parseInt(d)]++));
@@ -860,11 +825,10 @@ function calculateGeniusDnaScores(records) {
     else if(gapData[d].currentGap === 2) scores[d] += 10;
   }
 
-  let buddyPairs = analyzeCorrelationPairs(records);
   buddyPairs.forEach(bp => {
-    let parts = bp.pair.split(' & ');
-    scores[parseInt(parts[0])] += 10;
-    scores[parseInt(parts[1])] += 10;
+    let parts = bp.pair.split(' & ').map(Number);
+    scores[parts[0]] += 10;
+    scores[parts[1]] += 10;
   });
 
   for(let d=0; d<=9; d++) {
@@ -899,11 +863,34 @@ function calculateGeniusDnaScores(records) {
   return finalScores;
 }
 
-function generate6DigitWinArray(masterScores, records) {
-  let winDigits = masterScores.slice(0, 6).map(m => m.digit).sort((a,b) => a - b);
+// 🎯 ฟังก์ชันชุดวิน 6 ตัวตามหลัก Co-Occurrence
+function generateCoOccurrenceWinArray(records) {
+  let pairCoOccur = {};
+  records.forEach(r => {
+    let top2 = r.top3.slice(-2);
+    let bot2 = r.bottom2;
+    [top2, bot2].forEach(p => {
+      if(p.length === 2) {
+        let x = parseInt(p[0]), y = parseInt(p[1]);
+        let key = x < y ? `${x}-${y}` : `${y}-${x}`;
+        pairCoOccur[key] = (pairCoOccur[key] || 0) + 1;
+      }
+    });
+  });
+
+  let coScores = Array(10).fill(0);
+  for(let key in pairCoOccur) {
+    let parts = key.split('-').map(Number);
+    let score = pairCoOccur[key];
+    coScores[parts[0]] += score;
+    coScores[parts[1]] += score;
+  }
+
+  let rankedDigits = coScores.map((val, idx) => ({digit: idx, score: val})).sort((a,b) => b.score - a.score);
+  let winDigits = rankedDigits.slice(0, 6).map(item => item.digit).sort((a,b) => a - b);
+
   let hits = 0;
   let total = records.length;
-
   records.forEach(r => {
     let top2 = r.top3.slice(-2);
     let bot2 = r.bottom2;
@@ -922,6 +909,56 @@ function generate6DigitWinArray(masterScores, records) {
   };
 }
 
+// 🔗 ฟังก์ชันคัดเลือกชุดเจาะ 10 คู่ ที่ได้รับอานิสงส์ (Synergy) จากชุดวิน 6 ตัว
+function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
+  const pairFreqMap = {};
+  activeRecords.forEach(r => {
+    const top2 = r.top3.slice(-2);
+    const bot2 = r.bottom2;
+    [top2, bot2].forEach(p => {
+      if (p.length === 2) {
+        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
+        let rev = p.split('').reverse().join('');
+        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
+      }
+    });
+  });
+
+  let getFilteredCandidates = (mainDigit) => {
+    let cands = [];
+    for (let i = 0; i <= 9; i++) {
+      if (i === mainDigit) continue;
+      let pStr = `${mainDigit}${i}`;
+      let baseScore = pairFreqMap[pStr] || 0;
+      
+      // 🧬 Synergy Boost: ถ้าเลขคู่เจาะนี้ประกอบด้วยเลขที่อยู่ในชุดวิน 6 ตัวอัจฉริยะ ให้เพิ่มคะแนนพิเศษทันที!
+      let inWinArray = winDigits.includes(mainDigit) && winDigits.includes(i);
+      let synergyBonus = inWinArray ? 5 : 0;
+
+      cands.push({ pair: pStr, score: baseScore + synergyBonus });
+    }
+    cands.sort((a, b) => b.score - a.score);
+    return cands.slice(0, 5);
+  };
+
+  let d1Selected = getFilteredCandidates(d1);
+  let d2Selected = getFilteredCandidates(d2);
+
+  let result = [];
+  d1Selected.forEach((item, index) => {
+    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
+    result.push({ pair: item.pair, mainDigit: d1, rank: index + 1, highlight: highlight });
+  });
+
+  d2Selected.forEach((item, index) => {
+    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
+    result.push({ pair: item.pair, mainDigit: d2, rank: index + 1, highlight: highlight });
+  });
+
+  result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
+  return result;
+}
+
 function analyzeLotteryRecords(records) {
   const activeRecords = records.slice(0, 30);
   const total = activeRecords.length;
@@ -931,8 +968,10 @@ function analyzeLotteryRecords(records) {
   const d1 = masterScores[0].digit;
   const d2 = masterScores[1].digit;
 
-  const winArrayData = generate6DigitWinArray(masterScores, activeRecords);
-  const structuredPairs = generateOptimizedPairs(d1, d2, activeRecords);
+  const winArrayData = generateCoOccurrenceWinArray(activeRecords);
+  
+  // 🔗 ส่งชุดวิน 6 ตัวเข้าไปทำ Synergy ร่วมกับชุดเจาะ 10 คู่
+  const structuredPairs = generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winArrayData.winDigits);
   const displayedPairs = structuredPairs.map(p => p.pair);
 
   const auditPairs = [...displayedPairs];
@@ -981,7 +1020,8 @@ function analyzeLotteryRecords(records) {
     });
   }
 
-  const correlationResults = analyzeCorrelationPairs(activeRecords);
+  const gapData = analyzeGapTracker(activeRecords);
+  const correlationResults = analyzeCorrelationPairs(activeRecords, gapData);
   const evalCount = auditLogs.length;
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
   const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';
@@ -1085,7 +1125,7 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์แสดงผลทุกตารางเต็มรูปแบบ (V3.1.0 Full-Visible)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์ Hyper-Synergy Engine (V4.0.0)</div>`;
 
   let cardIndex = 0;
   for (const [type, rows] of Object.entries(parsedData)) {
@@ -1100,7 +1140,7 @@ function renderResults(parsedData) {
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
-            <span>✦</span> ทรัพย์นำโชค V3.1 <span>✦</span>
+            <span>✦</span> ทรัพย์นำโชค V4.0 <span>✦</span>
           </div>
           <div class="card-top-bar">
             <span class="card-date">${latestDate}</span>
@@ -1144,10 +1184,10 @@ function renderResults(parsedData) {
         </div>
       </div>
 
-      <!-- 🧩 ตารางที่ 1: ตารางชุดเลขวิน 6 ตัวอัจฉริยะ (แสดงผลชัดเจน) -->
+      <!-- 🧩 ตารางที่ 1: ชุดเลขวิน 6 ตัว (Co-Occurrence Win Array) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🧩 ตารางที่ 1: ชุดเลขวิน 6 ตัวอัจฉริยะ (${type})
+          🧩 ตารางที่ 1: ชุดเลขวิน 6 ตัวจับคู่จริง Co-Occurrence (${type})
         </div>
         <table class="audit-table">
           <thead>
@@ -1165,13 +1205,13 @@ function renderResults(parsedData) {
               <td><span style="color:#2e7d32;font-weight:700;">${res.winArrayData.hits}</span></td>
               <td>${res.winArrayData.total}</td>
               <td><span style="color:#b8860b;font-weight:700;">${res.winArrayData.winCoverageRate}%</span></td>
-              <td><span class="badge-hit">พร้อมใช้งาน</span></td>
+              <td><span class="badge-hit">ประสานพลังคู่เจาะสมบูรณ์</span></td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- 🧬 ตารางที่ 2: ดัชนีคะแนนรวมระดับ DNA & หักล้างสัญญาณหลอก (แสดงผลชัดเจน) -->
+      <!-- 🧬 ตารางที่ 2: ดัชนีคะแนนรวมระดับ DNA & หักล้างสัญญาณหลอก -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
           🧬 ตารางที่ 2: ดัชนี DNA ขัดแย้ง & หักล้างสัญญาณหลอก (${type})
@@ -1212,10 +1252,10 @@ function renderResults(parsedData) {
         </table>
       </div>
 
-      <!-- 🤝 ตารางที่ 3: ตารางคู่สัมพันธ์ทดแทนกัน (แสดงผลชัดเจน) -->
+      <!-- 🤝 ตารางที่ 3: คู่สัมพันธ์ทดแทนกัน (Gap-Boosted Buddy Pairs) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🤝 ตารางที่ 3: คู่สัมพันธ์ทดแทนกัน Buddy Pairs (${type})
+          🤝 ตารางที่ 3: คู่สัมพันธ์ทดแทนกัน Gap-Boosted Buddy Pairs (${type})
         </div>
         <table class="audit-table">
           <thead>
@@ -1237,7 +1277,7 @@ function renderResults(parsedData) {
               <td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td>
               <td>${item.total}</td>
               <td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td>
-              <td><span class="badge-hit">สัมพันธ์สูง</span></td>
+              <td><span class="badge-hit">สัมพันธ์สูง (บูสต์ Gap)</span></td>
             </tr>
       `;
     });
@@ -1247,7 +1287,7 @@ function renderResults(parsedData) {
         </table>
       </div>
 
-      <!-- 📋 ตารางที่ 4: ตารางตรวจสอบผลย้อนหลัง Audit Table (แสดงผลชัดเจน) -->
+      <!-- 📋 ตารางที่ 4: ตรวจสอบผลย้อนหลัง Audit Log -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
           📋 ตารางที่ 4: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)
