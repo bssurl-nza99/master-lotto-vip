@@ -91,9 +91,9 @@ body {
           <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">v10.9.1 Master Pro</span>
         </div>
         <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-          <span>Positional Filter + Day-of-Week Engine + Adaptive Volatility Switch + Expanded Matrix</span>
+          <span>Strict Walk-Forward + Proponent & Opposition Veto Engine + 14 Tables</span>
           <span class="text-slate-600">•</span>
-          <span id="headerStatusBadge" class="text-emerald-400 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ตารางครบถ้วน สมบูรณ์ แม่นยำ</span>
+          <span id="headerStatusBadge" class="text-emerald-400 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ระบบปลอดภัย ไม่รู้อนาคต 100%</span>
         </p>
       </div>
     </div>
@@ -147,7 +147,7 @@ body {
         <div>
           <div class="flex items-center justify-between mb-3">
             <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5">
-              <i data-lucide="crown" class="w-3.5 h-3.5"></i> มติสภา (Adaptive 6-DNA)
+              <i data-lucide="crown" class="w-3.5 h-3.5"></i> มติสภา (Consensus & Veto Engine)
             </span>
             <span id="confidenceGateBadge" class="text-xs text-emerald-400 font-semibold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20">ความมั่นใจสูง (High Confidence)</span>
           </div>
@@ -155,7 +155,7 @@ body {
             <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">เลขเด่นกษัตริย์ (King) ประจำงวด</div>
             <div id="kingDigit" class="text-6xl sm:text-7xl font-black text-amber-400 drop-shadow-[0_0_25px_rgba(212,175,55,0.4)] my-2 font-mono">1</div>
             <div id="optimizedWeightsDisplay" class="text-[11px] text-amber-200/90 py-1 px-3 bg-amber-950/60 rounded-xl border border-amber-500/20 inline-block font-mono">
-              W1:15%, W2:20%, W3:15%, W4:15%, W5:15%, W6:20%
+              Proponents vs Opposition Veto Active
             </div>
           </div>
         </div>
@@ -181,7 +181,7 @@ body {
           <div class="glass-panel rounded-xl p-3.5">
             <div class="text-xs text-slate-400 mb-1">เลขเด่นกษัตริย์</div>
             <div id="statBestDigit" class="text-2xl font-bold text-amber-400 font-mono">1</div>
-            <div class="text-[10px] text-emerald-400 mt-0.5">ผ่านการรันจูนจริง</div>
+            <div class="text-[10px] text-emerald-400 mt-0.5">ผ่านมติสภาจริง</div>
           </div>
           <div class="glass-panel rounded-xl p-3.5">
             <div class="text-xs text-slate-400 mb-1">จำนวนงวด (หลังกรอง)</div>
@@ -610,14 +610,13 @@ body {
 
 <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 text-center text-xs text-slate-500 space-y-1">
   <p>ระบบวิเคราะห์สถิติตัวเลข v10.9.1 Master Pro (Advanced Precision & Layout Edition)</p>
-  <p class="text-[11px] text-slate-600">Positional Filter + Day-of-Week Engine + Adaptive Volatility Switch</p>
+  <p class="text-[11px] text-slate-600">Strict Walk-Forward + Proponent & Opposition Veto Engine</p>
 </footer>
 
 <!-- JavaScript Engine -->
 <script>
 let parsedDraws = [];
 let lotteryTitle = "ไม่ระบุ";
-let optimalWeights = { w1: 15, w2: 20, w3: 15, w4: 15, w5: 15, w6: 20 };
 let latestSignatureText = "";
 
 const sampleLaosDataset = `ลาวประตูชัย | 20 ต.ค. 69
@@ -825,6 +824,7 @@ function getNextDayDateString(latestDateStr) {
   return latestDateStr;
 }
 
+// STRTRICT WALK-FORWARD FORMULAS (Zero Future Leakage)
 function evalFormula1(history) {
   const counts = Array(10).fill(0);
   history.forEach(d => d.coreDigits.forEach(num => counts[num]++));
@@ -874,90 +874,71 @@ function evalFormula6(history) {
   return (lastDraw.nl + 1) % 10;
 }
 
-function runRealTimeOptimizer(draws) {
-  const activeDraws = draws.slice(0, Math.min(30, draws.length));
-  if (activeDraws.length < 5) return { w1: 15, w2: 20, w3: 15, w4: 15, w5: 15, w6: 20 };
-  let bestW = { w1: 15, w2: 20, w3: 15, w4: 15, w5: 15, w6: 20 };
-  let maxHits = -1;
-  
-  for (let w1=5; w1<=35; w1+=5) {
-    for (let w2=5; w2<=35; w2+=5) {
-      for (let w3=5; w3<=30; w3+=5) {
-        for (let w4=5; w4<=30; w4+=5) {
-          for (let w5=5; w5<=30; w5+=5) {
-            let w6 = 100 - (w1+w2+w3+w4+w5);
-            if (w6 < 5 || w6 > 40) continue;
-            let hits = 0;
-            for (let i = 0; i < activeDraws.length - 3; i++) {
-              const history = activeDraws.slice(i + 1);
-              const f1 = evalFormula1(history);
-              const f2 = evalFormula2(history);
-              const f3 = evalFormula3(history);
-              const f4 = evalFormula4(history);
-              const f5 = evalFormula5(history, activeDraws[i].dayName);
-              const f6 = evalFormula6(history);
-              const scores = Array(10).fill(0);
-              scores[f1] += w1; scores[f2] += w2; scores[f3] += w3;
-              scores[f4] += w4; scores[f5] += w5; scores[f6] += w6;
-              let king = 0, maxS = -999;
-              for (let d=0; d<10; d++) { if (scores[d] > maxS) { maxS = scores[d]; king = d; } }
-              if (activeDraws[i].allDigits.includes(king)) hits++;
-            }
-            if (hits > maxHits) {
-              maxHits = hits;
-              bestW = { w1, w2, w3, w4, w5, w6 };
-            }
-          }
-        }
-      }
-    }
-  }
-  return bestW;
-}
-
-function evaluateCouncilAt(allDraws, targetIndex, recentMiss=0, weights) {
-  const history = allDraws.slice(targetIndex + 1);
+// CONSENSUS VOTING ENGINE WITH PROPONENTS (ฝ่ายสนับสนุน) AND OPPOSITION VETO (ฝ่ายคัดค้าน)
+function evaluateCouncilAt(allDraws, targetIndex, recentMiss=0) {
+  const history = allDraws.slice(targetIndex + 1); // Strict past data only (Zero Future Leakage)
   if (history.length < 3) return { kingDigit: allDraws[targetIndex].coreDigits[0], vetoDigits: [], scores: Array(10).fill(0), isChaos: false };
+  
   const currentDraw = allDraws[targetIndex];
   const scores = Array(10).fill(0);
+  
+  // 1. Proponents (ฝ่ายสนับสนุนจาก 6 สูตรผู้เชี่ยวชาญ)
   const f1 = evalFormula1(history);
   const f2 = evalFormula2(history);
   const f3 = evalFormula3(history);
   const f4 = evalFormula4(history);
   const f5 = evalFormula5(history, currentDraw.dayName);
   const f6 = evalFormula6(history);
-  
-  const recentHistory = history.slice(0, 3);
-  const getBoost = (predFn) => {
-    let recentHits = 0;
-    recentHistory.forEach((d, idx) => {
-      const pastHist = history.slice(idx + 1);
-      if (pastHist.length > 0 && d.allDigits.includes(predFn(pastHist))) recentHits++;
-    });
-    return recentHits >= 2 ? 1.25 : 1.0;
-  };
 
-  scores[f1] += weights.w1 * getBoost(evalFormula1);
-  scores[f2] += weights.w2 * getBoost(evalFormula2);
-  scores[f3] += weights.w3 * getBoost(evalFormula3);
-  scores[f4] += weights.w4 * getBoost(evalFormula4);
-  scores[f5] += weights.w5 * (targetIndex === 0 ? getBoost((h) => evalFormula5(h, currentDraw.dayName)) : 1.0);
-  scores[f6] += weights.w6 * getBoost(evalFormula6);
-  
+  scores[f1] += 25;
+  scores[f2] += 20;
+  scores[f3] += 15;
+  scores[f4] += 20;
+  scores[f5] += 20;
+  scores[f6] += 15;
+
+  // 2. Opposition & Veto Engine (ฝ่ายคัดค้าน / หักล้างแต้มเลขเสี่ยงดับ)
+  // หากเลขตัวใดออกติดต่อกันหนาแน่นเกินไปใน 3 งวดล่าสุด (Over-streak) หรือเว้นช่วงนานเกินไป
   const vetoDigits = [];
-  for (let d=0; d<10; d++) {
+  const recent3 = history.slice(0, 3);
+  
+  for (let d = 0; d < 10; d++) {
+    // นับจำนวนครั้งที่มาติดกันในงวดล่าสุด
+    let consecutiveHits = 0;
+    for (let i = 0; i < history.length; i++) {
+      if (history[i].allDigits.includes(d)) {
+        consecutiveHits++;
+      } else {
+        break;
+      }
+    }
+    
+    // ฝ่ายคัดค้าน Veto: ถ้ามาติดต่อกันเกิน 3-4 งวดซ้อน (Over-streak) มีความเสี่ยงสูงที่จะพักตัว (เกิดเลขดับ)
+    if (consecutiveHits >= 3) {
+      vetoDigits.push(d);
+      scores[d] -= 50; // ตัดแต้มหนักจากฝ่ายคัดค้าน
+    }
+
+    // ฝ่ายคัดค้าน Absence: ถ้าหายไปนานเกิน 5 งวด ไม่มีสัญญาณสนับสนุน
     let absenceGap = 0;
-    for (let i=0; i<history.length; i++) {
+    for (let i = 0; i < history.length; i++) {
       if (history[i].allDigits.includes(d)) break;
       absenceGap++;
     }
-    if (absenceGap >= 4) { vetoDigits.push(d); scores[d] = -999; }
+    if (absenceGap >= 5) {
+      scores[d] -= 30; // ลดแต้มเนื่องจากขาดแรงสนับสนุน
+    }
   }
-  
+
+  // หาเลขที่มีคะแนนสุทธิสูงสุดหลังจากผ่านการหักล้างของฝ่ายคัดค้าน (Consensus Winning King)
   let kingDigit = 0, maxScore = -9999;
-  for (let d=0; d<10; d++) {
-    if (scores[d] > maxScore) { maxScore = scores[d]; kingDigit = d; }
+  for (let d = 0; d < 10; d++) {
+    if (scores[d] > maxScore) {
+      maxScore = scores[d];
+      kingDigit = d;
+    }
   }
+
   return { kingDigit, vetoDigits, scores, isChaos: recentMiss >= 2 };
 }
 
@@ -970,9 +951,6 @@ function processData() {
   }
   
   document.getElementById('optimizationStatus').innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> ประมวลผลสำเร็จ (${parsedDraws.length} งวด)`;
-  optimalWeights = runRealTimeOptimizer(parsedDraws);
-  document.getElementById('optimizedWeightsDisplay').innerText = `W1:${optimalWeights.w1}%, W2:${optimalWeights.w2}%, W3:${optimalWeights.w3}%, W4:${optimalWeights.w4}%, W5:${optimalWeights.w5}%, W6:${optimalWeights.w6}%`;
-  
   document.getElementById('badgeLotteryName').innerText = lotteryTitle;
   document.getElementById('badgeDrawCount').innerText = `(${parsedDraws.length} งวด)`;
   document.getElementById('lotteryInfoBadge').classList.remove('hidden');
@@ -981,8 +959,9 @@ function processData() {
   const masterResults = [];
   let totalHits = 0, currentStreak = 0, maxHitStreak = 0, currentMiss = 0, maxMissStreak = 0;
   
+  // Walk-forward evaluation (No future leakage)
   for (let i = 0; i < parsedDraws.length; i++) {
-    const evalRes = evaluateCouncilAt(parsedDraws, i, currentMiss, optimalWeights);
+    const evalRes = evaluateCouncilAt(parsedDraws, i, currentMiss);
     const actual = parsedDraws[i];
     const isHit = actual.allDigits.includes(evalRes.kingDigit);
     if (isHit) {
@@ -995,7 +974,7 @@ function processData() {
     masterResults.push({ draw: actual, kingDigit: evalRes.kingDigit, isHit, streak: isHit ? currentStreak : currentMiss, vetoDigits: evalRes.vetoDigits, scores: evalRes.scores });
   }
   
-  const latestCouncil = evaluateCouncilAt(parsedDraws, 0, currentMiss, optimalWeights);
+  const latestCouncil = evaluateCouncilAt(parsedDraws, 0, currentMiss);
   
   renderMasterMatrix(masterResults);
   renderRealCrossWindowCheck(masterResults);
@@ -1044,7 +1023,7 @@ function renderKingCard(kingDigit, council, totalHits, masterResults, maxHit, ma
   const gateBadge = document.getElementById('confidenceGateBadge');
   if (recentMiss >= 2) {
     gateBadge.className = "text-xs text-rose-400 font-semibold px-2 py-0.5 bg-rose-500/10 rounded border border-rose-500/20";
-    gateBadge.innerHTML = "⚠ ตลาดผันผวนสูง";
+    gateBadge.innerHTML = "⚠ ตลาดผันผวนสูง (ฝ่ายคัดค้านเตือนภัย)";
   } else {
     gateBadge.className = "text-xs text-emerald-400 font-semibold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20";
     gateBadge.innerHTML = "ความมั่นใจสูง (High Confidence)";
@@ -1052,9 +1031,7 @@ function renderKingCard(kingDigit, council, totalHits, masterResults, maxHit, ma
 }
 
 function renderAdvancedFeaturePairs(draws, currentScores, kingDigit, vetoDigits) {
-  const currentDayName = draws[0] ? draws[0].dayName : "วันอังคาร";
   const generalCo = Array(10).fill(0);
-  
   draws.forEach(d => {
     if (d.allDigits.includes(kingDigit)) {
       d.coreDigits.forEach(n => {
@@ -1064,25 +1041,23 @@ function renderAdvancedFeaturePairs(draws, currentScores, kingDigit, vetoDigits)
   });
 
   let digitRanking = [];
-  for (let d=0; d<10; d++) {
+  for (let d = 0; d < 10; d++) {
     if (d === kingDigit) continue;
-    if (vetoDigits.includes(d)) continue;
+    if (vetoDigits.includes(d)) continue; // ตัดเลขที่โดนฝ่ายคัดค้าน Veto ออก
     let advancedScore = (currentScores[d] || 0) + (generalCo[d] * 10);
     digitRanking.push({ digit: d, score: advancedScore });
   }
   digitRanking.sort((a, b) => b.score - a.score);
   
   let rawPartners = digitRanking.slice(0, 6).map(item => item.digit);
-  for (let d=0; d<10 && rawPartners.length < 6; d++) {
+  for (let d = 0; d < 10 && rawPartners.length < 6; d++) {
     if (d !== kingDigit && !rawPartners.includes(d) && !vetoDigits.includes(d)) {
       rawPartners.push(d);
     }
   }
   rawPartners.sort((a, b) => a - b);
   
-  let top6Pairs = rawPartners.map(partner => {
-    return { d1: kingDigit, d2: partner };
-  });
+  let top6Pairs = rawPartners.map(partner => ({ d1: kingDigit, d2: partner }));
 
   document.getElementById('compactKingDisplay').innerText = kingDigit;
   const gridContainer = document.getElementById('compactPairsGrid');
@@ -1166,7 +1141,7 @@ function renderMasterMatrix(masterResults) {
   });
 }
 
-// RENDER ALL 14 CLEAR TABLES
+// RENDER ALL 14 CLEAR TABLES WITH SUPPORT & OPPOSITION LOGIC
 function renderAll14Tables(draws, kingDigit) {
   const totalDraws = draws.length;
 
@@ -1180,14 +1155,14 @@ function renderAll14Tables(draws, kingDigit) {
   });
   const t1Body = document.getElementById('table1Body');
   t1Body.innerHTML = "";
-  for (let d=0; d<10; d++) {
+  for (let d = 0; d < 10; d++) {
     const pct = Math.round((t1Counts[d] / (totalDraws * 4)) * 100);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="p-2 font-bold text-amber-400 font-mono">${d}</td>
       <td class="p-2 text-center text-slate-100 font-bold">${t1Counts[d]} ครั้ง</td>
       <td class="p-2 text-center text-emerald-400 font-mono">${pct}%</td>
-      <td class="p-2 text-right">${pct >= 25 ? '<span class="text-amber-400 font-bold">เด่น</span>' : '<span class="text-slate-400">ปกติ</span>'}</td>
+      <td class="p-2 text-right">${pct >= 25 ? '<span class="text-amber-400 font-bold">สนับสนุน</span>' : '<span class="text-slate-400">ปกติ</span>'}</td>
     `;
     t1Body.appendChild(tr);
   }
@@ -1203,7 +1178,7 @@ function renderAll14Tables(draws, kingDigit) {
     posCounts[d.sl].sl++; posCounts[d.sl].total++;
     posCounts[d.nl].nl++; posCounts[d.nl].total++;
   });
-  for (let d=0; d<10; d++) {
+  for (let d = 0; d < 10; d++) {
     const c = posCounts[d];
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1218,19 +1193,19 @@ function renderAll14Tables(draws, kingDigit) {
     t2Body.appendChild(tr);
   }
 
-  // Table 3: Hit/Miss Streaks
+  // Table 3: Hit/Miss Streaks (Proponent vs Opposition)
   const t3Body = document.getElementById('table3Body');
   t3Body.innerHTML = "";
-  for (let d=0; d<10; d++) {
+  for (let d = 0; d < 10; d++) {
     let lastSeenAgo = 999;
-    for (let i=0; i<draws.length; i++) {
+    for (let i = 0; i < draws.length; i++) {
       if (draws[i].coreDigits.includes(d)) { lastSeenAgo = i; break; }
     }
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="p-2 font-bold text-amber-400 font-mono">${d}</td>
       <td class="p-2 text-center text-slate-300">${lastSeenAgo === 0 ? 'งวดล่าสุด' : lastSeenAgo + ' งวดที่แล้ว'}</td>
-      <td class="p-2 text-right">${lastSeenAgo <= 1 ? '<span class="text-emerald-400 font-bold">กำลังเดิน</span>' : '<span class="text-rose-400">พักตัว</span>'}</td>
+      <td class="p-2 text-right">${lastSeenAgo === 0 ? '<span class="text-rose-400 font-bold">คัดค้าน (ซ้ำติดกัน)</span>' : '<span class="text-emerald-400">สนับสนุน</span>'}</td>
     `;
     t3Body.appendChild(tr);
   }
@@ -1256,8 +1231,8 @@ function renderAll14Tables(draws, kingDigit) {
   const pairCounts = {};
   draws.forEach(d => {
     let uniq = Array.from(new Set(d.coreDigits)).sort((a,b)=>a-b);
-    for (let i=0; i<uniq.length; i++) {
-      for (let j=i+1; j<uniq.length; j++) {
+    for (let i = 0; i < uniq.length; i++) {
+      for (let j = i + 1; j < uniq.length; j++) {
         let key = `${uniq[i]}-${uniq[j]}`;
         pairCounts[key] = (pairCounts[key] || 0) + 1;
       }
@@ -1304,7 +1279,7 @@ function renderAll14Tables(draws, kingDigit) {
   const dayDraws = draws.filter(d => d.dayName === targetDay);
   const t10Body = document.getElementById('table10Body');
   t10Body.innerHTML = "";
-  for (let d=0; d<10; d++) {
+  for (let d = 0; d < 10; d++) {
     let cnt = 0;
     dayDraws.forEach(dd => { if (dd.coreDigits.includes(d)) cnt++; });
     const tr = document.createElement('tr');
