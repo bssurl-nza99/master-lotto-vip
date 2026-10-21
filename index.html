@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.13</title>
+<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.15</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -511,7 +511,7 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V1.3.13</small>
+        <small>Smart PDF Parser V1.3.15</small>
       </div>
     </div>
     <div class="pill">MULTI-LOTTERY READY</div>
@@ -520,7 +520,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">PDF MULTI-LOTTERY ENGINE</div>
     <h1>ระบบวิเคราะห์หวยหลายประเภท <em>ดีไซน์ตรงตามเรฟการ์ด</em></h1>
-    <p>เพิ่มประสิทธิภาพชุดเจาะ (Spotlight Pair Optimizer) และรองรับเลขกลับ 100% ซื่อสัตย์ แม่นยำ และปลอดภัย</p>
+    <p>ล็อกเลขเด่นหลักสิบ จัดเรียงเลขเจาะจากน้อยไปหามาก ตัดคู่ไขว้เด่นบนการ์ด แต่ยังตรวจนับผลย้อนหลังครบถ้วน 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -736,8 +736,10 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-// 🚀 ฟังก์ชันใหม่: คำนวณหา 10 คู่เจาะอัจฉริยะ (Spotlight Pair Optimizer)
-// วิเคราะห์ความถี่ในการจับคู่กันจริงย้อนหลัง เพื่อให้ได้เลขเจาะแม่นยำสูงสุด
+// 🚀 ฟังก์ชันสร้างชุดเจาะ 10 คู่ตามกฎใหม่:
+// 1. เลขเด่นต้องอยู่หลักสิบ (ด้านหน้า) เสมอ
+// 2. ตัดคู่ไขว้ระหว่าง D1 และ D2 ออกจากการ์ด (เพราะคนซื้อวินเองอยู่แล้ว)
+// 3. เรียงลำดับจากน้อยไปหามากอย่างเป็นระเบียบ
 function generateOptimizedPairs(d1, d2, activeRecords) {
   const pairFreqMap = {};
 
@@ -746,25 +748,34 @@ function generateOptimizedPairs(d1, d2, activeRecords) {
     const bot2 = r.bottom2;
     [top2, bot2].forEach(p => {
       if (p.length === 2) {
-        const sortedPair = p.split('').sort().join(''); // normalize
-        pairFreqMap[sortedPair] = (pairFreqMap[sortedPair] || 0) + 1;
+        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
+        let rev = p.split('').reverse().join('');
+        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
       }
     });
   });
 
-  // สร้าง候補คู่ที่ประกบด้วย D1 และ D2
   let candidates = [];
-  
-  [d1, d2].forEach(mainDigit => {
+  const activeDigits = [d1, d2];
+
+  activeDigits.forEach(mainDigit => {
     for (let i = 0; i <= 9; i++) {
+      // ห้ามเอาเลขเด่นมาวินกันเองบนการ์ด (เช่น ตัดคู่ระหว่าง D1 กับ D2 ออก)
+      if (activeDigits.includes(i) && (
+          (mainDigit === d1 && i === d2) || 
+          (mainDigit === d2 && i === d1) ||
+          (mainDigit === i) // ตัดเลขเบิ้ลถ้าไม่จำเป็น หรือปล่อยไว้ตามสถิติ
+      )) {
+        continue;
+      }
+
       let pStr = `${mainDigit}${i}`;
-      let normStr = [mainDigit.toString(), i.toString()].sort().join('');
-      let score = (pairFreqMap[normStr] || 0);
-      candidates.push({ pair: pStr, score: score, main: mainDigit });
+      let score = (pairFreqMap[pStr] || 0);
+      candidates.push({ pair: pStr, score: score });
     }
   });
 
-  // เรียงลำดับตามคะแนนความถี่ และเลือก 10 คู่ที่ดีที่สุดโดยไม่ซ้ำกัน
+  // เรียงตามคะแนนความถี่สูงสุด
   candidates.sort((a, b) => b.score - a.score);
 
   let selectedPairs = [];
@@ -777,9 +788,9 @@ function generateOptimizedPairs(d1, d2, activeRecords) {
     }
   }
 
-  // หากไม่ครบ 10 คู่ ให้เติมเติมให้ครบอย่างเรียบร้อย
+  // หากยังไม่ครบ 10 คู่ ให้เติมด้วยเลขเด่นหลักสิบประกบเลขอื่นให้ครบ
   if (selectedPairs.length < 10) {
-    for (let d of [d1, d2]) {
+    for (let d of activeDigits) {
       for (let i = 0; i <= 9; i++) {
         let p = `${d}${i}`;
         if (!usedMap.has(p) && selectedPairs.length < 10) {
@@ -789,6 +800,9 @@ function generateOptimizedPairs(d1, d2, activeRecords) {
       }
     }
   }
+
+  // 📌 กฎสำคัญ: เรียงลำดับชุดเลขเจาะจากน้อยไปหามาก (Numerical Order) บนการ์ด
+  selectedPairs.sort((a, b) => parseInt(a) - parseInt(b));
 
   return selectedPairs;
 }
@@ -812,8 +826,16 @@ function analyzeLotteryRecords(records) {
   const d1 = sortedGlobal[0].dig;
   const d2 = sortedGlobal[1].dig;
 
-  // สร้างชุดเจาะ 10 คู่ด้วยอัลกอริทึมใหม่
-  const allTenPairs = generateOptimizedPairs(d1, d2, activeRecords);
+  const displayedPairs = generateOptimizedPairs(d1, d2, activeRecords);
+
+  // 💡 สร้างลิสต์คู่ทั้งหมดสำหรับใช้ตรวจสอบผล Audit (รวมทั้งคู่ไขว้ของเด่นที่ซ่อนไว้ เพื่อความซื่อสัตย์ 100%)
+  const auditPairs = [...displayedPairs];
+  [d1, d2].forEach(d => {
+    let crossPair = `${d1}${d2}`;
+    let crossRev = `${d2}${d1}`;
+    if (!auditPairs.includes(crossPair)) auditPairs.push(crossPair);
+    if (!auditPairs.includes(crossRev)) auditPairs.push(crossRev);
+  });
 
   let digitHits = 0;
   let pairHits = 0;
@@ -835,16 +857,14 @@ function analyzeLotteryRecords(records) {
     const actualBot2 = actualBottom2;
     const actualDigits = (actualTop3 + actualBottom2).split('');
 
-    // 1. ตรวจสอบเลขเด่น
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
     
-    // 2. ตรวจสอบเลขเจาะ (รองรับเลขกลับ / Reverse Match 100%)
+    // ตรวจสอบผลเลขเจาะ (รวมเลขกลับ และคู่ไขว้เด่นที่ผู้เล่นซื้อเองตามธรรมชาติ)
     let isPairHit = false;
     if (isDigitHit) {
       digitHits++;
-      isPairHit = allTenPairs.some(pair => {
+      isPairHit = auditPairs.some(pair => {
         const revPair = pair.split('').reverse().join('');
-        // ตรง หรือ กลับ ก็ถือว่าเข้า 100%
         return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
       });
       if (isPairHit) pairHits++;
@@ -864,9 +884,9 @@ function analyzeLotteryRecords(records) {
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
   const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';
 
-  const formattedPairs = allTenPairs.map((pair, idx) => ({
+  const formattedPairs = displayedPairs.map((pair, idx) => ({
     pair: pair,
-    gold: (idx === 0 || idx === 9),
+    gold: (idx === 0 || idx === displayedPairs.length - 1),
     pct: `${pairWinRate}%`
   }));
 
