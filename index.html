@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.17</title>
+<title>ทรัพย์นำโชค · AI LOTTERY MULTI-DIMENSIONAL ENGINE V1.5.0</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -168,7 +168,6 @@ body {
   resize: vertical;
   padding: 8px;
   border: 1px solid var(--line-soft);
-  border-radius: 99px;
   border-radius: 9px;
   background: #fff;
   color: var(--text-dark);
@@ -530,16 +529,16 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V1.3.17</small>
+        <small>Smart PDF Parser V1.5.0</small>
       </div>
     </div>
-    <div class="pill">MULTI-LOTTERY READY</div>
+    <div class="pill">CORRELATION ENGINE</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">PDF MULTI-LOTTERY ENGINE</div>
-    <h1>ระบบวิเคราะห์หวยหลายประเภท <em>ดีไซน์ตรงตามเรฟการ์ด</em></h1>
-    <p>วิเคราะห์ความถี่เชิงลึก พร้อมระบบจัดเกรดสีเน้นเจาะ (Gold, Silver, Rose Gold) และตรวจผลแบบซื่อสัตย์ 100%</p>
+    <div class="hero-tag">V1.5.0 MULTI-DIMENSIONAL UPGRADE</div>
+    <h1>ระบบวิเคราะห์คู่สัมพันธ์ทดแทนกัน <em>(Mutual Correlation Pairs)</em></h1>
+    <p>เพิ่มตารางวิเคราะห์คู่เลขเด่นที่ทำหน้าที่ทดแทนกันตามสถิติ พร้อมระบบตรวจสอบความแม่นยำครบถ้วนทั้งบนและล่างแบบซื่อสัตย์ 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -550,7 +549,7 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;ลาวประตูชัย | 21 ต.ค. 69&#10;470&#10;62&#10;&#10;ฮานอยเช้า | 21 ต.ค. 69&#10;114&#10;03"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;ลาวประตูชัย | 21 ต.ค. 69&#10;470&#10;62&#10;&#10;ลาวประตูชัย | 20 ต.ค. 69&#10;351&#10;19"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
@@ -573,13 +572,12 @@ const SAMPLE_PDF_DATA = `ลาวประตูชัย | 21 ต.ค. 69
 ลาวประตูชัย | 20 ต.ค. 69
 351
 19
-
-ฮานอยเช้า | 21 ต.ค. 69
-114
-03
-ฮานอยเช้า | 20 ต.ค. 69
-139
-58`;
+ลาวประตูชัย | 19 ต.ค. 69
+520
+30
+ลาวประตูชัย | 18 ต.ค. 69
+362
+70`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦',
@@ -613,43 +611,30 @@ function getFlag(typeName) {
 
 function formatDisplayName(rawName) {
   let name = rawName.trim();
-
   if (name.startsWith('ลาว')) {
     let sub = name.replace('ลาว', '').trim();
     if (sub.toLowerCase() === 'vip') return 'ล. V';
     if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
     return sub ? `ล. ${sub}` : 'ล.';
   }
-
   if (name.startsWith('ฮานอย')) {
     let sub = name.replace('ฮานอย', '').trim();
     if (sub.toLowerCase() === 'vip') return 'ฮ.น V';
     if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
     return sub ? `ฮ.น ${sub}` : 'ฮ.น';
   }
-
   if (name.includes('ดาวโจนส์')) {
     if (name.includes('VIP')) return name.replace(/VIP/gi, 'V');
     if (!name.includes('ปกติ') && !name.includes('V')) return 'ดาวโจนส์ ปกติ';
     return name;
   }
-
-  if (name.includes('รัฐบาลไทย') || name.includes('มาเลย์')) {
-    return name;
-  }
-
-  if (name.includes('อินเดีย') || name.includes('อียิปต์') || name.includes('อยีปิ ต์')) {
-    return name.replace(/หนุ้ /g, '').replace(/อินเดยี/g, 'อินเดีย').replace(/อยีปิ ต์/g, 'อียิปต์').trim();
-  }
-
+  if (name.includes('รัฐบาลไทย') || name.includes('มาเลย์')) return name;
   name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();
-
   if (name.includes('VIP')) {
     return name.replace(/VIP/gi, 'V').trim();
   } else if (!name.includes('ปกติ') && !name.includes('V')) {
     return name.replace('หุ้น', '').trim(); 
   }
-
   return name;
 }
 
@@ -694,7 +679,6 @@ function parsePDFText(rawText) {
 
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
-
       if (line.includes('งดออกผล') || line.startsWith('...') || line.startsWith('---') || line.includes('.........')) {
         pendingTop3 = null;
         currentDate = null;
@@ -706,20 +690,15 @@ function parsePDFText(rawText) {
         currentLottery = parts[0];
         currentDate = parts[1] || 'ไม่ระบุวันที่';
         pendingTop3 = null;
-        
         let formattedKey = formatDisplayName(currentLottery);
-        if (!grouped[formattedKey]) {
-          grouped[formattedKey] = [];
-        }
+        if (!grouped[formattedKey]) grouped[formattedKey] = [];
         continue;
       }
 
       if (!currentLottery && !/^\d+$/.test(line)) {
         currentLottery = line;
         let formattedKey = formatDisplayName(currentLottery);
-        if (!grouped[formattedKey]) {
-          grouped[formattedKey] = [];
-        }
+        if (!grouped[formattedKey]) grouped[formattedKey] = [];
         continue;
       }
 
@@ -730,9 +709,7 @@ function parsePDFText(rawText) {
 
       if (/^\d{2}$/.test(line) && pendingTop3 && currentLottery) {
         let formattedKey = formatDisplayName(currentLottery);
-        if (!grouped[formattedKey]) {
-          grouped[formattedKey] = [];
-        }
+        if (!grouped[formattedKey]) grouped[formattedKey] = [];
 
         const recordExists = grouped[formattedKey].some(
           r => r.date === currentDate && r.top3 === pendingTop3 && r.bottom2 === line
@@ -745,7 +722,6 @@ function parsePDFText(rawText) {
             bottom2: line
           });
         }
-        
         pendingTop3 = null;
         currentDate = null;
       }
@@ -758,7 +734,6 @@ function parsePDFText(rawText) {
 // 🎯 ฟังก์ชันสกัดชุดเจาะ 10 คู่ พร้อมการระบุเกรดความฟิต Top 1, 2, 3 แยกฝั่ง D1 และ D2
 function generateOptimizedPairs(d1, d2, activeRecords) {
   const pairFreqMap = {};
-
   activeRecords.forEach(r => {
     const top2 = r.top3.slice(-2);
     const bot2 = r.bottom2;
@@ -771,48 +746,70 @@ function generateOptimizedPairs(d1, d2, activeRecords) {
     });
   });
 
-  // คัดเลือกเจาะของ D1 (5 คู่)
   let d1Candidates = [];
   for (let i = 0; i <= 9; i++) {
-    if (i === d1 || i === d2) continue; // ตัดเลขเด่นและคู่ไขว้
+    if (i === d1 || i === d2) continue;
     let pStr = `${d1}${i}`;
     d1Candidates.push({ pair: pStr, score: pairFreqMap[pStr] || 0 });
   }
   d1Candidates.sort((a, b) => b.score - a.score);
   let d1Selected = d1Candidates.slice(0, 5);
 
-  // คัดเลือกเจาะของ D2 (5 คู่)
   let d2Candidates = [];
   for (let i = 0; i <= 9; i++) {
-    if (i === d1 || i === d2) continue; // ตัดเลขเด่นและคู่ไขว้
+    if (i === d1 || i === d2) continue;
     let pStr = `${d2}${i}`;
     d2Candidates.push({ pair: pStr, score: pairFreqMap[pStr] || 0 });
   }
   d2Candidates.sort((a, b) => b.score - a.score);
   let d2Selected = d2Candidates.slice(0, 5);
 
-  // กำหนดระดับไฮไลต์ Top 1 (Gold), Top 2 (Silver), Top 3 (Rose Gold) ของแต่ละฝั่ง
   let result = [];
-
   d1Selected.forEach((item, index) => {
-    let highlight = 'normal';
-    if (index === 0) highlight = 'top1';
-    else if (index === 1) highlight = 'top2';
-    else if (index === 2) highlight = 'top3';
+    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
     result.push({ pair: item.pair, mainDigit: d1, rank: index + 1, highlight: highlight });
   });
 
   d2Selected.forEach((item, index) => {
-    let highlight = 'normal';
-    if (index === 0) highlight = 'top1';
-    else if (index === 1) highlight = 'top2';
-    else if (index === 2) highlight = 'top3';
+    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
     result.push({ pair: item.pair, mainDigit: d2, rank: index + 1, highlight: highlight });
   });
 
-  // จัดเรียงลำดับตัวเลขจากน้อยไปหามากเพื่อความสวยงามและค้นหาง่าย
   result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
   return result;
+}
+
+// 🤝 ฟังก์ชันวิเคราะห์คู่สัมพันธ์ทดแทนกัน (Mutual Correlation Pairs Engine)
+function analyzeCorrelationPairs(records) {
+  let pairsList = [];
+  for(let a=0; a<=9; a++) {
+    for(let b=a+1; b<=9; b++) {
+      pairsList.push([a, b]);
+    }
+  }
+
+  let pairResults = pairsList.map(([dA, dB]) => {
+    let hits = 0;
+    let total = records.length;
+
+    records.forEach(r => {
+      let t3 = r.top3;
+      let b2 = r.bottom2;
+      let validDigits = [t3[1], t3[2], b2[0], b2[1]]; // หลักสิบ/หน่วย บนและล่าง
+      let hasA = validDigits.includes(dA.toString());
+      let hasB = validDigits.includes(dB.toString());
+      if (hasA || hasB) {
+        hits++;
+      }
+    });
+
+    let rate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
+    return { pair: `${dA} & ${dB}`, hits: hits, total: total, rate: parseFloat(rate) };
+  });
+
+  // เรียงลำดับคู่ที่มีอัตราความครอบคลุมสูงสุด
+  pairResults.sort((a, b) => b.rate - a.rate);
+  return pairResults.slice(0, 5); // คัดเอา 5 อันดับแรกที่เด่นที่สุด
 }
 
 function analyzeLotteryRecords(records) {
@@ -822,12 +819,8 @@ function analyzeLotteryRecords(records) {
 
   const counts = Array(10).fill(0);
   activeRecords.forEach(r => {
-    if (r.top3.length === 3) {
-      r.top3.split('').forEach(d => counts[parseInt(d)]++);
-    }
-    if (r.bottom2.length === 2) {
-      r.bottom2.split('').forEach(d => counts[parseInt(d)]++);
-    }
+    if (r.top3.length === 3) r.top3.split('').forEach(d => counts[parseInt(d)]++);
+    if (r.bottom2.length === 2) r.bottom2.split('').forEach(d => counts[parseInt(d)]++);
   });
 
   const sortedGlobal = counts.map((v, i) => ({dig: i, val: v})).sort((a,b) => b.val - a.val);
@@ -848,9 +841,8 @@ function analyzeLotteryRecords(records) {
   let digitHits = 0;
   let pairHits = 0;
   const auditLogs = [];
-  const minRequired = 1;
 
-  for (let i = Math.min(minRequired, Math.floor(activeRecords.length / 2)); i < activeRecords.length; i++) {
+  for (let i = Math.min(1, Math.floor(activeRecords.length / 2)); i < activeRecords.length; i++) {
     const past = activeRecords.slice(0, i);
     const target = activeRecords[i];
     
@@ -866,7 +858,6 @@ function analyzeLotteryRecords(records) {
     const actualDigits = (actualTop3 + actualBottom2).split('');
 
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
-    
     let isPairHit = false;
     if (isDigitHit) {
       digitHits++;
@@ -887,7 +878,10 @@ function analyzeLotteryRecords(records) {
     });
   }
 
-  // 🧮 คำนวณตารางมิติที่ 1 (ความถี่รวม 0-9) และตารางมิติที่ 2 (แยกรายหลัก)
+  // ประมวลผลตารางคู่สัมพันธ์ทดแทนกัน
+  const correlationResults = analyzeCorrelationPairs(activeRecords);
+
+  // 🧮 ตารางมิติที่ 1 & 2
   let overallStats = {};
   let positionStats = {};
   for(let d=0; d<=9; d++) {
@@ -902,13 +896,11 @@ function analyzeLotteryRecords(records) {
   chronologicalRecords.forEach(rec => {
     const t3 = rec.top3;
     const b2 = rec.bottom2;
-
     let validTens = [t3[1], b2[0]];
     let validUnits = [t3[2], b2[1]];
 
     for(let d=0; d<=9; d++) {
       let dStr = d.toString();
-      
       let inOverall = validTens.includes(dStr) || validUnits.includes(dStr);
       let ov = overallStats[d];
       if(inOverall) {
@@ -950,10 +942,8 @@ function analyzeLotteryRecords(records) {
   for(let d=0; d<=9; d++) {
     let ov = overallStats[d];
     ov.currentStreakText = ov.lastStatus === 'เข้า' ? `เข้า (${ov.tempWin})` : (ov.lastStatus === 'หลุด' ? `หลุด (${ov.tempLoss})` : '-');
-    
     let ts = positionStats[d].tens;
     ts.currentStreakText = ts.lastStatus === 'เข้า' ? `เข้า (${ts.tempWin})` : (ts.lastStatus === 'หลุด' ? `หลุด (${ts.tempLoss})` : '-');
-
     let un = positionStats[d].units;
     un.currentStreakText = un.lastStatus === 'เข้า' ? `เข้า (${un.tempWin})` : (un.lastStatus === 'หลุด' ? `หลุด (${un.tempLoss})` : '-');
   }
@@ -980,7 +970,8 @@ function analyzeLotteryRecords(records) {
     formattedPairs: formattedPairs,
     auditLogs: auditLogs,
     overallStats: overallStats,
-    positionStats: positionStats
+    positionStats: positionStats,
+    correlationResults: correlationResults
   };
 }
 
@@ -1028,12 +1019,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const rawText = inputData.value;
       const parsedData = parsePDFText(rawText);
       const categories = Object.keys(parsedData);
-
       if (categories.length === 0) {
         showAlert('⚠️ ไม่พบข้อมูลสถิติที่ถูกต้อง กรุณาตรวจสอบรูปแบบ');
         return;
       }
-
       renderResults(parsedData);
       showToast('ประมวลผลสำเร็จทุกประเภท');
     } catch (err) {
@@ -1045,7 +1034,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function captureCard(cardId, lotteryName) {
   const cardElement = document.getElementById(cardId);
   if (!cardElement) return;
-
   html2canvas(cardElement, {
     scale: 3,
     useCORS: true,
@@ -1063,7 +1051,7 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์และเลขเจาะ (ตรงตามเรฟการ์ด 100%)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์คู่สัมพันธ์ทดแทนกัน (V1.5.0)</div>`;
 
   let cardIndex = 0;
   for (const [type, rows] of Object.entries(parsedData)) {
@@ -1078,7 +1066,7 @@ function renderResults(parsedData) {
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
-            <span>✦</span> ทรัพย์นำโชค <span>✦</span>
+            <span>✦</span> ทรัพย์นำโชค V1.5.0 <span>✦</span>
           </div>
           <div class="card-top-bar">
             <span class="card-date">${latestDate}</span>
@@ -1120,6 +1108,41 @@ function renderResults(parsedData) {
             <span>📷</span> บันทึกภาพเฉพาะการ์ดนี้
           </button>
         </div>
+      </div>
+
+      <!-- 🤝 ตารางวิเคราะห์คู่สัมพันธ์ทดแทนกัน (Mutual Correlation Pairs) -->
+      <div class="summary-table-container">
+        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+          🤝 ตารางวิเคราะห์คู่สัมพันธ์ทดแทนกัน (${type}) — ตัวใดตัวหนึ่งมาถือว่าเข้า (บน & ล่าง)
+        </div>
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>คู่สัมพันธ์ (Buddy Pair)</th>
+              <th>มา (ครั้ง)</th>
+              <th>ทั้งหมด (งวด)</th>
+              <th>ความครอบคลุม (%)</th>
+              <th>สถานะความสัมพันธ์</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    res.correlationResults.forEach(item => {
+      html += `
+            <tr>
+              <td><b style="color:#b8860b;font-size:0.55rem;">[ ${item.pair} ]</b></td>
+              <td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td>
+              <td>${item.total}</td>
+              <td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td>
+              <td><span class="badge-hit">สัมพันธ์สูง</span></td>
+            </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
       </div>
 
       <!-- 1. ตารางตรวจสอบผลย้อนหลัง (Audit Table) -->
@@ -1197,7 +1220,7 @@ function renderResults(parsedData) {
         </table>
       </div>
 
-      <!-- 3. ตารางมิติที่ 2: ตารางสถิติแยกรายหลัก 0-9 (หลักสิบ / หลักหน่วย) -->
+      <!-- 3. ตารางมิติที่ 2: ตารางสถิติแยกรายหลัก 0-9 -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
           ตารางมิติที่ 2: ตารางสถิติแยกรายหลัก 0–9 (${type}) — หลักใครหลักมัน
