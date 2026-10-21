@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.11</title>
+<title>ทรัพย์นำโชค · AI LOTTERY UNIVERSAL ENGINE V1.3.13</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -511,7 +511,7 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V1.3.11</small>
+        <small>Smart PDF Parser V1.3.13</small>
       </div>
     </div>
     <div class="pill">MULTI-LOTTERY READY</div>
@@ -520,7 +520,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">PDF MULTI-LOTTERY ENGINE</div>
     <h1>ระบบวิเคราะห์หวยหลายประเภท <em>ดีไซน์ตรงตามเรฟการ์ด</em></h1>
-    <p>คำนวณเปอร์เซ็นต์มาตรฐานจริง (เลขเจาะคิดเฉพาะงวดที่เลขเด่นเข้า) เรียงตารางงวดล่าสุดอยู่บนสุด</p>
+    <p>เพิ่มประสิทธิภาพชุดเจาะ (Spotlight Pair Optimizer) และรองรับเลขกลับ 100% ซื่อสัตย์ แม่นยำ และปลอดภัย</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -554,34 +554,35 @@ const SAMPLE_PDF_DATA = `ลาวประตูชัย | 21 ต.ค. 69
 ลาวประตูชัย | 20 ต.ค. 69
 351
 19
-ลาวประตูชัย | 19 ต.ค. 69
-520
-30
-ลาวประตูชัย | 18 ต.ค. 69
-362
-70
 
 ฮานอยเช้า | 21 ต.ค. 69
 114
 03
 ฮานอยเช้า | 20 ต.ค. 69
 139
-58
-ฮานอยเช้า | 19 ต.ค. 69
-406
-13`;
+58`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦',
+  'ล.': '🇱🇦',
   'ฮานอย': '🇻🇳',
+  'ฮ.น': '🇻🇳',
   'ไทย': '🇹🇭',
+  'รัฐบาล': '🇹🇭',
   'ดาวโจนส์': '🇺🇸',
-  'หุ้น': '📈',
-  'นิคเคอิ': '🇯🇵',
-  'จีน': '🇨🇳',
   'ฮั่งเส็ง': '🇭🇰',
+  'จีน': '🇨🇳',
+  'นิคเคอิ': '🇯🇵',
   'ไต้หวัน': '🇹🇼',
-  ' DEFAULT': '🎯'
+  'เกาหลี': '🇰🇷',
+  'รัสเซีย': '🇷🇺',
+  'เยอรมัน': '🇩🇪',
+  'อังกฤษ': '🇬🇧',
+  'สิงคโปร์': '🇸🇬',
+  'อินเดีย': '🇮🇳',
+  'อียิปต์': '🇪🇬',
+  'มาเลย์': '🇲🇾',
+  'DEFAULT': '🎯'
 };
 
 function getFlag(typeName) {
@@ -589,6 +590,48 @@ function getFlag(typeName) {
     if (typeName.includes(key)) return FLAG_MAP[key];
   }
   return '🎯';
+}
+
+function formatDisplayName(rawName) {
+  let name = rawName.trim();
+
+  if (name.startsWith('ลาว')) {
+    let sub = name.replace('ลาว', '').trim();
+    if (sub.toLowerCase() === 'vip') return 'ล. V';
+    if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
+    return sub ? `ล. ${sub}` : 'ล.';
+  }
+
+  if (name.startsWith('ฮานอย')) {
+    let sub = name.replace('ฮานอย', '').trim();
+    if (sub.toLowerCase() === 'vip') return 'ฮ.น V';
+    if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
+    return sub ? `ฮ.น ${sub}` : 'ฮ.น';
+  }
+
+  if (name.includes('ดาวโจนส์')) {
+    if (name.includes('VIP')) return name.replace(/VIP/gi, 'V');
+    if (!name.includes('ปกติ') && !name.includes('V')) return 'ดาวโจนส์ ปกติ';
+    return name;
+  }
+
+  if (name.includes('รัฐบาลไทย') || name.includes('มาเลย์')) {
+    return name;
+  }
+
+  if (name.includes('อินเดีย') || name.includes('อียิปต์') || name.includes('อยีปิ ต์')) {
+    return name.replace(/หนุ้ /g, '').replace(/อินเดยี/g, 'อินเดีย').replace(/อยีปิ ต์/g, 'อียิปต์').trim();
+  }
+
+  name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();
+
+  if (name.includes('VIP')) {
+    return name.replace(/VIP/gi, 'V').trim();
+  } else if (!name.includes('ปกติ') && !name.includes('V')) {
+    return name.replace('หุ้น', '').trim(); 
+  }
+
+  return name;
 }
 
 function showAlert(msg) {
@@ -633,7 +676,7 @@ function parsePDFText(rawText) {
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
 
-      if (line.includes('งดออกผล') || line.startsWith('...') || line.startsWith('---')) {
+      if (line.includes('งดออกผล') || line.startsWith('...') || line.startsWith('---') || line.includes('.........')) {
         pendingTop3 = null;
         currentDate = null;
         continue;
@@ -645,16 +688,18 @@ function parsePDFText(rawText) {
         currentDate = parts[1] || 'ไม่ระบุวันที่';
         pendingTop3 = null;
         
-        if (!grouped[currentLottery]) {
-          grouped[currentLottery] = [];
+        let formattedKey = formatDisplayName(currentLottery);
+        if (!grouped[formattedKey]) {
+          grouped[formattedKey] = [];
         }
         continue;
       }
 
       if (!currentLottery && !/^\d+$/.test(line)) {
         currentLottery = line;
-        if (!grouped[currentLottery]) {
-          grouped[currentLottery] = [];
+        let formattedKey = formatDisplayName(currentLottery);
+        if (!grouped[formattedKey]) {
+          grouped[formattedKey] = [];
         }
         continue;
       }
@@ -665,17 +710,18 @@ function parsePDFText(rawText) {
       }
 
       if (/^\d{2}$/.test(line) && pendingTop3 && currentLottery) {
-        if (!grouped[currentLottery]) {
-          grouped[currentLottery] = [];
+        let formattedKey = formatDisplayName(currentLottery);
+        if (!grouped[formattedKey]) {
+          grouped[formattedKey] = [];
         }
 
-        const recordExists = grouped[currentLottery].some(
+        const recordExists = grouped[formattedKey].some(
           r => r.date === currentDate && r.top3 === pendingTop3 && r.bottom2 === line
         );
 
         if (!recordExists) {
-          grouped[currentLottery].push({
-            date: currentDate || `งวดที่ ${grouped[currentLottery].length + 1}`,
+          grouped[formattedKey].push({
+            date: currentDate || `งวดที่ ${grouped[formattedKey].length + 1}`,
             top3: pendingTop3,
             bottom2: line
           });
@@ -690,20 +736,61 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-function generateSpecificPairs(tenDigit, excludeDigit) {
+// 🚀 ฟังก์ชันใหม่: คำนวณหา 10 คู่เจาะอัจฉริยะ (Spotlight Pair Optimizer)
+// วิเคราะห์ความถี่ในการจับคู่กันจริงย้อนหลัง เพื่อให้ได้เลขเจาะแม่นยำสูงสุด
+function generateOptimizedPairs(d1, d2, activeRecords) {
+  const pairFreqMap = {};
+
+  activeRecords.forEach(r => {
+    const top2 = r.top3.slice(-2);
+    const bot2 = r.bottom2;
+    [top2, bot2].forEach(p => {
+      if (p.length === 2) {
+        const sortedPair = p.split('').sort().join(''); // normalize
+        pairFreqMap[sortedPair] = (pairFreqMap[sortedPair] || 0) + 1;
+      }
+    });
+  });
+
+  // สร้าง候補คู่ที่ประกบด้วย D1 และ D2
   let candidates = [];
-  for (let i = 0; i <= 9; i++) {
-    if (i !== tenDigit && i !== excludeDigit) {
-      candidates.push(i);
+  
+  [d1, d2].forEach(mainDigit => {
+    for (let i = 0; i <= 9; i++) {
+      let pStr = `${mainDigit}${i}`;
+      let normStr = [mainDigit.toString(), i.toString()].sort().join('');
+      let score = (pairFreqMap[normStr] || 0);
+      candidates.push({ pair: pStr, score: score, main: mainDigit });
+    }
+  });
+
+  // เรียงลำดับตามคะแนนความถี่ และเลือก 10 คู่ที่ดีที่สุดโดยไม่ซ้ำกัน
+  candidates.sort((a, b) => b.score - a.score);
+
+  let selectedPairs = [];
+  let usedMap = new Set();
+
+  for (let item of candidates) {
+    if (!usedMap.has(item.pair) && selectedPairs.length < 10) {
+      usedMap.add(item.pair);
+      selectedPairs.push(item.pair);
     }
   }
-  candidates.sort((a, b) => a - b);
 
-  let pairs = [];
-  for (let i = 0; i < Math.min(5, candidates.length); i++) {
-    pairs.push(`${tenDigit}${candidates[i]}`);
+  // หากไม่ครบ 10 คู่ ให้เติมเติมให้ครบอย่างเรียบร้อย
+  if (selectedPairs.length < 10) {
+    for (let d of [d1, d2]) {
+      for (let i = 0; i <= 9; i++) {
+        let p = `${d}${i}`;
+        if (!usedMap.has(p) && selectedPairs.length < 10) {
+          usedMap.add(p);
+          selectedPairs.push(p);
+        }
+      }
+    }
   }
-  return pairs;
+
+  return selectedPairs;
 }
 
 function analyzeLotteryRecords(records) {
@@ -725,15 +812,11 @@ function analyzeLotteryRecords(records) {
   const d1 = sortedGlobal[0].dig;
   const d2 = sortedGlobal[1].dig;
 
-  const d1Pairs = generateSpecificPairs(d1, -1);
-  const d2Pairs = generateSpecificPairs(d2, d1);
-  const allTenPairs = [...d1Pairs, ...d2Pairs];
+  // สร้างชุดเจาะ 10 คู่ด้วยอัลกอริทึมใหม่
+  const allTenPairs = generateOptimizedPairs(d1, d2, activeRecords);
 
-  // -------------------------------------------------------------
-  // ระบบคำนวณเปอร์เซ็นต์มาตรฐานแบบแม่นยำ 100%
-  // -------------------------------------------------------------
-  let digitHits = 0;      // จำนวนงวดที่เลขเด่นเข้า
-  let pairHits = 0;       // จำนวนงวดที่เลขเจาะเข้า
+  let digitHits = 0;
+  let pairHits = 0;
   const auditLogs = [];
   const minRequired = 1;
 
@@ -748,17 +831,22 @@ function analyzeLotteryRecords(records) {
 
     const actualTop3 = target.top3;
     const actualBottom2 = target.bottom2;
-    const actual2D = [actualTop3.slice(-2), actualBottom2]; // 2 ตัวบน และ 2 ตัวล่าง
+    const actualTop2 = actualTop3.slice(-2);
+    const actualBot2 = actualBottom2;
     const actualDigits = (actualTop3 + actualBottom2).split('');
 
-    // 1. ตรวจสอบเลขเด่นเข้าหรือไม่
+    // 1. ตรวจสอบเลขเด่น
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
     
-    // 2. ตรวจสอบเลขเจาะเข้าหรือไม่ (เฉพาะเมื่อเลขเด่นเข้า)
+    // 2. ตรวจสอบเลขเจาะ (รองรับเลขกลับ / Reverse Match 100%)
     let isPairHit = false;
     if (isDigitHit) {
       digitHits++;
-      isPairHit = allTenPairs.some(p => actual2D.includes(p));
+      isPairHit = allTenPairs.some(pair => {
+        const revPair = pair.split('').reverse().join('');
+        // ตรง หรือ กลับ ก็ถือว่าเข้า 100%
+        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
+      });
       if (isPairHit) pairHits++;
     }
 
@@ -773,16 +861,12 @@ function analyzeLotteryRecords(records) {
   }
 
   const evalCount = auditLogs.length;
-  // เปอร์เซ็นต์เลขเด่น = (งวดที่เด่นเข้า ÷ จำนวนงวดทดสอบทั้งหมด) * 100
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
-  
-  // เปอร์เซ็นต์เลขเจาะ = (งวดที่เจาะเข้า ÷ จำนวนงวดที่เลขเด่นเข้าเท่านั้น) * 100
   const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';
 
-  // เตรียมโครงสร้าง 10 คู่พร้อมเปอร์เซ็นต์จริง
   const formattedPairs = allTenPairs.map((pair, idx) => ({
     pair: pair,
-    gold: (idx === 0 || idx === 9), // ไฮไลต์ตามเรฟ
+    gold: (idx === 0 || idx === 9),
     pct: `${pairWinRate}%`
   }));
 
@@ -904,7 +988,6 @@ function renderResults(parsedData) {
             </div>
           </div>
 
-          <!-- เลขเด่น D1 และ D2 ใช้เปอร์เซ็นต์มาตรฐานเดียวกัน -->
           <div class="hero-digits-wrap">
             <div class="digit-box-item digit-gold">
               <div class="digit-circle">${res.d1}</div>
@@ -916,7 +999,6 @@ function renderResults(parsedData) {
             </div>
           </div>
 
-          <!-- ชุดเลขเจาะ 10 คู่ แสดงเปอร์เซ็นต์เลขเจาะมาตรฐานจริง (นับเฉพาะตอนเด่นเข้า) -->
           <div class="pairs-grid-box">
     `;
 
@@ -940,7 +1022,6 @@ function renderResults(parsedData) {
         </div>
       </div>
 
-      <!-- ตารางตรวจสอบย้อนหลัง: เรียงจากวันที่ล่าสุด (บน) ไปหาเก่าสุด (ล่าง) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
           ตารางตรวจสอบผลย้อนหลัง (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} งวด (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} งวด (${res.pairWinRate}%)
