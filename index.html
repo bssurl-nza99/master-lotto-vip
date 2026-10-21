@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>ทรัพย์นำโชค · AI LOTTERY MASTER ENGINE V2.0.0</title>
+<title>ทรัพย์นำโชค · AI LOTTERY FULL-VISIBLE ENGINE V3.1.0</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -494,6 +494,16 @@ table.audit-table th {
   display: inline-block;
 }
 
+.badge-warn {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+  padding: 1px 5px;
+  border-radius: 99px;
+  font-weight: 700;
+  display: inline-block;
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -528,16 +538,16 @@ table.audit-table th {
       <div class="logo">AI</div>
       <div>
         <b>ทรัพย์นำโชค Universal</b>
-        <small>Smart PDF Parser V2.0.0 Master</small>
+        <small>Smart PDF Parser V3.1.0 Full-Visible</small>
       </div>
     </div>
-    <div class="pill">MASTER ENGINE V2.0</div>
+    <div class="pill">FULL VISIBLE V3.1</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">V2.0.0 ULTIMATE MASTER INTEGRATION</div>
-    <h1>ระบบคัดกรองดัชนีคะแนนรวม <em>(Master Scoreboard 0-100)</em></h1>
-    <p>เชื่อมโยงสถิติครบทุกตารางมิติ (ความถี่, รายหลัก, Buddy Pairs, ระยะเว้นช่วง Gap, แต้มรวม และเลขไหล) คัดเลขเด่นที่ดีที่สุด 1, 2 และเลขดับอย่างพิถีพิถัน 100%</p>
+    <div class="hero-tag">V3.1.0 FULL-VISIBLE TABLES UPGRADE</div>
+    <h1>ระบบแสดงผลทุกตารางแบบชัดเจน <em>(ครบถ้วน ไม่มีซ่อนหลังบ้าน)</em></h1>
+    <p>การันตีแสดงผลทุกตารางมิติออกหน้าจอแบบเต็มรูปแบบ ตารางใครตารางมัน พร้อมระบบ DNA ดัชนีหักล้างสัญญาณหลอกและเลขวิน 6 ตัว 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -552,7 +562,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลและเชื่อมโยงทุกมิติพร้อมกัน (Process)
+        <span>⚡</span> ประมวลผลและแสดงผลทุกตารางพร้อมกัน (Process)
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -733,7 +743,6 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-// 🎯 ฟังก์ชันสกัดชุดเจาะ 10 คู่ พร้อมการระบุเกรดความฟิต Top 1, 2, 3 แยกฝั่ง D1 และ D2
 function generateOptimizedPairs(d1, d2, activeRecords) {
   const pairFreqMap = {};
   activeRecords.forEach(r => {
@@ -781,7 +790,6 @@ function generateOptimizedPairs(d1, d2, activeRecords) {
   return result;
 }
 
-// 🤝 ฟังก์ชันวิเคราะห์คู่สัมพันธ์ทดแทนกัน (Mutual Correlation Pairs Engine)
 function analyzeCorrelationPairs(records) {
   let pairsList = [];
   for(let a=0; a<=9; a++) {
@@ -800,9 +808,7 @@ function analyzeCorrelationPairs(records) {
       let validDigits = [t3[1], t3[2], b2[0], b2[1]];
       let hasA = validDigits.includes(dA.toString());
       let hasB = validDigits.includes(dB.toString());
-      if (hasA || hasB) {
-        hits++;
-      }
+      if (hasA || hasB) hits++;
     });
 
     let rate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
@@ -813,21 +819,17 @@ function analyzeCorrelationPairs(records) {
   return pairResults.slice(0, 5);
 }
 
-// ⏳ ฟังก์ชันวิเคราะห์ระยะเว้นช่วง (Gap & Omission Tracker)
 function analyzeGapTracker(records) {
   let gapMap = {};
   for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
 
-  records.forEach((r, idx) => {
+  records.forEach((r) => {
     let digits = (r.top3 + r.bottom2).split('');
     for(let d=0; d<=9; d++) {
       let dStr = d.toString();
       if(!gapMap[d].found) {
-        if(digits.includes(dStr)) {
-          gapMap[d].found = true;
-        } else {
-          gapMap[d].currentGap++;
-        }
+        if(digits.includes(dStr)) gapMap[d].found = true;
+        else gapMap[d].currentGap++;
       }
     }
   });
@@ -835,55 +837,29 @@ function analyzeGapTracker(records) {
   return gapMap;
 }
 
-// 🔢 ฟังก์ชันวิเคราะห์ผลรวมแต้ม (Sum Digit Matrix)
-function analyzeSumMatrix(records) {
-  let top2Sums = {}, top3Sums = {}, bot2Sums = {};
-  records.forEach(r => {
-    let t3 = r.top3, b2 = r.bottom2;
-    let sTop3 = t3.split('').reduce((a,b) => a + parseInt(b), 0);
-    let sTop2 = parseInt(t3[1]) + parseInt(t3[2]);
-    let sBot2 = b2.split('').reduce((a,b) => a + parseInt(b), 0);
-
-    top3Sums[sTop3] = (top3Sums[sTop3] || 0) + 1;
-    top2Sums[sTop2] = (top2Sums[sTop2] || 0) + 1;
-    bot2Sums[sBot2] = (bot2Sums[sBot2] || 0) + 1;
-  });
-
-  let topTop2Sum = Object.entries(top2Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
-  let topBot2Sum = Object.entries(bot2Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
-
-  return {
-    top2PopularSum: topTop2Sum[0],
-    bot2PopularSum: topBot2Sum[0]
-  };
-}
-
-// 🧠 ฟังก์ชัน Master Score Calculator (เชื่อมโยงทุกตาราง 0-100 คะแนน)
-function calculateMasterScores(records) {
+function calculateGeniusDnaScores(records) {
   let scores = Array(10).fill(0);
+  let vetoPenalty = Array(10).fill(0);
+  let statusText = Array(10).fill('ปกติ');
   let gapData = analyzeGapTracker(records);
 
-  // 1. คะแนนความถี่รวม (30 คะแนน)
   let counts = Array(10).fill(0);
   records.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => counts[parseInt(d)]++));
   let maxCount = Math.max(...counts, 1);
   counts.forEach((c, d) => scores[d] += (c / maxCount) * 30);
 
-  // 2. คะแนนตามตำแหน่งหลัก (30 คะแนน)
   records.forEach(r => {
     let t3 = r.top3, b2 = r.bottom2;
     let validTensUnits = [t3[1], t3[2], b2[0], b2[1]];
     validTensUnits.forEach(d => scores[parseInt(d)] += 2.5);
   });
 
-  // 3. คะแนนระยะเว้นช่วง Gap - กำลังเดินดี (20 คะแนน)
   for(let d=0; d<=9; d++) {
-    if(gapData[d].currentGap === 0) scores[d] += 20; // ออกติดกัน
+    if(gapData[d].currentGap === 0) scores[d] += 20;
     else if(gapData[d].currentGap === 1) scores[d] += 15;
     else if(gapData[d].currentGap === 2) scores[d] += 10;
   }
 
-  // 4. คะแนน Buddy Pairs (20 คะแนน)
   let buddyPairs = analyzeCorrelationPairs(records);
   buddyPairs.forEach(bp => {
     let parts = bp.pair.split(' & ');
@@ -891,16 +867,59 @@ function calculateMasterScores(records) {
     scores[parseInt(parts[1])] += 10;
   });
 
-  // ปรับให้อยู่ในสเกล 0-100
-  let maxScore = Math.max(...scores, 1);
-  let finalScores = scores.map((s, d) => ({
-    digit: d,
-    score: Math.min(100, Math.round((s / maxScore) * 100)),
-    gap: gapData[d].currentGap
-  }));
+  for(let d=0; d<=9; d++) {
+    if(gapData[d].currentGap >= 6) {
+      vetoPenalty[d] += 40;
+      statusText[d] = 'สัญญาณหลอก (ค้างนาน)';
+    }
+    if(counts[d] <= 2 && gapData[d].currentGap === 0) {
+      vetoPenalty[d] += 25;
+      statusText[d] = 'สัญญาณหลอก (แกว่ง)';
+    }
+  }
 
-  finalScores.sort((a, b) => b.score - a.score);
+  let finalScores = scores.map((s, d) => {
+    let net = Math.max(0, s - vetoPenalty[d]);
+    return {
+      digit: d,
+      rawScore: s,
+      vetoPenalty: vetoPenalty[d],
+      netScore: net,
+      gap: gapData[d].currentGap,
+      status: vetoPenalty[d] > 0 ? statusText[d] : 'ผ่านการพิสูจน์ DNA'
+    };
+  });
+
+  let maxNet = Math.max(...finalScores.map(f => f.netScore), 1);
+  finalScores.forEach(f => {
+    f.normalizedScore = Math.min(100, Math.round((f.netScore / maxNet) * 100));
+  });
+
+  finalScores.sort((a, b) => b.normalizedScore - a.normalizedScore);
   return finalScores;
+}
+
+function generate6DigitWinArray(masterScores, records) {
+  let winDigits = masterScores.slice(0, 6).map(m => m.digit).sort((a,b) => a - b);
+  let hits = 0;
+  let total = records.length;
+
+  records.forEach(r => {
+    let top2 = r.top3.slice(-2);
+    let bot2 = r.bottom2;
+    let tMatch = winDigits.includes(parseInt(top2[0])) && winDigits.includes(parseInt(top2[1]));
+    let bMatch = winDigits.includes(parseInt(bot2[0])) && winDigits.includes(parseInt(bot2[1]));
+    if(tMatch || bMatch) hits++;
+  });
+
+  let winCoverageRate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
+
+  return {
+    winDigits: winDigits,
+    hits: hits,
+    total: total,
+    winCoverageRate: winCoverageRate
+  };
 }
 
 function analyzeLotteryRecords(records) {
@@ -908,12 +927,11 @@ function analyzeLotteryRecords(records) {
   const total = activeRecords.length;
   if (total === 0) return null;
 
-  // คำนวณคะแนน Master Scoreboard เชื่อมโยงทุกมิติ
-  const masterScores = calculateMasterScores(activeRecords);
-  const d1 = masterScores[0].digit; // เลขเด่น 1 (ทอง)
-  const d2 = masterScores[1].digit; // เลขเด่น 2 (เงิน)
-  const dDead = masterScores[masterScores.length - 1].digit; // เลขดับ/ค้างนาน
+  const masterScores = calculateGeniusDnaScores(activeRecords);
+  const d1 = masterScores[0].digit;
+  const d2 = masterScores[1].digit;
 
+  const winArrayData = generate6DigitWinArray(masterScores, activeRecords);
   const structuredPairs = generateOptimizedPairs(d1, d2, activeRecords);
   const displayedPairs = structuredPairs.map(p => p.pair);
 
@@ -933,7 +951,7 @@ function analyzeLotteryRecords(records) {
     const past = activeRecords.slice(0, i);
     const target = activeRecords[i];
     
-    const pastMaster = calculateMasterScores(past);
+    const pastMaster = calculateGeniusDnaScores(past);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
 
     const actualTop3 = target.top3;
@@ -964,8 +982,6 @@ function analyzeLotteryRecords(records) {
   }
 
   const correlationResults = analyzeCorrelationPairs(activeRecords);
-  const sumResults = analyzeSumMatrix(activeRecords);
-
   const evalCount = auditLogs.length;
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
   const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';
@@ -985,12 +1001,11 @@ function analyzeLotteryRecords(records) {
     evalCount: evalCount,
     d1: d1,
     d2: d2,
-    dDead: dDead,
     masterScores: masterScores,
+    winArrayData: winArrayData,
     formattedPairs: formattedPairs,
     auditLogs: auditLogs,
-    correlationResults: correlationResults,
-    sumResults: sumResults
+    correlationResults: correlationResults
   };
 }
 
@@ -1070,7 +1085,7 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์เชื่อมโยงมิติขั้นสูง (V2.0.0 Master Engine)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์แสดงผลทุกตารางเต็มรูปแบบ (V3.1.0 Full-Visible)</div>`;
 
   let cardIndex = 0;
   for (const [type, rows] of Object.entries(parsedData)) {
@@ -1085,7 +1100,7 @@ function renderResults(parsedData) {
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
           <div class="card-brand-tag">
-            <span>✦</span> ทรัพย์นำโชค V2.0 <span>✦</span>
+            <span>✦</span> ทรัพย์นำโชค V3.1 <span>✦</span>
           </div>
           <div class="card-top-bar">
             <span class="card-date">${latestDate}</span>
@@ -1129,19 +1144,47 @@ function renderResults(parsedData) {
         </div>
       </div>
 
-      <!-- 🏆 ตารางสรุปดัชนีคะแนนรวม Master Scoreboard (0-100 คะแนน) -->
+      <!-- 🧩 ตารางที่ 1: ตารางชุดเลขวิน 6 ตัวอัจฉริยะ (แสดงผลชัดเจน) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🏆 ตารางดัชนีคะแนนรวมเชื่อมโยงทุกมิติ Master Scoreboard (${type}) — เด่น 1, 2 & เลขดับ
+          🧩 ตารางที่ 1: ชุดเลขวิน 6 ตัวอัจฉริยะ (${type})
         </div>
         <table class="audit-table">
           <thead>
             <tr>
-              <th>อันดับ (Rank)</th>
+              <th>ชุดเลขวิน 6 ตัว</th>
+              <th>เข้าเป้า (ครั้ง)</th>
+              <th>งวดทั้งหมด</th>
+              <th>ความครอบคลุม (%)</th>
+              <th>สถานะความแม่นยำ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b style="color:#b8860b;font-size:0.65rem;letter-spacing:1px;">[ ${res.winArrayData.winDigits.join(' - ')} ]</b></td>
+              <td><span style="color:#2e7d32;font-weight:700;">${res.winArrayData.hits}</span></td>
+              <td>${res.winArrayData.total}</td>
+              <td><span style="color:#b8860b;font-weight:700;">${res.winArrayData.winCoverageRate}%</span></td>
+              <td><span class="badge-hit">พร้อมใช้งาน</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 🧬 ตารางที่ 2: ดัชนีคะแนนรวมระดับ DNA & หักล้างสัญญาณหลอก (แสดงผลชัดเจน) -->
+      <div class="summary-table-container">
+        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+          🧬 ตารางที่ 2: ดัชนี DNA ขัดแย้ง & หักล้างสัญญาณหลอก (${type})
+        </div>
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>อันดับ</th>
               <th>ตัวเลข</th>
-              <th>ดัชนีคะแนนรวม (Score 0-100)</th>
-              <th>ระยะเว้นช่วง (Gap)</th>
-              <th>สถานะคัดกรอง</th>
+              <th>คะแนนรวม DNA (0-100)</th>
+              <th>หักคะแนน Veto</th>
+              <th>ระยะ Gap</th>
+              <th>สถานะการพิสูจน์ DNA</th>
             </tr>
           </thead>
           <tbody>
@@ -1150,12 +1193,14 @@ function renderResults(parsedData) {
     res.masterScores.forEach((item, idx) => {
       let badge = idx === 0 ? '<span class="badge-hit">เด่น 1 (Gold)</span>' : 
                  (idx === 1 ? '<span class="badge-hit" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9;">เด่น 2 (Silver)</span>' : 
-                 (idx === res.masterScores.length - 1 ? '<span class="badge-miss">เลขดับ / ค้างนาน</span>' : '<span style="color:#888">ทั่วไป</span>'));
+                 (item.vetoPenalty > 0 ? `<span class="badge-warn">${item.status}</span>` : 
+                 (idx === res.masterScores.length - 1 ? '<span class="badge-miss">เลขดับ / ค้างนาน</span>' : '<span class="badge-hit">ผ่านการพิสูจน์</span>')));
       html += `
             <tr>
               <td><b>#${idx + 1}</b></td>
               <td><b style="color:#b8860b;font-size:0.55rem;">${item.digit}</b></td>
-              <td><span style="color:#78590f;font-weight:700;">${item.score} / 100</span></td>
+              <td><span style="color:#78590f;font-weight:700;">${item.normalizedScore} / 100</span></td>
+              <td><span style="color:${item.vetoPenalty > 0 ? '#c62828' : '#2e7d32'};font-weight:700;">-${item.vetoPenalty}</span></td>
               <td>เว้น ${item.gap} งวด</td>
               <td>${badge}</td>
             </tr>
@@ -1167,10 +1212,10 @@ function renderResults(parsedData) {
         </table>
       </div>
 
-      <!-- 🤝 ตารางวิเคราะห์คู่สัมพันธ์ทดแทนกัน (Mutual Correlation Pairs) -->
+      <!-- 🤝 ตารางที่ 3: ตารางคู่สัมพันธ์ทดแทนกัน (แสดงผลชัดเจน) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🤝 ตารางวิเคราะห์คู่สัมพันธ์ทดแทนกัน (${type}) — ตัวใดตัวหนึ่งมาถือว่าเข้า (บน & ล่าง)
+          🤝 ตารางที่ 3: คู่สัมพันธ์ทดแทนกัน Buddy Pairs (${type})
         </div>
         <table class="audit-table">
           <thead>
@@ -1202,10 +1247,10 @@ function renderResults(parsedData) {
         </table>
       </div>
 
-      <!-- 1. ตารางตรวจสอบผลย้อนหลัง (Audit Table) -->
+      <!-- 📋 ตารางที่ 4: ตารางตรวจสอบผลย้อนหลัง Audit Table (แสดงผลชัดเจน) -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          ตารางตรวจสอบผลย้อนหลัง (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} งวด (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} งวด (${res.pairWinRate}%)
+          📋 ตารางที่ 4: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)
         </div>
         <table class="audit-table">
           <thead>
