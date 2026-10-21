@@ -555,7 +555,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">เศรษฐีเงินล้าน · TRANSCENDENT LEVEL 999+</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลเหนือชั้นด้วย Multi-Scale Ensemble Window Bagging และ Dynamic Volatility Veto ปราศจากบั๊กและจุดโหว่ 100%</p>
+    <p>ประมวลผลเหนือชั้นด้วย Multi-Scale Ensemble Window Bagging และ Dynamic Volatility Veto พร้อมระบบจัดมาตรฐานชื่อหุ้นถูกต้อง 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -566,7 +566,7 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นดาวโจนส์ | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นดาวโจนส์ | 19 ต.ค. 69&#10;603&#10;38"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นนิเคอิเช้า | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นนิเคอิเช้า | 19 ต.ค. 69&#10;603&#10;38"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
@@ -583,34 +583,34 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `หุ้นดาวโจนส์ | 20 ต.ค. 69
+const SAMPLE_PDF_DATA = `หุ้นนิเคอิเช้า | 20 ต.ค. 69
 588
 85
-หุ้นดาวโจนส์ | 19 ต.ค. 69
+หุ้นนิเคอิเช้า | 19 ต.ค. 69
 603
 38
-หุ้นดาวโจนส์ | 16 ต.ค. 69
+หุ้นนิเคอิเช้า | 16 ต.ค. 69
 241
 28
-หุ้นดาวโจนส์ | 15 ต.ค. 69
+หุ้นนิเคอิเช้า | 15 ต.ค. 69
 769
 21
-หุ้นดาวโจนส์ | 14 ต.ค. 69
+หุ้นนิเคอิเช้า | 14 ต.ค. 69
 148
 62
-หุ้นดาวโจนส์ | 13 ต.ค. 69
+หุ้นนิเคอิเช้า | 13 ต.ค. 69
 010
 45
-หุ้นดาวโจนส์ | 12 ต.ค. 69
+หุ้นนิเคอิเช้า | 12 ต.ค. 69
 055
 60
-หุ้นดาวโจนส์ | 9 ต.ค. 69
+หุ้นนิเคอิเช้า | 9 ต.ค. 69
 495
 31
-หุ้นดาวโจนส์ | 8 ต.ค. 69
+หุ้นนิเคอิเช้า | 8 ต.ค. 69
 164
 77
-หุ้นดาวโจนส์ | 7 ต.ค. 69
+หุ้นนิเคอิเช้า | 7 ต.ค. 69
 987
 41`;
 
@@ -619,7 +619,7 @@ const FLAG_MAP = {
   'ฮานอย': '🇻🇳', 'ฮ.น': '🇻🇳',
   'ไทย': '🇹🇭', 'รัฐบาล': '🇹🇭',
   'ดาวโจนส์': '🇺🇸', 'ฮั่งเส็ง': '🇭🇰',
-  'จีน': '🇨🇳', 'นิคเคอิ': '🇯🇵',
+  'จีน': '🇨🇳', 'นิเคอิ': '🇯🇵', 'นิคเคอิ': '🇯🇵',
   'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷',
   'รัสเซีย': '🇷🇺', 'เยอรมัน': '🇩🇪',
   'อังกฤษ': '🇬🇧', 'สิงคโปร์': '🇸🇬',
@@ -684,11 +684,40 @@ function getFlag(typeName) {
   return '🎯';
 }
 
-// 🛠️ AUDITED & FIXED: ตัดตัวเลขนำหน้าขยะ (เช่น "62ไต้หวัน V" -> "ไต้หวัน V") เพื่อป้องกันการสร้างการ์ดซ้ำซ้อน
+// 🛠️ AUDITED & FIXED: มาตรฐานชื่อหุ้นไทย (แก้ "นิคเคอิ" -> "นิเคอิ" และจัดรูปแบบ "ชื่อหุ้น ปกติ เช้า" ตามกำหนด)
 function formatDisplayName(rawName) {
   let name = rawName.trim();
-  // ลบตัวเลขที่ติดอยู่ข้างหน้าสุด (เช่น "62ไต้หวัน V" หรือ "15ดาวโจนส์") ออกอย่างเด็ดขาด
+  // ตัดตัวเลขนำหน้าขยะ (เช่น "62ไต้หวัน V" หรือ "15หุ้นนิเคอิเช้า")
   name = name.replace(/^\d+\s*/, '').trim();
+  name = name.replace(/^หุ้น\s*/, '').trim();
+
+  // แก้คำว่า นิคเคอิ เป็น นิเคอิ ที่คนไทยนิยมเรียก
+  name = name.replace(/นิคเคอิ/g, 'นิเคอิ');
+
+  // ตรวจสอบกลุ่มหุ้นหลักที่ต้องเติมคำว่า "ปกติ" (นิเคอิ, จีน, ฮั่งเส็ง, ไต้หวัน, เกาหลี, รัสเซีย, เยอรมัน, อังกฤษ, สิงคโปร์)
+  const standardStocks = ['นิเคอิ', 'จีน', 'ฮั่งเส็ง', 'ไต้หวัน', 'เกาหลี', 'รัสเซีย', 'เยอรมัน', 'อังกฤษ', 'สิงคโปร์'];
+  
+  for (const stock of standardStocks) {
+    if (name.includes(stock)) {
+      // ตรวจสอบว่าเป็นรอบ VIP หรือ V หรือไม่
+      let isVip = name.includes('VIP') || name.includes('V');
+      let session = '';
+      if (name.includes('เช้า')) session = 'เช้า';
+      else if (name.includes('บ่าย')) session = 'บ่าย';
+      else if (name.includes('เที่ยง')) session = 'เที่ยง';
+      else if (name.includes('เย็น')) session = 'เย็น';
+      else if (name.includes('ค่ำ')) session = 'ค่ำ';
+
+      if (isVip) {
+        let sub = name.replace(stock, '').replace(/VIP/gi, 'V').replace(/V/g, '').trim();
+        return `${stock} V ${sub}`.trim();
+      } else if (session) {
+        return `${stock} ปกติ ${session}`;
+      } else {
+        return `${stock} ปกติ`;
+      }
+    }
+  }
 
   if (name.startsWith('ลาว')) {
     let sub = name.replace('ลาว', '').trim();
@@ -708,9 +737,7 @@ function formatDisplayName(rawName) {
     if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';
     return name;
   }
-  name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();
-  if (name.includes('VIP')) return name.replace(/VIP/gi, 'V').trim();
-  else if (!name.includes('ปกติ') && !name.includes('V')) return name.replace('หุ้น', '').trim();
+
   return name;
 }
 
