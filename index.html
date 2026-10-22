@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Production Master Engine (Perfect Colors Certified)</title>
+<title>เศรษฐีเงินล้าน · Production Master Engine (True Score-Driven Colors)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -432,7 +432,7 @@ body {
   transition: all 0.2s ease;
 }
 
-/* ★ กำหนดสีไฮไลต์เลขเจาะ 3 อันดับอย่างแม่นยำ (ทอง, เงิน, ชมพู Rose Gold) ★ */
+/* ★ ไฮไลต์สีตามคะแนนจริง 100% ไม่อิงการเรียงตัวเลข ★ */
 .pair-badge.highlight-top1 {
   background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98));
   border: 1.5px solid #d4af37;
@@ -591,17 +591,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (Perfect Colors Certified)</b>
-        <small>Universal Robust Core · 100% Honest Audit</small>
+        <b>เศรษฐีเงินล้าน Master (True Score Engine)</b>
+        <small>Universal Robust Core · Strict Score-Driven Colors</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (Perfect Colors Certified)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (True Score Certified)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ตารางที่ 1 แสดงผลครบถ้วนทุกงวด สีไฮไลต์เลขเจาะครบ 3 อันดับ (ทอง, เงิน, ชมพู) และคำนวณเปอร์เซ็นต์ซื่อสัตย์ 12 งวดล่าสุด 100%</p>
+    <p>ตารางที่ 1 แสดงผลครบถ้วนทุกงวด และสีไฮไลต์เลขเจาะอิงจากคะแนนสถิติสูงสุดจริง 100% ไม่มีการจัดเรียงหลอกตา</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -1118,7 +1118,7 @@ function generateCoOccurrenceWinArray(records) {
   return { winDigits, hits, total, winCoverageRate };
 }
 
-/* ★ จัดอันดับเลขเจาะ 10 คู่ พร้อมการันตีคลาสสีไฮไลต์ (top1 = ทอง, top2 = เงิน, top3 = ชมพู) ให้ครบถ้วนชัวร์ 100% ★ */
+/* ★ แก้ไขให้เรียงลำดับคู่เจาะตามคะแนนความฟิต (Score) จริงๆ จากมากไปน้อย ก่อนที่จะหยิบมาให้สีไฮไลต์ ★ */
 function generateStrict10Pairs(d1, d2, activeRecords, winDigits) {
   const digitFreqMap = Array(10).fill(0);
   activeRecords.forEach(r => {
@@ -1136,28 +1136,32 @@ function generateStrict10Pairs(d1, d2, activeRecords, winDigits) {
       return { target: target, totalScore: winBonus + freqScore };
     });
 
-    // เรียงลำดับจากคะแนนมากไปน้อย
+    // เรียงลำดับจากคะแนนสูงสุดไปต่ำสุด (True Score Ranking) ห้ามเรียงตามตัวเลขเด็ดขาด!
     scoredCandidates.sort((a, b) => b.totalScore - a.totalScore);
     
+    // คัดเอา 5 ตัวแรกที่มีคะแนนสูงสุด
     let top5Targets = scoredCandidates.slice(0, 5);
-    top5Targets.sort((a, b) => a.target - b.target); // เรียงตัวเลขจากน้อยไปมากสำหรับแสดงผล
 
     return top5Targets.map((item, idx) => {
       let target = item.target;
       let pairStr = `${mainDigit}${target}`;
       let highlight = '';
-      if (idx === 0) highlight = 'top1';       // อันดับ 1 -> ทอง
-      else if (idx === 1) highlight = 'top2'; // อันดับ 2 -> เงิน
-      else if (idx === 2) highlight = 'top3'; // อันดับ 3 -> ชมพู Rose Gold
+      if (idx === 0) highlight = 'top1';       // อันดับ 1 คะแนนสูงสุด -> สีทอง
+      else if (idx === 1) highlight = 'top2'; // อันดับ 2 รองลงมา -> สีเงิน
+      else if (idx === 2) highlight = 'top3'; // อันดับ 3 ถัดมา -> สีชมพู Rose Gold
 
-      return { pair: pairStr, highlight: highlight };
+      return { pair: pairStr, highlight: highlight, score: item.totalScore };
     });
   };
 
   let d1Pairs = getPairsForMainDigit(d1, d2);
   let d2Pairs = getPairsForMainDigit(d2, d1);
 
-  return [...d1Pairs, ...d2Pairs];
+  // รวมทั้งหมด 10 คู่ แล้วจัดเรียงลำดับใหม่โดยยึดคะแนนสูงสุดไว้แถวบนสุด/ซ้ายสุด เพื่อความสมจริง
+  let allPairs = [...d1Pairs, ...d2Pairs];
+  allPairs.sort((a, b) => b.score - a.score);
+
+  return allPairs;
 }
 
 function analyzeOverallFrequency(records) {
@@ -1242,7 +1246,7 @@ function analyzeSumMatrix(records) {
   return { top2Sum: topTop2[0], top3Sum: topTop3[0] };
 }
 
-/* ★ ตารางที่ 1 และการประมวลผลหลัก ครบถ้วน 30 งวด + ซื่อสัตย์ 12 งวดล่าสุด 100% ★ */
+/* ★ ตารางที่ 1 และระบบประมวลผลหลัก ครบถ้วนทุกงวด + ซื่อสัตย์ 12 งวดล่าสุด ★ */
 function analyzeLotteryRecords(records, lotteryType) {
   const activeRecords = records;
   const total = activeRecords.length;
@@ -1402,7 +1406,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-PerfectColors.png`;
+    link.download = `card-${lotteryName}-TrueScore.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดสำเร็จ!');
