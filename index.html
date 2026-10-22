@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Production Master Engine (V2 - Grand Diagnostic)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V3)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -591,17 +591,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V2)</b>
-        <small>Smart PDF Parser Engine · Grand Diagnostic</small>
+        <b>เศรษฐีเงินล้าน Master (V3)</b>
+        <small>Master Diagnostic Engine · Atomic Level</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (V2)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · DIAGNOSTIC EDITION (V3)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลข้อมูลสถิติจริงเต็มพิกัด 100% พร้อมตารางสรุปภาพรวมและวินิจฉัยจุดบอดระดับอะตอม เพื่อการพัฒนาที่แม่นยำสูงสุด</p>
+    <p>ประมวลผลข้อมูลสถิติจริงพร้อมตารางวินิจฉัยจุดบอดระดับอะตอม และตารางวิเคราะห์ความล้มเหลวรายโมดูล เพื่อการปรับจูนที่แม่นยำที่สุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -616,7 +616,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระดับโปรดักชั่น & วินิจฉัยจุดบอด
+        <span>⚡</span> ประมวลผลระดับมาสเตอร์ & วินิจฉัยจุดบอดอะตอม
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1199,10 +1199,16 @@ function analyzeLotteryRecords(records, lotteryType) {
   if (!auditPairs.includes(crossPair1)) auditPairs.push(crossPair1);
   if (!auditPairs.includes(crossPair2)) auditPairs.push(crossPair2);
 
-  // Full Audit Log Evaluation (Table 1)
+  // Full Audit Log Evaluation (Table 1) with Atomic Error Counters
   let digitHits = 0, pairValidRounds = 0, pairHits = 0;
   let currentWinStreak = 0, maxWinStreak = 0;
   let currentLossStreak = 0, maxLossStreak = 0;
+  
+  // Atomic failure counters
+  let dnaErrorCount = 0;
+  let pairMissCount = 0;
+  let gapTrapCount = 0;
+
   const auditLogs = [];
   const chronRecords = [...activeRecords].reverse();
 
@@ -1218,6 +1224,7 @@ function analyzeLotteryRecords(records, lotteryType) {
 
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
     let isPairHit = false;
+
     if (isDigitHit) {
       digitHits++;
       pairValidRounds++;
@@ -1225,7 +1232,17 @@ function analyzeLotteryRecords(records, lotteryType) {
         const revPair = pair.split('').reverse().join('');
         return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
       });
-      if (isPairHit) pairHits++;
+      if (isPairHit) {
+        pairHits++;
+      } else {
+        pairMissCount++;
+      }
+    } else {
+      dnaErrorCount++;
+      // Check if past master had gap traps (>6 gap)
+      if (pastMaster[0].gap >= 6 || pastMaster[1].gap >= 6) {
+        gapTrapCount++;
+      }
     }
 
     // Streak Calculation
@@ -1251,11 +1268,28 @@ function analyzeLotteryRecords(records, lotteryType) {
   const cardDigitWinRate = auditDigitWinRate;
   const cardPairWinRate = auditPairWinRate;
 
-  // Atomic Bottleneck Detector for this lottery
-  let bottleneckNote = 'เสถียรภาพปกติ (เกรด A)';
-  if (parseFloat(auditDigitWinRate) < 75) bottleneckNote = '⚠️ ตารางที่ 10: DNA จัดอันดับพลาดเป้าช่วงสวิง';
-  else if (parseFloat(auditPairWinRate) < 70) bottleneckNote = '⚠️ ตารางที่ 4: คู่สัมพันธ์ (Buddy Pairs) บอดบ่อย';
-  else if (maxLossStreak >= 3) bottleneckNote = '⚠️ ตารางที่ 7: มีช่วงค้างนาน (Gap) หลายงวดติด';
+  // Atomic Failure Rates calculation for Table 14
+  const dnaErrorRate = evalCount > 0 ? ((dnaErrorCount / evalCount) * 100).toFixed(1) : '0.0';
+  const pairMissRate = pairValidRounds > 0 ? ((pairMissCount / pairValidRounds) * 100).toFixed(1) : '0.0';
+  const gapTrapRate = evalCount > 0 ? ((gapTrapCount / evalCount) * 100).toFixed(1) : '0.0';
+
+  // Lottery Health & Tier Rating for Table 15
+  let healthTier = 'Tier A (เสถียรสูง)';
+  let tierColor = '#2e7d32';
+  let bottleneckNote = 'เสถียรภาพสมบูรณ์ (พร้อมใช้งาน)';
+
+  const dRateNum = parseFloat(auditDigitWinRate);
+  const pRateNum = parseFloat(auditPairWinRate);
+
+  if (dRateNum < 60 || pRateNum < 60) {
+    healthTier = 'Tier C (เสถียรต่ำ/วิกฤต)';
+    tierColor = '#c62828';
+    bottleneckNote = '⚠️ ตารางที่ 10 & 4: ระบบแกว่งตัวสูง ค่าความผิดพลาดเกินเกณฑ์';
+  } else if (dRateNum < 72 || pRateNum < 70) {
+    healthTier = 'Tier B (ปานกลาง/ต้องเฝ้าระวัง)';
+    tierColor = '#e65100';
+    bottleneckNote = '⚠️ ตารางที่ 10: DNA จัดอันดับพลาดเป้าช่วงตลาดสวิง';
+  }
 
   const gapData = analyzeGapTracker(activeRecords);
   const momentumResults = analyzeTrendMomentum(activeRecords);
@@ -1284,6 +1318,8 @@ function analyzeLotteryRecords(records, lotteryType) {
     auditDigitWinRate, auditPairWinRate,
     digitHits, pairHits, pairValidRounds, evalCount, d1, d2,
     maxWinStreak, maxLossStreak, bottleneckNote,
+    healthTier, tierColor,
+    dnaErrorRate, pairMissRate, gapTrapRate,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
     freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, adaptiveOptResults, nextDrawDate
   };
@@ -1338,7 +1374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลระดับโปรดักชั่นสำเร็จ');
+      showToast('ประมวลผลระดับมาสเตอร์สำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1356,10 +1392,10 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-Production.png`;
+    link.download = `card-${lotteryName}-Master.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    showToast('บันทึกภาพระดับมืออาชีพสำเร็จ!');
+    showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
   });
 }
 
@@ -1447,16 +1483,16 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((grandDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = grandPairValid > 0 ? ((grandPairHits / grandPairValid) * 100).toFixed(2) : '0.00';
 
-  // Build Grand Diagnostic Report Text for Clipboard
-  let grandReportText = `=== 📊 GRAND DIAGNOSTIC SYSTEM REPORT (เศรษฐีเงินล้าน) ===\n`;
+  // Build Grand Diagnostic Report Text for Clipboard with Atomic Payload
+  let grandReportText = `=== 📊 MASTER ATOMIC DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V3) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
   grandReportText += `• งวดตรวจวัดรวม: ${grandEvalCount} งวด\n`;
   grandReportText += `• เปอร์เซ็นต์เลขเด่นรวม: ${grandDigitHits}/${grandEvalCount} (${grandDigitRate}%)\n`;
   grandReportText += `• เปอร์เซ็นต์เลขเจาะรวม: ${grandPairHits}/${grandPairValid} (${grandPairRate}%)\n`;
   grandReportText += `• สถิติต่อเนื่องสูงสุด: เข้าติดต่อกัน ${globalMaxWin} งวด | หลุดติดต่อกัน ${globalMaxLoss} งวด\n\n`;
-  grandReportText += `--- รายละเอียดรายประเภทหวย ---\n`;
+  grandReportText += `--- รายละเอียดระดับอะตอมรายประเภทหวย ---\n`;
   analyzedResults.forEach(r => {
-    grandReportText += `[${r.lotteryType}] เด่น: ${r.auditDigitWinRate}% | เจาะ: ${r.auditPairWinRate}% | จุดบอด: ${r.bottleneckNote}\n`;
+    grandReportText += `[${r.lotteryType}] Tier: ${r.healthTier} | เด่น: ${r.auditDigitWinRate}% | เจาะ: ${r.auditPairWinRate}% | DNA Error: ${r.dnaErrorRate}% | Pair Miss: ${r.pairMissRate}% | Gap Trap: ${r.gapTrapRate}% | จุดบอด: ${r.bottleneckNote}\n`;
   });
 
   // Render Grand Summary Table Container
@@ -1468,7 +1504,7 @@ function renderResults(parsedData) {
           🌐 ภาพรวมระบบทั้งหมด (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
         </div>
         <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวมทั้งหมดสำเร็จ!')">
-          <span>📋</span> คัดลอกรายงานภาพรวม (Grand Report)
+          <span>📋</span> คัดลอกรายงานภาพรวม (Grand Report V3)
         </button>
       </div>
       <table class="audit-table">
@@ -1480,6 +1516,7 @@ function renderResults(parsedData) {
             <th>เจาะเข้า (%)</th>
             <th>เข้าติดต่อสูงสุด</th>
             <th>หลุดติดต่อสูงสุด</th>
+            <th>เกรดระบบ (Tier)</th>
             <th>จุดบอด / ตารางที่ต้องเพ่งเล็ง</th>
             <th>จัดการ</th>
           </tr>
@@ -1488,16 +1525,17 @@ function renderResults(parsedData) {
   `;
 
   analyzedResults.forEach(r => {
-    let singleReport = `=== 📌 DIAGNOSTIC REPORT: ${r.lotteryType} ===\n- งวดตรวจวัด: ${r.evalCount} งวด\n- เด่นเข้า: ${r.digitHits}/${r.evalCount} (${r.auditDigitWinRate}%)\n- เจาะเข้า: ${r.pairHits}/${r.pairValidRounds} (${r.auditPairWinRate}%)\n- เข้าสูงสุด: ${r.maxWinStreak} งวด | หลุดสูงสุด: ${r.maxLossStreak} งวด\n- จุดบอด: ${r.bottleneckNote}`;
+    let singleReport = `=== 📌 ATOMIC DIAGNOSTIC REPORT: ${r.lotteryType} ===\n- Health Tier: ${r.healthTier}\n- งวดตรวจวัด: ${r.evalCount} งวด\n- เด่นเข้า: ${r.digitHits}/${r.evalCount} (${r.auditDigitWinRate}%)\n- เจาะเข้า: ${r.pairHits}/${r.pairValidRounds} (${r.auditPairWinRate}%)\n- อัตราความเพี้ยน DNA (T.10 Error): ${r.dnaErrorRate}%\n- อัตราคู่เจาะบอด (T.4 Miss): ${r.pairMissRate}%\n- อัตรากับดักค้างนาน (T.7 Trap): ${r.gapTrapRate}%\n- เข้าสูงสุด: ${r.maxWinStreak} งวด | หลุดสูงสุด: ${r.maxLossStreak} งวด\n- จุดบอด: ${r.bottleneckNote}`;
     
     html += `
       <tr>
         <td><b>${getFlag(r.lotteryType)} ${r.lotteryType}</b></td>
         <td>${r.evalCount} งวด</td>
-        <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span> (${r.digitHits}/${r.evalCount})</td>
-        <td><span style="color:#b8860b;font-weight:700;">${r.auditPairWinRate}%</span> (${r.pairHits}/${r.pairValidRounds})</td>
+        <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span></td>
+        <td><span style="color:#b8860b;font-weight:700;">${r.auditPairWinRate}%</span></td>
         <td><b>${r.maxWinStreak}</b> งวด</td>
         <td><b>${r.maxLossStreak}</b> งวด</td>
+        <td><span style="color:${r.tierColor}; font-weight:800;">${r.healthTier}</span></td>
         <td style="text-align:left; font-size:0.42rem;">${r.bottleneckNote}</td>
         <td>
           <button style="padding:2px 6px; font-size:0.38rem; background:#faf5eb; border:1px solid #d4af37; border-radius:4px; color:#78590f; cursor:pointer;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(singleReport)}'), '📋 คัดลอกรายงาน ${r.lotteryType} สำเร็จ!')">
@@ -1508,7 +1546,6 @@ function renderResults(parsedData) {
     `;
   });
 
-  // Grand Total Row
   html += `
         <tr style="background:#faf5eb; font-weight:800;">
           <td>🌐 Grand Total System</td>
@@ -1517,7 +1554,8 @@ function renderResults(parsedData) {
           <td><span style="color:#b8860b;">${grandPairRate}%</span></td>
           <td>${globalMaxWin} งวด</td>
           <td>${globalMaxLoss} งวด</td>
-          <td style="text-align:left; font-size:0.42rem; color:#c62828;">🚨 จุดบอดภาพรวม: ตรวจสอบตารางที่ 4 และ 10 หากค่าเปอร์เซ็นต์ต่ำกว่า 75%</td>
+          <td><span style="color:#2e7d32;">Tier A/B Average</span></td>
+          <td style="text-align:left; font-size:0.42rem; color:#c62828;">🚨 จุดบอดระบบ: ตรวจสอบโมดูล DNA (T.10) และ คู่เจาะ (T.4) เมื่อค่าผิดพลาดเกิน 30%</td>
           <td>-</td>
         </tr>
         </tbody>
@@ -1525,8 +1563,8 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  // Render Lottery Navigation Bar & Cards / Detailed Tables
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Production Mode & 13 Tables)</div>`;
+  // Render Lottery Navigation Bar & Cards / Detailed Tables (13 Tables + 2 New Diagnostic Tables)
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Production Mode & Full Diagnostic Tables)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1861,6 +1899,54 @@ function renderResults(parsedData) {
     });
 
     html += `
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 🔬 ตารางที่ 14: โมดูลชำแหละความล้มเหลวรายโมดูล (Module Failure Diagnostic) -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🔬 ตารางที่ 14: โมดูลชำแหละความล้มเหลวระดับอะตอม (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวชี้วัดความผิดพลาด (Failure Metric)</th><th>อัตราความเพี้ยน (%)</th><th>การวินิจฉัยสาเหตุ (Root Cause Analysis)</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>อัตราความผิดพลาด DNA (T.10 Error)</b></td>
+                <td><span style="color:${parseFloat(res.dnaErrorRate) > 35 ? '#c62828' : '#2e7d32'}; font-weight:700;">${res.dnaErrorRate}%</span></td>
+                <td>${parseFloat(res.dnaErrorRate) > 35 ? '⚠️ ตารางที่ 10 จัดอันดับสลับขั้วบ่อยในช่วงตลาดสวิง' : '✅ ควบคุมความผิดพลาดของ DNA ได้ดี'}</td>
+              </tr>
+              <tr>
+                <td><b>อัตราคู่เจาะบอด (T.4 Miss Rate)</b></td>
+                <td><span style="color:${parseFloat(res.pairMissRate) > 35 ? '#c62828' : '#2e7d32'}; font-weight:700;">${res.pairMissRate}%</span></td>
+                <td>${parseFloat(res.pairMissRate) > 35 ? '⚠️ ตารางที่ 4 ดึงคู่สัมพันธ์ล้าหลังจากอัปเดตมาช้า' : '✅ คู่สัมพันธ์ (Buddy Pairs) ทำงานได้แม่นยำ'}</td>
+              </tr>
+              <tr>
+                <td><b>อัตรากับดักเลขค้างนาน (T.7 Gap Trap)</b></td>
+                <td><span style="color:${parseFloat(res.gapTrapRate) > 20 ? '#c62828' : '#2e7d32'}; font-weight:700;">${res.gapTrapRate}%</span></td>
+                <td>${parseFloat(res.gapTrapRate) > 20 ? '⚠️ ตารางที่ 7 เผลอปล่อยเลขค้างนานเกิน 6 งวดมาเล่น' : '✅ หลบเลี่ยงกับดักเลขค้างนานได้ดี'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 🩺 ตารางที่ 15: จัดเกรดสุขภาพและสถานะความเสถียร (Lottery Health & Tier Rating) -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🩺 ตารางที่ 15: จัดเกรดสุขภาพและความเสถียรของระบบ (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>เกรดประสิทธิภาพ (Health Tier)</th><th>สถานะการประมวลผล</th><th>คำแนะนำในการปรับจูน (Tuning Advice)</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b style="color:${res.tierColor}; font-size:0.55rem;">${res.healthTier}</b></td>
+                <td>เด่น ${res.auditDigitWinRate}% | เจาะ ${res.auditPairWinRate}%</td>
+                <td><b>${res.bottleneckNote}</b></td>
+              </tr>
             </tbody>
           </table>
         </div>
