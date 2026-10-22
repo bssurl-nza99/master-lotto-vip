@@ -733,12 +733,22 @@ function getFlag(typeName) {
 function formatDisplayName(rawName) {
   let name = rawName.trim();
 
-  // 1. ประชาชนลาว -> ประชาชน ล.
+  // 1. หุ้นไทย รัฐบาล -> รัฐบาล ไทย
+  if (name.includes('หุ้นไทย รัฐบาล') || name.includes('หุ้นไทยรัฐบาล')) {
+    return 'รัฐบาล ไทย';
+  }
+
+  // 2. ประชาชนลาว -> ประชาชน ล.
   if (name === 'ประชาชนลาว' || name.includes('ประชาชนลาว')) {
     return 'ประชาชน ล.';
   }
 
-  // 2. ลาวอื่นๆ และ ฮานอยคงเดิม 100%
+  // 3. อินเดีย, อียิปต์, มาเลย์ ห้ามมีคำว่า "ปกติ"
+  if (name === 'อินเดีย' || name === 'หุ้นอินเดีย' || name === 'อียิปต์' || name === 'หุ้นอียิปต์' || name === 'มาเลย์' || name === 'หวยมาเลย์') {
+    return name.replace('หุ้น', '').replace('หวย', '').trim();
+  }
+
+  // 4. ลาวอื่นๆ และ ฮานอยคงเดิม 100%
   if (name.startsWith('ลาว')) {
     let sub = name.replace('ลาว', '').trim();
     if (sub.toLowerCase() === 'vip') return 'ล. V';
@@ -752,7 +762,7 @@ function formatDisplayName(rawName) {
     return sub ? `ฮ.น ${sub}` : 'ฮ.น';
   }
 
-  // 3. ดาวโจนส์สตาร์ -> ดาวโจนส์ สตาร์
+  // 5. ดาวโจนส์สตาร์ -> ดาวโจนส์ สตาร์
   if (name.includes('ดาวโจนส์สตาร์') || name.includes('ดาวโจนส์ Star') || name.includes('ดาวโจนส์Star') || name.includes('ดาวโจนส์ สตาร์')) {
     return 'ดาวโจนส์ สตาร์';
   }
@@ -771,14 +781,14 @@ function formatDisplayName(rawName) {
     return name.replace(/VIP/gi, 'V').trim();
   }
 
-  // 4. จัดการหุ้นไทย
+  // 6. จัดการหุ้นไทย (เช้า / เที่ยง / บ่าย / เย็น)
   if (name.includes('ไทย') || name.includes('หุ้นไทย')) {
     let timePart = name.replace('หุ้นไทย', '').replace('ไทย', '').trim();
     if (timePart) return `หุ้นไทย ${timePart}`;
     return 'หุ้นไทย ปกติ';
   }
 
-  // 5. หุ้นที่มีช่วงเวลา เช้า / เที่ยง / บ่าย / เย็น (นิเคอิ, จีน, ฮั่งเส็ง)
+  // 7. หุ้นที่มีช่วงเวลา เช้า / เที่ยง / บ่าย / เย็น (นิเคอิ, จีน, ฮั่งเส็ง)
   const timeKeywords = ['เช้า', 'เที่ยง', 'บ่าย', 'เย็น'];
   let matchedTime = timeKeywords.find(t => name.includes(t));
 
@@ -787,7 +797,7 @@ function formatDisplayName(rawName) {
     return `${baseName} ปกติ ${matchedTime}`;
   }
 
-  // 6. หุ้นเดี่ยวปกติทั่วไป (ไต้หวัน, เกาหลี, สิงคโปร์, รัสเซีย, เยอรมัน, อังกฤษ ฯลฯ)
+  // 8. หุ้นเดี่ยวปกติทั่วไป (ไต้หวัน, เกาหลี, สิงคโปร์, รัสเซีย, เยอรมัน, อังกฤษ ฯลฯ)
   if (!name.includes('ปกติ')) {
     let cleanName = name.replace('หุ้น', '').trim();
     return `${cleanName} ปกติ`;
@@ -1358,6 +1368,7 @@ function captureCard(cardId, lotteryName) {
   });
 }
 
+/* สลับ Tab ประเภทหวยโดยไม่มีการสั่งเลื่อนหน้าจอ (Freeze Scroll Position) */
 function switchLotteryTab(targetGroup) {
   const allPanels = document.querySelectorAll('.lottery-group-panel');
   const allTabs = document.querySelectorAll('.nav-tab-btn');
@@ -1378,11 +1389,7 @@ function switchLotteryTab(targetGroup) {
       }
     });
   }
-
-  const container = document.getElementById('resultOutput');
-  if (container) {
-    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  /* ไม่ใส่ scrollIntoView หน้าจอจะนิ่งสนิทอยู่ที่เดิม 100% */
 }
 
 function renderResults(parsedData) {
