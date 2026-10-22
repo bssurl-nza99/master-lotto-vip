@@ -1,4 +1,5 @@
-<!DOCTYPE html>  <html lang="th">  
+<!DOCTYPE html>  
+<html lang="th">  
 <head>  
 <meta charset="UTF-8">  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">  
@@ -317,9 +318,6 @@ body {
   font-weight: 800;
   color: #322c23;
   letter-spacing: -0.2px;
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  text-decoration-color: rgba(30, 30, 30, 0.85);
 }
 
 .hero-digits-wrap {
@@ -563,7 +561,7 @@ table.audit-table th {
       <span>วางสถิติจาก PDF (เว้น 1 บรรทัดกั้นแต่ละประเภท):</span>  
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>  
     </label>  
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นดาวโจนส์ | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นดาวโจนส์ | 19 ต.ค. 69&#10;603&#10;38"></textarea>  
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นไทยเช้า | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นไทยเช้า | 19 ต.ค. 69&#10;603&#10;38"></textarea>  
 
     <div class="actions">  
       <button id="runBtn" class="run" type="button">  
@@ -580,36 +578,30 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>  
 
 <script>  
-const SAMPLE_PDF_DATA = `หุ้นดาวโจนส์ | 20 ต.ค. 69  
+const SAMPLE_PDF_DATA = `หุ้นไทยเช้า | 20 ต.ค. 69  
 588  
 85  
-หุ้นดาวโจนส์ | 19 ต.ค. 69  
+หุ้นไทยเช้า | 19 ต.ค. 69  
 603  
 38  
-หุ้นดาวโจนส์ | 16 ต.ค. 69  
+หุ้นไทยเที่ยง | 20 ต.ค. 69  
 241  
 28  
-หุ้นดาวโจนส์ | 15 ต.ค. 69  
+หุ้นไทยเที่ยง | 19 ต.ค. 69  
 769  
 21  
-หุ้นดาวโจนส์ | 14 ต.ค. 69  
+หุ้นไทยบ่าย | 20 ต.ค. 69  
 148  
 62  
-หุ้นดาวโจนส์ | 13 ต.ค. 69  
+หุ้นไทยบ่าย | 19 ต.ค. 69  
 010  
 45  
-หุ้นดาวโจนส์ | 12 ต.ค. 69  
+หุ้นไทยเย็น | 20 ต.ค. 69  
 055  
 60  
-หุ้นดาวโจนส์ | 9 ต.ค. 69  
+หุ้นไทยเย็น | 19 ต.ค. 69  
 495  
-31  
-หุ้นดาวโจนส์ | 8 ต.ค. 69  
-164  
-77  
-หุ้นดาวโจนส์ | 7 ต.ค. 69  
-987  
-41`;  
+31`;  
   
 const FLAG_MAP = {  
   'ลาว': '🇱🇦', 'ล.': '🇱🇦',  
@@ -662,27 +654,38 @@ function calculateNextDrawDate(lotteryType, lastDateStr) {
     else dateObj = new Date(year, month + 1, 1);  
     return formatThaiDate(dateObj);  
   }  
-  if (name.includes('มาเลย์')) {  
-    do { dateObj.setDate(dateObj.getDate() + 1); } while (![3, 6, 0].includes(dateObj.getDay()));  
-    return formatThaiDate(dateObj);  
-  }  
-  if (name.includes('ดาวโจนส์') && !name.includes('VIP') && !name.includes('สตาร์') && !name.includes('V')) {  
-    do { dateObj.setDate(dateObj.getDate() + 1); } while ([0, 1].includes(dateObj.getDay()));  
-    return formatThaiDate(dateObj);  
-  }  
   dateObj.setDate(dateObj.getDate() + 1);  
   return formatThaiDate(dateObj);  
 }  
   
 function getFlag(typeName) {  
+  if (typeName.includes('หุ้นไทยทั้งวัน')) return '🇹🇭🔥';  
   for (const key in FLAG_MAP) {  
     if (typeName.includes(key)) return FLAG_MAP[key];  
   }  
   return '🎯';  
 }  
   
+// 1. ระบบจัดหมวดหมู่อัจฉริยะ (Fuzzy String Normalization แก้คำสะกดผิดจากต้นทาง)
+function normalizeCategoryName(rawName) {
+    if (!rawName) return "อื่นๆ";
+    let cleaned = rawName.trim()
+        .replace(/หนุ้/g, 'หุ้น')
+        .replace(/เทย/g, 'ไทย')
+        .replace(/บา่/g, 'บ่าย')
+        .replace(/เชา้/g, 'เช้า')
+        .replace(/สดาร์/g, 'สตาร์')
+        .replace(/เข้า/g, 'เช้า');
+    
+    if (cleaned.includes('ไทยเช้า')) return 'หุ้นไทยเช้า';
+    if (cleaned.includes('ไทยเที่ยง')) return 'หุ้นไทยเที่ยง';
+    if (cleaned.includes('ไทยบ่าย')) return 'หุ้นไทยบ่าย';
+    if (cleaned.includes('หุ้นไทยเย็น')) return 'หุ้นไทยเย็น';
+    return cleaned;
+}
+
 function formatDisplayName(rawName) {  
-  let name = rawName.trim();  
+  let name = normalizeCategoryName(rawName);  
   name = name.replace(/^\d+\s*/, '').trim();  
   
   if (name.startsWith('ลาว')) {  
@@ -703,7 +706,7 @@ function formatDisplayName(rawName) {
     if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';  
     return name;  
   }  
-  name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();  
+  name = name.replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();  
   if (name.includes('VIP')) return name.replace(/VIP/gi, 'V').trim();  
   else if (!name.includes('ปกติ') && !name.includes('V')) return name.replace('หุ้น', '').trim();  
   return name;  
@@ -732,10 +735,45 @@ function showToast(msg) {
   }  
 }  
   
+// 2. ฟังก์ชันควบรวมหุ้นไทยทั้งวัน (Merge Thai All Day Records)
+function getMergedThaiAllDayRecords(allRecords) {
+    const thaiCategories = ['หุ้นไทยเช้า', 'หุ้นไทยเที่ยง', 'หุ้นไทยบ่าย', 'หุ้นไทยเย็น'];
+    const filtered = allRecords.filter(r => thaiCategories.includes(normalizeCategoryName(r.category)));
+    
+    const dateMap = {};
+    filtered.forEach(r => {
+        if (!dateMap[r.date]) {
+            dateMap[r.date] = {
+                date: r.date,
+                category: 'หุ้นไทยทั้งวัน',
+                rounds: []
+            };
+        }
+        dateMap[r.date].rounds.push({
+            name: r.category,
+            top3: r.top3,
+            bottom2: r.bottom2
+        });
+    });
+
+    // แปลงรูปแบบให้เข้ากันได้กับระบบวิเคราะห์หลัก (โดยดึงค่ารอบแรกหรือจำลองเป็นตัวแทนเพื่อใช้โครงสร้างเดิม แต่เวลาตรวจผลใช้กติกาวันละ 1 ครั้ง 100% Cap)
+    return Object.values(dateMap).sort((a, b) => new Date(b.date) - new Date(a.date)).map(item => {
+        let repTop3 = item.rounds[0].top3;
+        let repBottom2 = item.rounds[0].bottom2;
+        return {
+            date: item.date,
+            top3: repTop3,
+            bottom2: repBottom2,
+            isAllDayMerged: true,
+            rounds: item.rounds
+        };
+    });
+}
+
 function parsePDFText(rawText) {  
   if (!rawText || typeof rawText !== 'string') return {};  
   const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);  
-  const grouped = {};  
+  let flatRecords = [];
   
   blocks.forEach((block) => {  
     const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);  
@@ -755,14 +793,10 @@ function parsePDFText(rawText) {
         currentLottery = parts[0];  
         currentDate = parts[1] || 'ไม่ระบุวันที่';  
         pendingTop3 = null;  
-        let formattedKey = formatDisplayName(currentLottery);  
-        if (!grouped[formattedKey]) grouped[formattedKey] = [];  
         continue;  
       }  
       if (!currentLottery && !/^\d+$/.test(line)) {  
         currentLottery = line;  
-        let formattedKey = formatDisplayName(currentLottery);  
-        if (!grouped[formattedKey]) grouped[formattedKey] = [];  
         continue;  
       }  
       if (/^\d{3}$/.test(line)) {  
@@ -771,15 +805,28 @@ function parsePDFText(rawText) {
       }  
       if (/^\d{2}$/.test(line) && pendingTop3 && currentLottery) {  
         let formattedKey = formatDisplayName(currentLottery);  
-        if (!grouped[formattedKey]) grouped[formattedKey] = [];  
-        const recordExists = grouped[formattedKey].some(r => r.date === currentDate && r.top3 === pendingTop3 && r.bottom2 === line);  
+        const recordExists = flatRecords.some(r => r.category === formattedKey && r.date === currentDate && r.top3 === pendingTop3 && r.bottom2 === line);  
         if (!recordExists) {  
-          grouped[formattedKey].push({ date: currentDate || `งวดที่ ${grouped[formattedKey].length + 1}`, top3: pendingTop3, bottom2: line });  
+          flatRecords.push({ category: formattedKey, date: currentDate || 'ไม่ระบุวันที่', top3: pendingTop3, bottom2: line });  
         }  
         pendingTop3 = null; currentDate = null;  
       }  
     }  
   });  
+
+  const grouped = {};  
+  flatRecords.forEach(r => {  
+    if (!grouped[r.category]) grouped[r.category] = [];  
+    grouped[r.category].push({ date: r.date, top3: r.top3, bottom2: r.bottom2 });  
+  });  
+
+  // เพิ่มหมวดหมู่พิเศษ "หุ้นไทยทั้งวัน" อัตโนมัติหากมีข้อมูลหุ้นไทย
+  const thaiCategories = ['หุ้นไทยเช้า', 'หุ้นไทยเที่ยง', 'หุ้นไทยบ่าย', 'หุ้นไทยเย็น'];
+  let hasThaiStock = flatRecords.some(r => thaiCategories.includes(r.category));
+  if (hasThaiStock) {
+    grouped['หุ้นไทยทั้งวัน'] = getMergedThaiAllDayRecords(flatRecords);
+  }
+
   return grouped;  
 }  
   
@@ -788,6 +835,9 @@ function analyzeGapTracker(records) {
   for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };  
   records.forEach((r) => {  
     let digits = (r.top3 + r.bottom2).split('');  
+    if(r.rounds) {
+      r.rounds.forEach(rd => digits.push(...(rd.top3 + rd.bottom2).split('')));
+    }
     for(let d=0; d<=9; d++) {  
       let dStr = d.toString();  
       if(!gapMap[d].found) {  
@@ -806,18 +856,34 @@ function analyzeTrendMomentum(records) {
     let dStr = d.toString();  
     let shortRange = records.slice(0, 5);  
     let shortHits = 0;  
-    shortRange.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) shortHits++; });  
+    shortRange.forEach(r => { 
+      let source = r.top3 + r.bottom2;
+      if(r.rounds) r.rounds.forEach(rd => source += rd.top3 + rd.bottom2);
+      if(source.includes(dStr)) shortHits++; 
+    });  
   
     let midRange = records.slice(5, 10);  
     let midHits = 0;  
-    midRange.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) midHits++; });  
+    midRange.forEach(r => { 
+      let source = r.top3 + r.bottom2;
+      if(r.rounds) r.rounds.forEach(rd => source += rd.top3 + rd.bottom2);
+      if(source.includes(dStr)) midHits++; 
+    });  
   
     let longRange = records.slice(10, 20);  
     let longHits = 0;  
-    longRange.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) longHits++; });  
+    longRange.forEach(r => { 
+      let source = r.top3 + r.bottom2;
+      if(r.rounds) r.rounds.forEach(rd => source += rd.top3 + rd.bottom2);
+      if(source.includes(dStr)) longHits++; 
+    });  
   
     let totalHits = 0;  
-    records.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) totalHits++; });  
+    records.forEach(r => { 
+      let source = r.top3 + r.bottom2;
+      if(r.rounds) r.rounds.forEach(rd => source += rd.top3 + rd.bottom2);
+      if(source.includes(dStr)) totalHits++; 
+    });  
     let totalRate = len > 0 ? (totalHits / len) * 100 : 0;  
   
     let shortPct = shortRange.length > 0 ? (shortHits / shortRange.length) * 100 : 0;  
@@ -841,17 +907,24 @@ function analyzePureMathematics(records) {
     let dStr = d.toString();  
     let markovTransitions = 0, totalPrevOccurrences = 0;  
     for(let i=0; i<len-1; i++) {  
-      let prevDigits = (records[i+1].top3 + records[i+1].bottom2);  
-      let currDigits = (records[i].top3 + records[i].bottom2);  
-      if(prevDigits.includes(dStr)) {  
+      let prevSrc = records[i+1].top3 + records[i+1].bottom2;
+      if(records[i+1].rounds) records[i+1].rounds.forEach(rd => prevSrc += rd.top3 + rd.bottom2);
+      let currSrc = records[i].top3 + records[i].bottom2;
+      if(records[i].rounds) records[i].rounds.forEach(rd => currSrc += rd.top3 + rd.bottom2);
+
+      if(prevSrc.includes(dStr)) {  
         totalPrevOccurrences++;  
-        if(currDigits.includes(dStr)) markovTransitions++;  
+        if(currSrc.includes(dStr)) markovTransitions++;  
       }  
     }  
     let markovScore = totalPrevOccurrences > 0 ? Math.round((markovTransitions / totalPrevOccurrences) * 100) : 50;  
   
     let totalHits = 0;  
-    records.forEach(r => { if((r.top3 + r.bottom2).includes(dStr)) totalHits++; });  
+    records.forEach(r => { 
+      let source = r.top3 + r.bottom2;
+      if(r.rounds) r.rounds.forEach(rd => source += rd.top3 + rd.bottom2);
+      if(source.includes(dStr)) totalHits++; 
+    });  
     let lambda = len > 0 ? totalHits / len : 0.5;  
     let poissonScore = Math.min(100, Math.round(Math.exp(-lambda) * Math.pow(lambda, 1) * 100 * 5) + 30);  
   
@@ -877,6 +950,11 @@ function analyzeCorrelationPairs(records, gapData) {
     records.forEach(r => {  
       let t3 = r.top3, b2 = r.bottom2;  
       let validDigits = [t3[1], t3[2], b2[0], b2[1]];  
+      if(r.rounds) {
+        r.rounds.forEach(rd => {
+          validDigits.push(rd.top3[1], rd.top3[2], rd.bottom2[0], rd.bottom2[1]);
+        });
+      }
       if (validDigits.includes(dA.toString()) || validDigits.includes(dB.toString())) hits++;  
     });  
     let rate = total > 0 ? (hits / total) : 0;  
@@ -899,19 +977,50 @@ function analyzeAdaptiveWeightOptimizer(records) {
   let adaptiveBonuses = Array(10).fill(5);  
   records.slice(0, Math.min(10, records.length)).forEach((r, idx) => {  
     let weight = idx < 5 ? 2.5 : 1.0;  
-    (r.top3 + r.bottom2).split('').forEach(d => {  
+    let source = r.top3 + r.bottom2;
+    if(r.rounds) r.rounds.forEach(rd => source += rd.top3 + rd.bottom2);
+    source.split('').forEach(d => {  
       adaptiveBonuses[parseInt(d)] += weight;  
     });  
   });  
   return { profiles, adaptiveBonuses };  
 }  
   
+// 3. ระบบกรองความผิดปกติของตัวเลข (Anomaly & Outlier Veto)
+function calculateAnomalyVeto(records) {
+    let digitCounts = Array(10).fill(0);
+    let totalDigits = 0;
+    
+    records.forEach(r => {
+        let textSource = r.top3 + r.bottom2;
+        if(r.rounds) r.rounds.forEach(rd => textSource += rd.top3 + rd.bottom2);
+        textSource.split('').forEach(char => {
+            if (!isNaN(char)) {
+                digitCounts[parseInt(char)]++;
+                totalDigits++;
+            }
+        });
+    });
+
+    let vetos = Array(10).fill(0);
+    if (totalDigits > 0) {
+        digitCounts.forEach((count, digit) => {
+            let expected = totalDigits / 10;
+            if (count > expected * 1.8) {
+                vetos[digit] = 25; // โดนหักคะแนน Veto หากเหวี่ยงหรือออกซ้ำซ้อนผิดปกติ
+            }
+        });
+    }
+    return vetos;
+}
+
 function calculateGeniusDnaScores(records) {  
   let gapData = analyzeGapTracker(records);  
   let buddyPairs = analyzeCorrelationPairs(records, gapData);  
   let momentumData = analyzeTrendMomentum(records);  
   let mathData = analyzePureMathematics(records);  
   let adaptiveOpt = analyzeAdaptiveWeightOptimizer(records);  
+  let vetoPenalties = calculateAnomalyVeto(records);
   
   let subShort = records.slice(0, Math.min(10, records.length));  
   let subMid = records.slice(0, Math.min(20, records.length));  
@@ -921,9 +1030,18 @@ function calculateGeniusDnaScores(records) {
   let scoreMid = Array(10).fill(0);  
   let scoreLong = Array(10).fill(0);  
   
-  subShort.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => scoreShort[parseInt(d)] += 3.5));  
-  subMid.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => scoreMid[parseInt(d)] += 2.0));  
-  subLong.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => scoreLong[parseInt(d)] += 1.0));  
+  subShort.forEach(r => {
+    let src = r.top3 + r.bottom2; if(r.rounds) r.rounds.forEach(rd => src += rd.top3 + rd.bottom2);
+    src.split('').forEach(d => scoreShort[parseInt(d)] += 3.5);
+  });  
+  subMid.forEach(r => {
+    let src = r.top3 + r.bottom2; if(r.rounds) r.rounds.forEach(rd => src += rd.top3 + rd.bottom2);
+    src.split('').forEach(d => scoreMid[parseInt(d)] += 2.0);
+  });  
+  subLong.forEach(r => {
+    let src = r.top3 + r.bottom2; if(r.rounds) r.rounds.forEach(rd => src += rd.top3 + rd.bottom2);
+    src.split('').forEach(d => scoreLong[parseInt(d)] += 1.0);
+  });  
   
   let scores = Array(10).fill(0);  
   let vetoPenalty = Array(10).fill(0);  
@@ -953,7 +1071,13 @@ function calculateGeniusDnaScores(records) {
   });  
   
   mathData.forEach(m => { scores[m.digit] += (m.purityScore * 0.12); });  
-  for(let d=0; d<=9; d++) { scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; }  
+  for(let d=0; d<=9; d++) { 
+    scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; 
+    if(vetoPenalties[d] > 0) {
+      vetoPenalty[d] += vetoPenalties[d];
+      statusText[d] = 'สัญญาณหลอก (ผันผวนผิดปกติ)';
+    }
+  }  
   
   for(let d=0; d<=9; d++) {  
     if(gapData[d].currentGap >= 6) { vetoPenalty[d] += 45; statusText[d] = 'สัญญาณหลอก (ค้างนาน)'; }  
@@ -973,15 +1097,19 @@ function calculateGeniusDnaScores(records) {
 function generateCoOccurrenceWinArray(records) {  
   let pairCoOccur = {};  
   records.forEach(r => {  
-    let top2 = r.top3.slice(-2);  
-    let bot2 = r.bottom2;  
-    [top2, bot2].forEach(p => {  
-      if(p.length === 2) {  
-        let x = parseInt(p[0]), y = parseInt(p[1]);  
-        let key = x < y ? `${x}-${y}` : `${y}-${x}`;  
-        pairCoOccur[key] = (pairCoOccur[key] || 0) + 1;  
-      }  
-    });  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    targets.forEach(t => {
+      let top2 = t.top3.slice(-2);  
+      let bot2 = t.bottom2;  
+      [top2, bot2].forEach(p => {  
+        if(p.length === 2) {  
+          let x = parseInt(p[0]), y = parseInt(p[1]);  
+          let key = x < y ? `${x}-${y}` : `${y}-${x}`;  
+          pairCoOccur[key] = (pairCoOccur[key] || 0) + 1;  
+        }  
+      });  
+    });
   });  
   
   let coScores = Array(10).fill(0);  
@@ -996,10 +1124,16 @@ function generateCoOccurrenceWinArray(records) {
   
   let hits = 0, total = records.length;  
   records.forEach(r => {  
-    let top2 = r.top3.slice(-2), bot2 = r.bottom2;  
-    let tMatch = winDigits.includes(parseInt(top2[0])) && winDigits.includes(parseInt(top2[1]));  
-    let bMatch = winDigits.includes(parseInt(bot2[0])) && winDigits.includes(parseInt(bot2[1]));  
-    if(tMatch || bMatch) hits++;  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    let matchedInRecord = false;
+    targets.forEach(t => {
+      let top2 = t.top3.slice(-2), bot2 = t.bottom2;  
+      let tMatch = winDigits.includes(parseInt(top2[0])) && winDigits.includes(parseInt(top2[1]));  
+      let bMatch = winDigits.includes(parseInt(bot2[0])) && winDigits.includes(parseInt(bot2[1]));  
+      if(tMatch || bMatch) matchedInRecord = true;
+    });
+    if(matchedInRecord) hits++;  
   });  
   let winCoverageRate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';  
   return { winDigits, hits, total, winCoverageRate };  
@@ -1010,6 +1144,7 @@ function analyzeOverallFrequency(records) {
   const chron = [...records].reverse();  
   chron.forEach(r => {  
     let digits = (r.top3 + r.bottom2).split('');  
+    if(r.rounds) r.rounds.forEach(rd => digits.push(...(rd.top3 + rd.bottom2).split('')));
     for(let d=0; d<=9; d++) {  
       counts[d]++;  
       if(digits.includes(d.toString())) {  
@@ -1030,24 +1165,33 @@ function analyzePositionBreakdown(records) {
   let pos = {};  
   for(let d=0; d<=9; d++) { pos[d] = { hundreds: { hits: 0 }, tens: { hits: 0 }, units: { hits: 0 } }; }  
   records.forEach(r => {  
-    let t3 = r.top3, b2 = r.bottom2;  
-    let h = t3[0], t = t3[1], u = t3[2], bTens = b2[0], bUnits = b2[1];  
-    for(let d=0; d<=9; d++) {  
-      let dStr = d.toString();  
-      if(h === dStr) pos[d].hundreds.hits++;  
-      if(t === dStr || bTens === dStr) pos[d].tens.hits++;  
-      if(u === dStr || bUnits === dStr) pos[d].units.hits++;  
-    }  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    targets.forEach(t => {
+      let t3 = t.top3, b2 = t.bottom2;  
+      let h = t3[0], tens = t3[1], u = t3[2], bTens = b2[0], bUnits = b2[1];  
+      for(let d=0; d<=9; d++) {  
+        let dStr = d.toString();  
+        if(h === dStr) pos[d].hundreds.hits++;  
+        if(tens === dStr || bTens === dStr) pos[d].tens.hits++;  
+        if(u === dStr || bUnits === dStr) pos[d].units.hits++;  
+      }  
+    });
   });  
   return pos;  
 }  
   
 function analyzeOddEvenHighLow(records) {  
-  let evenCount = 0, oddCount = 0, highCount = 0, lowCount = 0, total = records.length;  
+  let evenCount = 0, oddCount = 0, highCount = 0, lowCount = 0, total = 0;  
   records.forEach(r => {  
-    let top2 = parseInt(r.top3.slice(-2));  
-    if(top2 % 2 === 0) evenCount++; else oddCount++;  
-    if(top2 >= 50) highCount++; else lowCount++;  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    targets.forEach(t => {
+      total++;
+      let top2 = parseInt(t.top3.slice(-2));  
+      if(top2 % 2 === 0) evenCount++; else oddCount++;  
+      if(top2 >= 50) highCount++; else lowCount++;  
+    });
   });  
   return {  
     evenRate: total > 0 ? ((evenCount / total) * 100).toFixed(1) : '0.0',  
@@ -1058,13 +1202,18 @@ function analyzeOddEvenHighLow(records) {
 }  
   
 function analyzeSpecialPatterns(records) {  
-  let doubleCount = 0, harmCount = 0, sisterCount = 0, total = records.length;  
+  let doubleCount = 0, harmCount = 0, sisterCount = 0, total = 0;  
   records.forEach(r => {  
-    let t3 = r.top3, top2 = t3.slice(-2);  
-    if(t3[1] === t3[2]) doubleCount++;  
-    if(t3[0] === t3[2]) harmCount++;  
-    let d1 = parseInt(top2[0]), d2 = parseInt(top2[1]);  
-    if(Math.abs(d1 - d2) === 1 || (d1 === 0 && d2 === 9) || (d1 === 9 && d2 === 0)) sisterCount++;  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    targets.forEach(t => {
+      total++;
+      let t3 = t.top3, top2 = t3.slice(-2);  
+      if(t3[1] === t3[2]) doubleCount++;  
+      if(t3[0] === t3[2]) harmCount++;  
+      let d1 = parseInt(top2[0]), d2 = parseInt(top2[1]);  
+      if(Math.abs(d1 - d2) === 1 || (d1 === 0 && d2 === 9) || (d1 === 9 && d2 === 0)) sisterCount++;  
+    });
   });  
   return {  
     doubleRate: total > 0 ? ((doubleCount / total) * 100).toFixed(1) : '0.0',  
@@ -1076,11 +1225,15 @@ function analyzeSpecialPatterns(records) {
 function analyzeSumMatrix(records) {  
   let top2Sums = {}, top3Sums = {};  
   records.forEach(r => {  
-    let t3 = r.top3;  
-    let sTop3 = t3.split('').reduce((a,b) => a + parseInt(b), 0);  
-    let sTop2 = parseInt(t3[1]) + parseInt(t3[2]);  
-    top3Sums[sTop3] = (top3Sums[sTop3] || 0) + 1;  
-    top2Sums[sTop2] = (top2Sums[sTop2] || 0) + 1;  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    targets.forEach(t => {
+      let t3 = t.top3;  
+      let sTop3 = t3.split('').reduce((a,b) => a + parseInt(b), 0);  
+      let sTop2 = parseInt(t3[1]) + parseInt(t3[2]);  
+      top3Sums[sTop3] = (top3Sums[sTop3] || 0) + 1;  
+      top2Sums[sTop2] = (top2Sums[sTop2] || 0) + 1;  
+    });
   });  
   let topTop2 = Object.entries(top2Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];  
   let topTop3 = Object.entries(top3Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];  
@@ -1090,14 +1243,18 @@ function analyzeSumMatrix(records) {
 function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {  
   const pairFreqMap = {};  
   activeRecords.forEach(r => {  
-    const top2 = r.top3.slice(-2), bot2 = r.bottom2;  
-    [top2, bot2].forEach(p => {  
-      if (p.length === 2) {  
-        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;  
-        let rev = p.split('').reverse().join('');  
-        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;  
-      }  
-    });  
+    let targets = [r];
+    if(r.rounds) r.rounds.forEach(rd => targets.push(rd));
+    targets.forEach(t => {
+      const top2 = t.top3.slice(-2), bot2 = t.bottom2;  
+      [top2, bot2].forEach(p => {  
+        if (p.length === 2) {  
+          pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;  
+          let rev = p.split('').reverse().join('');  
+          pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;  
+        }  
+      });  
+    });
   });  
   
   let getFilteredCandidates = (mainDigit) => {  
@@ -1131,7 +1288,7 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
 }  
   
 function analyzeLotteryRecords(records, lotteryType) {  
-  // ใช้ Window Size 20-25 งวด เพื่อความสมดุลสูงสุดของข้อมูลหุ้นไทยและหวยทุกประเภท  
+  // Dynamic Window Sizing: กำหนดค่ามาตรฐานที่ 25 งวดเพื่อความเสถียรสูงสุด
   const activeRecords = records.slice(0, 25);  
   const total = activeRecords.length;  
   if (total === 0) return null;  
@@ -1152,6 +1309,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   let digitHits = 0, pairHits = 0;  
   const auditLogs = [];  
   const chronRecords = [...activeRecords].reverse();  
+  const isAllDay = lotteryType.includes('หุ้นไทยทั้งวัน');
   
   for (let i = Math.min(1, Math.floor(chronRecords.length / 2)); i < chronRecords.length; i++) {  
     const past = chronRecords.slice(0, i);  
@@ -1159,22 +1317,49 @@ function analyzeLotteryRecords(records, lotteryType) {
     const pastMaster = calculateGeniusDnaScores(past);  
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];  
   
-    const actualTop3 = target.top3, actualBottom2 = target.bottom2;  
-    const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;  
-    const actualDigits = (actualTop3 + actualBottom2).split('');  
+    let isDigitHit = false;
+    let isPairHit = false;
+
+    if (isAllDay && target.rounds) {
+      // กติกากลุ่มหุ้นไทยทั้งวัน: ขอแค่เข้า 1 รอบในวันนั้น (เช้า/เที่ยง/บ่าย/เย็น) นับเป็นเข้าเป้า 100% ทันที
+      let dayHitDigit = false;
+      let dayHitPair = false;
+      target.rounds.forEach(rd => {
+        let rdTop3 = rd.top3, rdBot2 = rd.bottom2;
+        let rdTop2 = rdTop3.slice(-2), rdBot2Str = rdBot2;
+        let rdDigits = (rdTop3 + rdBot2).split('');
+        if (topCandidates.some(d => rdDigits.includes(d.toString()))) {
+          dayHitDigit = true;
+          let hitP = auditPairs.some(pair => {
+            let rev = pair.split('').reverse().join('');
+            return (rdTop2 === pair || rdTop2 === rev || rdBot2Str === pair || rdBot2Str === rev);
+          });
+          if (hitP) dayHitPair = true;
+        }
+      });
+      isDigitHit = dayHitDigit;
+      isPairHit = dayHitPair;
+    } else {
+      const actualTop3 = target.top3, actualBottom2 = target.bottom2;  
+      const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;  
+      const actualDigits = (actualTop3 + actualBottom2).split('');  
   
-    const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));  
-    let isPairHit = false;  
-    if (isDigitHit) {  
-      digitHits++;  
-      isPairHit = auditPairs.some(pair => {  
-        const revPair = pair.split('').reverse().join('');  
-        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);  
-      });  
-      if (isPairHit) pairHits++;  
-    }  
-  
-    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });  
+      isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));  
+      if (isDigitHit) {  
+        isPairHit = auditPairs.some(pair => {  
+          const revPair = pair.split('').reverse().join('');  
+          return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);  
+        });  
+      }  
+    }
+
+    if (isDigitHit) digitHits++;
+    if (isPairHit) pairHits++;
+
+    let displayTop3 = target.rounds ? target.rounds.map(rd=>rd.top3).join('/') : target.top3;
+    let displayBot2 = target.rounds ? target.rounds.map(rd=>rd.bottom2).join('/') : target.bottom2;
+
+    auditLogs.push({ date: target.date, top3: displayTop3, bottom2: displayBot2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });  
   }  
   
   auditLogs.reverse();  
@@ -1192,7 +1377,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   
   const evalCount = auditLogs.length;  
   const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';  
-  const pairWinRate = digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00';  
+  const pairWinRate = evalCount > 0 ? ((pairHits / evalCount) * 100).toFixed(2) : '0.00';  
   
   const formattedPairs = structuredPairs.map(pItem => ({  
     pair: pItem.pair,  
@@ -1349,7 +1534,7 @@ function renderResults(parsedData) {
       <!-- 📋 ตารางที่ 1 -->  
       <div class="summary-table-container">  
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">  
-          📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)  
+          📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.evalCount} (${res.pairWinRate}%)  
         </div>  
         <table class="audit-table">  
           <thead>  
@@ -1359,7 +1544,7 @@ function renderResults(parsedData) {
     `;  
   
     res.auditLogs.forEach(log => {  
-      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isDigitHit ? (log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>') : '<span style="color:#999">-</span>'}</td></tr>`;  
+      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td></tr>`;  
     });  
   
     html += `  
