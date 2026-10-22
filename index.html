@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V3)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V4 - Full User Data)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -591,17 +591,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V3)</b>
-        <small>Master Diagnostic Engine · Atomic Level</small>
+        <b>เศรษฐีเงินล้าน Master (V4)</b>
+        <small>Full User Data Diagnostic Engine</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · DIAGNOSTIC EDITION (V3)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · FULL USER DATA EDITION (V4)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลข้อมูลสถิติจริงพร้อมตารางวินิจฉัยจุดบอดระดับอะตอม และตารางวิเคราะห์ความล้มเหลวรายโมดูล เพื่อการปรับจูนที่แม่นยำที่สุด</p>
+    <p>ประมวลผลเปอร์เซ็นต์ความแม่นยำจากสถิติข้อมูลทั้งหมดที่ผู้ใช้กรอกเข้ามาจริงแบบครบถ้วนทุกงวด พร้อมวินิจฉัยจุดบอดระดับอะตอม</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -616,7 +616,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระดับมาสเตอร์ & วินิจฉัยจุดบอดอะตอม
+        <span>⚡</span> ประมวลผลจากข้อมูลผู้ใช้จริงทั้งหมด & วินิจฉัยจุดบอด
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1199,12 +1199,11 @@ function analyzeLotteryRecords(records, lotteryType) {
   if (!auditPairs.includes(crossPair1)) auditPairs.push(crossPair1);
   if (!auditPairs.includes(crossPair2)) auditPairs.push(crossPair2);
 
-  // Full Audit Log Evaluation (Table 1) with Atomic Error Counters
+  // Full User Data Evaluation: Audit EVERY SINGLE record from the user's input data
   let digitHits = 0, pairValidRounds = 0, pairHits = 0;
   let currentWinStreak = 0, maxWinStreak = 0;
   let currentLossStreak = 0, maxLossStreak = 0;
   
-  // Atomic failure counters
   let dnaErrorCount = 0;
   let pairMissCount = 0;
   let gapTrapCount = 0;
@@ -1212,7 +1211,8 @@ function analyzeLotteryRecords(records, lotteryType) {
   const auditLogs = [];
   const chronRecords = [...activeRecords].reverse();
 
-  for (let i = Math.min(1, Math.floor(chronRecords.length / 2)); i < chronRecords.length; i++) {
+  // Evaluate starting from index 1 (or 0 if history allows) through the entire dataset entered by user
+  for (let i = 1; i < chronRecords.length; i++) {
     const past = chronRecords.slice(0, i);
     const target = chronRecords[i];
     const pastMaster = calculateGeniusDnaScores(past);
@@ -1239,13 +1239,11 @@ function analyzeLotteryRecords(records, lotteryType) {
       }
     } else {
       dnaErrorCount++;
-      // Check if past master had gap traps (>6 gap)
       if (pastMaster[0].gap >= 6 || pastMaster[1].gap >= 6) {
         gapTrapCount++;
       }
     }
 
-    // Streak Calculation
     if (isDigitHit) {
       currentWinStreak++;
       currentLossStreak = 0;
@@ -1259,6 +1257,30 @@ function analyzeLotteryRecords(records, lotteryType) {
     auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
   }
 
+  // If there's only 1 record entered, evaluate that 1 record directly
+  if (chronRecords.length === 1) {
+    const target = chronRecords[0];
+    const topCandidates = [d1, d2];
+    const actualTop3 = target.top3, actualBottom2 = target.bottom2;
+    const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
+    const actualDigits = (actualTop3 + actualBottom2).split('');
+    const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
+    let isPairHit = false;
+    if (isDigitHit) {
+      digitHits++;
+      pairValidRounds++;
+      isPairHit = auditPairs.some(pair => {
+        const revPair = pair.split('').reverse().join('');
+        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
+      });
+      if (isPairHit) pairHits++; else pairMissCount++;
+    } else {
+      dnaErrorCount++;
+    }
+    if (isDigitHit) { maxWinStreak = Math.max(maxWinStreak, 1); } else { maxLossStreak = Math.max(maxLossStreak, 1); }
+    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
+  }
+
   auditLogs.reverse();
 
   const evalCount = auditLogs.length;
@@ -1268,12 +1290,10 @@ function analyzeLotteryRecords(records, lotteryType) {
   const cardDigitWinRate = auditDigitWinRate;
   const cardPairWinRate = auditPairWinRate;
 
-  // Atomic Failure Rates calculation for Table 14
   const dnaErrorRate = evalCount > 0 ? ((dnaErrorCount / evalCount) * 100).toFixed(1) : '0.0';
   const pairMissRate = pairValidRounds > 0 ? ((pairMissCount / pairValidRounds) * 100).toFixed(1) : '0.0';
   const gapTrapRate = evalCount > 0 ? ((gapTrapCount / evalCount) * 100).toFixed(1) : '0.0';
 
-  // Lottery Health & Tier Rating for Table 15
   let healthTier = 'Tier A (เสถียรสูง)';
   let tierColor = '#2e7d32';
   let bottleneckNote = 'เสถียรภาพสมบูรณ์ (พร้อมใช้งาน)';
@@ -1374,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลระดับมาสเตอร์สำเร็จ');
+      showToast('ประมวลผลจากข้อมูลผู้ใช้จริงสำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1464,7 +1484,6 @@ function renderResults(parsedData) {
 
   if (analyzedResults.length === 0) return;
 
-  // Grand Totals Calculation
   let grandTotalRounds = 0;
   let grandDigitHits = 0, grandEvalCount = 0;
   let grandPairHits = 0, grandPairValid = 0;
@@ -1483,10 +1502,9 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((grandDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = grandPairValid > 0 ? ((grandPairHits / grandPairValid) * 100).toFixed(2) : '0.00';
 
-  // Build Grand Diagnostic Report Text for Clipboard with Atomic Payload
-  let grandReportText = `=== 📊 MASTER ATOMIC DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V3) ===\n`;
+  let grandReportText = `=== 📊 MASTER ATOMIC DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V4 - Full Data) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
-  grandReportText += `• งวดตรวจวัดรวม: ${grandEvalCount} งวด\n`;
+  grandReportText += `• งวดตรวจวัดรวมทั้งหมดจากข้อมูลผู้ใช้: ${grandEvalCount} งวด\n`;
   grandReportText += `• เปอร์เซ็นต์เลขเด่นรวม: ${grandDigitHits}/${grandEvalCount} (${grandDigitRate}%)\n`;
   grandReportText += `• เปอร์เซ็นต์เลขเจาะรวม: ${grandPairHits}/${grandPairValid} (${grandPairRate}%)\n`;
   grandReportText += `• สถิติต่อเนื่องสูงสุด: เข้าติดต่อกัน ${globalMaxWin} งวด | หลุดติดต่อกัน ${globalMaxLoss} งวด\n\n`;
@@ -1495,16 +1513,15 @@ function renderResults(parsedData) {
     grandReportText += `[${r.lotteryType}] Tier: ${r.healthTier} | เด่น: ${r.auditDigitWinRate}% | เจาะ: ${r.auditPairWinRate}% | DNA Error: ${r.dnaErrorRate}% | Pair Miss: ${r.pairMissRate}% | Gap Trap: ${r.gapTrapRate}% | จุดบอด: ${r.bottleneckNote}\n`;
   });
 
-  // Render Grand Summary Table Container
   let html = `<div class="section-title">📊 ตารางสรุปภาพรวม & จุดบอดระดับอะตอม (Grand Summary & System Bottleneck)</div>`;
   html += `
     <div class="summary-table-container">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;">
-          🌐 ภาพรวมระบบทั้งหมด (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
+          🌐 ภาพรวมระบบจากข้อมูลผู้ใช้จริง (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
         </div>
         <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวมทั้งหมดสำเร็จ!')">
-          <span>📋</span> คัดลอกรายงานภาพรวม (Grand Report V3)
+          <span>📋</span> คัดลอกรายงานภาพรวม (Grand Report V4)
         </button>
       </div>
       <table class="audit-table">
@@ -1525,7 +1542,7 @@ function renderResults(parsedData) {
   `;
 
   analyzedResults.forEach(r => {
-    let singleReport = `=== 📌 ATOMIC DIAGNOSTIC REPORT: ${r.lotteryType} ===\n- Health Tier: ${r.healthTier}\n- งวดตรวจวัด: ${r.evalCount} งวด\n- เด่นเข้า: ${r.digitHits}/${r.evalCount} (${r.auditDigitWinRate}%)\n- เจาะเข้า: ${r.pairHits}/${r.pairValidRounds} (${r.auditPairWinRate}%)\n- อัตราความเพี้ยน DNA (T.10 Error): ${r.dnaErrorRate}%\n- อัตราคู่เจาะบอด (T.4 Miss): ${r.pairMissRate}%\n- อัตรากับดักค้างนาน (T.7 Trap): ${r.gapTrapRate}%\n- เข้าสูงสุด: ${r.maxWinStreak} งวด | หลุดสูงสุด: ${r.maxLossStreak} งวด\n- จุดบอด: ${r.bottleneckNote}`;
+    let singleReport = `=== 📌 ATOMIC DIAGNOSTIC REPORT: ${r.lotteryType} ===\n- Health Tier: ${r.healthTier}\n- งวดตรวจวัด (จากผู้ใช้): ${r.evalCount} งวด\n- เด่นเข้า: ${r.digitHits}/${r.evalCount} (${r.auditDigitWinRate}%)\n- เจาะเข้า: ${r.pairHits}/${r.pairValidRounds} (${r.auditPairWinRate}%)\n- อัตราความเพี้ยน DNA (T.10 Error): ${r.dnaErrorRate}%\n- อัตราคู่เจาะบอด (T.4 Miss): ${r.pairMissRate}%\n- อัตรากับดักค้างนาน (T.7 Trap): ${r.gapTrapRate}%\n- เข้าสูงสุด: ${r.maxWinStreak} งวด | หลุดสูงสุด: ${r.maxLossStreak} งวด\n- จุดบอด: ${r.bottleneckNote}`;
     
     html += `
       <tr>
@@ -1563,8 +1580,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  // Render Lottery Navigation Bar & Cards / Detailed Tables (13 Tables + 2 New Diagnostic Tables)
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Production Mode & Full Diagnostic Tables)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Full User Data & Diagnostic Tables)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1903,7 +1919,7 @@ function renderResults(parsedData) {
           </table>
         </div>
 
-        <!-- 🔬 ตารางที่ 14: โมดูลชำแหละความล้มเหลวรายโมดูล (Module Failure Diagnostic) -->
+        <!-- 🔬 ตารางที่ 14 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
             🔬 ตารางที่ 14: โมดูลชำแหละความล้มเหลวระดับอะตอม (${type})
@@ -1932,7 +1948,7 @@ function renderResults(parsedData) {
           </table>
         </div>
 
-        <!-- 🩺 ตารางที่ 15: จัดเกรดสุขภาพและสถานะความเสถียร (Lottery Health & Tier Rating) -->
+        <!-- 🩺 ตารางที่ 15 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
             🩺 ตารางที่ 15: จัดเกรดสุขภาพและความเสถียรของระบบ (${type})
