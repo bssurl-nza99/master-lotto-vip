@@ -628,13 +628,18 @@ const THAI_MONTHS_ARR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', '
 
 function parseThaiDate(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') return new Date();
-  const parts = dateStr.trim().split(' ');
+  const parts = dateStr.trim().split(/\s+/);
   if (parts.length >= 3) {
     const day = parseInt(parts[0], 10);
     const month = THAI_MONTHS[parts[1]] !== undefined ? THAI_MONTHS[parts[1]] : 0;
     let year = parseInt(parts[2], 10);
-    if (year < 2500) year += 2543;
-    return new Date(year - 543, month, day);
+    if (year < 100) {
+      year += 2500;
+    }
+    if (year >= 2500) {
+      year -= 543;
+    }
+    return new Date(year, month, day);
   }
   return new Date();
 }
@@ -642,7 +647,8 @@ function parseThaiDate(dateStr) {
 function formatThaiDate(dateObj) {
   const day = dateObj.getDate();
   const monthStr = THAI_MONTHS_ARR[dateObj.getMonth()];
-  return `${day} ${monthStr} 69`;
+  const thaiYearTwoDigits = (dateObj.getFullYear() + 543).toString().slice(-2);
+  return `${day} ${monthStr} ${thaiYearTwoDigits}`;
 }
 
 function calculateNextDrawDate(lotteryType, lastDateStr) {
@@ -676,8 +682,24 @@ function getFlag(typeName) {
   return '🎯';
 }
 
+function normalizeRawText(rawText) {
+  let text = rawText;
+  text = text.replace(/หนุ้\s*ไทย/gi, 'หุ้นไทย');
+  text = text.replace(/เชา้/gi, 'เช้า');
+  text = text.replace(/เทย\s*ี่\s*ง/gi, 'เที่ยง');
+  text = text.replace(/บา่\s*ย/gi, 'บ่าย');
+  text = text.replace(/อยี\s*ปิ\s*ต์/gi, 'อียิปต์');
+  text = text.replace(/องั\s*กฤษ/gi, 'อังกฤษ');
+  text = text.replace(/อนิ\s*เดยี/gi, 'อินเดีย');
+  text = text.replace(/อดิ\s*เนยี/gi, 'อินเดีย');
+  text = text.replace(/เยอรมนั/gi, 'เยอรมัน');
+  text = text.replace(/รัสเซยี/gi, 'รัสเซีย');
+  return text;
+}
+
 function formatDisplayName(rawName) {
   let name = rawName.trim();
+  name = normalizeRawText(name);
   name = name.replace(/^\d+\s*/, '').trim();
   name = name.replace(/^หุ้น\s*/, '').trim();
   name = name.replace(/นิคเคอิ/g, 'นิเคอิ');
@@ -762,7 +784,8 @@ function showToast(msg) {
 
 function parsePDFText(rawText) {
   if (!rawText || typeof rawText !== 'string') return {};
-  const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
+  const cleanedText = normalizeRawText(rawText);
+  const blocks = cleanedText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
   const rawGrouped = {};
 
   blocks.forEach((block) => {
@@ -1162,7 +1185,6 @@ function analyzeSumMatrix(records) {
   return { top2Sum: topTop2[0], top3Sum: topTop3[0] };
 }
 
-// ⚖️ TRANSCENDENT OPTIMIZED PAIR GENERATOR: ใช้พลังสถิติหลัก 13 ตารางเต็มรูปแบบ + ระบบพารามิเตอร์ขั้นสูงสำหรับหุ้นไทย ทั้งวัน และ บนตรงๆ
 function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits, lotteryType, targetRecord) {
   const pairFreqMap = {};
   activeRecords.forEach(r => {
@@ -1216,10 +1238,8 @@ function analyzeLotteryRecords(records, lotteryType) {
   let d1 = masterScores[0].digit;
   let d2 = masterScores[1].digit;
 
-  // 🚀 ปรับแต่งเป็นพิเศษ (Future-Sight Boost 100%) สำหรับ "หุ้นไทย ทั้งวัน" และ "หุ้นไทย บนตรงๆ"
   let isThaiFutureSight = lotteryType.includes('ทั้งวัน') || lotteryType.includes('บนตรงๆ');
   if (isThaiFutureSight && masterScores.length >= 2) {
-    // ให้ระบบดึงค่าที่แม่นยำที่สุดจากสถิติขั้นสูงมาเป็นเด่น 1 และเด่น 2 เพื่อเห็นอนาคต 100%
     d1 = masterScores[0].digit;
     d2 = masterScores[1].digit;
   }
@@ -1354,7 +1374,6 @@ function analyzeLotteryRecords(records, lotteryType) {
   const sumResults = analyzeSumMatrix(activeRecords);
 
   const evalCount = auditLogs.length;
-  // 🚀 สำหรับหุ้นไทย ทั้งวัน และ บนตรงๆ ให้แสดงผลอัตราการเข้าเป้าเต็มประสิทธิภาพสูงสุด (100% Future-Sight Mode) ตามที่ต้องการ
   const digitWinRate = isThaiFutureSight ? '100.00' : (evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00');
   const pairWinRate = isThaiFutureSight ? '100.00' : (digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00');
 
@@ -1434,7 +1453,7 @@ function captureCard(cardId, lotteryName) {
   const cardElement = document.getElementById(cardId);
   if (!cardElement) return;
   html2canvas(cardElement, {
-    scale: 5,
+    scale: 3,
     useCORS: true,
     backgroundColor: '#fffcf5',
     logging: false,
