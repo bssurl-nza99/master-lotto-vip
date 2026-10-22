@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Production Master Engine (V1 Pro Certified)</title>
+<title>เศรษฐีเงินล้าน · Production Master Engine (Full 30-Audit & Perfect Color Certified)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -432,6 +432,7 @@ body {
   transition: all 0.2s ease;
 }
 
+/* ★ คืนค่าระบบสีไฮไลต์ครบ 3 สี (ทอง, เงิน, ชมพู Rose Gold) ★ */
 .pair-badge.highlight-top1 {
   background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98));
   border: 1.5px solid #d4af37;
@@ -591,16 +592,16 @@ table.audit-table th {
       <div class="logo">เศรษฐี</div>
       <div>
         <b>เศรษฐีเงินล้าน Master (V1 Pro Certified)</b>
-        <small>Universal Robust Core · 12-Draw Rolling Metric</small>
+        <small>Universal Robust Core · Full Audit Matrix</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (V1 Pro Certified)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (Full Audit Certified)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลข้อมูลสถิติจริงเต็มพิกัด 100% ปราศจากบั๊กและจุดโหว่ พร้อมระบบถ่วงดุล DNA, Veto และ Triple-Lock Matrix ที่สมบูรณ์แบบที่สุด</p>
+    <p>ประมวลผลสถิติจริงเต็มพิกัด โชว์ Audit Log ตารางที่ 1 ครบถ้วนทุกงวด คำนวณเปอร์เซ็นต์ซื่อสัตย์จาก 12 งวดล่าสุด 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -979,12 +980,52 @@ function analyzeAdaptiveWeightOptimizer(records) {
   return { profiles, adaptiveBonuses };
 }
 
+function analyzePatternEquations(records) {
+  if (!records || records.length < 3) {
+    return { formulaList: [], patternBonuses: Array(10).fill(0) };
+  }
+
+  const formulas = [
+    { name: 'หลักร้อย (T) + หลักร้อย (T-1)', getVal: (r1, r2) => (parseInt(r1.top3[0]) + parseInt(r2.top3[0])) % 10 },
+    { name: 'หลักสิบ (T) + หลักหน่วย (T)', getVal: (r1, r2) => (parseInt(r1.top3[1]) + parseInt(r1.top3[2])) % 10 },
+    { name: 'หลักหน่วยล่าง (T) + หลักสิบล่าง (T-1)', getVal: (r1, r2) => (parseInt(r1.bottom2[1]) + parseInt(r2.bottom2[0])) % 10 },
+    { name: 'ผลต่างหลักร้อย (T) - หลักหน่วย (T)', getVal: (r1, r2) => Math.abs(parseInt(r1.top3[0]) - parseInt(r1.top3[2])) % 10 },
+    { name: 'หลักสิบบน (T) + หลักสิบล่าง (T)', getVal: (r1, r2) => (parseInt(r1.top3[1]) + parseInt(r1.bottom2[0])) % 10 }
+  ];
+
+  let evalResults = formulas.map(f => {
+    let hits = 0, evalCount = records.length - 2;
+    for (let i = 0; i < records.length - 2; i++) {
+      let r0 = records[i];
+      let r1 = records[i + 1];
+      let r2 = records[i + 2];
+      let predictedDigit = f.getVal(r1, r2);
+      let actualDigits = (r0.top3 + r0.bottom2).split('').map(Number);
+      if (actualDigits.includes(predictedDigit)) hits++;
+    }
+    let winRate = evalCount > 0 ? (hits / evalCount) * 100 : 0;
+    let nextDigit = f.getVal(records[0], records[1]);
+    return { name: f.name, hits, total: evalCount, winRate: parseFloat(winRate.toFixed(1)), nextDigit };
+  });
+
+  evalResults.sort((a, b) => b.winRate - a.winRate);
+
+  let patternBonuses = Array(10).fill(0);
+  evalResults.slice(0, 3).forEach((f, idx) => {
+    let weight = idx === 0 ? 10 : (idx === 1 ? 7 : 5);
+    patternBonuses[f.nextDigit] += weight;
+  });
+
+  return { formulaList: evalResults, patternBonuses };
+}
+
 function calculateGeniusDnaScores(records) {
   let gapData = analyzeGapTracker(records);
   let buddyPairs = analyzeCorrelationPairs(records, gapData);
   let momentumData = analyzeTrendMomentum(records);
   let mathData = analyzePureMathematics(records);
   let adaptiveOpt = analyzeAdaptiveWeightOptimizer(records);
+  let patternData = analyzePatternEquations(records);
 
   let scores = Array(10).fill(0);
   let vetoPenalty = Array(10).fill(0);
@@ -1002,8 +1043,8 @@ function calculateGeniusDnaScores(records) {
   });
 
   for (let d = 0; d <= 9; d++) {
-    let scoreShort = (countsShort[d] / 10) * 50;
-    let scoreMed = (countsMed[d] / 30) * 30;
+    let scoreShort = (countsShort[d] / 10) * 45;
+    let scoreMed = (countsMed[d] / 30) * 25;
     let scoreLong = (countsLong[d] / 60) * 20;
     scores[d] += (scoreShort + scoreMed + scoreLong);
   }
@@ -1014,14 +1055,17 @@ function calculateGeniusDnaScores(records) {
   });
 
   for(let d=0; d<=9; d++) {
-    if(gapData[d].currentGap === 0) scores[d] += 20;
-    else if(gapData[d].currentGap === 1) scores[d] += 15;
-    else if(gapData[d].currentGap === 2) scores[d] += 10;
+    if(gapData[d].currentGap === 0) scores[d] += 18;
+    else if(gapData[d].currentGap === 1) scores[d] += 13;
+    else if(gapData[d].currentGap === 2) scores[d] += 8;
   }
 
   momentumData.forEach(m => { scores[m.digit] += (m.rawBonus * 0.10); });
   mathData.forEach(m => { scores[m.digit] += (m.purityScore * 0.10); });
-  for(let d=0; d<=9; d++) { scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; }
+  for(let d=0; d<=9; d++) { 
+    scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; 
+    scores[d] += patternData.patternBonuses[d] * 0.10;
+  }
 
   for(let d=0; d<=9; d++) {
     if(gapData[d].currentGap >= 7) { vetoPenalty[d] += 40; statusText[d] = 'สัญญาณหลอก (ค้างนาน)'; }
@@ -1074,7 +1118,7 @@ function generateCoOccurrenceWinArray(records) {
   return { winDigits, hits, total, winCoverageRate };
 }
 
-/* ★ STRICT 10-PAIRS ENGINE: คำนวณไฮไลต์สีอันดับ (Dynamic Top 1, 2, 3 Score) ★ */
+/* ★ ยกระดับการสกัดเลขเจาะ + คืนค่าไฮไลต์สีครบ 3 อันดับ (ทอง, เงิน, ชมพู) ★ */
 function generateStrict10Pairs(d1, d2, activeRecords, winDigits) {
   const digitFreqMap = Array(10).fill(0);
   activeRecords.forEach(r => {
@@ -1083,13 +1127,18 @@ function generateStrict10Pairs(d1, d2, activeRecords, winDigits) {
   });
 
   let getPairsForMainDigit = (mainDigit, otherDigit) => {
+    // ดึงเฉพาะตัวเลือกที่อยู่ในชุดวิน 6 ตัวก่อนเพื่อความคมสูงสุด
     let candidates = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(x => x !== mainDigit && x !== otherDigit);
-    candidates.sort((a, b) => digitFreqMap[b] - digitFreqMap[a]);
+    candidates.sort((a, b) => {
+      let winA = winDigits.includes(a) ? 100 : 0;
+      let winB = winDigits.includes(b) ? 100 : 0;
+      return (winB + digitFreqMap[b]) - (winA + digitFreqMap[a]);
+    });
     
     let top5Targets = candidates.slice(0, 5);
     let scoredCandidates = top5Targets.map(target => ({
       target: target,
-      score: digitFreqMap[target]
+      score: (winDigits.includes(target) ? 50 : 0) + digitFreqMap[target]
     }));
 
     scoredCandidates.sort((a, b) => b.score - a.score);
@@ -1101,7 +1150,7 @@ function generateStrict10Pairs(d1, d2, activeRecords, winDigits) {
 
     return top5Targets.map(target => {
       let pairStr = `${mainDigit}${target}`;
-      let targetScore = digitFreqMap[target];
+      let targetScore = (winDigits.includes(target) ? 50 : 0) + digitFreqMap[target];
       let highlight = '';
       if (targetScore === top1Score && top1Score > 0) highlight = 'top1';
       else if (targetScore === top2Score && top2Score > 0) highlight = 'top2';
@@ -1199,7 +1248,7 @@ function analyzeSumMatrix(records) {
   return { top2Sum: topTop2[0], top3Sum: topTop3[0] };
 }
 
-/* ★ ROLLING 12-DRAWS PERCENTAGE ENGINE: ประมวลผลย้อนหลัง ล็อกตัวเลขเปอร์เซ็นต์บนการ์ดไว้ที่ 12 งวดล่าสุด ★ */
+/* ★ แก้ไขตารางที่ 1 ให้แสดงผลครบถ้วนทุกงวด (30 งวดเต็ม) + % คิดจาก 12 งวดล่าสุด ★ */
 function analyzeLotteryRecords(records, lotteryType) {
   const activeRecords = records;
   const total = activeRecords.length;
@@ -1218,11 +1267,11 @@ function analyzeLotteryRecords(records, lotteryType) {
   if (!auditPairs.includes(crossPair1)) auditPairs.push(crossPair1);
   if (!auditPairs.includes(crossPair2)) auditPairs.push(crossPair2);
 
-  let digitHits = 0, pairHits = 0;
   const auditLogs = [];
   const chronRecords = [...activeRecords].reverse();
 
-  for (let i = Math.min(1, Math.floor(chronRecords.length / 2)); i < chronRecords.length; i++) {
+  // วิ่งลูปประมวลผลย้อนหลังครบทุกงวดที่มีในสถิติ (ไม่ตัดจบเร็ว)
+  for (let i = 1; i < chronRecords.length; i++) {
     const past = chronRecords.slice(0, i);
     const target = chronRecords[i];
     const pastMaster = calculateGeniusDnaScores(past);
@@ -1235,12 +1284,10 @@ function analyzeLotteryRecords(records, lotteryType) {
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
     let isPairHit = false;
     if (isDigitHit) {
-      digitHits++;
       isPairHit = auditPairs.some(pair => {
         const revPair = pair.split('').reverse().join('');
         return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
       });
-      if (isPairHit) pairHits++;
     }
 
     auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
@@ -1248,7 +1295,7 @@ function analyzeLotteryRecords(records, lotteryType) {
 
   auditLogs.reverse();
 
-  // 🔒 คำนวณตัวเลขเปอร์เซ็นต์ย้อนหลังโดยล็อกเฉพาะ 12 งวดล่าสุด
+  // 🔒 ล็อกสกัดตัวเลข % บนการ์ดจาก 12 งวดล่าสุดเท่านั้น
   const evalCountTotal = auditLogs.length;
   const recentLogs12 = auditLogs.slice(0, Math.min(12, evalCountTotal));
   const recentCount12 = recentLogs12.length;
@@ -1259,7 +1306,9 @@ function analyzeLotteryRecords(records, lotteryType) {
   recentLogs12.forEach(log => {
     if (log.isDigitHit) {
       recentDigitHits12++;
-      if (log.isPairHit) recentPairHits12++;
+      if (log.isPairHit) {
+        recentPairHits12++;
+      }
     }
   });
 
@@ -1270,6 +1319,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   const momentumResults = analyzeTrendMomentum(activeRecords);
   const mathResults = analyzePureMathematics(activeRecords);
   const adaptiveOptResults = analyzeAdaptiveWeightOptimizer(activeRecords);
+  const patternResults = analyzePatternEquations(activeRecords);
   const correlationResults = analyzeCorrelationPairs(activeRecords, gapData);
   const freqResults = analyzeOverallFrequency(activeRecords);
   const posResults = analyzePositionBreakdown(activeRecords);
@@ -1287,9 +1337,9 @@ function analyzeLotteryRecords(records, lotteryType) {
   const nextDrawDate = calculateNextDrawDate(lotteryType, latestRecordedDate);
 
   return {
-    total, digitWinRate: digitWinRate12, pairWinRate: pairWinRate12, digitHits, pairHits, evalCount: evalCountTotal, recentCount12, d1, d2,
+    total, digitWinRate: digitWinRate12, pairWinRate: pairWinRate12, evalCount: evalCountTotal, recentCount12, d1, d2,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
-    freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, adaptiveOptResults, nextDrawDate
+    freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, adaptiveOptResults, patternResults, nextDrawDate
   };
 }
 
@@ -1360,10 +1410,10 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-Production.png`;
+    link.download = `card-${lotteryName}-Full.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    showToast('บันทึกภาพระดับมืออาชีพสำเร็จ!');
+    showToast('บันทึกภาพการ์ดสำเร็จ!');
   });
 }
 
@@ -1394,7 +1444,7 @@ function renderResults(parsedData) {
   container.innerHTML = '';
 
   let categories = Object.keys(parsedData);
-  let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Production Mode)</div>`;
+  let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 14 ตาราง - Production Mode)</div>`;
 
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${categories.length})</button>`;
@@ -1717,7 +1767,7 @@ function renderResults(parsedData) {
         <!-- 🎛️ ตารางที่ 13 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🎛️ ตารางที่ 13: Self-Adaptive Weight Optimizer (จำลอง Backtest 5% Fine-Tuning) (${type})
+            🎛️ ตารางที่ 13: Self-Adaptive Weight Optimizer (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1729,6 +1779,28 @@ function renderResults(parsedData) {
     res.adaptiveOptResults.profiles.forEach((p, idx) => {
       let badge = idx === 1 ? '<span class="badge-hit">เลือกใช้จริง (Top 1)</span>' : '<span style="color:#888">สำรอง</span>';
       html += `<tr><td><b>${p.name}</b></td><td>${p.freqWeight}</td><td>${p.gapWeight}</td><td>${p.mathWeight}</td><td><span style="color:#b8860b;font-weight:700;">${p.backtestHitRate}</span></td><td>${badge}</td></tr>`;
+    });
+
+    html += `
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 🔄 ตารางที่ 14 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🔄 ตารางที่ 14: Dynamic Pattern Equation Engine (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>รูปแบบสมการบวก-ลบตำแหน่ง</th><th>เข้าเป้า (ครั้ง)</th><th>ทั้งหมด</th><th>ความแม่นยำ (%)</th><th>ตัวเลขทำนายงวดถัดไป</th></tr>
+            </thead>
+            <tbody>
+    `;
+
+    res.patternResults.formulaList.forEach((f, idx) => {
+      let badge = idx === 0 ? '<span class="badge-hit">สมการเดินดีสุด (Top 1)</span>' : '<span class="badge-hit">รองรับ</span>';
+      html += `<tr><td><b>${f.name}</b></td><td><span style="color:#2e7d32;font-weight:700;">${f.hits}</span></td><td>${f.total}</td><td><span style="color:#b8860b;font-weight:700;">${f.winRate}%</span></td><td><b style="color:#c62828;font-size:0.6rem;">[ ${f.nextDigit} ]</b> ${badge}</td></tr>`;
     });
 
     html += `
