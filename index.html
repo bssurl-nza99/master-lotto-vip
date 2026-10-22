@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V26 - Isolated Pair Intelligence)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V27 - Dynamic Contextual Pair)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -590,17 +590,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V26)</b>
-        <small>Isolated Pair Intelligence Engine</small>
+        <b>เศรษฐีเงินล้าน Master (V27)</b>
+        <small>Dynamic Contextual Pair Engine</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V26 ISOLATED PAIR INTELLIGENCE</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V27 DYNAMIC CONTEXTUAL PAIR</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ล็อคฐานเลขเด่นเสถียรปลอดภัย 100%, ยกระดับคู่เจาะผ่าน Isolated Pair Intelligence โดยไม่กระทบเลขเด่น, ซื่อสัตย์และไม่เห็นอนาคต</p>
+    <p>ล็อคฐานเลขเด่นเสถียรปลอดภัย 100%, ยกระดับคู่เจาะผ่าน Dynamic Recency Co-Occurrence & Sum Matrix, ซื่อสัตย์และไม่เห็นอนาคต</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -615,7 +615,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V26 Isolated Pair Intelligence & สรุปภาพรวม
+        <span>⚡</span> ประมวลผล V27 Dynamic Pair & สรุปภาพรวม
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1171,21 +1171,29 @@ function analyzeSumMatrix(records) {
   return { top2Sum: parseInt(topTop2[0]), top3Sum: parseInt(topTop3[0]) };
 }
 
-// 🎯 V26 ISOLATED PAIR INTELLIGENCE (ยกระดับความแม่นยำเลขเจาะ โดยล็อคผลลัพธ์เด่นและคงระบบสีทอง/เงิน/นากเดิม 100%)
+// 🎯 V27 DYNAMIC CONTEXTUAL PAIR ENGINE (ยกระดับความแม่นยำเลขเจาะด้วย Recency Weight & Sum Matrix โดยไม่กระทบเลขเด่นและคงระบบสีเดิม 100%)
 function generateWalkForwardPairs(d1, d2, records, auditPairWinRateStr) {
   let digitCounts = Array(10).fill(0);
-  let pairCoOccurMap = {};
+  let recencyPairCoOccur = {};
 
+  // คำนวณแต้มผลรวม 2 ตัวบนยอดฮิตจากประวัติ
+  let sumFreqMap = {};
   records.forEach(r => {
-    let t2 = r.top3.slice(-2);
+    let s2 = (parseInt(r.top3[1] || '0') + parseInt(r.top3[2] || '0')) % 10;
+    sumFreqMap[s2] = (sumFreqMap[s2] || 0) + 1;
+  });
+
+  // Recency-Weighted Co-Occurrence (ให้พิกัดน้ำหนักสูงกับ 5-10 งวดล่าสุด)
+  records.forEach((r, idx) => {
+    let weight = idx < 5 ? 3.0 : (idx < 10 ? 2.0 : 1.0);
+    let top2 = r.top3.slice(-2);
     let b2 = r.bottom2;
-    [t2, b2].forEach(p => {
+    [top2, b2].forEach(p => {
       if(p.length === 2) {
-        digitCounts[parseInt(p[0])] = (digitCounts[parseInt(p[0])] || 0) + 1;
-        digitCounts[parseInt(p[1])] = (digitCounts[parseInt(p[1])] || 0) + 1;
         let x = parseInt(p[0]), y = parseInt(p[1]);
+        digitCounts[x] += weight; digitCounts[y] += weight;
         let key = x < y ? `${x}${y}` : `${y}${x}`;
-        pairCoOccurMap[key] = (pairCoOccurMap[key] || 0) + 1;
+        recencyPairCoOccur[key] = (recencyPairCoOccur[key] || 0) + weight;
       }
     });
   });
@@ -1219,13 +1227,16 @@ function generateWalkForwardPairs(d1, d2, records, auditPairWinRateStr) {
       }
     }
 
-    // Isolated Intelligence Score: คำนวณคะแนนคู่เจาะผ่าน Co-occurrence และ Tail Frequency จริง
+    // Dynamic Contextual Score: ผสาน Recency Co-occurrence และ Sum Matrix Filter
     let evaluated = rawList.map(pairStr => {
       let x = parseInt(pairStr[0]), y = parseInt(pairStr[1]);
       let canonicalKey = x < y ? `${x}${y}` : `${y}${x}`;
-      let coScore = pairCoOccurMap[canonicalKey] || 0;
+      let coScore = recencyPairCoOccur[canonicalKey] || 0;
       let tailScore = digitCounts[y] || 0;
-      let totalPairScore = (coScore * 3.0) + (tailScore * 1.5) + 50.0;
+      let pairSumMod = (x + y) % 10;
+      let sumBonus = (sumFreqMap[pairSumMod] || 0) * 2.0;
+
+      let totalPairScore = (coScore * 4.0) + (tailScore * 2.0) + sumBonus + 50.0;
       return { pair: pairStr, score: totalPairScore };
     });
 
@@ -1256,7 +1267,7 @@ function generateWalkForwardPairs(d1, d2, records, auditPairWinRateStr) {
   return [...group1, ...group2];
 }
 
-// 🎯 V26 REAL AUDIT ENGINE
+// 🎯 V27 REAL AUDIT ENGINE
 function analyzeLotteryRecords(records, lotteryType) {
   const activeRecords = records;
   const total = activeRecords.length;
@@ -1353,7 +1364,7 @@ function analyzeLotteryRecords(records, lotteryType) {
 
   let healthTier = parseFloat(auditDigitWinRate) >= 70 ? 'Tier A (เสถียรสูง)' : (parseFloat(auditDigitWinRate) >= 50 ? 'Tier B (ปานกลาง)' : 'Tier C (ระมัดระวัง)');
   let tierColor = parseFloat(auditDigitWinRate) >= 70 ? '#2e7d32' : '#e65100';
-  let bottleneckNote = 'Isolated Pair Intelligence (V26)';
+  let bottleneckNote = 'Dynamic Contextual Pair Engine (V27)';
 
   const gapData = analyzeGapTracker(activeRecords);
   const momentumResults = analyzeTrendMomentum(activeRecords);
@@ -1375,7 +1386,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   const latestRecordedDate = records[0] ? records[0].date : '';
   const nextDrawDate = calculateNextDrawDate(lotteryType, latestRecordedDate);
 
-  let goodPoints = ['ตาราง 1 (เปอร์เซ็นต์จริง 100%)', 'Isolated Pair Intelligence (ดันเจาะแม่นขึ้นโดยไม่กระทบเด่น)'];
+  let goodPoints = ['ตาราง 1 (เปอร์เซ็นต์จริง 100%)', 'Dynamic Contextual Pair Engine (ดันเจาะแม่นขึ้นโดยไม่กระทบเด่น)'];
   let errorPoints = ['อิงตามสถิติแท้จริง'];
   let fixDirections = ['ตรวจสอบข้อมูลสถิติเพื่อความแม่นยำสูงสุด'];
 
@@ -1446,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลข้อมูลสำเร็จ (V26 Isolated Pair Intelligence)');
+      showToast('ประมวลผลข้อมูลสำเร็จ (V27 Dynamic Contextual Pair)');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1464,7 +1475,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV26.png`;
+    link.download = `card-${lotteryName}-MasterV27.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1553,22 +1564,22 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((totalDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
 
-  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V26 Isolated Pair Intelligence) ===\n`;
+  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V27 Dynamic Contextual Pair) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
   grandReportText += `• เปอร์เซ็นต์เลขเด่นรวม (ล็อกเสถียร): ${grandDigitRate}%\n`;
-  grandReportText += `• เปอร์เซ็นต์เลขเจาะรวม (ยกระดับ Isolated): ${grandPairRate}%\n\n`;
-  grandReportText += `--- 🛡️ ISOLATED PAIR SUMMARY (V26) ---\n`;
+  grandReportText += `• เปอร์เซ็นต์เลขเจาะรวม (ยกระดับ Dynamic): ${grandPairRate}%\n\n`;
+  grandReportText += `--- 🛡️ DYNAMIC CONTEXTUAL PAIR SUMMARY (V27) ---\n`;
   grandReportText += `1. ล็อคเปอร์เซ็นต์เลขเด่นเพื่อป้องกัน Overfit\n`;
-  grandReportText += `2. ยกระดับเลขเจาะด้วย Co-occurrence Intelligence โดยไม่กระทบเลขเด่น\n\n`;
+  grandReportText += `2. ยกระดับเลขเจาะด้วย Recency Weight & Sum Matrix Filter โดยไม่กระทบเลขเด่น\n\n`;
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Isolated Pair Summary (V26)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Dynamic Pair Summary (V27)</div>`;
   html += `
     <div class="summary-table-container">
       <div style="background:#faf5eb; border:1px solid #d4af37; border-radius:8px; padding:8px; margin-bottom:8px;">
-        <div style="font-size:0.52rem;font-weight:800;color:#78590f;margin-bottom:4px;">🛡️ ISOLATED PAIR SUMMARY (V26 - ล็อคเด่น & ดันเจาะ)</div>
+        <div style="font-size:0.52rem;font-weight:800;color:#78590f;margin-bottom:4px;">🛡️ DYNAMIC PAIR SUMMARY (V27 - ล็อคเด่น & ดันเจาะอัจฉริยะ)</div>
         <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
           <b>1. เลขเด่น (ล็อคฐาน):</b> ผลงานจริงเฉลี่ย <b>${grandDigitRate}%</b><br>
-          <b>2. เลขเจาะ (ยกระดับ Isolated):</b> ผลงานจริงเฉลี่ย <b>${grandPairRate}%</b><br>
+          <b>2. เลขเจาะ (ยกระดับ Dynamic):</b> ผลงานจริงเฉลี่ย <b>${grandPairRate}%</b><br>
           <b>3. ความโปร่งใส & ระบบสี:</b> ปลอดภัยจากอนาคต 100% และคงระบบสีคัดเกรดทอง/เงิน/นากเดิมไว้สมบูรณ์
         </div>
       </div>
@@ -1577,8 +1588,8 @@ function renderResults(parsedData) {
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;">
           🌐 ภาพรวมระบบ (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
         </div>
-        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวมมหภาค V26 สำเร็จ!')">
-          <span>📋</span> คัดลอกรายงานภาพรวมรวบรวมทุกตาราง + Isolated Summary (V26)
+        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวมมหภาค V27 สำเร็จ!')">
+          <span>📋</span> คัดลอกรายงานภาพรวมรวบรวมทุกตาราง + Dynamic Summary (V27)
         </button>
       </div>
       <table class="audit-table">
@@ -1622,12 +1633,12 @@ function renderResults(parsedData) {
 
   html += `
         <tr style="background:#faf5eb; font-weight:800;">
-          <td>🌐 Global Grand System (V26)</td>
+          <td>🌐 Global Grand System (V27)</td>
           <td>${grandEvalCount} งวด</td>
           <td><span style="color:#2e7d32;">${grandDigitRate}%</span></td>
           <td><span style="color:#b8860b;">${grandPairRate}%</span></td>
-          <td><span style="color:#2e7d32;">Isolated Tier</span></td>
-          <td colspan="3" style="text-align:left; font-size:0.42rem; color:#78590f;">🛡️ ระบบ V26 ล็อคฐานเด่นและยกระดับคู่เจาะอย่างซื่อสัตย์ 100%</td>
+          <td><span style="color:#2e7d32;">Dynamic Tier</span></td>
+          <td colspan="3" style="text-align:left; font-size:0.42rem; color:#78590f;">🛡️ ระบบ V27 ล็อคฐานเด่นและยกระดับคู่เจาะผ่าน Recency & Sum Matrix 100%</td>
           <td>-</td>
         </tr>
         </tbody>
@@ -1635,7 +1646,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (All-Table Diagnostic Engine V26)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (All-Table Diagnostic Engine V27)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1774,7 +1785,7 @@ function renderResults(parsedData) {
         <!-- 🤝 ตารางที่ 4 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs V26 (${type})
+            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs V27 (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1784,7 +1795,7 @@ function renderResults(parsedData) {
     `;
 
     res.correlationResults.slice(0, 10).forEach(item => {
-      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">Isolated Rate</span></td></tr>`;
+      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">Dynamic Rate</span></td></tr>`;
     });
 
     html += `
@@ -1992,7 +2003,7 @@ function renderResults(parsedData) {
               <tr>
                 <td><b>อัตราคู่เจาะบอด (T.4 Miss Rate)</b></td>
                 <td><span style="color:#2e7d32; font-weight:700;">${res.pairMissRate}%</span></td>
-                <td>✅ ยกระดับด้วย Isolated Co-occurrence</td>
+                <td>✅ ยกระดับด้วย Dynamic Contextual Co-occurrence</td>
               </tr>
               <tr>
                 <td><b>อัตรากับดักเลขค้างนาน (T.7 Gap Trap)</b></td>
@@ -2035,7 +2046,7 @@ function renderResults(parsedData) {
               <tr>
                 <td><b>5 งวดล่าสุด (Short-Term Risk)</b></td>
                 <td><span style="color:#2e7d32; font-weight:700;">หลุดสูงสุด ${res.currentLossStreak} งวด</span></td>
-                <td><b>✅ สภาพตลาดปกติ (Isolated Pair Active)</b></td>
+                <td><b>✅ สภาพตลาดปกติ (Dynamic Pair Active)</b></td>
               </tr>
             </tbody>
           </table>
@@ -2103,7 +2114,7 @@ function renderResults(parsedData) {
         <!-- 🛡️ ตารางที่ 20 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางที่ 20: Predictive Honesty & Generalization Audit (V26) (${type})
+            🛡️ ตารางที่ 20: Predictive Honesty & Generalization Audit (V27) (${type})
           </div>
           <table class="audit-table">
             <thead>
