@@ -1223,7 +1223,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   if (!auditPairs.includes(crossPair1)) auditPairs.push(crossPair1);
   if (!auditPairs.includes(crossPair2)) auditPairs.push(crossPair2);
 
-  // เงื่อนไขหลัก: วัดผลเฉพาะ 12 งวดล่าสุดจากปัจจุบันไปหาอดีต
+  // 1. Card Evaluation (Strictly 12 most recent rounds from current to past)
   const cardEvalRecords = activeRecords.slice(0, 12);
   let cardDigitHits = 0, cardPairValidRounds = 0, cardPairHits = 0;
   const chronCardRecords = [...cardEvalRecords].reverse();
@@ -1241,7 +1241,6 @@ function analyzeLotteryRecords(records, lotteryType) {
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
     if (isDigitHit) {
       cardDigitHits++;
-      // เงื่อนไขเลขเจาะ: นับรอบเปอร์เซ็นต์ "เฉพาะรอบที่เลขเด่นเข้าเท่านั้น"
       cardPairValidRounds++;
       const isPairHit = auditPairs.some(pair => {
         const revPair = pair.split('').reverse().join('');
@@ -1255,7 +1254,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   const cardDigitWinRate = cardEvalCount > 0 ? ((cardDigitHits / cardEvalCount) * 100).toFixed(2) : '0.00';
   const cardPairWinRate = cardPairValidRounds > 0 ? ((cardPairHits / cardPairValidRounds) * 100).toFixed(2) : '0.00';
 
-  // ตรวจสอบ Audit Log สำหรับตารางที่ 1 (ใช้เงื่อนไขเดียวกัน 12 งวดล่าสุด)
+  // 2. Full Audit Log Evaluation (Table 1 - all available backtest records)
   let digitHits = 0, pairValidRounds = 0, pairHits = 0;
   const auditLogs = [];
   const chronRecords = [...activeRecords].reverse();
@@ -1299,8 +1298,8 @@ function analyzeLotteryRecords(records, lotteryType) {
   const sumResults = analyzeSumMatrix(activeRecords);
 
   const evalCount = auditLogs.length;
-  const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
-  const pairWinRate = pairValidRounds > 0 ? ((pairHits / pairValidRounds) * 100).toFixed(2) : '0.00';
+  const auditDigitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
+  const auditPairWinRate = pairValidRounds > 0 ? ((pairHits / pairValidRounds) * 100).toFixed(2) : '0.00';
 
   const formattedPairs = structuredPairs.map(pItem => ({
     pair: pItem.pair,
@@ -1312,7 +1311,10 @@ function analyzeLotteryRecords(records, lotteryType) {
   const nextDrawDate = calculateNextDrawDate(lotteryType, latestRecordedDate);
 
   return {
-    total, digitWinRate: cardDigitWinRate, pairWinRate: cardPairWinRate, digitHits, pairHits, evalCount, d1, d2,
+    total, 
+    cardDigitWinRate, cardPairWinRate,
+    auditDigitWinRate, auditPairWinRate,
+    digitHits, pairHits, pairValidRounds, evalCount, d1, d2,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
     freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, adaptiveOptResults, nextDrawDate
   };
@@ -1459,11 +1461,11 @@ function renderResults(parsedData) {
             <div class="hero-digits-wrap">
               <div class="digit-box-item digit-gold">
                 <div class="digit-circle">${res.d1}</div>
-                <span class="digit-rate">${res.digitWinRate}%</span>
+                <span class="digit-rate">${res.cardDigitWinRate}%</span>
               </div>
               <div class="digit-box-item digit-silver">
                 <div class="digit-circle">${res.d2}</div>
-                <span class="digit-rate">${res.digitWinRate}%</span>
+                <span class="digit-rate">${res.cardDigitWinRate}%</span>
               </div>
             </div>
 
@@ -1493,7 +1495,7 @@ function renderResults(parsedData) {
         <!-- 📋 ตารางที่ 1 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-            📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)
+            📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.auditDigitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.pairValidRounds} (${res.auditPairWinRate}%)
           </div>
           <table class="audit-table">
             <thead>
