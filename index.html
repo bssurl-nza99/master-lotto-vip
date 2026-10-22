@@ -255,6 +255,52 @@ body {
   padding-left: 6px;
 }
 
+/* Quick Selector Navigation Bar */
+.lottery-nav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 2px 10px 2px;
+  margin-bottom: 12px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lottery-nav-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.lottery-nav-bar::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+.nav-tab-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--line-gold);
+  border-radius: 8px;
+  background: #fff;
+  color: #78590f;
+  font-size: 0.48rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+  flex-shrink: 0;
+}
+
+.nav-tab-btn.active {
+  background: linear-gradient(135deg, #c49828, #8c6511);
+  color: #fff;
+  border-color: #8c6511;
+  box-shadow: 0 3px 8px rgba(140, 101, 17, 0.3);
+}
+
+.lottery-group-panel {
+  display: block;
+}
+
 .prediction-card-wrapper {
   position: relative;
   margin-bottom: 16px;
@@ -686,6 +732,13 @@ function getFlag(typeName) {
 
 function formatDisplayName(rawName) {
   let name = rawName.trim();
+
+  // 1. ประชาชนลาว -> ประชาชน ล.
+  if (name === 'ประชาชนลาว' || name.includes('ประชาชนลาว')) {
+    return 'ประชาชน ล.';
+  }
+
+  // 2. ลาวอื่นๆ และ ฮานอยคงเดิม 100%
   if (name.startsWith('ลาว')) {
     let sub = name.replace('ลาว', '').trim();
     if (sub.toLowerCase() === 'vip') return 'ล. V';
@@ -698,15 +751,48 @@ function formatDisplayName(rawName) {
     if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
     return sub ? `ฮ.น ${sub}` : 'ฮ.น';
   }
+
+  // 3. ดาวโจนส์สตาร์ -> ดาวโจนส์ สตาร์
+  if (name.includes('ดาวโจนส์สตาร์') || name.includes('ดาวโจนส์ Star') || name.includes('ดาวโจนส์Star') || name.includes('ดาวโจนส์ สตาร์')) {
+    return 'ดาวโจนส์ สตาร์';
+  }
+
   if (name.includes('ดาวโจนส์')) {
     if (name.includes('VIP')) return name.replace(/VIP/gi, 'V');
-    if (name.includes('สตาร์')) return name.replace(/สตาร์/gi, 'Star');
-    if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';
+    if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('สตาร์') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';
     return name;
   }
+
+  // แก้ไขการสะกดผิดคำ OCR พื้นฐาน
   name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();
-  if (name.includes('VIP')) return name.replace(/VIP/gi, 'V').trim();
-  else if (!name.includes('ปกติ') && !name.includes('V')) return name.replace('หุ้น', '').trim();
+
+  // หากเป็น VIP หรือ V ให้คงไว้ ไม่แตะต้อง
+  if (name.includes('VIP') || name.includes(' V')) {
+    return name.replace(/VIP/gi, 'V').trim();
+  }
+
+  // 4. จัดการหุ้นไทย
+  if (name.includes('ไทย') || name.includes('หุ้นไทย')) {
+    let timePart = name.replace('หุ้นไทย', '').replace('ไทย', '').trim();
+    if (timePart) return `หุ้นไทย ${timePart}`;
+    return 'หุ้นไทย ปกติ';
+  }
+
+  // 5. หุ้นที่มีช่วงเวลา เช้า / เที่ยง / บ่าย / เย็น (นิเคอิ, จีน, ฮั่งเส็ง)
+  const timeKeywords = ['เช้า', 'เที่ยง', 'บ่าย', 'เย็น'];
+  let matchedTime = timeKeywords.find(t => name.includes(t));
+
+  if (matchedTime) {
+    let baseName = name.replace(matchedTime, '').replace('หุ้น', '').replace('ปกติ', '').trim();
+    return `${baseName} ปกติ ${matchedTime}`;
+  }
+
+  // 6. หุ้นเดี่ยวปกติทั่วไป (ไต้หวัน, เกาหลี, สิงคโปร์, รัสเซีย, เยอรมัน, อังกฤษ ฯลฯ)
+  if (!name.includes('ปกติ')) {
+    let cleanName = name.replace('หุ้น', '').trim();
+    return `${cleanName} ปกติ`;
+  }
+
   return name;
 }
 
@@ -898,7 +984,6 @@ function analyzeAdaptiveWeightOptimizer(records) {
     { name: 'Profile Gamma (Balanced Pure Math)', freqWeight: 0.30, gapWeight: 0.30, mathWeight: 0.40, backtestHitRate: '79.8%' }
   ];
   let adaptiveBonuses = Array(10).fill(5);
-  // ใช้ระบบถ่วงน้ำหนักข้อมูลล่าสุดเพื่อเพิ่มความแม่นยำระดับโปรดักชั่น
   records.slice(0, Math.min(10, records.length)).forEach((r, idx) => {
     let weight = idx < 5 ? 2.0 : 1.0;
     (r.top3 + r.bottom2).split('').forEach(d => {
@@ -1273,11 +1358,50 @@ function captureCard(cardId, lotteryName) {
   });
 }
 
+function switchLotteryTab(targetGroup) {
+  const allPanels = document.querySelectorAll('.lottery-group-panel');
+  const allTabs = document.querySelectorAll('.nav-tab-btn');
+
+  allTabs.forEach(tab => tab.classList.remove('active'));
+  
+  const selectedTab = document.querySelector(`.nav-tab-btn[data-target="${targetGroup}"]`);
+  if (selectedTab) selectedTab.classList.add('active');
+
+  if (targetGroup === 'ALL') {
+    allPanels.forEach(panel => panel.style.display = 'block');
+  } else {
+    allPanels.forEach(panel => {
+      if (panel.id === `group_${targetGroup}`) {
+        panel.style.display = 'block';
+      } else {
+        panel.style.display = 'none';
+      }
+    });
+  }
+
+  const container = document.getElementById('resultOutput');
+  if (container) {
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
+  let categories = Object.keys(parsedData);
   let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Production Mode)</div>`;
+
+  // สร้างแถบปุ่มเลือกประเภทหวย (Quick Selector Navigation Bar)
+  html += `<div class="lottery-nav-bar">`;
+  html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${categories.length})</button>`;
+  
+  categories.forEach((type, idx) => {
+    const flag = getFlag(type);
+    html += `<button class="nav-tab-btn" data-target="${idx}" onclick="switchLotteryTab('${idx}')">${flag} ${type}</button>`;
+  });
+  html += `</div>`;
+
   let cardIndex = 0;
 
   for (const [type, rows] of Object.entries(parsedData)) {
@@ -1285,66 +1409,69 @@ function renderResults(parsedData) {
     if (!res) continue;
 
     const flag = getFlag(type);
-    const cardUniqueId = `predictionCard_${cardIndex++}`;
+    const cardUniqueId = `predictionCard_${cardIndex}`;
+    const groupUniqueId = `group_${cardIndex}`;
+    cardIndex++;
 
     html += `
-      <div class="prediction-card-wrapper">
-        <div class="prediction-card" id="${cardUniqueId}">
-          <div class="card-brand-tag">
-            <span>✦</span> เศรษฐีเงินล้าน <span>✦</span>
-          </div>
-          <div class="card-top-bar">
-            <span class="card-date">วันที่: ${res.nextDrawDate}</span>
-            <div class="card-title-group">
-              <span class="card-flag">${flag}</span>
-              <span class="card-lottery-name">${type}</span>
+      <div class="lottery-group-panel" id="${groupUniqueId}">
+        <div class="prediction-card-wrapper">
+          <div class="prediction-card" id="${cardUniqueId}">
+            <div class="card-brand-tag">
+              <span>✦</span> เศรษฐีเงินล้าน <span>✦</span>
             </div>
-          </div>
+            <div class="card-top-bar">
+              <span class="card-date">วันที่: ${res.nextDrawDate}</span>
+              <div class="card-title-group">
+                <span class="card-flag">${flag}</span>
+                <span class="card-lottery-name">${type}</span>
+              </div>
+            </div>
 
-          <div class="hero-digits-wrap">
-            <div class="digit-box-item digit-gold">
-              <div class="digit-circle">${res.d1}</div>
-              <span class="digit-rate">${res.digitWinRate}%</span>
+            <div class="hero-digits-wrap">
+              <div class="digit-box-item digit-gold">
+                <div class="digit-circle">${res.d1}</div>
+                <span class="digit-rate">${res.digitWinRate}%</span>
+              </div>
+              <div class="digit-box-item digit-silver">
+                <div class="digit-circle">${res.d2}</div>
+                <span class="digit-rate">${res.digitWinRate}%</span>
+              </div>
             </div>
-            <div class="digit-box-item digit-silver">
-              <div class="digit-circle">${res.d2}</div>
-              <span class="digit-rate">${res.digitWinRate}%</span>
-            </div>
-          </div>
 
-          <div class="pairs-grid-box">
+            <div class="pairs-grid-box">
     `;
 
     res.formattedPairs.forEach(p => {
       html += `
-            <div class="pair-badge ${p.highlightClass}">
-              <span class="pair-num">${p.pair}</span>
-              <span class="pair-pct">${p.pct}</span>
-            </div>
+              <div class="pair-badge ${p.highlightClass}">
+                <span class="pair-num">${p.pair}</span>
+                <span class="pair-pct">${p.pct}</span>
+              </div>
       `;
     });
 
     html += `
+            </div>
+          </div>
+
+          <div class="card-action-bar">
+            <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
+              <span>📷</span> บันทึกภาพการ์ด (ระดับมืออาชีพ)
+            </button>
           </div>
         </div>
 
-        <div class="card-action-bar">
-          <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-            <span>📷</span> บันทึกภาพการ์ด (ระดับมืออาชีพ)
-          </button>
-        </div>
-      </div>
-
-      <!-- 📋 ตารางที่ 1 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)
-        </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>เลขเด่น</th><th>ผลเลขเด่น</th><th>ผลเลขเจาะ</th></tr>
-          </thead>
-          <tbody>
+        <!-- 📋 ตารางที่ 1 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
+            📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>เลขเด่น</th><th>ผลเลขเด่น</th><th>ผลเลขเจาะ</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.auditLogs.forEach(log => {
@@ -1352,20 +1479,20 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 🧮 ตารางที่ 2 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          🧮 ตารางที่ 2: ความถี่รวมตัวเลข 0–9 (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ตัวเลข</th><th>มา (ครั้ง)</th><th>เข้าติดต่อสูงสุด</th><th>หลุดติดต่อสูงสุด</th><th>สถานะล่าสุด</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 🧮 ตารางที่ 2 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
+            🧮 ตารางที่ 2: ความถี่รวมตัวเลข 0–9 (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>มา (ครั้ง)</th><th>เข้าติดต่อสูงสุด</th><th>หลุดติดต่อสูงสุด</th><th>สถานะล่าสุด</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.freqResults.forEach(f => {
@@ -1373,46 +1500,46 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 📊 ตารางที่ 3 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          📊 ตารางที่ 3: สถิติแยกรายหลัก 0–9 (ร้อย, สิบ, หน่วย) (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ตัวเลข</th><th>ตำแหน่ง</th><th>มา (ครั้ง)</th><th>สถานะความฟิต</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 📊 ตารางที่ 3 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
+            📊 ตารางที่ 3: สถิติแยกรายหลัก 0–9 (ร้อย, สิบ, หน่วย) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>ตำแหน่ง</th><th>มา (ครั้ง)</th><th>สถานะความฟิต</th></tr>
+            </thead>
+            <tbody>
     `;
 
     for(let d=0; d<=9; d++) {
       let p = res.posResults[d];
       html += `
-        <tr><td rowspan="3"><b style="color:#b8860b">${d}</b></td><td>หลักร้อย</td><td><span style="color:#2e7d32;font-weight:700;">${p.hundreds.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
-        <tr><td>หลักสิบ</td><td><span style="color:#2e7d32;font-weight:700;">${p.tens.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
-        <tr><td>หลักหน่วย</td><td><span style="color:#2e7d32;font-weight:700;">${p.units.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
+          <tr><td rowspan="3"><b style="color:#b8860b">${d}</b></td><td>หลักร้อย</td><td><span style="color:#2e7d32;font-weight:700;">${p.hundreds.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
+          <tr><td>หลักสิบ</td><td><span style="color:#2e7d32;font-weight:700;">${p.tens.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
+          <tr><td>หลักหน่วย</td><td><span style="color:#2e7d32;font-weight:700;">${p.units.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
       `;
     }
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 🤝 ตารางที่ 4 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🤝 ตารางที่ 4: คู่สัมพันธ์ทดแทนกัน Gap-Boosted Buddy Pairs (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>คู่สัมพันธ์</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 🤝 ตารางที่ 4 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🤝 ตารางที่ 4: คู่สัมพันธ์ทดแทนกัน Gap-Boosted Buddy Pairs (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>คู่สัมพันธ์</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.correlationResults.forEach(item => {
@@ -1420,53 +1547,53 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 📈 ตารางที่ 5 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          📈 ตารางที่ 5: พฤติกรรม คู่-คี่ & สูง-ต่ำ (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ประเภทพฤติกรรม</th><th>สถิติ (%)</th><th>แนวโน้ม</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><b>เลขคู่ / เลขคี่ (2 ตัวบน)</b></td><td>คู่ <span style="color:#2e7d32">${res.oehlResults.evenRate}%</span> | คี่ <span style="color:#c62828">${res.oehlResults.oddRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
-            <tr><td><b>สูง / ต่ำ ( >= 50 )</b></td><td>สูง <span style="color:#2e7d32">${res.oehlResults.highRate}%</span> | ต่ำ <span style="color:#c62828">${res.oehlResults.lowRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- 🧩 ตารางที่ 6 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🧩 ตารางที่ 6: กลุ่มพิเศษ เบิ้ล / หาม / เลขพี่น้อง (${type})
+        <!-- 📈 ตารางที่ 5 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📈 ตารางที่ 5: พฤติกรรม คู่-คี่ & สูง-ต่ำ (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ประเภทพฤติกรรม</th><th>สถิติ (%)</th><th>แนวโน้ม</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>เลขคู่ / เลขคี่ (2 ตัวบน)</b></td><td>คู่ <span style="color:#2e7d32">${res.oehlResults.evenRate}%</span> | คี่ <span style="color:#c62828">${res.oehlResults.oddRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
+              <tr><td><b>สูง / ต่ำ ( >= 50 )</b></td><td>สูง <span style="color:#2e7d32">${res.oehlResults.highRate}%</span> | ต่ำ <span style="color:#c62828">${res.oehlResults.lowRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ประเภทกลุ่มพิเศษ</th><th>ความถี่ (%)</th><th>สถานะ</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><b>เลขเบิ้ล (00-99)</b></td><td><span style="color:#b8860b">${res.specialResults.doubleRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
-            <tr><td><b>เลขหาม (หน้า-หลังเหมือน)</b></td><td><span style="color:#b8860b">${res.specialResults.harmRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
-            <tr><td><b>เลขพี่น้อง / เลขเรียง</b></td><td><span style="color:#2e7d32">${res.specialResults.sisterRate}%</span></td><td><span class="badge-hit">เด่นชัด</span></td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- ⏳ ตารางที่ 7 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          ⏳ ตารางที่ 7: ระยะเว้นช่วง / เลขดับ-เลขค้าง (Gap & Omission) (${type})
+        <!-- 🧩 ตารางที่ 6 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🧩 ตารางที่ 6: กลุ่มพิเศษ เบิ้ล / หาม / เลขพี่น้อง (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ประเภทกลุ่มพิเศษ</th><th>ความถี่ (%)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>เลขเบิ้ล (00-99)</b></td><td><span style="color:#b8860b">${res.specialResults.doubleRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
+              <tr><td><b>เลขหาม (หน้า-หลังเหมือน)</b></td><td><span style="color:#b8860b">${res.specialResults.harmRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
+              <tr><td><b>เลขพี่น้อง / เลขเรียง</b></td><td><span style="color:#2e7d32">${res.specialResults.sisterRate}%</span></td><td><span class="badge-hit">เด่นชัด</span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ตัวเลข</th><th>ระยะเว้นช่วง (Gap)</th><th>สถานะความห่าง</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- ⏳ ตารางที่ 7 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            ⏳ ตารางที่ 7: ระยะเว้นช่วง / เลขดับ-เลขค้าง (Gap & Omission) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>ระยะเว้นช่วง (Gap)</th><th>สถานะความห่าง</th></tr>
+            </thead>
+            <tbody>
     `;
 
     for(let d=0; d<=9; d++) {
@@ -1476,57 +1603,57 @@ function renderResults(parsedData) {
     }
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 🔢 ตารางที่ 8 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต (Sum Digit Matrix) (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>หมวดผลรวม</th><th>แต้มยอดฮิตสูงสุด</th><th>สถานะการกรอง</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><b>ผลรวม 2 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top2Sum}</span></td><td><span class="badge-hit">ใช้งานจริง</span></td></tr>
-            <tr><td><b>ผลรวม 3 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top3Sum}</span></td><td><span class="badge-hit">ใช้งานจริง</span></td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- 🎯 ตารางที่ 9 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🎯 ตารางที่ 9: ชุดเลขวิน 6 ตัวจับคู่จริง Co-Occurrence (${type})
+        <!-- 🔢 ตารางที่ 8 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต (Sum Digit Matrix) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>หมวดผลรวม</th><th>แต้มยอดฮิตสูงสุด</th><th>สถานะการกรอง</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>ผลรวม 2 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top2Sum}</span></td><td><span class="badge-hit">ใช้งานจริง</span></td></tr>
+              <tr><td><b>ผลรวม 3 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top3Sum}</span></td><td><span class="badge-hit">ใช้งานจริง</span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ชุดเลขวิน 6 ตัว</th><th>เข้าเป้า</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><b style="color:#b8860b;font-size:0.65rem;letter-spacing:1px;">[ ${res.winArrayData.winDigits.join(' - ')} ]</b></td>
-              <td><span style="color:#2e7d32;font-weight:700;">${res.winArrayData.hits}</span></td>
-              <td>${res.winArrayData.total}</td>
-              <td><span style="color:#b8860b;font-weight:700;">${res.winArrayData.winCoverageRate}%</span></td>
-              <td><span class="badge-hit">ประสานพลังคู่เจาะ</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- 🧬 ตารางที่ 10 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🧬 ตารางที่ 10: ดัชนี DNA ขัดแย้ง & หักล้างสัญญาณหลอก (${type})
+        <!-- 🎯 ตารางที่ 9 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🎯 ตารางที่ 9: ชุดเลขวิน 6 ตัวจับคู่จริง Co-Occurrence (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ชุดเลขวิน 6 ตัว</th><th>เข้าเป้า</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b style="color:#b8860b;font-size:0.65rem;letter-spacing:1px;">[ ${res.winArrayData.winDigits.join(' - ')} ]</b></td>
+                <td><span style="color:#2e7d32;font-weight:700;">${res.winArrayData.hits}</span></td>
+                <td>${res.winArrayData.total}</td>
+                <td><span style="color:#b8860b;font-weight:700;">${res.winArrayData.winCoverageRate}%</span></td>
+                <td><span class="badge-hit">ประสานพลังคู่เจาะ</span></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>อันดับ</th><th>ตัวเลข</th><th>คะแนน DNA (0-100)</th><th>Veto</th><th>Gap</th><th>สถานะการพิสูจน์</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 🧬 ตารางที่ 10 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🧬 ตารางที่ 10: ดัชนี DNA ขัดแย้ง & หักล้างสัญญาณหลอก (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>อันดับ</th><th>ตัวเลข</th><th>คะแนน DNA (0-100)</th><th>Veto</th><th>Gap</th><th>สถานะการพิสูจน์</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.masterScores.forEach((item, idx) => {
@@ -1538,20 +1665,20 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 📈 ตารางที่ 11 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          📈 ตารางที่ 11: วิเคราะห์กระแสความแรง & ความเสถียร 0–9 (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ตัวเลข</th><th>ระยะสั้น (3-5)</th><th>ระยะกลาง (6-10)</th><th>ระยะยาว (11-20)</th><th>ความเสถียร</th><th>แนวโน้ม</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 📈 ตารางที่ 11 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📈 ตารางที่ 11: วิเคราะห์กระแสความแรง & ความเสถียร 0–9 (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>ระยะสั้น (3-5)</th><th>ระยะกลาง (6-10)</th><th>ระยะยาว (11-20)</th><th>ความเสถียร</th><th>แนวโน้ม</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.momentumResults.forEach(m => {
@@ -1559,20 +1686,20 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 📐 ตารางที่ 12 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          📐 ตารางที่ 12: ดัชนีคณิตศาสตร์บริสุทธิ์ 0–9 (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>ตัวเลข</th><th>Markov Chain</th><th>Poisson Dist.</th><th>Modulo Pattern</th><th>คะแนนความบริสุทธิ์</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 📐 ตารางที่ 12 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📐 ตารางที่ 12: ดัชนีคณิตศาสตร์บริสุทธิ์ 0–9 (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>Markov Chain</th><th>Poisson Dist.</th><th>Modulo Pattern</th><th>คะแนนความบริสุทธิ์</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.mathResults.forEach(m => {
@@ -1580,20 +1707,20 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 🎛️ ตารางที่ 13 -->
-      <div class="summary-table-container">
-        <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🎛️ ตารางที่ 13: Self-Adaptive Weight Optimizer (จำลอง Backtest 5% Fine-Tuning) (${type})
+            </tbody>
+          </table>
         </div>
-        <table class="audit-table">
-          <thead>
-            <tr><th>รูปแบบพารามิเตอร์ (Profile)</th><th>น้ำหนัก (Freq)</th><th>น้ำหนัก (Gap)</th><th>น้ำหนัก (Math)</th><th>ความแม่นยำย้อนหลัง</th><th>สถานะการจูน</th></tr>
-          </thead>
-          <tbody>
+
+        <!-- 🎛️ ตารางที่ 13 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🎛️ ตารางที่ 13: Self-Adaptive Weight Optimizer (จำลอง Backtest 5% Fine-Tuning) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>รูปแบบพารามิเตอร์ (Profile)</th><th>น้ำหนัก (Freq)</th><th>น้ำหนัก (Gap)</th><th>น้ำหนัก (Math)</th><th>ความแม่นยำย้อนหลัง</th><th>สถานะการจูน</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.adaptiveOptResults.profiles.forEach((p, idx) => {
@@ -1602,8 +1729,9 @@ function renderResults(parsedData) {
     });
 
     html += `
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   }
@@ -1614,4 +1742,3 @@ function renderResults(parsedData) {
 </script>
 </body>
 </html>
-
