@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Production Master Engine (V1 Pro Final)</title>
+<title>เศรษฐีเงินล้าน · Production Master Engine (V1 Pro Final Fixed)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -359,11 +359,15 @@ body {
   line-height: 1;
 }
 
+/* ★ คืนค่าเส้นขีดฆ่าชื่อหวยกลับมา 100% ★ */
 .card-lottery-name {
   font-size: 0.85rem;
   font-weight: 800;
   color: #322c23;
   letter-spacing: -0.2px;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(30, 30, 30, 0.85);
 }
 
 .hero-digits-wrap {
@@ -429,6 +433,7 @@ body {
   transition: all 0.2s ease;
 }
 
+/* ★ คืนค่าสีอันดับ 1, 2, 3 ชัดเจน ★ */
 .pair-badge.highlight-top1 {
   background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98));
   border: 1.5px solid #d4af37;
@@ -439,6 +444,12 @@ body {
   background: linear-gradient(135deg, rgba(245,247,250,0.98), rgba(230,235,240,0.98));
   border: 1.5px solid #a8b2bc;
   box-shadow: 0 2.5px 7px rgba(168, 178, 188, 0.2);
+}
+
+.pair-badge.highlight-top3 {
+  background: linear-gradient(135deg, rgba(253,242,242,0.98), rgba(248,230,230,0.98));
+  border: 1.5px solid #b76e79;
+  box-shadow: 0 2.5px 7px rgba(183, 110, 121, 0.2);
 }
 
 .pair-num {
@@ -452,6 +463,7 @@ body {
 
 .highlight-top1 .pair-num { color: #8a650d; }
 .highlight-top2 .pair-num { color: #4a525d; }
+.highlight-top3 .pair-num { color: #7d3f48; }
 
 .pair-pct {
   font-size: 0.35rem;
@@ -1064,67 +1076,39 @@ function generateCoOccurrenceWinArray(records) {
   return { winDigits, hits, total, winCoverageRate };
 }
 
-/* ★ V1 Pro Final: Strict 10-Pair Sourcing (5 คู่ของเด่นที่ 1 + 5 คู่ของเด่นที่ 2 | ตัดเบิ้ล | ไม่เอาเด่นวินกันเอง | ไม่เอาตัวกลับซ้ำ) */
+/* ★ FIX RENDER ENGINE: บังคับเลขเด่นอยู่หลักสิบ 100% | เด่น 1 (5 คู่) + เด่น 2 (5 คู่) รวม 10 คู่เรียงจากน้อยไปมาก ★ */
 function generateStrict10Pairs(d1, d2, activeRecords, winDigits) {
-  const pairFreqMap = {};
+  const digitFreqMap = Array(10).fill(0);
   activeRecords.forEach(r => {
-    const top2 = r.top3.slice(-2), bot2 = r.bottom2;
-    [top2, bot2].forEach(p => {
-      if (p.length === 2) {
-        // ตัดเลขเบิ้ลทิ้งทันที
-        if (p[0] === p[1]) return;
-        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
-        let rev = p.split('').reverse().join('');
-        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
-      }
-    });
+    let digits = (r.top3 + r.bottom2).split('');
+    digits.forEach(d => digitFreqMap[parseInt(d)]++);
   });
 
-  let getUniquePairsForMainDigit = (mainDigit, excludedDigits, countNeeded) => {
-    let cands = [];
-    // ค้นหาคู่ประกบจาก winDigits โดยห้ามซ้ำกับ excludedDigits และห้ามเป็นเลขเบิ้ล
-    winDigits.forEach(targetDigit => {
-      if (targetDigit === mainDigit || excludedDigits.includes(targetDigit)) return;
-      let pStr = `${mainDigit}${targetDigit}`;
-      let revStr = `${targetDigit}${mainDigit}`;
-      let score = Math.max(pairFreqMap[pStr] || 0, pairFreqMap[revStr] || 0);
-      cands.push({ pair: pStr, score: score });
+  let getPairsForMainDigit = (mainDigit, otherDigit) => {
+    // ดึงตัวจับคู่ที่ไม่ใช่เลขเบิ้ล และไม่ใช่เลขเด่นอีกตัว
+    let candidates = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(x => x !== mainDigit && x !== otherDigit);
+    
+    // เรียงคะแนนความถี่ตัวจับคู่
+    candidates.sort((a, b) => digitFreqMap[b] - digitFreqMap[a]);
+    
+    // เลือก Top 5
+    let top5Targets = candidates.slice(0, 5);
+    // เรียงตัวจับคู่จากน้อยไปมาก
+    top5Targets.sort((a, b) => a - b);
+
+    // สร้างคู่โดยบังคับ [เลขเด่น][ตัวจับคู่] เสมอ
+    return top5Targets.map((target, idx) => {
+      let pairStr = `${mainDigit}${target}`;
+      let highlight = idx === 0 ? 'top1' : (idx === 1 ? 'top2' : (idx === 2 ? 'top3' : ''));
+      return { pair: pairStr, highlight: highlight };
     });
-
-    // เรียงตามความถี่สูงสุด
-    cands.sort((a, b) => b.score - a.score);
-
-    let selected = [];
-    let usedSignatures = new Set();
-
-    for (let c of cands) {
-      if (selected.length >= countNeeded) break;
-      let p = c.pair;
-      let pRev = p.split('').reverse().join('');
-      let sig = parseInt(p) < parseInt(pRev) ? p : pRev; // ป้องกันตัวกลับซ้ำ
-
-      if (!usedSignatures.has(sig)) {
-        usedSignatures.add(sig);
-        selected.push(p);
-      }
-    }
-    return selected;
   };
 
-  // เด่นตัวที่ 1: หา 5 คู่ (ห้ามมี d2 เพื่อไม่ให้เด่นวินกันเอง, ห้ามมีตัวกลับซ้ำ, ตัดเบิ้ล)
-  let d1Pairs = getUniquePairsForMainDigit(d1, [d2], 5);
-  // เด่นตัวที่ 2: หา 5 คู่ (ห้ามมี d1 เพื่อไม่ให้เด่นวินกันเอง, ห้ามมีตัวกลับซ้ำ, ตัดเบิ้ล)
-  let d2Pairs = getUniquePairsForMainDigit(d2, [d1], 5);
+  let d1Pairs = getPairsForMainDigit(d1, d2);
+  let d2Pairs = getPairsForMainDigit(d2, d1);
 
-  let formatted = [];
-  d1Pairs.forEach((p, idx) => {
-    formatted.push({ pair: p, highlight: idx === 0 ? 'top1' : 'top2' });
-  });
-  d2Pairs.forEach((p, idx) => {
-    formatted.push({ pair: p, highlight: idx === 0 ? 'top1' : 'top2' });
-  });
-
-  return formatted;
+  // รวม 5 คู่เด่นที่ 1 + 5 คู่เด่นที่ 2 เป็น 10 คู่สมบูรณ์แบบ
+  return [...d1Pairs, ...d2Pairs];
 }
 
 function analyzeOverallFrequency(records) {
@@ -1274,7 +1258,7 @@ function analyzeLotteryRecords(records, lotteryType) {
 
   const formattedPairs = structuredPairs.map(pItem => ({
     pair: pItem.pair,
-    highlightClass: pItem.highlight === 'top1' ? 'highlight-top1' : 'highlight-top2',
+    highlightClass: pItem.highlight === 'top1' ? 'highlight-top1' : (pItem.highlight === 'top2' ? 'highlight-top2' : (pItem.highlight === 'top3' ? 'highlight-top3' : '')),
     pct: `${pairWinRate}%`
   }));
 
