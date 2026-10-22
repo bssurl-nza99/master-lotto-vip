@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Transcendent Level 999+ Engine (Anti-AI FB Strikethrough Mode)</title>
+<title>เศรษฐีเงินล้าน · Transcendent Level 999+ Engine (Strict Audit Mode)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -243,7 +243,6 @@ body {
   display: block;
 }
 
-/* Tab Navigation Bar สำหรับเลือกดูทีละหวย */
 .tab-nav-container {
   display: flex;
   gap: 5px;
@@ -339,7 +338,7 @@ body {
   line-height: 1;
 }
 
-/* สไตล์ชื่อหวยพร้อมเส้นขีดทับแนวนอน (Strikethrough / Horizontal Slash Line) ตามตัวอย่างของคุณ */
+/* ขีดเส้นทับแนวนอนพาดผ่านชื่อหวย ป้องกัน AI Facebook */
 .card-lottery-name {
   font-size: 0.85rem;
   font-weight: 800;
@@ -572,16 +571,16 @@ table.audit-table th {
       <div class="logo">เศรษฐี</div>
       <div>
         <b>เศรษฐีเงินล้าน Master</b>
-        <small>Smart PDF Parser Engine · Tabbed View (Anti-AI FB Strikethrough)</small>
+        <small>Strict Audit Engine · Tabbed View (Anti-AI FB Strikethrough)</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · TRANSCENDENT LEVEL 999+ (ANTI-AI FB MODE)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · TRANSCENDENT LEVEL 999+ (STRICT AUDIT MODE)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบแท็บสลับดูทีละหวย พร้อมเส้นขีดทับแนวนอนป้องกัน AI Facebook ทุกประเภทหวย ซื่อสัตย์ 100% ครบถ้วน 13 ตาราง</p>
+    <p>ระบบตรวจสอบซื่อสัตย์ 100%: เลขเจาะจะนับว่าเข้าก็ต่อเมื่อเลขเด่นเข้าเท่านั้น พร้อมเส้นขีดทับป้องกัน AI Facebook</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -596,7 +595,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระดับ Transcendent 999+ (Strikethrough Mode)
+        <span>⚡</span> ประมวลผลระดับ Strict Audit 999+
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1302,7 +1301,9 @@ function analyzeLotteryRecords(records, lotteryType) {
       });
 
       isDigitHit = dayDigitHit;
-      isPairHit = dayPairHit;
+      // ลำดับความซื่อสัตย์: เลขเจาะจะนับว่าเข้าก็ต่อเมื่อเลขเด่นเข้าด้วยเท่านั้น
+      isPairHit = isDigitHit ? dayPairHit : false;
+
       if (isDigitHit) digitHits++;
       if (isPairHit) pairHits++;
 
@@ -1329,7 +1330,8 @@ function analyzeLotteryRecords(records, lotteryType) {
       });
 
       isDigitHit = dayDigitHit;
-      isPairHit = dayPairHit;
+      isPairHit = isDigitHit ? dayPairHit : false;
+
       if (isDigitHit) digitHits++;
       if (isPairHit) pairHits++;
 
@@ -1344,10 +1346,13 @@ function analyzeLotteryRecords(records, lotteryType) {
       isDigitHit = topCandidates.some(d => digits.includes(d.toString()));
       if (isDigitHit) digitHits++;
       
-      isPairHit = auditPairs.some(pair => {
+      let rawPairHit = auditPairs.some(pair => {
         let revPair = pair.split('').reverse().join('');
         return (top2 === pair || top2 === revPair || bot2 === pair || bot2 === revPair);
       });
+      // ลำดับความซื่อสัตย์: เลขเด่นต้องเข้าก่อน เลขเจาะถึงจะนับว่าเข้า
+      isPairHit = isDigitHit ? rawPairHit : false;
+
       if (isPairHit) pairHits++;
 
       auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
@@ -1360,10 +1365,13 @@ function analyzeLotteryRecords(records, lotteryType) {
       isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
       if (isDigitHit) digitHits++;
 
-      isPairHit = auditPairs.some(pair => {
+      let rawPairHit = auditPairs.some(pair => {
         const revPair = pair.split('').reverse().join('');
         return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
       });
+      // ลำดับความซื่อสัตย์: เลขเด่นต้องเข้าก่อน เลขเจาะถึงจะนับว่าเข้า
+      isPairHit = isDigitHit ? rawPairHit : false;
+
       if (isPairHit) pairHits++;
 
       auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
@@ -1453,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลระดับ Transcendent 999+ (Strikethrough Mode) สำเร็จ');
+      showToast('ประมวลผลระดับ Strict Audit 999+ สำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1471,14 +1479,13 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-Strikethrough.png`;
+    link.download = `card-${lotteryName}-StrictAudit.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพป้องกัน AI Facebook (ขีดทับ) สำเร็จ!');
   });
 }
 
-// ฟังก์ชันสลับแท็บแสดงผลหวยแต่ละประเภท
 function switchTab(index) {
   const allContents = document.querySelectorAll('.lottery-panel-content');
   const allBtns = document.querySelectorAll('.tab-btn');
@@ -1500,7 +1507,6 @@ function renderResults(parsedData) {
   let lotteryKeys = Object.keys(parsedData);
   if (lotteryKeys.length === 0) return;
 
-  // สร้างแถบ Tab Navigation ด้านบนสุด
   let tabNavHtml = `<div class="tab-nav-container">`;
   lotteryKeys.forEach((type, idx) => {
     let activeClass = idx === 0 ? 'active' : '';
