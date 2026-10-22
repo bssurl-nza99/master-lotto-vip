@@ -243,7 +243,6 @@ body {
   display: block;
 }
 
-/* แผงแท็บเลือกประเภทหวยแบบแยกหน้าจอเดี่ยว */
 .tab-nav-panel {
   display: none;
   background: linear-gradient(135deg, #fffcf5, #f5ebd0);
@@ -657,12 +656,12 @@ const SAMPLE_PDF_DATA = `หุ้นไทย เช้า | 20 ต.ค. 69
 62`;
 
 const FLAG_MAP = {
-  'ลาว': '🇱🇦', 'ล.': '🇱🇦',
+  'ลาว': '🇱🇦', 'ประชาชน ล.': '🇱🇦',
   'ฮานอย': '🇻🇳', 'ฮ.น': '🇻🇳',
   'หุ้นไทย เช้า': '🇹🇭', 'หุ้นไทย เที่ยง': '🇹🇭', 'หุ้นไทย บ่าย': '🇹🇭', 'หุ้นไทย เย็น': '🇹🇭',
   'ไทย': '🇹🇭', 'รัฐบาล': '🇹🇭',
   'ดาวโจนส์': '🇺🇸', 'ฮั่งเส็ง': '🇭🇰',
-  'จีน': '🇨🇳', 'นิคเคอิ': '🇯🇵',
+  'จีน': '🇨🇳', 'นิคเคอิ': '🇯🇵', 'นิเคอิ ปกติ': '🇯🇵',
   'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷',
   'รัสเซีย': '🇷🇺', 'เยอรมัน': '🇩🇪',
   'อังกฤษ': '🇬🇧', 'สิงคโปร์': '🇸🇬',
@@ -712,7 +711,7 @@ function calculateNextDrawDate(lotteryType, lastDateStr) {
     do { dateObj.setDate(dateObj.getDate() + 1); } while (![3, 6, 0].includes(dateObj.getDay()));
     return formatThaiDate(dateObj);
   }
-  if (name.includes('ดาวโจนส์') && !name.includes('VIP') && !name.includes('สตาร์') && !name.includes('V')) {
+  if (name.includes('ดาวโจนส์') && !name.includes('VIP') && !name.includes('สตาร์') && !name.includes('V') && !name.includes('Star')) {
     do { dateObj.setDate(dateObj.getDate() + 1); } while ([0, 1].includes(dateObj.getDay()));
     return formatThaiDate(dateObj);
   }
@@ -735,24 +734,38 @@ function formatDisplayName(rawName) {
   if (name.includes('ไทยบ่าย') || name.includes('ไทยบา่ ย') || name.includes('ไทย บ่าย') || name.includes('ไทย บา่ ย')) return 'หุ้นไทย บ่าย';
   if (name.includes('ไทยเย็น') || name.includes('ไทย เย็น')) return 'หุ้นไทย เย็น';
 
-  if (name.startsWith('ลาว')) {
-    let sub = name.replace('ลาว', '').trim();
-    if (sub.toLowerCase() === 'vip') return 'ล. V';
+  // จัดการชื่อหวยลาว (ประชาชน ล.)
+  if (name.includes('ประชาชน') || name.startsWith('ลาว') || name.startsWith('ล.')) {
+    let sub = name.replace(/ลาว/g, '').replace(/ล\./g, '').replace(/ประชาชน/g, '').trim();
+    if (sub.toLowerCase() === 'vip') return 'ประชาชน ล. V';
     if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
-    return sub ? `ล. ${sub}` : 'ล.';
+    return sub ? `ประชาชน ล. ${sub}` : 'ประชาชน ล.';
   }
-  if (name.startsWith('ฮานอย')) {
-    let sub = name.replace('ฮานอย', '').trim();
-    if (sub.toLowerCase() === 'vip') return 'ฮ.น V';
-    if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
-    return sub ? `ฮ.น ${sub}` : 'ฮ.น';
-  }
+
+  // จัดการชื่อดาวโจนส์ (เว้นวรรคก่อน Star/VIP)
   if (name.includes('ดาวโจนส์')) {
-    if (name.includes('VIP')) return name.replace(/VIP/gi, 'V');
-    if (name.includes('สตาร์')) return name.replace(/สตาร์/gi, 'Star');
-    if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';
-    return name;
+    let sub = name.replace(/ดาวโจนส์/g, '').trim();
+    if (!sub) return 'ดาวโจนส์ ปกติ';
+    if (sub.toLowerCase() === 'vip' || sub === 'V') return 'ดาวโจนส์ V';
+    if (sub.toLowerCase().includes('star') || sub.includes('สตาร์')) return 'ดาวโจนส์ Star';
+    return `ดาวโจนส์ ${sub}`;
   }
+
+  // จัดการกลุ่มหุ้นต่างประเทศที่ต้องเติม "ปกติ" หากไม่มี VIP
+  const normalCountries = ['นิเคอิ', 'จีน', 'ฮั่งเส็ง', 'ไต้หวัน', 'เกาหลี', 'สิงคโปร์', 'รัสเซีย', 'เยอรมัน', 'อังกฤษ'];
+  for (let c of normalCountries) {
+    if (name.startsWith(c) || name.includes(c)) {
+      let sub = name.replace(new RegExp(c, 'g'), '').trim();
+      let isVip = sub.toLowerCase().includes('vip') || sub.includes('V');
+      if (isVip) {
+        sub = sub.replace(/VIP/gi, 'V').trim();
+        return `${c} ${sub}`;
+      } else {
+        return sub ? `${c} ปกติ ${sub}` : `${c} ปกติ`;
+      }
+    }
+  }
+
   name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();
   if (name.includes('VIP')) return name.replace(/VIP/gi, 'V').trim();
   else if (!name.includes('ปกติ') && !name.includes('V')) return name.replace('หุ้น', '').trim();
