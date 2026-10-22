@@ -1223,38 +1223,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   if (!auditPairs.includes(crossPair1)) auditPairs.push(crossPair1);
   if (!auditPairs.includes(crossPair2)) auditPairs.push(crossPair2);
 
-  // 1. Card Evaluation (Strictly 12 most recent rounds from current to past)
-  const cardEvalRecords = activeRecords.slice(0, 12);
-  let cardDigitHits = 0, cardPairValidRounds = 0, cardPairHits = 0;
-  const chronCardRecords = [...cardEvalRecords].reverse();
-
-  for (let i = Math.min(1, Math.floor(chronCardRecords.length / 2)); i < chronCardRecords.length; i++) {
-    const past = chronCardRecords.slice(0, i);
-    const target = chronCardRecords[i];
-    const pastMaster = calculateGeniusDnaScores(past);
-    const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
-
-    const actualTop3 = target.top3, actualBottom2 = target.bottom2;
-    const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
-    const actualDigits = (actualTop3 + actualBottom2).split('');
-
-    const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
-    if (isDigitHit) {
-      cardDigitHits++;
-      cardPairValidRounds++;
-      const isPairHit = auditPairs.some(pair => {
-        const revPair = pair.split('').reverse().join('');
-        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
-      });
-      if (isPairHit) cardPairHits++;
-    }
-  }
-
-  const cardEvalCount = chronCardRecords.length > 1 ? chronCardRecords.length - Math.min(1, Math.floor(chronCardRecords.length / 2)) : (chronCardRecords.length === 1 ? 1 : 0);
-  const cardDigitWinRate = cardEvalCount > 0 ? ((cardDigitHits / cardEvalCount) * 100).toFixed(2) : '0.00';
-  const cardPairWinRate = cardPairValidRounds > 0 ? ((cardPairHits / cardPairValidRounds) * 100).toFixed(2) : '0.00';
-
-  // 2. Full Audit Log Evaluation (Table 1 - all available backtest records)
+  // Full Audit Log Evaluation (Table 1 - all available backtest records)
   let digitHits = 0, pairValidRounds = 0, pairHits = 0;
   const auditLogs = [];
   const chronRecords = [...activeRecords].reverse();
@@ -1286,6 +1255,14 @@ function analyzeLotteryRecords(records, lotteryType) {
 
   auditLogs.reverse();
 
+  const evalCount = auditLogs.length;
+  const auditDigitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
+  const auditPairWinRate = pairValidRounds > 0 ? ((pairHits / pairValidRounds) * 100).toFixed(2) : '0.00';
+
+  // Card percentages now strictly reference Table 1 percentages as requested
+  const cardDigitWinRate = auditDigitWinRate;
+  const cardPairWinRate = auditPairWinRate;
+
   const gapData = analyzeGapTracker(activeRecords);
   const momentumResults = analyzeTrendMomentum(activeRecords);
   const mathResults = analyzePureMathematics(activeRecords);
@@ -1296,10 +1273,6 @@ function analyzeLotteryRecords(records, lotteryType) {
   const oehlResults = analyzeOddEvenHighLow(activeRecords);
   const specialResults = analyzeSpecialPatterns(activeRecords);
   const sumResults = analyzeSumMatrix(activeRecords);
-
-  const evalCount = auditLogs.length;
-  const auditDigitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
-  const auditPairWinRate = pairValidRounds > 0 ? ((pairHits / pairValidRounds) * 100).toFixed(2) : '0.00';
 
   const formattedPairs = structuredPairs.map(pItem => ({
     pair: pItem.pair,
