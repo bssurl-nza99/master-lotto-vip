@@ -1223,7 +1223,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   if (!auditPairs.includes(crossPair1)) auditPairs.push(crossPair1);
   if (!auditPairs.includes(crossPair2)) auditPairs.push(crossPair2);
 
-  // ตัดข้อมูลพิจารณาเฉพาะ 12 รอบล่าสุด (หรือทั้งหมดถ้าน้อยกว่า 12) สำหรับคิดเปอร์เซ็นต์บนการ์ด
+  // เงื่อนไขหลัก: วัดผลเฉพาะ 12 งวดล่าสุดจากปัจจุบันไปหาอดีต
   const cardEvalRecords = activeRecords.slice(0, 12);
   let cardDigitHits = 0, cardPairValidRounds = 0, cardPairHits = 0;
   const chronCardRecords = [...cardEvalRecords].reverse();
@@ -1241,6 +1241,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     const isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
     if (isDigitHit) {
       cardDigitHits++;
+      // เงื่อนไขเลขเจาะ: นับรอบเปอร์เซ็นต์ "เฉพาะรอบที่เลขเด่นเข้าเท่านั้น"
       cardPairValidRounds++;
       const isPairHit = auditPairs.some(pair => {
         const revPair = pair.split('').reverse().join('');
@@ -1254,7 +1255,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   const cardDigitWinRate = cardEvalCount > 0 ? ((cardDigitHits / cardEvalCount) * 100).toFixed(2) : '0.00';
   const cardPairWinRate = cardPairValidRounds > 0 ? ((cardPairHits / cardPairValidRounds) * 100).toFixed(2) : '0.00';
 
-  // ตรวจสอบ Audit Log สำหรับตารางที่ 1
+  // ตรวจสอบ Audit Log สำหรับตารางที่ 1 (ใช้เงื่อนไขเดียวกัน 12 งวดล่าสุด)
   let digitHits = 0, pairValidRounds = 0, pairHits = 0;
   const auditLogs = [];
   const chronRecords = [...activeRecords].reverse();
