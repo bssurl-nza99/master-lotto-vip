@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V5 - Master Hub Edition)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V6 - Full Power Hub)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -590,7 +590,7 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V5)</b>
+        <b>เศรษฐีเงินล้าน Master (V6)</b>
         <small>Master Hub Diagnostic Engine</small>
       </div>
     </div>
@@ -598,7 +598,7 @@ table.audit-table th {
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V5 ALL-TABLE DIAGNOSTIC HUB</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V6 FULL-POWER HUB</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
     <p>ประมวลผลเปอร์เซ็นต์ความแม่นยำจากข้อมูลผู้ใช้จริงทุกงวด พร้อมระบบวิเคราะห์รวมทุกตารางคำนวณ ชี้เป้าจุดบอดและแนวทางแก้ไขทรงพลัง</p>
   </div>
@@ -615,7 +615,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลจากข้อมูลผู้ใช้จริงทั้งหมด & วินิจฉัยทุกตาราง
+        <span>⚡</span> ประมวลผลจากข้อมูลผู้ใช้จริงทั้งหมด & วินิจฉัยทุกตาราง (V6)
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -968,7 +968,7 @@ function analyzeAdaptiveWeightOptimizer(records) {
   return { profiles, adaptiveBonuses };
 }
 
-function calculateGeniusDnaScores(records) {
+function calculateGeniusDnaScores(records, shortLossStreak = 0) {
   let gapData = analyzeGapTracker(records);
   let buddyPairs = analyzeCorrelationPairs(records, gapData);
   let momentumData = analyzeTrendMomentum(records);
@@ -982,11 +982,13 @@ function calculateGeniusDnaScores(records) {
   let counts = Array(10).fill(0);
   records.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => counts[parseInt(d)]++));
   let maxCount = Math.max(...counts, 1);
-  counts.forEach((c, d) => scores[d] += (c / maxCount) * 30);
+  
+  let freqWeightFactor = shortLossStreak >= 3 ? 0.5 : 1.0;
+  counts.forEach((c, d) => scores[d] += (c / maxCount) * 30 * freqWeightFactor);
 
   records.forEach(r => {
     let t3 = r.top3, b2 = r.bottom2;
-    [t3[1], t3[2], b2[0], b2[1]].forEach(d => { if(d) scores[parseInt(d)] += 2.5; });
+    [t3[1], t3[2], b2[0], b2[1]].forEach(d => { if(d) scores[parseInt(d)] += (2.5 * freqWeightFactor); });
   });
 
   for(let d=0; d<=9; d++) {
@@ -1001,7 +1003,10 @@ function calculateGeniusDnaScores(records) {
   });
 
   momentumData.forEach(m => { scores[m.digit] += (m.rawBonus * 0.12); });
-  mathData.forEach(m => { scores[m.digit] += (m.purityScore * 0.12); });
+  mathData.forEach(m => { 
+    let mathMultiplier = shortLossStreak >= 3 ? 1.5 : 0.12;
+    scores[m.digit] += (m.purityScore * mathMultiplier); 
+  });
   for(let d=0; d<=9; d++) { scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; }
 
   for(let d=0; d<=9; d++) {
@@ -1139,6 +1144,8 @@ function analyzeSumMatrix(records) {
 
 function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
   const pairFreqMap = {};
+  const recentSlice = activeRecords.slice(0, 5);
+  
   activeRecords.forEach(r => {
     const top2 = r.top3.slice(-2), bot2 = r.bottom2;
     [top2, bot2].forEach(p => {
@@ -1146,6 +1153,17 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
         pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
         let rev = p.split('').reverse().join('');
         pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
+      }
+    });
+  });
+
+  recentSlice.forEach(r => {
+    const top2 = r.top3.slice(-2), bot2 = r.bottom2;
+    [top2, bot2].forEach(p => {
+      if (p.length === 2) {
+        pairFreqMap[p] = (pairFreqMap[p] || 0) + 2;
+        let rev = p.split('').reverse().join('');
+        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 2;
       }
     });
   });
@@ -1185,7 +1203,19 @@ function analyzeLotteryRecords(records, lotteryType) {
   const total = activeRecords.length;
   if (total === 0) return null;
 
-  const masterScores = calculateGeniusDnaScores(activeRecords);
+  let currentLossStreakCheck = 0;
+  const chronCheck = [...activeRecords].reverse();
+  for (let i = chronCheck.length - 1; i >= 0; i--) {
+    let past = chronCheck.slice(0, i);
+    if (past.length === 0) continue;
+    let target = chronCheck[i];
+    let pMaster = calculateGeniusDnaScores(past, currentLossStreakCheck);
+    let topC = [pMaster[0].digit, pMaster[1].digit];
+    let isHit = topC.some(d => (target.top3 + target.bottom2).includes(d.toString()));
+    if (!isHit) currentLossStreakCheck++; else currentLossStreakCheck = 0;
+  }
+
+  const masterScores = calculateGeniusDnaScores(activeRecords, currentLossStreakCheck);
   const d1 = masterScores[0].digit;
   const d2 = masterScores[1].digit;
 
@@ -1207,12 +1237,11 @@ function analyzeLotteryRecords(records, lotteryType) {
   let gapTrapCount = 0;
 
   const auditLogs = [];
-  const chronRecords = [...activeRecords].reverse();
 
-  for (let i = 1; i < chronRecords.length; i++) {
-    const past = chronRecords.slice(0, i);
-    const target = chronRecords[i];
-    const pastMaster = calculateGeniusDnaScores(past);
+  for (let i = 1; i < chronCheck.length; i++) {
+    const past = chronCheck.slice(0, i);
+    const target = chronCheck[i];
+    const pastMaster = calculateGeniusDnaScores(past, currentLossStreak);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
 
     const actualTop3 = target.top3, actualBottom2 = target.bottom2;
@@ -1254,8 +1283,8 @@ function analyzeLotteryRecords(records, lotteryType) {
     auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
   }
 
-  if (chronRecords.length === 1) {
-    const target = chronRecords[0];
+  if (chronCheck.length === 1) {
+    const target = chronCheck[0];
     const topCandidates = [d1, d2];
     const actualTop3 = target.top3, actualBottom2 = target.bottom2;
     const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
@@ -1327,7 +1356,6 @@ function analyzeLotteryRecords(records, lotteryType) {
   const latestRecordedDate = records[0] ? records[0].date : '';
   const nextDrawDate = calculateNextDrawDate(lotteryType, latestRecordedDate);
 
-  // คำนวณสรุปจุดดี จุดบอด และแนวทางแก้ไขจากทุกตาราง (All-Table Master Hub Summary)
   let goodPoints = [];
   let errorPoints = [];
   let fixDirections = [];
@@ -1345,8 +1373,8 @@ function analyzeLotteryRecords(records, lotteryType) {
     errorPoints.push(`ตาราง 4 (คู่เจาะหลุด ${pairMissRate}%)`);
     fixDirections.push('ปรับจูน T.4 โดยเพิ่มน้ำหนักความกระชั้นชิด (Recency Weight)');
   }
-  if (maxLossStreak >= 3) {
-    errorPoints.push(`ตาราง 16 (ความลาดชันขาลง หลุด ${maxLossStreak} งวดติด)`);
+  if (currentLossStreak >= 3) {
+    errorPoints.push(`ตาราง 16 (ความลาดชันขาลง หลุด ${currentLossStreak} งวดติด)`);
     fixDirections.push('เปิดใช้ Profile Gamma ใน T.13 (พึ่งพา Pure Math)');
   }
 
@@ -1360,7 +1388,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     cardDigitWinRate, cardPairWinRate,
     auditDigitWinRate, auditPairWinRate,
     digitHits, pairHits, pairValidRounds, evalCount, d1, d2,
-    maxWinStreak, maxLossStreak, bottleneckNote,
+    maxWinStreak, maxLossStreak, currentLossStreak, bottleneckNote,
     healthTier, tierColor,
     dnaErrorRate, pairMissRate, gapTrapRate,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
@@ -1420,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลจากข้อมูลผู้ใช้จริงสำเร็จ');
+      showToast('ประมวลผลจากข้อมูลผู้ใช้จริงสำเร็จ (V6)');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1438,7 +1466,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV5.png`;
+    link.download = `card-${lotteryName}-MasterV6.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1528,8 +1556,7 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((grandDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = grandPairValid > 0 ? ((grandPairHits / grandPairValid) * 100).toFixed(2) : '0.00';
 
-  // รายงาน Grand Report V5 รวบรวมจากทุกมิติตาราง (All-Table Master Diagnostic)
-  let grandReportText = `=== 📊 MASTER ALL-TABLE DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V5) ===\n`;
+  let grandReportText = `=== 📊 MASTER ALL-TABLE DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V6) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
   grandReportText += `• งวดตรวจวัดรวมทั้งหมดจากข้อมูลผู้ใช้: ${grandEvalCount} งวด\n`;
   grandReportText += `• เปอร์เซ็นต์เลขเด่นรวม: ${grandDigitHits}/${grandEvalCount} (${grandDigitRate}%)\n`;
@@ -1546,7 +1573,7 @@ function renderResults(parsedData) {
     grandReportText += `  - ทิศทางการปรับปรุง: ${r.fixDirectionsStr}\n\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวม & วินิจฉัยจุดบอดทุกตาราง (Grand Summary All-Table Hub)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวม & วินิจฉัยจุดบอดทุกตาราง (Grand Summary All-Table Hub V6)</div>`;
   html += `
     <div class="summary-table-container">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
@@ -1554,7 +1581,7 @@ function renderResults(parsedData) {
           🌐 ภาพรวมระบบจากข้อมูลผู้ใช้จริง (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
         </div>
         <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวมทั้งหมดสำเร็จ!')">
-          <span>📋</span> คัดลอกรายงานภาพรวมรวบรวมทุกตาราง (Grand Report V5)
+          <span>📋</span> คัดลอกรายงานภาพรวมรวบรวมทุกตาราง (Grand Report V6)
         </button>
       </div>
       <table class="audit-table">
@@ -1611,7 +1638,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (All-Table Diagnostic Engine)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (All-Table Diagnostic Engine V6)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1750,7 +1777,7 @@ function renderResults(parsedData) {
         <!-- 🤝 ตารางที่ 4 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🤝 ตารางที่ 4: คู่สัมพันธ์ทดแทนกัน Gap-Boosted Buddy Pairs (${type})
+            🤝 ตารางที่ 4: คู่สัมพันธ์ทดแทนกัน Recency-Boosted Buddy Pairs (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1760,7 +1787,7 @@ function renderResults(parsedData) {
     `;
 
     res.correlationResults.forEach(item => {
-      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">บูสต์ Gap</span></td></tr>`;
+      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">บูสต์ Recency</span></td></tr>`;
     });
 
     html += `
@@ -1864,7 +1891,7 @@ function renderResults(parsedData) {
         <!-- 🧬 ตารางที่ 10 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🧬 ตารางที่ 10: ดัชนี DNA ขัดแย้ง & หักล้างสัญญาณหลอก (${type})
+            🧬 ตารางที่ 10: ดัชนี DNA ขัดแย้ง & หักล้างสัญญาณหลอก (Adaptive Veto) (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2010,8 +2037,8 @@ function renderResults(parsedData) {
             <tbody>
               <tr>
                 <td><b>5 งวดล่าสุด (Short-Term Risk)</b></td>
-                <td><span style="color:${res.maxLossStreak >= 3 ? '#c62828' : '#2e7d32'}; font-weight:700;">หลุดสูงสุด ${res.maxLossStreak} งวด</span></td>
-                <td><b>${res.maxLossStreak >= 3 ? '⚠️ กำลังอยู่ในช่วงขาลง (Market Slump)' : '✅ สภาพตลาดปกติ (Stable)'}</b></td>
+                <td><span style="color:${res.currentLossStreak >= 3 ? '#c62828' : '#2e7d32'}; font-weight:700;">หลุดสูงสุด ${res.currentLossStreak} งวด</span></td>
+                <td><b>${res.currentLossStreak >= 3 ? '⚠️ กำลังอยู่ในช่วงขาลง (Market Slump) — บังคับปรับลดน้ำหนัก Freq T.10' : '✅ สภาพตลาดปกติ (Stable)'}</b></td>
               </tr>
             </tbody>
           </table>
