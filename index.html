@@ -566,7 +566,7 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นดาวโจนส์ | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นดาวโจนส์ | 19 ต.ค. 69&#10;603&#10;38"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นไทย เช้า | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นไทย เช้า | 19 ต.ค. 69&#10;603&#10;38"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
@@ -583,40 +583,26 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `หุ้นดาวโจนส์ | 20 ต.ค. 69
+const SAMPLE_PDF_DATA = `หุ้นไทยเช้า | 20 ต.ค. 69
 588
 85
-หุ้นดาวโจนส์ | 19 ต.ค. 69
+หุ้นไทยเช้า | 19 ต.ค. 69
 603
 38
-หุ้นดาวโจนส์ | 16 ต.ค. 69
+หุ้นไทยเที่ยง | 20 ต.ค. 69
 241
 28
-หุ้นดาวโจนส์ | 15 ต.ค. 69
+หุ้นไทยบ่าย | 20 ต.ค. 69
 769
 21
-หุ้นดาวโจนส์ | 14 ต.ค. 69
+หุ้นไทยเย็น | 20 ต.ค. 69
 148
-62
-หุ้นดาวโจนส์ | 13 ต.ค. 69
-010
-45
-หุ้นดาวโจนส์ | 12 ต.ค. 69
-055
-60
-หุ้นดาวโจนส์ | 9 ต.ค. 69
-495
-31
-หุ้นดาวโจนส์ | 8 ต.ค. 69
-164
-77
-หุ้นดาวโจนส์ | 7 ต.ค. 69
-987
-41`;
+62`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦', 'ล.': '🇱🇦',
   'ฮานอย': '🇻🇳', 'ฮ.น': '🇻🇳',
+  'หุ้นไทยเช้า': '🇹🇭', 'หุ้นไทยเที่ยง': '🇹🇭', 'หุ้นไทยบ่าย': '🇹🇭', 'หุ้นไทยเย็น': '🇹🇭',
   'ไทย': '🇹🇭', 'รัฐบาล': '🇹🇭',
   'ดาวโจนส์': '🇺🇸', 'ฮั่งเส็ง': '🇭🇰',
   'จีน': '🇨🇳', 'นิคเคอิ': '🇯🇵',
@@ -686,6 +672,13 @@ function getFlag(typeName) {
 
 function formatDisplayName(rawName) {
   let name = rawName.trim();
+  
+  // จัดการชื่อหุ้นไทยให้ถูกต้องตามรูปแบบ หุ้นไทย เช้า/เที่ยง/บ่าย/เย็น
+  if (name.includes('ไทยเช้า') || name.includes('ไทย เช้า')) return 'หุ้นไทยเช้า';
+  if (name.includes('ไทยเที่ยง') || name.includes('ไทย เที่ยง')) return 'หุ้นไทยเที่ยง';
+  if (name.includes('ไทยบ่าย') || name.includes('ไทย บ่าย')) return 'หุ้นไทยบ่าย';
+  if (name.includes('ไทยเย็น') || name.includes('ไทย เย็น')) return 'หุ้นไทยเย็น';
+
   if (name.startsWith('ลาว')) {
     let sub = name.replace('ลาว', '').trim();
     if (sub.toLowerCase() === 'vip') return 'ล. V';
@@ -898,7 +891,6 @@ function analyzeAdaptiveWeightOptimizer(records) {
     { name: 'Profile Gamma (Balanced Pure Math)', freqWeight: 0.30, gapWeight: 0.30, mathWeight: 0.40, backtestHitRate: '79.8%' }
   ];
   let adaptiveBonuses = Array(10).fill(5);
-  // ใช้ระบบถ่วงน้ำหนักข้อมูลล่าสุดเพื่อเพิ่มความแม่นยำระดับโปรดักชั่น
   records.slice(0, Math.min(10, records.length)).forEach((r, idx) => {
     let weight = idx < 5 ? 2.0 : 1.0;
     (r.top3 + r.bottom2).split('').forEach(d => {
@@ -1614,4 +1606,3 @@ function renderResults(parsedData) {
 </script>
 </body>
 </html>
-
