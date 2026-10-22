@@ -243,52 +243,54 @@ body {
   display: block;
 }
 
-.batch-control-bar {
+/* แผงเมนูด่วนด้านบน (นอกตัวการ์ด) สำหรับกระโดดข้ามไปดูแต่ละหวย */
+.quick-nav-panel {
   display: none;
   background: linear-gradient(135deg, #fffcf5, #f5ebd0);
   border: 1px solid rgba(212, 175, 55, 0.5);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 10px;
   margin-bottom: 14px;
   box-shadow: var(--shadow-lux);
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
 }
 
-.batch-control-bar.show {
-  display: flex;
+.quick-nav-panel.show {
+  display: block;
 }
 
-.batch-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.5rem;
-  font-weight: 700;
+.quick-nav-title {
+  font-size: 0.52rem;
+  font-weight: 800;
   color: #78590f;
-}
-
-.batch-btns {
+  margin-bottom: 6px;
   display: flex;
-  gap: 5px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.batch-btn {
+.quick-nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 110px;
+  overflow-y: auto;
+}
+
+.quick-chip {
   background: #fff;
   border: 1px solid #d4af37;
   color: #8c6511;
-  padding: 5px 10px;
-  border-radius: 7px;
+  padding: 4px 8px;
+  border-radius: 6px;
   font-size: 0.45rem;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.batch-btn.primary {
-  background: linear-gradient(135deg, #c49828, #8c6511);
+.quick-chip:hover {
+  background: #d4af37;
   color: #fff;
-  border: 0;
 }
 
 .section-title {
@@ -317,17 +319,6 @@ body {
   position: relative;
 }
 
-.card-select-checkbox {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  width: 20px;
-  height: 20px;
-  accent-color: #c49828;
-  cursor: pointer;
-  z-index: 5;
-}
-
 .card-brand-tag {
   position: absolute;
   top: 14px;
@@ -352,7 +343,6 @@ body {
   margin-bottom: 14px;
   border-bottom: 1.5px dashed #ebdcb8;
   padding-bottom: 9px;
-  padding-left: 26px;
   padding-right: 102px;
 }
 
@@ -637,16 +627,13 @@ table.audit-table th {
     </div>
   </div>
 
-  <!-- แผงควบคุมการเลือกและบันทึกภาพหลายการ์ดพร้อมกัน -->
-  <div id="batchControlBar" class="batch-control-bar">
-    <div class="batch-left">
-      <span>📌 เลือกการ์ดแล้ว: <b id="selectedCount" style="color:#c49828">0</b> ใบ</span>
+  <!-- แผงเมนูด่วนด้านบน (นอกตัวการ์ด) สำหรับกดข้ามไปยังหวยแต่ละตัวทันที -->
+  <div id="quickNavPanel" class="quick-nav-panel">
+    <div class="quick-nav-title">
+      <span>🚀 เมนูด่วน: เลือกหวยเพื่อกระโดดไปดูและแคปภาพทันที</span>
+      <span id="quickCount" style="color:#b8860b;font-weight:700">0 ประเภท</span>
     </div>
-    <div class="batch-btns">
-      <button class="batch-btn" type="button" onclick="toggleSelectAll(true)">เลือกทั้งหมด</button>
-      <button class="batch-btn" type="button" onclick="toggleSelectAll(false)">ยกเลิก</button>
-      <button class="batch-btn primary" type="button" onclick="captureSelectedCards()">📥 บันทึกภาพที่เลือก</button>
-    </div>
+    <div id="quickNavList" class="quick-nav-list"></div>
   </div>
 
   <div id="resultOutput"></div>
@@ -1296,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inputData.value = '';
     dataCount.innerText = '0 รายการ';
     document.getElementById('resultOutput').innerHTML = '';
-    document.getElementById('batchControlBar').classList.remove('show');
+    document.getElementById('quickNavPanel').classList.remove('show');
     clearAlert();
     showToast('ล้างข้อมูลเรียบร้อย');
   });
@@ -1312,8 +1299,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      document.getElementById('batchControlBar').classList.add('show');
-      updateSelectedCount();
       showToast('ประมวลผลระดับโปรดักชั่นสำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
@@ -1339,71 +1324,41 @@ function captureCard(cardId, lotteryName) {
   });
 }
 
-function toggleSelectAll(select) {
-  const checkboxes = document.querySelectorAll('.card-select-checkbox');
-  checkboxes.forEach(cb => cb.checked = select);
-  updateSelectedCount();
-}
-
-function updateSelectedCount() {
-  const checkedCount = document.querySelectorAll('.card-select-checkbox:checked').length;
-  const countEl = document.getElementById('selectedCount');
-  if (countEl) countEl.innerText = checkedCount;
-}
-
-async function captureSelectedCards() {
-  const checkedBoxes = document.querySelectorAll('.card-select-checkbox:checked');
-  if (checkedBoxes.length === 0) {
-    showToast('กรุณาติ๊กเลือกการ์ดที่ต้องการบันทึกภาพอย่างน้อย 1 ใบ');
-    return;
+function jumpToCard(cardId) {
+  const el = document.getElementById(cardId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('เลื่อนไปยังการ์ดที่เลือกแล้ว');
   }
-
-  showToast(`กำลังทยอยบันทึก ${checkedBoxes.length} ภาพ...`);
-  
-  for (let i = 0; i < checkedBoxes.length; i++) {
-    const cb = checkedBoxes[i];
-    const cardId = cb.getAttribute('data-card-id');
-    const lotteryName = cb.getAttribute('data-lottery-name');
-    
-    await new Promise(resolve => {
-      const cardElement = document.getElementById(cardId);
-      if (!cardElement) { resolve(); return; }
-      html2canvas(cardElement, {
-        scale: 5,
-        useCORS: true,
-        backgroundColor: '#fffcf5',
-        logging: false,
-        letterRendering: true
-      }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `card-${lotteryName}-Production.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        setTimeout(resolve, 500); // ดีเลย์เล็กน้อยป้องกันเบราว์เซอร์บล็อกดาวน์โหลดรัว
-      });
-    });
-  }
-  showToast('บันทึกภาพทั้งหมดเสร็จสิ้น!');
 }
 
 function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Production Mode)</div>`;
+  const categories = Object.keys(parsedData);
+  const quickNavPanel = document.getElementById('quickNavPanel');
+  const quickNavList = document.getElementById('quickNavList');
+  const quickCount = document.getElementById('quickCount');
+
+  quickCount.innerText = `${categories.length} ประเภท`;
+  quickNavList.innerHTML = '';
+
   let cardIndex = 0;
+  let quickNavHtml = '';
 
   for (const [type, rows] of Object.entries(parsedData)) {
+    const cardUniqueId = `predictionCard_${cardIndex++}`;
+    quickNavHtml += `<button class="quick-chip" type="button" onclick="jumpToCard('${cardUniqueId}')">${getFlag(type)} ${type}</button>`;
+
     const res = analyzeLotteryRecords(rows, type);
     if (!res) continue;
 
     const flag = getFlag(type);
-    const cardUniqueId = `predictionCard_${cardIndex++}`;
 
-    html += `
-      <div class="prediction-card-wrapper">
+    container.innerHTML += `
+      <div class="prediction-card-wrapper" id="wrapper_${cardUniqueId}">
         <div class="prediction-card" id="${cardUniqueId}">
-          <input type="checkbox" class="card-select-checkbox" data-card-id="${cardUniqueId}" data-lottery-name="${type}" checked onchange="updateSelectedCount()">
           <div class="card-brand-tag">
             <span>✦</span> เศรษฐีเงินล้าน <span>✦</span>
           </div>
@@ -1427,18 +1382,12 @@ function renderResults(parsedData) {
           </div>
 
           <div class="pairs-grid-box">
-    `;
-
-    res.formattedPairs.forEach(p => {
-      html += `
-            <div class="pair-badge ${p.highlightClass}">
-              <span class="pair-num">${p.pair}</span>
-              <span class="pair-pct">${p.pct}</span>
-            </div>
-      `;
-    });
-
-    html += `
+            ${res.formattedPairs.map(p => `
+              <div class="pair-badge ${p.highlightClass}">
+                <span class="pair-num">${p.pair}</span>
+                <span class="pair-pct">${p.pct}</span>
+              </div>
+            `).join('')}
           </div>
         </div>
 
@@ -1459,13 +1408,16 @@ function renderResults(parsedData) {
             <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>เลขเด่น</th><th>ผลเลขเด่น</th><th>ผลเลขเจาะ</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.auditLogs.forEach(log => {
-      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isDigitHit ? (log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>') : '<span style="color:#999">-</span>'}</td></tr>`;
-    });
-
-    html += `
+            ${res.auditLogs.map(log => `
+              <tr>
+                <td>${log.date}</td>
+                <td><b>${log.top3}</b></td>
+                <td><b>${log.bottom2}</b></td>
+                <td><b style="color:#b8860b">${log.pred}</b></td>
+                <td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td>
+                <td>${log.isDigitHit ? (log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>') : '<span style="color:#999">-</span>'}</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -1480,13 +1432,15 @@ function renderResults(parsedData) {
             <tr><th>ตัวเลข</th><th>มา (ครั้ง)</th><th>เข้าติดต่อสูงสุด</th><th>หลุดติดต่อสูงสุด</th><th>สถานะล่าสุด</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.freqResults.forEach(f => {
-      html += `<tr><td><b style="color:#b8860b">${f.digit}</b></td><td><span style="color:#2e7d32;font-weight:700;">${f.hits}</span></td><td>${f.maxWin} งวด</td><td>${f.maxLoss} งวด</td><td><b>${f.status}</b></td></tr>`;
-    });
-
-    html += `
+            ${res.freqResults.map(f => `
+              <tr>
+                <td><b style="color:#b8860b">${f.digit}</b></td>
+                <td><span style="color:#2e7d32;font-weight:700;">${f.hits}</span></td>
+                <td>${f.maxWin} งวด</td>
+                <td>${f.maxLoss} งวด</td>
+                <td><b>${f.status}</b></td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -1501,18 +1455,18 @@ function renderResults(parsedData) {
             <tr><th>ตัวเลข</th><th>ตำแหน่ง</th><th>มา (ครั้ง)</th><th>สถานะความฟิต</th></tr>
           </thead>
           <tbody>
-    `;
-
-    for(let d=0; d<=9; d++) {
-      let p = res.posResults[d];
-      html += `
-        <tr><td rowspan="3"><b style="color:#b8860b">${d}</b></td><td>หลักร้อย</td><td><span style="color:#2e7d32;font-weight:700;">${p.hundreds.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
-        <tr><td>หลักสิบ</td><td><span style="color:#2e7d32;font-weight:700;">${p.tens.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
-        <tr><td>หลักหน่วย</td><td><span style="color:#2e7d32;font-weight:700;">${p.units.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
-      `;
-    }
-
-    html += `
+            ${(() => {
+              let rowsHtml = '';
+              for(let d=0; d<=9; d++) {
+                let p = res.posResults[d];
+                rowsHtml += `
+                  <tr><td rowspan="3"><b style="color:#b8860b">${d}</b></td><td>หลักร้อย</td><td><span style="color:#2e7d32;font-weight:700;">${p.hundreds.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
+                  <tr><td>หลักสิบ</td><td><span style="color:#2e7d32;font-weight:700;">${p.tens.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
+                  <tr><td>หลักหน่วย</td><td><span style="color:#2e7d32;font-weight:700;">${p.units.hits}</span></td><td><span class="badge-hit">ปกติ</span></td></tr>
+                `;
+              }
+              return rowsHtml;
+            })()}
           </tbody>
         </table>
       </div>
@@ -1527,13 +1481,15 @@ function renderResults(parsedData) {
             <tr><th>คู่สัมพันธ์</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.correlationResults.forEach(item => {
-      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">บูสต์ Gap</span></td></tr>`;
-    });
-
-    html += `
+            ${res.correlationResults.map(item => `
+              <tr>
+                <td><b style="color:#b8860b">[ ${item.pair} ]</b></td>
+                <td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td>
+                <td>${item.total}</td>
+                <td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td>
+                <td><span class="badge-hit">บูสต์ Gap</span></td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -1581,15 +1537,15 @@ function renderResults(parsedData) {
             <tr><th>ตัวเลข</th><th>ระยะเว้นช่วง (Gap)</th><th>สถานะความห่าง</th></tr>
           </thead>
           <tbody>
-    `;
-
-    for(let d=0; d<=9; d++) {
-      let g = res.gapData[d].currentGap;
-      let badge = g >= 6 ? '<span class="badge-miss">ค้างนาน / ดับ</span>' : (g <= 1 ? '<span class="badge-hit">กำลังเดินดี</span>' : '<span style="color:#888">ปกติ</span>');
-      html += `<tr><td><b style="color:#b8860b">${d}</b></td><td>เว้น ${g} งวด</td><td>${badge}</td></tr>`;
-    }
-
-    html += `
+            ${(() => {
+              let rowsHtml = '';
+              for(let d=0; d<=9; d++) {
+                let g = res.gapData[d].currentGap;
+                let badge = g >= 6 ? '<span class="badge-miss">ค้างนาน / ดับ</span>' : (g <= 1 ? '<span class="badge-hit">กำลังเดินดี</span>' : '<span style="color:#888">ปกติ</span>');
+                rowsHtml += `<tr><td><b style="color:#b8860b">${d}</b></td><td>เว้น ${g} งวด</td><td>${badge}</td></tr>`;
+              }
+              return rowsHtml;
+            })()}
           </tbody>
         </table>
       </div>
@@ -1641,17 +1597,13 @@ function renderResults(parsedData) {
             <tr><th>อันดับ</th><th>ตัวเลข</th><th>คะแนน DNA (0-100)</th><th>Veto</th><th>Gap</th><th>สถานะการพิสูจน์</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.masterScores.forEach((item, idx) => {
-      let badge = idx === 0 ? '<span class="badge-hit">เด่น 1 (Gold)</span>' : 
-                 (idx === 1 ? '<span class="badge-hit" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9;">เด่น 2 (Silver)</span>' : 
-                 (item.vetoPenalty > 0 ? `<span class="badge-warn">${item.status}</span>` : 
-                 (idx === res.masterScores.length - 1 ? '<span class="badge-miss">เลขดับ / ค้างนาน</span>' : '<span class="badge-hit">ผ่านการพิสูจน์</span>')));
-      html += `<tr><td><b>#${idx + 1}</b></td><td><b style="color:#b8860b">${item.digit}</b></td><td><span style="color:#78590f;font-weight:700;">${item.normalizedScore} / 100</span></td><td><span style="color:${item.vetoPenalty > 0 ? '#c62828' : '#2e7d32'};font-weight:700;">-${item.vetoPenalty}</span></td><td>เว้น ${item.gap} งวด</td><td>${badge}</td></tr>`;
-    });
-
-    html += `
+            ${res.masterScores.map((item, idx) => {
+              let badge = idx === 0 ? '<span class="badge-hit">เด่น 1 (Gold)</span>' : 
+                         (idx === 1 ? '<span class="badge-hit" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9;">เด่น 2 (Silver)</span>' : 
+                         (item.vetoPenalty > 0 ? `<span class="badge-warn">${item.status}</span>` : 
+                         (idx === res.masterScores.length - 1 ? '<span class="badge-miss">เลขดับ / ค้างนาน</span>' : '<span class="badge-hit">ผ่านการพิสูจน์</span>')));
+              return `<tr><td><b>#${idx + 1}</b></td><td><b style="color:#b8860b">${item.digit}</b></td><td><span style="color:#78590f;font-weight:700;">${item.normalizedScore} / 100</span></td><td><span style="color:${item.vetoPenalty > 0 ? '#c62828' : '#2e7d32'};font-weight:700;">-${item.vetoPenalty}</span></td><td>เว้น ${item.gap} งวด</td><td>${badge}</td></tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -1666,13 +1618,16 @@ function renderResults(parsedData) {
             <tr><th>ตัวเลข</th><th>ระยะสั้น (3-5)</th><th>ระยะกลาง (6-10)</th><th>ระยะยาว (11-20)</th><th>ความเสถียร</th><th>แนวโน้ม</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.momentumResults.forEach(m => {
-      html += `<tr><td><b style="color:#b8860b">${m.digit}</b></td><td><span style="color:#2e7d32;font-weight:700;">${m.shortHits}</span></td><td>${m.midHits}</td><td>${m.longHits}</td><td><span style="color:#b8860b;font-weight:700;">${m.stabilityIndex}</span></td><td><b>${m.trendLabel}</b></td></tr>`;
-    });
-
-    html += `
+            ${res.momentumResults.map(m => `
+              <tr>
+                <td><b style="color:#b8860b">${m.digit}</b></td>
+                <td><span style="color:#2e7d32;font-weight:700;">${m.shortHits}</span></td>
+                <td>${m.midHits}</td>
+                <td>${m.longHits}</td>
+                <td><span style="color:#b8860b;font-weight:700;">${m.stabilityIndex}</span></td>
+                <td><b>${m.trendLabel}</b></td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -1687,13 +1642,15 @@ function renderResults(parsedData) {
             <tr><th>ตัวเลข</th><th>Markov Chain</th><th>Poisson Dist.</th><th>Modulo Pattern</th><th>คะแนนความบริสุทธิ์</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.mathResults.forEach(m => {
-      html += `<tr><td><b style="color:#b8860b">${m.digit}</b></td><td>${m.markov}</td><td>${m.poisson}</td><td>${m.modulo}</td><td><span style="color:#2e7d32;font-weight:700;">${m.purityScore} / 100</span></td></tr>`;
-    });
-
-    html += `
+            ${res.mathResults.map(m => `
+              <tr>
+                <td><b style="color:#b8860b">${m.digit}</b></td>
+                <td>${m.markov}</td>
+                <td>${m.poisson}</td>
+                <td>${m.modulo}</td>
+                <td><span style="color:#2e7d32;font-weight:700;">${m.purityScore} / 100</span></td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -1708,21 +1665,18 @@ function renderResults(parsedData) {
             <tr><th>รูปแบบพารามิเตอร์ (Profile)</th><th>น้ำหนัก (Freq)</th><th>น้ำหนัก (Gap)</th><th>น้ำหนัก (Math)</th><th>ความแม่นยำย้อนหลัง</th><th>สถานะการจูน</th></tr>
           </thead>
           <tbody>
-    `;
-
-    res.adaptiveOptResults.profiles.forEach((p, idx) => {
-      let badge = idx === 1 ? '<span class="badge-hit">เลือกใช้จริง (Top 1)</span>' : '<span style="color:#888">สำรอง</span>';
-      html += `<tr><td><b>${p.name}</b></td><td>${p.freqWeight}</td><td>${p.gapWeight}</td><td>${p.mathWeight}</td><td><span style="color:#b8860b;font-weight:700;">${p.backtestHitRate}</span></td><td>${badge}</td></tr>`;
-    });
-
-    html += `
+            ${res.adaptiveOptResults.profiles.map((p, idx) => {
+              let badge = idx === 1 ? '<span class="badge-hit">เลือกใช้จริง (Top 1)</span>' : '<span style="color:#888">สำรอง</span>';
+              return `<tr><td><b>${p.name}</b></td><td>${p.freqWeight}</td><td>${p.gapWeight}</td><td>${p.mathWeight}</td><td><span style="color:#b8860b;font-weight:700;">${p.backtestHitRate}</span></td><td>${badge}</td></tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>
     `;
   }
 
-  container.innerHTML = html;
+  quickNavList.innerHTML = quickNavHtml;
+  quickNavPanel.classList.add('show');
   container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
