@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Transcendent Level 999+ Engine (Strict Audit Mode)</title>
+<title>เศรษฐีเงินล้าน · Transcendent Level 999+ Engine (Strict Audit & Fixed Parser)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -571,16 +571,16 @@ table.audit-table th {
       <div class="logo">เศรษฐี</div>
       <div>
         <b>เศรษฐีเงินล้าน Master</b>
-        <small>Strict Audit Engine · Tabbed View (Anti-AI FB Strikethrough)</small>
+        <small>Strict Audit Engine · Fixed Parser Mode (Anti-AI FB)</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · TRANSCENDENT LEVEL 999+ (STRICT AUDIT MODE)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · TRANSCENDENT LEVEL 999+ (FIXED PARSER)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบตรวจสอบซื่อสัตย์ 100%: เลขเจาะจะนับว่าเข้าก็ต่อเมื่อเลขเด่นเข้าเท่านั้น พร้อมเส้นขีดทับป้องกัน AI Facebook</p>
+    <p>ระบบแยกแยะชื่อหวยแม่นยำ 100%: รองรับรัฐบาลไทย, หุ้นไทย และทุกประเภท พร้อมเส้นขีดทับป้องกัน AI Facebook</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -591,11 +591,11 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นไทยเช้า | 21 ต.ค. 69&#10;295&#10;01&#10;&#10;หุ้นไทยเที่ยง | 21 ต.ค. 69&#10;845&#10;49"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;รัฐบาลไทย | 1 ต.ค. 68&#10;978&#10;77&#10;&#10;หุ้นไทยเช้า | 21 ต.ค. 69&#10;295&#10;01"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระดับ Strict Audit 999+
+        <span>⚡</span> ประมวลผลระดับ Strict Audit (Fixed Parser)
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -608,36 +608,28 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `หุ้นไทยเช้า | 21 ต.ค. 69
+const SAMPLE_PDF_DATA = `รัฐบาลไทย | 1 ต.ค. 68
+978
+77
+รัฐบาลไทย | 16 ก.ย. 68
+646
+58
+รัฐบาลไทย | 1 ก.ย. 68
+356
+31
+
+หุ้นไทยเช้า | 21 ต.ค. 69
 295
 01
 หุ้นไทยเที่ยง | 21 ต.ค. 69
 845
-49
-หุ้นไทยบ่าย | 21 ต.ค. 69
-047
-47
-หุ้นไทยเย็น | 21 ต.ค. 69
-209
-15
-
-หุ้นไทยเช้า | 20 ต.ค. 69
-012
-40
-หุ้นไทยเที่ยง | 20 ต.ค. 69
-377
-95
-หุ้นไทยบ่าย | 20 ต.ค. 69
-866
-06
-หุ้นไทยเย็น | 20 ต.ค. 69
-994
-78`;
+49`;
 
 const FLAG_MAP = {
+  'รัฐบาลไทย': '🇹🇭',
   'ลาว': '🇱🇦', 'ล.': '🇱🇦',
   'ฮานอย': '🇻🇳', 'ฮ.น': '🇻🇳',
-  'ไทย': '🇹🇭', 'รัฐบาล': '🇹🇭',
+  'ไทย': '🇹🇭',
   'ดาวโจนส์': '🇺🇸', 'ฮั่งเส็ง': '🇭🇰',
   'จีน': '🇨🇳', 'นิเคอิ': '🇯🇵', 'นิคเคอิ': '🇯🇵',
   'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷',
@@ -700,6 +692,7 @@ function calculateNextDrawDate(lotteryType, lastDateStr) {
 }
 
 function getFlag(typeName) {
+  if (typeName.includes('รัฐบาล')) return '🇹🇭';
   for (const key in FLAG_MAP) {
     if (typeName.includes(key)) return FLAG_MAP[key];
   }
@@ -725,6 +718,12 @@ function formatDisplayName(rawName) {
   let name = rawName.trim();
   name = normalizeRawText(name);
   name = name.replace(/^\d+\s*/, '').trim();
+
+  // ป้องกันไม่ให้ "รัฐบาลไทย" ถูกปะปนไปกับ "หุ้นไทย"
+  if (name.includes('รัฐบาล')) {
+    return 'รัฐบาลไทย';
+  }
+
   name = name.replace(/^หุ้น\s*/, '').trim();
   name = name.replace(/นิคเคอิ/g, 'นิเคอิ');
 
@@ -751,7 +750,7 @@ function formatDisplayName(rawName) {
     }
   }
 
-  if (name.includes('ไทย')) {
+  if (name.includes('ไทย') && !name.includes('รัฐบาล')) {
     if (name.includes('เช้า')) return 'หุ้นไทย เช้า';
     if (name.includes('เที่ยง')) return 'หุ้นไทย เที่ยง';
     if (name.includes('บ่าย')) return 'หุ้นไทย บ่าย';
@@ -855,44 +854,6 @@ function parsePDFText(rawText) {
       }
     }
   });
-
-  let thaiSessions = ['หุ้นไทย เช้า', 'หุ้นไทย เที่ยง', 'หุ้นไทย บ่าย', 'หุ้นไทย เย็น'];
-  let dateMap = {};
-
-  thaiSessions.forEach(sess => {
-    if (rawGrouped[sess]) {
-      rawGrouped[sess].forEach(rec => {
-        if (!dateMap[rec.date]) dateMap[rec.date] = { morning: null, noon: null, afternoon: null, evening: null };
-        if (sess.includes('เช้า')) dateMap[rec.date].morning = rec;
-        if (sess.includes('เที่ยง')) dateMap[rec.date].noon = rec;
-        if (sess.includes('บ่าย')) dateMap[rec.date].afternoon = rec;
-        if (sess.includes('เย็น')) dateMap[rec.date].evening = rec;
-      });
-    }
-  });
-
-  let allDayRecords = [];
-  let directTopRecords = [];
-
-  for (let date in dateMap) {
-    let dObj = dateMap[date];
-    let representativeRec = dObj.morning || dObj.noon || dObj.afternoon || dObj.evening;
-
-    if (dObj.morning && dObj.morning.top3) {
-      directTopRecords.push({ date: date, top3: representativeRec ? representativeRec.top3 : dObj.morning.top3, bottom2: representativeRec ? representativeRec.bottom2 : dObj.morning.bottom2, sessions: dObj });
-    }
-
-    if (representativeRec) {
-      allDayRecords.push({ date: date, top3: representativeRec.top3, bottom2: representativeRec.bottom2, sessions: dObj });
-    }
-  }
-
-  if (allDayRecords.length > 0) {
-    rawGrouped['หุ้นไทย ทั้งวัน'] = allDayRecords;
-  }
-  if (directTopRecords.length > 0) {
-    rawGrouped['หุ้นไทย บนตรงๆ'] = directTopRecords;
-  }
 
   return rawGrouped;
 }
@@ -1276,106 +1237,23 @@ function analyzeLotteryRecords(records, lotteryType) {
     let isDigitHit = false;
     let isPairHit = false;
 
-    const isThaiDirectTop = lotteryType.includes('บนตรงๆ');
-    const isThaiAllDay = lotteryType.includes('ทั้งวัน');
-    const isThaiSingleSession = lotteryType.includes('ไทย') && (lotteryType.includes('เช้า') || lotteryType.includes('เที่ยง') || lotteryType.includes('บ่าย') || lotteryType.includes('เย็น'));
+    const actualTop3 = target.top3, actualBottom2 = target.bottom2;
+    const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
+    const actualDigits = (actualTop3 + actualBottom2).split('');
 
-    if (isThaiDirectTop && target.sessions) {
-      let sessionsArr = [target.sessions.morning, target.sessions.noon, target.sessions.afternoon, target.sessions.evening].filter(Boolean);
-      let dayDigitHit = false;
-      let dayPairHit = false;
+    isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
+    if (isDigitHit) digitHits++;
 
-      sessionsArr.forEach(sess => {
-        let t3 = sess.top3; 
-        let topDigits = t3.split(''); 
-        let top2 = t3.slice(-2); 
+    let rawPairHit = auditPairs.some(pair => {
+      const revPair = pair.split('').reverse().join('');
+      return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
+    });
+    // เงื่อนไขความซื่อสัตย์ 100%: เลขเด่นต้องเข้าก่อน เลขเจาะถึงจะนับว่าเข้า
+    isPairHit = isDigitHit ? rawPairHit : false;
 
-        if (topCandidates.some(d => topDigits.includes(d.toString()))) {
-          dayDigitHit = true;
-          let matchedPair = auditPairs.some(pair => {
-            let revPair = pair.split('').reverse().join('');
-            return (top2 === pair || top2 === revPair);
-          });
-          if (matchedPair) dayPairHit = true;
-        }
-      });
+    if (isPairHit) pairHits++;
 
-      isDigitHit = dayDigitHit;
-      // ลำดับความซื่อสัตย์: เลขเจาะจะนับว่าเข้าก็ต่อเมื่อเลขเด่นเข้าด้วยเท่านั้น
-      isPairHit = isDigitHit ? dayPairHit : false;
-
-      if (isDigitHit) digitHits++;
-      if (isPairHit) pairHits++;
-
-      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
-
-    } else if (isThaiAllDay && target.sessions) {
-      let sessionsArr = [target.sessions.morning, target.sessions.noon, target.sessions.afternoon, target.sessions.evening].filter(Boolean);
-      let dayDigitHit = false;
-      let dayPairHit = false;
-
-      sessionsArr.forEach(sess => {
-        let t3 = sess.top3, b2 = sess.bottom2;
-        let digits = (t3 + b2).split('');
-        let top2 = t3.slice(-2), bot2 = b2;
-
-        if (topCandidates.some(d => digits.includes(d.toString()))) {
-          dayDigitHit = true;
-          let matchedPairInSession = auditPairs.some(pair => {
-            let revPair = pair.split('').reverse().join('');
-            return (top2 === pair || top2 === revPair || bot2 === pair || bot2 === revPair);
-          });
-          if (matchedPairInSession) dayPairHit = true;
-        }
-      });
-
-      isDigitHit = dayDigitHit;
-      isPairHit = isDigitHit ? dayPairHit : false;
-
-      if (isDigitHit) digitHits++;
-      if (isPairHit) pairHits++;
-
-      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
-
-    } else if (isThaiSingleSession) {
-      let sess = target;
-      let t3 = sess.top3, b2 = sess.bottom2;
-      let digits = (t3 + b2).split('');
-      let top2 = t3.slice(-2), bot2 = b2;
-
-      isDigitHit = topCandidates.some(d => digits.includes(d.toString()));
-      if (isDigitHit) digitHits++;
-      
-      let rawPairHit = auditPairs.some(pair => {
-        let revPair = pair.split('').reverse().join('');
-        return (top2 === pair || top2 === revPair || bot2 === pair || bot2 === revPair);
-      });
-      // ลำดับความซื่อสัตย์: เลขเด่นต้องเข้าก่อน เลขเจาะถึงจะนับว่าเข้า
-      isPairHit = isDigitHit ? rawPairHit : false;
-
-      if (isPairHit) pairHits++;
-
-      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
-
-    } else {
-      const actualTop3 = target.top3, actualBottom2 = target.bottom2;
-      const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
-      const actualDigits = (actualTop3 + actualBottom2).split('');
-
-      isDigitHit = topCandidates.some(d => actualDigits.includes(d.toString()));
-      if (isDigitHit) digitHits++;
-
-      let rawPairHit = auditPairs.some(pair => {
-        const revPair = pair.split('').reverse().join('');
-        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
-      });
-      // ลำดับความซื่อสัตย์: เลขเด่นต้องเข้าก่อน เลขเจาะถึงจะนับว่าเข้า
-      isPairHit = isDigitHit ? rawPairHit : false;
-
-      if (isPairHit) pairHits++;
-
-      auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
-    }
+    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), isDigitHit: isDigitHit, isPairHit: isPairHit });
   }
 
   auditLogs.reverse();
@@ -1461,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผลระดับ Strict Audit 999+ สำเร็จ');
+      showToast('ประมวลผลระดับ Strict Audit สำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1479,10 +1357,10 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-StrictAudit.png`;
+    link.download = `card-${lotteryName}-FixedParser.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    showToast('บันทึกภาพป้องกัน AI Facebook (ขีดทับ) สำเร็จ!');
+    showToast('บันทึกภาพการ์ดสำเร็จ!');
   });
 }
 
