@@ -243,6 +243,54 @@ body {
   display: block;
 }
 
+.batch-control-bar {
+  display: none;
+  background: linear-gradient(135deg, #fffcf5, #f5ebd0);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-lux);
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.batch-control-bar.show {
+  display: flex;
+}
+
+.batch-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #78590f;
+}
+
+.batch-btns {
+  display: flex;
+  gap: 5px;
+}
+
+.batch-btn {
+  background: #fff;
+  border: 1px solid #d4af37;
+  color: #8c6511;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 0.45rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.batch-btn.primary {
+  background: linear-gradient(135deg, #c49828, #8c6511);
+  color: #fff;
+  border: 0;
+}
+
 .section-title {
   font-size: 0.65rem;
   font-weight: 800;
@@ -269,6 +317,17 @@ body {
   position: relative;
 }
 
+.card-select-checkbox {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  accent-color: #c49828;
+  cursor: pointer;
+  z-index: 5;
+}
+
 .card-brand-tag {
   position: absolute;
   top: 14px;
@@ -293,6 +352,7 @@ body {
   margin-bottom: 14px;
   border-bottom: 1.5px dashed #ebdcb8;
   padding-bottom: 9px;
+  padding-left: 26px;
   padding-right: 102px;
 }
 
@@ -577,6 +637,18 @@ table.audit-table th {
     </div>
   </div>
 
+  <!-- แผงควบคุมการเลือกและบันทึกภาพหลายการ์ดพร้อมกัน -->
+  <div id="batchControlBar" class="batch-control-bar">
+    <div class="batch-left">
+      <span>📌 เลือกการ์ดแล้ว: <b id="selectedCount" style="color:#c49828">0</b> ใบ</span>
+    </div>
+    <div class="batch-btns">
+      <button class="batch-btn" type="button" onclick="toggleSelectAll(true)">เลือกทั้งหมด</button>
+      <button class="batch-btn" type="button" onclick="toggleSelectAll(false)">ยกเลิก</button>
+      <button class="batch-btn primary" type="button" onclick="captureSelectedCards()">📥 บันทึกภาพที่เลือก</button>
+    </div>
+  </div>
+
   <div id="resultOutput"></div>
 </div>
 
@@ -673,7 +745,6 @@ function getFlag(typeName) {
 function formatDisplayName(rawName) {
   let name = rawName.trim();
   
-  // แปลงชื่อหุ้นไทยให้แสดงผลลัพธ์พร้อมเว้นวรรค (Space bar 1 ครั้ง) อย่างถูกต้องตามที่กำหนด
   if (name.includes('ไทยเช้า') || name.includes('ไทยเชา้') || name.includes('ไทย เช้า') || name.includes('ไทย เชา้')) return 'หุ้นไทย เช้า';
   if (name.includes('ไทยเที่ยง') || name.includes('ไทยเทยี่ ง') || name.includes('ไทยเทยี่') || name.includes('ไทย เที่ยง') || name.includes('ไทย เทีย่ ง')) return 'หุ้นไทย เที่ยง';
   if (name.includes('ไทยบ่าย') || name.includes('ไทยบา่ ย') || name.includes('ไทย บ่าย') || name.includes('ไทย บา่ ย')) return 'หุ้นไทย บ่าย';
@@ -1225,6 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inputData.value = '';
     dataCount.innerText = '0 รายการ';
     document.getElementById('resultOutput').innerHTML = '';
+    document.getElementById('batchControlBar').classList.remove('show');
     clearAlert();
     showToast('ล้างข้อมูลเรียบร้อย');
   });
@@ -1240,6 +1312,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
+      document.getElementById('batchControlBar').classList.add('show');
+      updateSelectedCount();
       showToast('ประมวลผลระดับโปรดักชั่นสำเร็จ');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
@@ -1261,8 +1335,55 @@ function captureCard(cardId, lotteryName) {
     link.download = `card-${lotteryName}-Production.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    showToast('บันทึกภาพระดับมืออาชีพสำเร็จ!');
+    showToast(`บันทึกภาพ ${lotteryName} สำเร็จ!`);
   });
+}
+
+function toggleSelectAll(select) {
+  const checkboxes = document.querySelectorAll('.card-select-checkbox');
+  checkboxes.forEach(cb => cb.checked = select);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checkedCount = document.querySelectorAll('.card-select-checkbox:checked').length;
+  const countEl = document.getElementById('selectedCount');
+  if (countEl) countEl.innerText = checkedCount;
+}
+
+async function captureSelectedCards() {
+  const checkedBoxes = document.querySelectorAll('.card-select-checkbox:checked');
+  if (checkedBoxes.length === 0) {
+    showToast('กรุณาติ๊กเลือกการ์ดที่ต้องการบันทึกภาพอย่างน้อย 1 ใบ');
+    return;
+  }
+
+  showToast(`กำลังทยอยบันทึก ${checkedBoxes.length} ภาพ...`);
+  
+  for (let i = 0; i < checkedBoxes.length; i++) {
+    const cb = checkedBoxes[i];
+    const cardId = cb.getAttribute('data-card-id');
+    const lotteryName = cb.getAttribute('data-lottery-name');
+    
+    await new Promise(resolve => {
+      const cardElement = document.getElementById(cardId);
+      if (!cardElement) { resolve(); return; }
+      html2canvas(cardElement, {
+        scale: 5,
+        useCORS: true,
+        backgroundColor: '#fffcf5',
+        logging: false,
+        letterRendering: true
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `card-${lotteryName}-Production.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        setTimeout(resolve, 500); // ดีเลย์เล็กน้อยป้องกันเบราว์เซอร์บล็อกดาวน์โหลดรัว
+      });
+    });
+  }
+  showToast('บันทึกภาพทั้งหมดเสร็จสิ้น!');
 }
 
 function renderResults(parsedData) {
@@ -1282,6 +1403,7 @@ function renderResults(parsedData) {
     html += `
       <div class="prediction-card-wrapper">
         <div class="prediction-card" id="${cardUniqueId}">
+          <input type="checkbox" class="card-select-checkbox" data-card-id="${cardUniqueId}" data-lottery-name="${type}" checked onchange="updateSelectedCount()">
           <div class="card-brand-tag">
             <span>✦</span> เศรษฐีเงินล้าน <span>✦</span>
           </div>
@@ -1322,7 +1444,7 @@ function renderResults(parsedData) {
 
         <div class="card-action-bar">
           <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-            <span>📷</span> บันทึกภาพการ์ด (ระดับมืออาชีพ)
+            <span>📷</span> บันทึกภาพการ์ดใบนี้
           </button>
         </div>
       </div>
