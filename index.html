@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Production Master Engine (V1)</title>
+<title>เศรษฐีเงินล้าน · Production Master Engine (V1 Pro)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -591,17 +591,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V1)</b>
-        <small>Smart PDF Parser Engine · Production</small>
+        <b>เศรษฐีเงินล้าน Master (V1 Pro)</b>
+        <small>Smart PDF Parser Engine · Triple-Lock Matrix</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (V1)</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · PRODUCTION EDITION (V1 Pro)</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ประมวลผลข้อมูลสถิติจริงเต็มพิกัด 100% ปราศจากบั๊กและจุดโหว่ พร้อมระบบถ่วงดุล DNA และ Veto ที่สมบูรณ์แบบที่สุด</p>
+    <p>ประมวลผลข้อมูลสถิติจริงเต็มพิกัด 100% ปราศจากบั๊กและจุดโหว่ พร้อมระบบถ่วงดุล DNA, Veto และ Triple-Lock Matrix ที่สมบูรณ์แบบที่สุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -733,7 +733,7 @@ function getFlag(typeName) {
 function formatDisplayName(rawName) {
   let name = rawName.trim();
 
-  // 1. ดักจับ "รัฐบาลไทย" หรือ "หุ้นไทย รัฐบาล" ให้แสดงผลเป็น "รัฐบาล ไทย" เสมอ (วางไว้บนสุดเพื่อไม่ให้โดนเงื่อนไขอื่นตัดคำ)
+  // 1. ดักจับ "รัฐบาลไทย" หรือ "หุ้นไทย รัฐบาล" ให้แสดงผลเป็น "รัฐบาล ไทย" เสมอ
   if (name.includes('รัฐบาลไทย') || name.includes('รัฐบาล ไทย') || name.includes('หุ้นไทย รัฐบาล') || name.includes('หุ้นไทยรัฐบาล')) {
     return 'รัฐบาล ไทย';
   }
@@ -1003,6 +1003,7 @@ function analyzeAdaptiveWeightOptimizer(records) {
   return { profiles, adaptiveBonuses };
 }
 
+/* ★ V1 Pro Upgrade: Multi-Timeframe DNA Rating (เลขเด่นเสถียรไร้แกว่ง) */
 function calculateGeniusDnaScores(records) {
   let gapData = analyzeGapTracker(records);
   let buddyPairs = analyzeCorrelationPairs(records, gapData);
@@ -1014,34 +1015,47 @@ function calculateGeniusDnaScores(records) {
   let vetoPenalty = Array(10).fill(0);
   let statusText = Array(10).fill('ปกติ');
 
-  let counts = Array(10).fill(0);
-  records.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => counts[parseInt(d)]++));
-  let maxCount = Math.max(...counts, 1);
-  counts.forEach((c, d) => scores[d] += (c / maxCount) * 30);
+  // 1. คำนวณความถี่แบบยืดหยุ่น Multi-Timeframe (5 งวดล่าสุดน้ำหนัก 50%, 15 งวดน้ำหนัก 30%, 30 งวดน้ำหนัก 20%)
+  let countsShort = Array(10).fill(0), countsMed = Array(10).fill(0), countsLong = Array(10).fill(0);
+  records.forEach((r, idx) => {
+    let digits = (r.top3 + r.bottom2).split('');
+    digits.forEach(d => {
+      let dInt = parseInt(d);
+      if (idx < 5) countsShort[dInt]++;
+      if (idx < 15) countsMed[dInt]++;
+      countsLong[dInt]++;
+    });
+  });
 
+  for (let d = 0; d <= 9; d++) {
+    let scoreShort = (countsShort[d] / 10) * 50;
+    let scoreMed = (countsMed[d] / 30) * 30;
+    let scoreLong = (countsLong[d] / 60) * 20;
+    scores[d] += (scoreShort + scoreMed + scoreLong);
+  }
+
+  // 2. แต้มตำแหน่งหลัก
   records.forEach(r => {
     let t3 = r.top3, b2 = r.bottom2;
     [t3[1], t3[2], b2[0], b2[1]].forEach(d => { if(d) scores[parseInt(d)] += 2.5; });
   });
 
+  // 3. แต้มจากระยะเว้นช่วง (Gap)
   for(let d=0; d<=9; d++) {
     if(gapData[d].currentGap === 0) scores[d] += 20;
     else if(gapData[d].currentGap === 1) scores[d] += 15;
     else if(gapData[d].currentGap === 2) scores[d] += 10;
   }
 
-  buddyPairs.forEach(bp => {
-    let parts = bp.pair.split(' & ').map(Number);
-    scores[parts[0]] += 10; scores[parts[1]] += 10;
-  });
-
+  // 4. แต้มเสริมจากโมเดลคณิตศาสตร์บริสุทธิ์
   momentumData.forEach(m => { scores[m.digit] += (m.rawBonus * 0.10); });
   mathData.forEach(m => { scores[m.digit] += (m.purityScore * 0.10); });
   for(let d=0; d<=9; d++) { scores[d] += adaptiveOpt.adaptiveBonuses[d] * 0.05; }
 
+  // 5. ระบบ Veto หักล้างสัญญาณหลอก
   for(let d=0; d<=9; d++) {
-    if(gapData[d].currentGap >= 6) { vetoPenalty[d] += 40; statusText[d] = 'สัญญาณหลอก (ค้างนาน)'; }
-    if(counts[d] <= 2 && gapData[d].currentGap === 0) { vetoPenalty[d] += 25; statusText[d] = 'สัญญาณหลอก (แกว่ง)'; }
+    if(gapData[d].currentGap >= 7) { vetoPenalty[d] += 40; statusText[d] = 'สัญญาณหลอก (ค้างนาน)'; }
+    if(countsLong[d] <= 2 && gapData[d].currentGap === 0) { vetoPenalty[d] += 25; statusText[d] = 'สัญญาณหลอก (แกว่ง)'; }
   }
 
   let finalScores = scores.map((s, d) => {
@@ -1088,6 +1102,51 @@ function generateCoOccurrenceWinArray(records) {
   });
   let winCoverageRate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
   return { winDigits, hits, total, winCoverageRate };
+}
+
+/* ★ V1 Pro Upgrade: Targeted Pairs Engine (Triple-Lock Sourcing ตรงจากชุดวิน 6 ตัว) */
+function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
+  const pairFreqMap = {};
+  activeRecords.forEach(r => {
+    const top2 = r.top3.slice(-2), bot2 = r.bottom2;
+    [top2, bot2].forEach(p => {
+      if (p.length === 2) {
+        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
+        let rev = p.split('').reverse().join('');
+        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
+      }
+    });
+  });
+
+  // สกัดคู่เจาะโดยบังคับให้จับคู่เฉพาะตัวเลขที่มีอยู่ในชุดวิน 6 ตัวเท่านั้น (Triple-Lock)
+  let getAnchorCandidates = (mainDigit) => {
+    let cands = [];
+    // ตัวเลขคู่ประกบต้องมาจาก winDigits ที่ไม่เท่ากับ mainDigit
+    winDigits.forEach(targetDigit => {
+      if (targetDigit === mainDigit) return;
+      let pStr = `${mainDigit}${targetDigit}`;
+      let baseScore = pairFreqMap[pStr] || 0;
+      cands.push({ pair: pStr, score: baseScore, targetDigit: targetDigit });
+    });
+    cands.sort((a, b) => b.score - a.score);
+    return cands;
+  };
+
+  let d1Cands = getAnchorCandidates(d1);
+  let d2Cands = getAnchorCandidates(d2);
+
+  let selectedPairs = [];
+  // สกัด Top 3 จาก d1
+  d1Cands.slice(0, 3).forEach((item, idx) => {
+    selectedPairs.push({ pair: item.pair, highlight: idx === 0 ? 'top1' : (idx === 1 ? 'top2' : 'top3') });
+  });
+  // สกัด Top 2 จาก d2
+  d2Cands.slice(0, 2).forEach((item, idx) => {
+    selectedPairs.push({ pair: item.pair, highlight: idx === 0 ? 'top1' : 'top2' });
+  });
+
+  selectedPairs.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
+  return selectedPairs;
 }
 
 function analyzeOverallFrequency(records) {
@@ -1170,49 +1229,6 @@ function analyzeSumMatrix(records) {
   let topTop2 = Object.entries(top2Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
   let topTop3 = Object.entries(top3Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
   return { top2Sum: topTop2[0], top3Sum: topTop3[0] };
-}
-
-function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits) {
-  const pairFreqMap = {};
-  activeRecords.forEach(r => {
-    const top2 = r.top3.slice(-2), bot2 = r.bottom2;
-    [top2, bot2].forEach(p => {
-      if (p.length === 2) {
-        pairFreqMap[p] = (pairFreqMap[p] || 0) + 1;
-        let rev = p.split('').reverse().join('');
-        pairFreqMap[rev] = (pairFreqMap[rev] || 0) + 1;
-      }
-    });
-  });
-
-  let getFilteredCandidates = (mainDigit) => {
-    let cands = [];
-    for (let i = 0; i <= 9; i++) {
-      if (i === mainDigit || i === d1 || i === d2) continue;
-      let pStr = `${mainDigit}${i}`;
-      let baseScore = pairFreqMap[pStr] || 0;
-      let inWinArray = winDigits.includes(mainDigit) && winDigits.includes(i);
-      let synergyBonus = inWinArray ? 5 : 0;
-      cands.push({ pair: pStr, score: baseScore + synergyBonus });
-    }
-    cands.sort((a, b) => b.score - a.score);
-    return cands.slice(0, 5);
-  };
-
-  let d1Selected = getFilteredCandidates(d1);
-  let d2Selected = getFilteredCandidates(d2);
-  let result = [];
-
-  d1Selected.forEach((item, index) => {
-    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
-    result.push({ pair: item.pair, mainDigit: d1, rank: index + 1, highlight: highlight });
-  });
-  d2Selected.forEach((item, index) => {
-    let highlight = index === 0 ? 'top1' : (index === 1 ? 'top2' : (index === 2 ? 'top3' : 'normal'));
-    result.push({ pair: item.pair, mainDigit: d2, rank: index + 1, highlight: highlight });
-  });
-  result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
-  return result;
 }
 
 function analyzeLotteryRecords(records, lotteryType) {
@@ -1389,7 +1405,6 @@ function switchLotteryTab(targetGroup) {
       }
     });
   }
-  /* ไม่ใส่ scrollIntoView หน้าจอจะนิ่งสนิทอยู่ที่เดิม 100% */
 }
 
 function renderResults(parsedData) {
@@ -1399,7 +1414,7 @@ function renderResults(parsedData) {
   let categories = Object.keys(parsedData);
   let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Production Mode)</div>`;
 
-  // สร้างแถบปุ่มเลือกประเภทหวย (Quick Selector Navigation Bar)
+  // แถบปุ่มเลือกประเภทหวย (Quick Selector Navigation Bar)
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${categories.length})</button>`;
   
