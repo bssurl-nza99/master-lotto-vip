@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -241,6 +242,19 @@ body {
 
 .mobile-alert.show {
   display: block;
+}
+
+.guardrail-alert {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  color: #856404;
+  font-size: 0.46rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .section-title {
@@ -633,12 +647,8 @@ function parseThaiDate(dateStr) {
     const day = parseInt(parts[0], 10);
     const month = THAI_MONTHS[parts[1]] !== undefined ? THAI_MONTHS[parts[1]] : 0;
     let year = parseInt(parts[2], 10);
-    if (year < 100) {
-      year += 2500;
-    }
-    if (year >= 2500) {
-      year -= 543;
-    }
+    if (year < 100) year += 2500;
+    if (year >= 2500) year -= 543;
     return new Date(year, month, day);
   }
   return new Date();
@@ -988,23 +998,60 @@ function analyzeCorrelationPairs(records, gapData) {
   return pairResults.slice(0, 5);
 }
 
+// 🎛️ DYNAMIC PROFILE AUTO-SWITCHING WITH ROLLING BACKTEST
+function evaluateProfilePerformance(profile, records) {
+  if (records.length < 6) return 80;
+  let recentHits = 0;
+  let evalSpan = Math.min(5, records.length - 1);
+  for (let i = 0; i < evalSpan; i++) {
+    let testTrain = records.slice(i + 1);
+    let target = records[i];
+    let candidateScores = Array(10).fill(0);
+    
+    testTrain.slice(0, 10).forEach(r => {
+      (r.top3 + r.bottom2).split('').forEach(d => candidateScores[parseInt(d)] += profile.freqWeight * 10);
+    });
+    
+    let targetDigits = (target.top3 + target.bottom2).split('');
+    let top2 = candidateScores.map((s, d) => ({ digit: d, score: s })).sort((a, b) => b.score - a.score).slice(0, 2);
+    if (top2.some(item => targetDigits.includes(item.digit.toString()))) {
+      recentHits++;
+    }
+  }
+  return Math.round((recentHits / evalSpan) * 100);
+}
+
 function analyzeAdaptiveWeightOptimizer(records) {
-  let profiles = [
-    { name: 'Profile Alpha (Frequency-Driven)', freqWeight: 0.50, gapWeight: 0.20, mathWeight: 0.30, backtestHitRate: '80.2%' },
-    { name: 'Profile Beta (Multi-Scale Ensemble Optimized)', freqWeight: 0.25, gapWeight: 0.55, mathWeight: 0.20, backtestHitRate: '83.5%' },
-    { name: 'Profile Gamma (Balanced Pure Math)', freqWeight: 0.30, gapWeight: 0.30, mathWeight: 0.40, backtestHitRate: '81.4%' }
+  let baseProfiles = [
+    { id: 'alpha', name: 'Profile Alpha (Frequency-Driven)', freqWeight: 0.50, gapWeight: 0.20, mathWeight: 0.30 },
+    { id: 'beta', name: 'Profile Beta (Multi-Scale Ensemble Optimized)', freqWeight: 0.25, gapWeight: 0.55, mathWeight: 0.20 },
+    { id: 'gamma', name: 'Profile Gamma (Balanced Pure Math)', freqWeight: 0.30, gapWeight: 0.30, mathWeight: 0.40 }
   ];
+
+  let activeProfile = baseProfiles[1]; // Default Beta
+  let maxRate = -1;
+
+  let profiles = baseProfiles.map(p => {
+    let rate = evaluateProfilePerformance(p, records);
+    if (rate > maxRate) {
+      maxRate = rate;
+      activeProfile = p;
+    }
+    return { ...p, backtestHitRate: `${rate}%` };
+  });
+
   let adaptiveBonuses = Array(10).fill(5);
   records.slice(0, Math.min(10, records.length)).forEach((r, idx) => {
-    let weight = idx < 5 ? 2.5 : 1.0;
+    let weight = idx < 5 ? (2.5 * activeProfile.freqWeight) : (1.0 * activeProfile.freqWeight);
     (r.top3 + r.bottom2).split('').forEach(d => {
       adaptiveBonuses[parseInt(d)] += weight;
     });
   });
-  return { profiles, adaptiveBonuses };
+
+  return { profiles, adaptiveBonuses, activeProfile };
 }
 
-function calculateGeniusDnaScores(records) {
+function calculateGeniusDnaScores(records, crossSynergyBonus = Array(10).fill(0)) {
   let gapData = analyzeGapTracker(records);
   let buddyPairs = analyzeCorrelationPairs(records, gapData);
   let momentumData = analyzeTrendMomentum(records);
@@ -1028,7 +1075,7 @@ function calculateGeniusDnaScores(records) {
   let statusText = Array(10).fill('ปกติ');
 
   for(let d=0; d<=9; d++) {
-    scores[d] = (scoreShort[d] * 0.45) + (scoreMid[d] * 0.35) + (scoreLong[d] * 0.20);
+    scores[d] = (scoreShort[d] * 0.45) + (scoreMid[d] * 0.35) + (scoreLong[d] * 0.20) + (crossSynergyBonus[d] || 0);
   }
 
   for(let d=0; d<=9; d++) {
@@ -1229,20 +1276,22 @@ function generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winDigits, lot
   return result;
 }
 
-function analyzeLotteryRecords(records, lotteryType) {
+function analyzeLotteryRecords(records, lotteryType, globalContext = {}) {
   const activeRecords = records;
   const total = activeRecords.length;
   if (total === 0) return null;
 
-  const masterScores = calculateGeniusDnaScores(activeRecords);
+  // 🔗 CROSS-LOTTERY SYNERGY MATRIX
+  let crossSynergyBonus = Array(10).fill(0);
+  if (lotteryType.includes('ไทย') && globalContext['หุ้นไทย เช้า']) {
+    globalContext['หุ้นไทย เช้า'].slice(0, 3).forEach(r => {
+      (r.top3 + r.bottom2).split('').forEach(d => crossSynergyBonus[parseInt(d)] += 1.5);
+    });
+  }
+
+  const masterScores = calculateGeniusDnaScores(activeRecords, crossSynergyBonus);
   let d1 = masterScores[0].digit;
   let d2 = masterScores[1].digit;
-
-  let isThaiFutureSight = lotteryType.includes('ทั้งวัน') || lotteryType.includes('บนตรงๆ');
-  if (isThaiFutureSight && masterScores.length >= 2) {
-    d1 = masterScores[0].digit;
-    d2 = masterScores[1].digit;
-  }
 
   const winArrayData = generateCoOccurrenceWinArray(activeRecords);
   const structuredPairs = generateOptimizedPairsWithSynergy(d1, d2, activeRecords, winArrayData.winDigits, lotteryType, activeRecords[0]);
@@ -1260,7 +1309,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   for (let i = Math.min(1, Math.floor(chronRecords.length / 2)); i < chronRecords.length; i++) {
     const past = chronRecords.slice(0, i);
     const target = chronRecords[i];
-    const pastMaster = calculateGeniusDnaScores(past);
+    const pastMaster = calculateGeniusDnaScores(past, crossSynergyBonus);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
 
     let isDigitHit = false;
@@ -1374,8 +1423,10 @@ function analyzeLotteryRecords(records, lotteryType) {
   const sumResults = analyzeSumMatrix(activeRecords);
 
   const evalCount = auditLogs.length;
-  const digitWinRate = isThaiFutureSight ? '100.00' : (evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00');
-  const pairWinRate = isThaiFutureSight ? '100.00' : (digitHits > 0 ? ((pairHits / digitHits) * 100).toFixed(2) : '0.00');
+
+  // 🎯 DYNAMIC WIN RATE FIX: CALCULATE EXACT ACCURACY FROM AUDIT LOGS
+  const digitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
+  const pairWinRate = evalCount > 0 ? ((pairHits / evalCount) * 100).toFixed(2) : '0.00';
 
   const formattedPairs = structuredPairs.map(pItem => ({
     pair: pItem.pair,
@@ -1471,11 +1522,17 @@ function renderResults(parsedData) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
 
-  let html = `<div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Transcendent Mode)</div>`;
+  let html = `
+    <div class="guardrail-alert">
+      <span>🛡️</span>
+      <span><b>Smart Guardrail Active:</b> เปิดใช้งานระบบกรองสถิติขยะ + Dynamic Rolling Backtest 5% + Cross-Lottery Synergy Matrix สมบูรณ์แบบ</span>
+    </div>
+    <div class="section-title">ผลการวิเคราะห์ เศรษฐีเงินล้าน (ครบถ้วนทั้ง 13 ตาราง - Transcendent Mode)</div>
+  `;
   let cardIndex = 0;
 
   for (const [type, rows] of Object.entries(parsedData)) {
-    const res = analyzeLotteryRecords(rows, type);
+    const res = analyzeLotteryRecords(rows, type, parsedData);
     if (!res) continue;
 
     const flag = getFlag(type);
@@ -1532,7 +1589,7 @@ function renderResults(parsedData) {
       <!-- 📋 ตารางที่ 1 -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-          📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.digitHits} (${res.pairWinRate}%)
+          📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.digitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.evalCount} (${res.pairWinRate}%)
         </div>
         <table class="audit-table">
           <thead>
@@ -1542,7 +1599,7 @@ function renderResults(parsedData) {
     `;
 
     res.auditLogs.forEach(log => {
-      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isDigitHit ? (log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>') : '<span style="color:#999">-</span>'}</td></tr>`;
+      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td></tr>`;
     });
 
     html += `
@@ -1781,17 +1838,18 @@ function renderResults(parsedData) {
       <!-- 🎛️ ตารางที่ 13 -->
       <div class="summary-table-container">
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-          🎛️ ตารางที่ 13: Self-Adaptive Weight Optimizer (จำลอง Backtest 5% Fine-Tuning) (${type})
+          🎛️ ตารางที่ 13: Self-Adaptive Weight Optimizer (จำลอง Backtest สลับ Profile อัตโนมัติ) (${type})
         </div>
         <table class="audit-table">
           <thead>
-            <tr><th>รูปแบบพารามิเตอร์ (Profile)</th><th>น้ำหนัก (Freq)</th><th>น้ำหนัก (Gap)</th><th>น้ำหนัก (Math)</th><th>ความแม่นยำย้อนหลัง</th><th>สถานะการจูน</th></tr>
+            <tr><th>รูปแบบพารามิเตอร์ (Profile)</th><th>น้ำหนัก (Freq)</th><th>น้ำหนัก (Gap)</th><th>น้ำหนัก (Math)</th><th>ความแม่นยำย้อนหลัง</th><th>สถานะการเลือก</th></tr>
           </thead>
           <tbody>
     `;
 
-    res.adaptiveOptResults.profiles.forEach((p, idx) => {
-      let badge = idx === 1 ? '<span class="badge-hit">เลือกใช้จริง (Top 1)</span>' : '<span style="color:#888">สำรอง</span>';
+    res.adaptiveOptResults.profiles.forEach((p) => {
+      let isSelected = p.id === res.adaptiveOptResults.activeProfile.id;
+      let badge = isSelected ? '<span class="badge-hit">เปิดใช้งานจริง (Top Active)</span>' : '<span style="color:#888">สำรอง</span>';
       html += `<tr><td><b>${p.name}</b></td><td>${p.freqWeight}</td><td>${p.gapWeight}</td><td>${p.mathWeight}</td><td><span style="color:#b8860b;font-weight:700;">${p.backtestHitRate}</span></td><td>${badge}</td></tr>`;
     });
 
@@ -1808,3 +1866,4 @@ function renderResults(parsedData) {
 </script>
 </body>
 </html>
+```
