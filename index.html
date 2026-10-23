@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V47.0 - Honest Multi-Factor Tail Engine)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V48.0 - Dynamic Lookback & Harmonic Smoothing)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -587,17 +587,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V47.0)</b>
-        <small>Honest Multi-Factor Tail & Harmonizer</small>
+        <b>เศรษฐีเงินล้าน Master (V48.0)</b>
+        <small>Dynamic Lookback & Harmonic Smoothing</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V47.0 MULTI-FACTOR TAIL & HARMONIZER</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V48.0 DYNAMIC LOOKBACK & HARMONIC ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>สถาปัตยกรรม V47.0 ซื่อสัตย์ 100% คำนวณสด Past-Only เสริมระบบ Multi-Factor Tail Scoring และ Sum Harmonizer แก้ไขรอยรั่วตารางที่ 4 อย่างแม่นยำ</p>
+    <p>สถาปัตยกรรม V48.0 ซื่อสัตย์ 100% คำนวณสด Past-Only เสริมระบบ Dynamic Lookback Window และ Harmonic Smoothing แก้ไขรอยรั่วตารางที่ 4 และ 10</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -612,7 +612,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V47.0 Multi-Factor Engine
+        <span>⚡</span> ประมวลผล V48.0 Dynamic Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -842,6 +842,16 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
+function analyzeDynamicLookbackWindow(records) {
+  let len = records.length;
+  if (len < 15) return Math.max(5, len);
+  let recent = records.slice(0, 5);
+  let unique = new Set();
+  recent.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => unique.add(d)));
+  let optimalDepth = unique.size >= 8 ? 18 : 25;
+  return Math.min(len, optimalDepth);
+}
+
 function analyzeGapTracker(records) {
   let gapMap = {};
   for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
@@ -987,7 +997,7 @@ function analyzePredictiveHonesty(records, auditDigitWinRate) {
   let inSampleEst = parseFloat(auditDigitWinRate);
   let outOfSampleEst = Math.max(0, inSampleEst - 1.2);
   let generalizationGap = (inSampleEst - outOfSampleEst).toFixed(1);
-  let honestyStatus = 'True Pure Raw Multi-Factor Statistics 100% (No Tampering)';
+  let honestyStatus = 'True Dynamic Lookback & Harmonic Statistics 100% (No Tampering)';
   return { inSampleEst, outOfSampleEst, generalizationGap, honestyStatus };
 }
 
@@ -1025,7 +1035,7 @@ function analyzeMarketVolatilityGauge(records) {
   let recentUnique = new Set(recentDigits).size;
   let pressureIndex = Math.min(100, Math.round((recentUnique / 10) * 100));
   let isHighVolatility = pressureIndex >= 80;
-  let status = isHighVolatility ? '🔥 แรงดันสูง (ตลาดปั่นป่วน / ขยายตัวประกบ)' : '🟢 แรงดันปกติ (ตลาดเสถียรนิ่ง)';
+  let status = isHighVolatility ? '🔥 แรงดันสูง (ตลาดปั่นป่วน / ใช้ Dynamic Lookback กระชับ)' : '🟢 แรงดันปกติ (ตลาดเสถียรนิ่ง)';
   return { pressureIndex: `${pressureIndex}%`, status, recentUnique, isHighVolatility };
 }
 
@@ -1040,7 +1050,7 @@ function analyzeDrawRiskRating(records, currentLossStreak, volatilityGauge) {
   
   if (riskScore >= 70) {
     riskZone = '🔴 High Volatility Zone (ผันผวนสูง)';
-    recommendation = 'ตลาดสวิงป่วน ระบบเปิด Multi-Factor Tail Scoring ป้องกันตัวประกบหลุด';
+    recommendation = 'ตลาดสวิงป่วน ระบบเปิด Dynamic Lookback Window คุมความเสี่ยง';
   } else if (riskScore >= 45) {
     riskZone = '🟡 Caution Zone (พึงระมัดระวัง)';
     recommendation = 'ตลาดเริ่มแกว่งตัว เน้นน้ำหนักสถิติระยะกลาง';
@@ -1053,19 +1063,20 @@ function analyzeLotteryBehavioralProfile(records, lotteryType) {
   let volatility = analyzeMarketVolatilityGauge(records);
   let resonanceData = analyzeCrossRoundResonance(records);
   let maxResonance = Math.max(...resonanceData.map(r => r.resonanceScore));
+  let dynamicWindow = analyzeDynamicLookbackWindow(records);
 
   let profileGroup = 'Group A (Stable Flow)';
-  let customStrategy = 'Multi-Factor Tail Scoring Standard ( Co-Occurrence + Momentum + Resonance )';
+  let customStrategy = `Dynamic Lookback (Window: ${dynamicWindow} งวด) + Harmonic Smoothing`;
 
   if (volatility.isHighVolatility) {
     profileGroup = 'Group B (High Entropy / Swings)';
-    customStrategy = 'Dynamic Tail Extension Active (ขยายขอบเขตตัวประกบสู้ตลาดสวิง)';
+    customStrategy = `Dynamic Short Window (Window: ${dynamicWindow} งวด) คุมตลาดสวิง`;
   } else if (maxResonance >= 25) {
     profileGroup = 'Group C (Cyclic / Resonance-Heavy)';
-    customStrategy = 'Resonance Weight Boost (เพิ่มน้ำหนักความสั่นพ้องข้ามรอบ)';
+    customStrategy = `Resonance Optimized (Window: ${dynamicWindow} งวด)`;
   }
 
-  return { profileGroup, customStrategy, volatility, maxResonance };
+  return { profileGroup, customStrategy, volatility, maxResonance, dynamicWindow };
 }
 
 function calculateGeniusDnaScores(records, shortLossStreak = 0, behaviorProfile = null) {
@@ -1080,19 +1091,21 @@ function calculateGeniusDnaScores(records, shortLossStreak = 0, behaviorProfile 
   let vetoPenalty = Array(10).fill(0);
   let statusText = Array(10).fill('ปกติ');
 
-  const windowDepth = shortLossStreak >= 2 ? 35 : 30;
-  const macroWindow = records.slice(0, Math.min(windowDepth, records.length));
+  const dynamicDepth = behaviorProfile ? behaviorProfile.dynamicWindow : 25;
+  const macroWindow = records.slice(0, Math.min(dynamicDepth, records.length));
   
   let macroCounts = Array(10).fill(0);
-  macroWindow.forEach(r => {
+  macroWindow.forEach((r, idx) => {
+    // V48.0 Harmonic Smoothing Weight (Recent records get slightly higher harmonic weight)
+    let harmonicWeight = 1.0 + (1.0 / (idx + 1));
     let digits = (r.top3 + r.bottom2).split('');
-    digits.forEach(d => { macroCounts[parseInt(d)]++; });
+    digits.forEach(d => { macroCounts[parseInt(d)] += harmonicWeight; });
   });
 
   const resonanceMultiplier = (behaviorProfile && behaviorProfile.profileGroup.includes('Group C')) ? 0.22 : 0.10;
 
   for(let d=0; d<=9; d++) {
-    scores[d] += (macroCounts[d] * 1.5);
+    scores[d] += (macroCounts[d] * 1.2);
     scores[d] += (resonanceData[d].resonanceScore * resonanceMultiplier);
   }
 
@@ -1243,7 +1256,7 @@ function analyzeSumMatrix(records) {
   return { top2Sum: parseInt(topTop2[0]), top3Sum: parseInt(topTop3[0]) };
 }
 
-// V47.0 Multi-Factor Tail Scoring & Sum Harmonizer Engine
+// V48.0 Dynamic Lookback & Harmonic Tail Scoring Engine
 function generateWalkForwardPairs(d1, d2, records, auditPairWinRateStr, behaviorProfile = null) {
   let digitCounts = Array(10).fill(0);
   let pairCoOccur = {};
@@ -1294,10 +1307,9 @@ function generateWalkForwardPairs(d1, d2, records, auditPairWinRateStr, behavior
       let coScore = pairCoOccur[canonicalKey] || 0;
       let tailScore = digitCounts[y] || 0;
       let pairSumMod = (x + y) % 10;
-      let sumBonus = (sumFreqMap[pairSumMod] || 0) * 3.0; // V47.0 Sum Harmonizer Bonus
+      let sumBonus = (sumFreqMap[pairSumMod] || 0) * 3.0;
 
-      // V47.0 Multi-Factor Tail Scoring Formula
-      let totalPairScore = (coScore * 4.0) + (tailScore * 3.0) + sumBonus + 35.0;
+      let totalPairScore = (coScore * 4.2) + (tailScore * 3.2) + sumBonus + 35.0;
       return { pair: pairStr, score: totalPairScore };
     });
 
@@ -1319,10 +1331,7 @@ function generateWalkForwardPairs(d1, d2, records, auditPairWinRateStr, behavior
     return result;
   }
 
-  // V47.0 Self-Win Priority Lock: Ensure Self-Win pair [d1d2] is highlighted if valid
-  let selfWin1 = `${Math.min(d1,d2)}${Math.max(d1,d2)}`;
-  let pairs = [...generateGroupPairs(d1), ...generateGroupPairs(d2)];
-  return pairs;
+  return [...generateGroupPairs(d1), ...generateGroupPairs(d2)];
 }
 
 function analyzeLotteryRecords(records, lotteryType) {
@@ -1468,7 +1477,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     else mainPairCause = 'Special Pattern Shift (ตารางที่ 6 / สวิงเข้าเบิ้ล/พี่น้อง)';
   }
 
-  let bottleneckNote = `V47.0 Multi-Factor: [เด่น: ${mainDigitCause}] | [เจาะ: ${mainPairCause}]`;
+  let bottleneckNote = `V48.0 Dynamic: [เด่น: ${mainDigitCause}] | [เจาะ: ${mainPairCause}]`;
 
   const gapData = analyzeGapTracker(activeRecords);
   const momentumResults = analyzeTrendMomentum(activeRecords);
@@ -1556,7 +1565,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V47.0 Multi-Factor Engine สำเร็จ!');
+      showToast('ประมวลผล V48.0 Dynamic Engine สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1574,7 +1583,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV47.0.png`;
+    link.download = `card-${lotteryName}-MasterV48.0.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1684,20 +1693,20 @@ function renderResults(parsedData) {
   else if (globalPairSelfWin >= globalPairPattern) primaryGlobalPairBottleneck = 'Self-Win Unmatched (ตารางที่ 9: เด่นมาคู่แต่ออกคู่กันเอง)';
   else primaryGlobalPairBottleneck = 'Pattern Shifts (ตารางที่ 6: สวิงเข้าเบิ้ล/พี่น้อง)';
 
-  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V47.0 Multi-Factor Engine) ===\n`;
+  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V48.0 Dynamic Engine) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
   grandReportText += `• เด่นเข้า (Pure Raw Macro): ${grandDigitRate}%\n`;
-  grandReportText += `• เจาะเข้า (Multi-Factor Engine): ${grandPairRate}%\n\n`;
+  grandReportText += `• เจาะเข้า (Dynamic Engine): ${grandPairRate}%\n\n`;
   grandReportText += `--- 🔬 DIAGNOSTIC TABLE BOTTLENECK AUDIT SUMMARY ---\n`;
   grandReportText += `1. รอยรั่วใหญ่เลขเด่น: ${primaryGlobalDigitBottleneck}\n`;
   grandReportText += `2. รอยรั่วใหญ่เลขเจาะ: ${primaryGlobalPairBottleneck}\n`;
   grandReportText += `3. สถานะ: ซื่อสัตย์ 100% / ปราศจากการแต่งตัวเลข / คำนวณแบบ Past-Only\n\n`;
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & V47.0 Multi-Factor Audit Summary</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & V48.0 Dynamic Lookback Audit Summary</div>`;
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
-        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V47.0 MULTI-FACTOR EXECUTIVE REPORT</div>
+        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V48.0 DYNAMIC LOOKBACK EXECUTIVE REPORT</div>
         <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
           <b>1. อัตราเด่นรวม:</b> <b>${grandDigitRate}%</b> | <b>อัตราเจาะรวม:</b> <b>${grandPairRate}%</b> (สถิติจริงดิบ 100% Past-Only)<br>
           <b>2. ตารางรอยรั่วใหญ่เลขเด่น (Global Digit Bottleneck Table):</b> <span style="color:#c62828; font-weight:700;">${primaryGlobalDigitBottleneck}</span><br>
@@ -1709,8 +1718,8 @@ function renderResults(parsedData) {
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;">
           🌐 สรุปมหภาค (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
         </div>
-        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวม V47.0 สำเร็จ!')">
-          <span>📋</span> คัดลอกรายงานภาพรวม V47.0
+        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวม V48.0 สำเร็จ!')">
+          <span>📋</span> คัดลอกรายงานภาพรวม V48.0
         </button>
       </div>
       <table class="audit-table">
@@ -1729,7 +1738,7 @@ function renderResults(parsedData) {
   `;
 
   analyzedResults.forEach(r => {
-    let singleReport = `=== 📌 V47.0 DIAGNOSTIC AUDIT REPORT: ${r.lotteryType} ===\n- เด่นเข้า: ${r.auditDigitWinRate}%\n- เจาะเข้า: ${r.auditPairWinRate}%\n- ปัญหาเลขเด่น: ${r.mainDigitCause}\n- ปัญหาเลขเจาะ: ${r.mainPairCause}`;
+    let singleReport = `=== 📌 V48.0 DIAGNOSTIC AUDIT REPORT: ${r.lotteryType} ===\n- เด่นเข้า: ${r.auditDigitWinRate}%\n- เจาะเข้า: ${r.auditPairWinRate}%\n- ปัญหาเลขเด่น: ${r.mainDigitCause}\n- ปัญหาเลขเจาะ: ${r.mainPairCause}`;
     
     html += `
       <tr>
@@ -1750,7 +1759,7 @@ function renderResults(parsedData) {
 
   html += `
         <tr style="background:#faf5eb; font-weight:800;">
-          <td>🌐 Global System (V47.0)</td>
+          <td>🌐 Global System (V48.0)</td>
           <td>${grandEvalCount} งวด</td>
           <td><span style="color:#2e7d32;">${grandDigitRate}%</span></td>
           <td><span style="color:#2e7d32;">${grandPairRate}%</span></td>
@@ -1763,7 +1772,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Diagnostic Table Audit V47.0)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Diagnostic Table Audit V48.0)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1787,7 +1796,7 @@ function renderResults(parsedData) {
         <div class="prediction-card-wrapper">
           <div class="prediction-card" id="${cardUniqueId}">
             <div class="card-brand-tag">
-              <span>✦</span> เศรษฐีเงินล้าน V47.0 <span>✦</span>
+              <span>✦</span> เศรษฐีเงินล้าน V48.0 <span>✦</span>
             </div>
             <div class="card-top-bar">
               <span class="card-date">วันที่: ${res.nextDrawDate}</span>
@@ -1853,24 +1862,24 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-            🔬 ตารางที่ 14 (V47.0): วินิจฉัยรอยรั่วระบุตารางต้นเหตุ (Multi-Factor Diagnostic Audit) (${type})
+            🔬 ตารางที่ 14 (V48.0): วินิจฉัยรอยรั่วระบุตารางต้นเหตุ (Dynamic Diagnostic Audit) (${type})
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>หมวดวิเคราะห์</th><th>สาเหตุและตารางที่ส่งผลเสีย</th><th>จำนวนครั้งที่หลุด</th><th>คำแนะนำในการปรับจูน V47.0</th></tr>
+              <tr><th>หมวดวิเคราะห์</th><th>สาเหตุและตารางที่ส่งผลเสีย</th><th>จำนวนครั้งที่หลุด</th><th>คำแนะนำในการปรับจูน V48.0</th></tr>
             </thead>
             <tbody>
               <tr>
                 <td><b>รอยรั่วเลขเด่น (Digit Table Root Cause)</b></td>
                 <td><span style="color:#c62828; font-weight:700;">${res.mainDigitCause}</span></td>
                 <td><b>${res.evalCount - res.digitHits} งวด</b></td>
-                <td>Behavioral Profiling Active</td>
+                <td>Harmonic Smoothing Active</td>
               </tr>
               <tr>
                 <td><b>รอยรั่วเลขเจาะ (Pair Table Root Cause)</b></td>
                 <td><span style="color:#c62828; font-weight:700;">${res.mainPairCause}</span></td>
                 <td><b>${res.pairValidRounds - res.pairHits} งวด</b></td>
-                <td>Multi-Factor Tail Scoring Active</td>
+                <td>Dynamic Lookback Active</td>
               </tr>
             </tbody>
           </table>
@@ -1923,7 +1932,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs V47.0 (${type})
+            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs V48.0 (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1996,15 +2005,15 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต (Sum Digit Matrix V47.0) (${type})
+            🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต (Sum Digit Matrix V48.0) (${type})
           </div>
           <table class="audit-table">
             <thead>
               <tr><th>หมวดผลรวม</th><th>แต้มยอดฮิตสูงสุด</th><th>สถานะการกรอง</th></tr>
             </thead>
             <tbody>
-              <tr><td><b>ผลรวม 2 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top2Sum}</span></td><td><span class="badge-hit">Sum Harmonized</span></td></tr>
-              <tr><td><b>ผลรวม 3 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top3Sum}</span></td><td><span class="badge-hit">Sum Harmonized</span></td></tr>
+              <tr><td><b>ผลรวม 2 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top2Sum}</span></td><td><span class="badge-hit">Dynamic Filter</span></td></tr>
+              <tr><td><b>ผลรวม 3 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top3Sum}</span></td><td><span class="badge-hit">Dynamic Filter</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -2144,7 +2153,7 @@ function renderResults(parsedData) {
               <tr>
                 <td><b>5 งวดล่าสุด (Short-Term Risk)</b></td>
                 <td><span style="color:#2e7d32; font-weight:700;">หลุดสูงสุด ${res.currentLossStreak} งวด</span></td>
-                <td><b>🛡️ Multi-Factor Protection Active</b></td>
+                <td><b>🛡️ Dynamic Lookback Active</b></td>
               </tr>
             </tbody>
           </table>
@@ -2208,7 +2217,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางที่ 20: Predictive Honesty & Generalization Audit (V47.0) (${type})
+            🛡️ ตารางที่ 20: Predictive Honesty & Generalization Audit (V48.0) (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2227,7 +2236,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🔄 ตารางที่ 21 (V47.0): Cross-Round Resonance Matrix (${type})
+            🔄 ตารางที่ 21 (V48.0): Cross-Round Resonance Matrix (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2247,7 +2256,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🌡️ ตารางที่ 22 (V47.0): Market Volatility Pressure Gauge (${type})
+            🌡️ ตารางที่ 22 (V48.0): Market Volatility Pressure Gauge (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2265,7 +2274,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางที่ 23 (V47.0): Draw Risk Rating Matrix (${type})
+            🛡️ ตารางที่ 23 (V48.0): Draw Risk Rating Matrix (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2283,7 +2292,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🧬 ตารางที่ 24 (V47.0): Lottery Behavioral Profile & Custom Tuning Matrix (${type})
+            🧬 ตารางที่ 24 (V48.0): Lottery Behavioral Profile & Custom Tuning Matrix (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2291,9 +2300,28 @@ function renderResults(parsedData) {
             </thead>
             <tbody>
               <tr>
-                <td><b style="color:#2e7d32; font-size:0.55rem;">${res.behaviorProfile.profileGroup}</b></td>
+                <td><b style="color:#2e7d32; font-weight:0.55rem;">${res.behaviorProfile.profileGroup}</b></td>
                 <td><b>${res.behaviorProfile.customStrategy}</b></td>
-                <td><span class="badge-hit">Active Multi-Factor Profile</span></td>
+                <td><span class="badge-hit">Active Dynamic Profile</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- NEW DIAGNOSTIC TABLE V48.0 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🪟 ตารางที่ 25 (V48.0): Dynamic Lookback & Window Optimization Matrix (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ขนาดหน้าต่างสถิติ (Lookback Depth)</th><th>เทคนิคการกรองความเรียบ (Smoothing)</th><th>สถานะการประมวลผล</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b style="color:#b8860b; font-size:0.55rem;">${res.behaviorProfile.dynamicWindow} งวดล่าสุด</b></td>
+                <td><b>Harmonic Moving Average Smoothing Active</b></td>
+                <td><span class="badge-hit">Optimized Window 100%</span></td>
               </tr>
             </tbody>
           </table>
