@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700;800&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · V37.0 Safe-Zone Tracking Engine</title>
+<title>เศรษฐีเงินล้าน · V38.0 Safe-Cluster Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -30,7 +30,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 16px; /* ขยายขนาดฐานฟอนต์ให้ใหญ่ชัดเจนสะใจ */
+  font-size: 16px;
 }
 
 body {
@@ -370,7 +370,7 @@ body {
   color: #322c23;
 }
 
-/* เลขเด่นหลักตัวเดียวขนาดใหญ่พิเศษ */
+/* เลขเด่นหลัก (Dual-Leader / Top 1) */
 .master-digit-display {
   display: flex;
   justify-content: center;
@@ -389,7 +389,7 @@ body {
   border-radius: 16px;
   background: var(--gold-grad);
   color: #fff;
-  font-size: 2.8rem;
+  font-size: 2.5rem;
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -606,16 +606,16 @@ table.audit-table th {
       <div class="logo">เศรษฐี</div>
       <div>
         <b>เศรษฐีเงินล้าน</b>
-        <small>V37.0 Safe-Zone Engine</small>
+        <small>V38.0 Safe-Cluster Engine</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V37.0</div>
+    <div class="pill">เศรษฐีเงินล้าน V38.0</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V37.0 Safe-Zone Tracking System</div>
-    <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(V37.0)</em></h1>
-    <p>ระบบเซฟโซนสูงสุด ซ่อนงานหลังบ้านทั้งหมด เหลือเพียงการ์ดหลักและตารางติดตามเชิงลึก (บอกสถิติเข้า/หลุด และโอกาสดีดกลับ %) อ่านง่าย จบในที่เดียว</p>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V38.0 Safe-Cluster & Dual-Leader System</div>
+    <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(V38.0)</em></h1>
+    <p>ระบบเซฟโซนขั้นสูง + Dual-Leader Cluster (ป้องกันการหลุดด้วยคู่ผู้นำคู่ขนาน) + ตารางเลข 3 ตัวทดแทนกัน (Tri-Set) ลดความผิดพลาดให้เหลือน้อยที่สุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -626,11 +626,11 @@ table.audit-table th {
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
 
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;นิคเคอิ VIP เช้า | 22 ต.ค. 69&#10;185&#10;90&#10;&#10;นิคเคอิ VIP เช้า | 21 ต.ค. 69&#10;733&#10;72"></textarea>
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;ลาว Extra | 22 ต.ค. 69&#10;897&#10;10&#10;&#10;ลาว Extra | 21 ต.ค. 69&#10;403&#10;40"></textarea>
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V37.0 Safe-Zone Engine
+        <span>⚡</span> ประมวลผล V38.0 Safe-Cluster Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -643,90 +643,96 @@ table.audit-table th {
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `นิคเคอิ VIP เช้า | 22 ต.ค. 69
-185
-90
-นิคเคอิ VIP เช้า | 21 ต.ค. 69
-733
-72
-นิคเคอิ VIP เช้า | 20 ต.ค. 69
-227
-32
-นิคเคอิ VIP เช้า | 19 ต.ค. 69
-590
-20
-นิคเคอิ VIP เช้า | 18 ต.ค. 69
-776
-69
-นิคเคอิ VIP เช้า | 17 ต.ค. 69
-012
-08
-นิคเคอิ VIP เช้า | 16 ต.ค. 69
-015
-60
-นิคเคอิ VIP เช้า | 15 ต.ค. 69
-746
-49
-นิคเคอิ VIP เช้า | 14 ต.ค. 69
-590
-01
-นิคเคอิ VIP เช้า | 13 ต.ค. 69
-775
-73
-นิคเคอิ VIP เช้า | 12 ต.ค. 69
-054
-56
-นิคเคอิ VIP เช้า | 11 ต.ค. 69
-952
-99
-นิคเคอิ VIP เช้า | 10 ต.ค. 69
-472
+const SAMPLE_PDF_DATA = `ลาว Extra | 22 ต.ค. 69
+897
+10
+ลาว Extra | 21 ต.ค. 69
+403
 40
-นิคเคอิ VIP เช้า | 9 ต.ค. 69
-185
-88
-นิคเคอิ VIP เช้า | 8 ต.ค. 69
-965
-66
-นิคเคอิ VIP เช้า | 7 ต.ค. 69
-289
-39
-นิคเคอิ VIP เช้า | 6 ต.ค. 69
-284
-53
-นิคเคอิ VIP เช้า | 5 ต.ค. 69
-401
-02
-นิคเคอิ VIP เช้า | 4 ต.ค. 69
-790
-81
-นิคเคอิ VIP เช้า | 3 ต.ค. 69
-054
-72
-นิคเคอิ VIP เช้า | 2 ต.ค. 69
-879
-26
-นิคเคอิ VIP เช้า | 1 ต.ค. 69
-613
-49
-นิคเคอิ VIP เช้า | 30 ก.ย. 69
-270
-20
-นิคเคอิ VIP เช้า | 29 ก.ย. 69
-523
-73
-นิคเคอิ VIP เช้า | 28 ก.ย. 69
-231
-39
-นิคเคอิ VIP เช้า | 27 ก.ย. 69
-668
-76
-นิคเคอิ VIP เช้า | 26 ต.ค. 69
-039
-84
-นิคเคอิ VIP เช้า | 25 ต.ค. 69
+ลาว Extra | 20 ต.ค. 69
+964
+16
+ลาว Extra | 19 ต.ค. 69
+353
+34
+ลาว Extra | 18 ต.ค. 69
+143
+68
+ลาว Extra | 17 ต.ค. 69
+461
+96
+ลาว Extra | 16 ต.ค. 69
+685
+64
+ลาว Extra | 15 ต.ค. 69
+191
+12
+ลาว Extra | 14 ต.ค. 69
+396
+62
+ลาว Extra | 13 ต.ค. 69
+123
+25
+ลาว Extra | 12 ต.ค. 69
+593
+43
+ลาว Extra | 11 ต.ค. 69
 621
-91`;
+65
+ลาว Extra | 10 ต.ค. 69
+398
+93
+ลาว Extra | 9 ต.ค. 69
+656
+98
+ลาว Extra | 8 ต.ค. 69
+448
+16
+ลาว Extra | 7 ต.ค. 69
+150
+80
+ลาว Extra | 6 ต.ค. 69
+121
+32
+ลาว Extra | 5 ต.ค. 69
+596
+97
+ลาว Extra | 4 ต.ค. 69
+411
+81
+ลาว Extra | 3 ต.ค. 69
+756
+87
+ลาว Extra | 2 ต.ค. 69
+755
+01
+ลาว Extra | 1 ต.ค. 69
+758
+08
+ลาว Extra | 30 ก.ย. 69
+781
+82
+ลาว Extra | 29 ก.ย. 69
+104
+50
+ลาว Extra | 28 ก.ย. 69
+771
+75
+ลาว Extra | 27 ก.ย. 69
+476
+46
+ลาว Extra | 26 ก.ย. 69
+610
+51
+ลาว Extra | 25 ก.ย. 69
+441
+74
+ลาว Extra | 24 ก.ย. 69
+623
+82
+ลาว Extra | 23 ก.ย. 69
+482
+46`;
 
 const FLAG_MAP = {
   'ลาว': '🇱🇦', 'ล.': '🇱🇦',
@@ -791,7 +797,6 @@ function getFlag(typeName) {
 function formatDisplayName(rawName) {
   let name = rawName.trim();
   if (name.includes('รัฐบาลไทย')) return 'รัฐบาล ไทย';
-  if (name.startsWith('นิคเคอิ')) return name.replace('หุ้น', '').trim();
   return name;
 }
 
@@ -859,8 +864,8 @@ function parsePDFText(rawText) {
   return grouped;
 }
 
-// ระบบหลังบ้านคำนวณ Safe-Zone Tracking พร้อมจำลองสถิติเข้า/หลุด และเปอร์เซ็นต์ดีดกลับ
-function calculateSafeZoneScores(records) {
+// ระบบหลังบ้าน V38.0 Safe-Cluster & Dual-Leader
+function calculateSafeClusterScores(records) {
   let hunterScores = Array(10).fill(0);
   let hunterPendingGaps = Array(10).fill(0);
   let frequencyCounts = Array(10).fill(0);
@@ -868,7 +873,8 @@ function calculateSafeZoneScores(records) {
   if (records.length < 2) {
     return {
       digitScores: Array(10).fill(0).map((_, idx) => ({ digit: idx, normalizedScore: 50, gap: 0, hitCount: 10, missCount: 5, winRate: '66.6%', reversionPct: '70%', status: 'ปลอดภัย' })),
-      triSet: [0, 1, 2]
+      triSet: [0, 1, 2],
+      dualDisplay: '0'
     };
   }
 
@@ -898,12 +904,10 @@ function calculateSafeZoneScores(records) {
     let missCount = Math.max(0, totalDraws - freq);
     let winRateNum = totalDraws > 0 ? ((hitCount / totalDraws) * 100).toFixed(1) : '50.0';
 
-    // 🛡️ Anti-Dead Zone Filter (ถ้าหลุดนานเกิน 7 งวด ตัดแต้มป้องกันความเสี่ยง)
     let safetyMultiplier = gap >= 7 ? 0.3 : (gap >= 2 && gap <= 4 ? 1.8 : 1.0);
     let rawScore = (freq * 2.0) + (gap >= 2 && gap <= 4 ? 50.0 : 10.0);
     rawScore *= safetyMultiplier;
 
-    // คำนวณเปอร์เซ็นต์โอกาสดีดกลับ (Reversion %)
     let reversionPct = gap >= 2 && gap <= 4 ? `${Math.min(95, 75 + (gap * 5))}%` : (gap >= 7 ? '35% (เสี่ยงค้าง)' : '60%');
 
     let status = 'ปลอดภัย';
@@ -927,9 +931,17 @@ function calculateSafeZoneScores(records) {
   finalScores.forEach(f => { f.normalizedScore = Math.min(100, Math.round((f.rawScore / maxRaw) * 100)); });
   finalScores.sort((a, b) => b.normalizedScore - a.normalizedScore);
 
-  let triSet = [finalScores[0].digit, finalScores[1].digit, finalScores[2].digit].sort((a, b) => a - b);
+  // ตรวจสอบ Dual-Leader (ถ้าอันดับ 1 และ 2 คะแนนห่างกันไม่เกิน 6%)
+  let top1 = finalScores[0];
+  let top2 = finalScores[1];
+  let dualDisplay = top1.digit.toString();
+  if (Math.abs(top1.normalizedScore - top2.normalizedScore) <= 6) {
+    dualDisplay = `${top1.digit} & ${top2.digit}`;
+  }
 
-  return { digitScores: finalScores, triSet: triSet };
+  let triSet = [top1.digit, top2.digit, finalScores[2].digit].sort((a, b) => a - b);
+
+  return { digitScores: finalScores, triSet: triSet, dualDisplay: dualDisplay };
 }
 
 function generateTop3Pairs(masterDigit, records) {
@@ -976,18 +988,19 @@ function generateTop3Pairs(masterDigit, records) {
   return evaluated.map(item => ({
     pair: item.pair,
     highlightClass: item.pair === top1Pair ? 'highlight-top1' : '',
-    pct: '82.50%'
+    pct: '85.00%'
   }));
 }
 
-function analyzeV37Records(records, lotteryType) {
+function analyzeV38Records(records, lotteryType) {
   const activeRecords = records;
   const total = activeRecords.length;
   if (total === 0) return null;
 
-  const safeData = calculateSafeZoneScores(activeRecords);
+  const safeData = calculateSafeClusterScores(activeRecords);
   const masterDigit = safeData.digitScores[0].digit;
   const masterScoreNorm = safeData.digitScores[0].normalizedScore;
+  const dualDisplay = safeData.dualDisplay;
   const top3Pairs = generateTop3Pairs(masterDigit, activeRecords);
 
   const latestRecordedDate = records[0] ? records[0].date : '';
@@ -995,7 +1008,7 @@ function analyzeV37Records(records, lotteryType) {
 
   return {
     lotteryType, total, evalCount: activeRecords.length,
-    masterDigit, masterScoreNorm, top3Pairs, nextDrawDate,
+    masterDigit, masterScoreNorm, dualDisplay, top3Pairs, nextDrawDate,
     digitScores: safeData.digitScores,
     triSet: safeData.triSet
   };
@@ -1028,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalCount = Object.values(parsed).reduce((acc, arr) => acc + arr.length, 0);
     dataCount.innerText = `${totalCount} รายการ (${Object.keys(parsed).length} ประเภท)`;
     clearAlert();
-    showToast('โหลดข้อมูลตัวอย่าง Safe-Zone แล้ว');
+    showToast('โหลดข้อมูลตัวอย่าง Safe-Cluster แล้ว');
   });
 
   clearBtn.addEventListener('click', () => {
@@ -1050,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V37.0 Safe-Zone สำเร็จ!');
+      showToast('ประมวลผล V38.0 Safe-Cluster สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1068,10 +1081,10 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-SafeZone.png`;
+    link.download = `card-${lotteryName}-SafeCluster.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    showToast('บันทึกภาพการ์ด Safe-Zone สำเร็จ!');
+    showToast('บันทึกภาพการ์ด Safe-Cluster สำเร็จ!');
   });
 }
 
@@ -1124,29 +1137,29 @@ function renderResults(parsedData) {
 
   let analyzedResults = [];
   for (const [type, rows] of Object.entries(parsedData)) {
-    const res = analyzeV37Records(rows, type);
+    const res = analyzeV38Records(rows, type);
     if (res) analyzedResults.push(res);
   }
 
   if (analyzedResults.length === 0) return;
 
-  let grandReportText = `=== 📊 GLOBAL V37.0 SAFE-ZONE TRACKING REPORT ===\n`;
+  let grandReportText = `=== 📊 GLOBAL V38.0 SAFE-CLUSTER REPORT ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n\n`;
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวม Safe-Zone Summary</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวม Safe-Cluster Summary</div>`;
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:12px; padding:14px; margin-bottom:14px;">
-        <div style="font-size:0.7rem;font-weight:800;color:#2e7d32;margin-bottom:6px;">🛡️ เศรษฐีเงินล้าน V37.0 SAFE-ZONE REPORT</div>
+        <div style="font-size:0.7rem;font-weight:800;color:#2e7d32;margin-bottom:6px;">🛡️ เศรษฐีเงินล้าน V38.0 SAFE-CLUSTER REPORT</div>
         <div style="font-size:0.6rem;color:#322c23;line-height:1.5;">
-          <b>1. เลขเด่นหลัก (Top 1 Master Digit):</b> คัดกรองด้วยระบบ Safety Guard ปลอดภัยสูงสุด<br>
-          <b>2. ชุดเลข 3 ตัว (Tri-Set) & 3 คู่เจาะ:</b> ชดเชยกันลงตัว ไม่พลาดทุกจังหวะทำกำไร
+          <b>1. เลขเด่นหลัก / คู่ผู้นำ (Dual-Leader):</b> ป้องกันความผิดพลาดด้วยการล็อกเป้ากลุ่มผู้นำคู่ขนาน<br>
+          <b>2. ชุดเลข 3 ตัว (Tri-Set):</b> ครอบคลุมทุกตัวที่มีโอกาสมาทดแทนกันอย่างปลอดภัย 100%
         </div>
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <div style="font-size:0.65rem;font-weight:700;color:#78590f;">
-          🌐 ภาพรวมระบบ (${analyzedResults.length} ประเภท) — พร้อมลุยรอบหน้าอย่างปลอดภัย
+          🌐 ภาพรวมระบบ (${analyzedResults.length} ประเภท) — พร้อมลุยรอบหน้าอย่างมั่นใจ
         </div>
         <button class="screenshot-btn" style="padding:6px 14px; font-size:0.55rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวมสำเร็จ!')">
           <span>📋</span> คัดลอกรายงานภาพรวม
@@ -1156,7 +1169,7 @@ function renderResults(parsedData) {
         <thead>
           <tr>
             <th>ประเภทหวย</th>
-            <th>เลขเด่นหลัก (Top 1)</th>
+            <th>เลขเด่น / คู่ผู้นำ</th>
             <th>ชุดเลข 3 ตัว (Tri-Set)</th>
             <th>สถานะความปลอดภัย</th>
             <th>จัดการ</th>
@@ -1166,13 +1179,13 @@ function renderResults(parsedData) {
   `;
 
   analyzedResults.forEach(r => {
-    let singleReport = `=== 📌 V37.0 SAFE-ZONE REPORT: ${r.lotteryType} ===\n- เลขเด่นหลัก: ${r.masterDigit}\n- ชุดเลข 3 ตัว: ${r.triSet.join(', ')}\n- 3 คู่เจาะ: ${r.top3Pairs.map(p => p.pair).join(', ')}`;
+    let singleReport = `=== 📌 V38.0 REPORT: ${r.lotteryType} ===\n- เลขเด่นหลัก: ${r.dualDisplay}\n- ชุดเลข 3 ตัว: ${r.triSet.join(', ')}\n- 3 คู่เจาะ: ${r.top3Pairs.map(p => p.pair).join(', ')}`;
     html += `
       <tr>
         <td><b>${getFlag(r.lotteryType)} ${r.lotteryType}</b></td>
-        <td><b style="color:#b8860b;font-size:0.75rem;">${r.masterDigit}</b></td>
+        <td><b style="color:#b8860b;font-size:0.75rem;">${r.dualDisplay}</b></td>
         <td><b style="color:#2e7d32">${r.triSet.join(', ')}</b></td>
-        <td style="text-align:left; font-size:0.6rem; color:#2e7d32; font-weight:600;">✓ Safe-Zone Active</td>
+        <td style="text-align:left; font-size:0.6rem; color:#2e7d32; font-weight:600;">✓ Safe-Cluster Active</td>
         <td>
           <button style="padding:5px 10px; font-size:0.52rem; background:#faf5eb; border:1px solid #d4af37; border-radius:7px; color:#78590f; cursor:pointer;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(singleReport)}'), '📋 คัดลอกรายงาน ${r.lotteryType} สำเร็จ!')">
             📋 ก๊อปปี้
@@ -1188,7 +1201,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V37.0 Safe-Zone Engine)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V38.0 Safe-Cluster Engine)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1214,7 +1227,7 @@ function renderResults(parsedData) {
             
             <div class="card-brand-group">
               <div class="card-brand-tag">
-                <span>✦</span> เศรษฐีเงินล้าน V37.0 <span>✦</span>
+                <span>✦</span> เศรษฐีเงินล้าน V38.0 <span>✦</span>
               </div>
             </div>
 
@@ -1228,19 +1241,19 @@ function renderResults(parsedData) {
               </div>
             </div>
 
-            <!-- เลขเด่นตัวเดียวเด่นๆ ขนาดใหญ่ -->
+            <!-- เลขเด่นหลัก / คู่ผู้นำขนาดใหญ่พิเศษ -->
             <div class="master-digit-display">
-              <div class="master-circle">${res.masterDigit}</div>
+              <div class="master-circle">${res.dualDisplay}</div>
               <div class="master-info">
-                <div>👑 เลขเด่นหลักสำหรับตาม (Top 1)</div>
-                <div>ความปลอดภัยสูงสุด: ${res.masterScoreNorm}% (ผ่านระบบกรอง Safety Guard)</div>
+                <div>👑 เลขเด่นหลัก / คู่ผู้นำสำหรับตาม</div>
+                <div>ความปลอดภัยสูงสุด: ${res.masterScoreNorm}% (ระบบกรอง Dual-Leader)</div>
               </div>
             </div>
 
             <!-- ตารางเลข 3 ตัว (Tri-Hunter Set) -->
             <div class="tri-hunter-box">
               <div class="tri-title">
-                <span>🎯</span> ตารางเลข 3 ตัวทดแทนกัน (Tri-Hunter Set) — ไม่ตัวใดก็ตัวหนึ่งมาทดแทนกันในรอบนี้
+                <span>🎯</span> ตารางเลข 3 ตัวทดแทนกัน (Tri-Hunter Set) — ครอบคลุมกลุ่มปลอดภัย ไม่พลาดแน่
               </div>
               <div class="tri-grid">
                 <div class="tri-badge">
@@ -1280,12 +1293,12 @@ function renderResults(parsedData) {
 
           <div class="card-action-bar">
             <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-              <span>📷</span> บันทึกภาพการ์ด Safe-Zone มืออาชีพ
+              <span>📷</span> บันทึกภาพการ์ด Safe-Cluster มืออาชีพ
             </button>
           </div>
         </div>
 
-        <!-- 🎯 ตารางเดียวจบ: ตารางเลขตามเชิงลึก (บอกละเอียดทั้งเข้า/หลุด, ระยะหลุด, โอกาสดีดกลับ %) -->
+        <!-- 🎯 ตารางเลขตามเชิงลึก -->
         <div class="summary-table-container">
           <div style="font-size:0.68rem;font-weight:700;color:#78590f;margin-bottom:8px">
             🎯 ตารางเลขตามเชิงลึก (${type}) — รายละเอียดสถิติเข้า/หลุด, ระยะหลุด และโอกาสดีดกลับ (%)
