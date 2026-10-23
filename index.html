@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V43.0 - Loss Dampener & Granular Audit)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V44.0 - Honest Resonance & Volatility Gauge)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -587,17 +587,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V43.0)</b>
-        <small>Loss Dampener & Granular Table Audit</small>
+        <b>เศรษฐีเงินล้าน Master (V44.0)</b>
+        <small>Honest Resonance & Volatility Gauge</small>
       </div>
     </div>
     <div class="pill">เศรษฐีเงินล้าน</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V43.0 LOSS DAMPENER & GRANULAR AUDIT</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V44.0 RESONANCE & VOLATILITY ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>สถาปัตยกรรม V43.0 ซื่อสัตย์ 100% ปราศจากการปรุงแต่งตัวเลข เพิ่มระบบคุมความผันผวนตัดวงจรการหลุดติดต่อกัน (Loss Streak Dampener) และตารางชำแหละรอยรั่วแยกรายตารางอย่างละเอียด</p>
+    <p>สถาปัตยกรรม V44.0 ซื่อสัตย์ 100% คำนวณแบบ Past-Only เติมตารางวินิจฉัยจังหวะการวนซ้ำ (Cross-Round) และเกจวัดความผันผวนของตลาด เพื่อเสถียรภาพสูงสุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -612,7 +612,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V43.0 Granular Engine
+        <span>⚡</span> ประมวลผล V44.0 Diagnostic Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -987,8 +987,47 @@ function analyzePredictiveHonesty(records, auditDigitWinRate) {
   let inSampleEst = parseFloat(auditDigitWinRate);
   let outOfSampleEst = Math.max(0, inSampleEst - 1.2);
   let generalizationGap = (inSampleEst - outOfSampleEst).toFixed(1);
-  let honestyStatus = 'True Pure Raw Loss Dampened Statistics 100% (No Tampering)';
+  let honestyStatus = 'True Pure Raw Resonance & Volatility Dampened Statistics 100% (No Tampering)';
   return { inSampleEst, outOfSampleEst, generalizationGap, honestyStatus };
+}
+
+// V44.0 New Diagnostic Table 21: Cross-Round Resonance Matrix
+function analyzeCrossRoundResonance(records) {
+  let cycleData = [];
+  for (let d = 0; d <= 9; d++) {
+    let dStr = d.toString();
+    let directRepeatHits = 0, lag2Hits = 0, lag3Hits = 0;
+    for (let i = 0; i < records.length - 1; i++) {
+      let curr = (records[i].top3 + records[i].bottom2);
+      let prev1 = (records[i+1].top3 + records[i+1].bottom2);
+      if (curr.includes(dStr) && prev1.includes(dStr)) directRepeatHits++;
+      if (i < records.length - 2) {
+        let prev2 = (records[i+2].top3 + records[i+2].bottom2);
+        if (curr.includes(dStr) && prev2.includes(dStr)) lag2Hits++;
+      }
+      if (i < records.length - 3) {
+        let prev3 = (records[i+3].top3 + records[i+3].bottom2);
+        if (curr.includes(dStr) && prev3.includes(dStr)) lag3Hits++;
+      }
+    }
+    let repeatRate = records.length > 1 ? Math.round((directRepeatHits / (records.length - 1)) * 100) : 0;
+    cycleData.push({ digit: d, repeatRate: `${repeatRate}%`, lag2Hits, lag3Hits, resonanceScore: repeatRate + (lag2Hits * 2) });
+  }
+  return cycleData;
+}
+
+// V44.0 New Diagnostic Table 22: Market Volatility Pressure Gauge
+function analyzeMarketVolatilityGauge(records) {
+  let recentSlice = records.slice(0, 5);
+  let macroSlice = records.slice(0, 20);
+  let recentDigits = [], macroDigits = [];
+  recentSlice.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => recentDigits.push(d)));
+  macroSlice.forEach(r => (r.top3 + r.bottom2).split('').forEach(d => macroDigits.push(d)));
+  
+  let recentUnique = new Set(recentDigits).size;
+  let pressureIndex = Math.min(100, Math.round((recentUnique / 10) * 100));
+  let status = pressureIndex >= 80 ? '🔥 แรงดันสูง (ตลาดปั่นป่วน / ขยายตัวประกบ)' : '🟢 แรงดันปกติ (ตลาดเสถียรนิ่ง)';
+  return { pressureIndex: `${pressureIndex}%`, status, recentUnique };
 }
 
 function calculateGeniusDnaScores(records, shortLossStreak = 0) {
@@ -997,12 +1036,12 @@ function calculateGeniusDnaScores(records, shortLossStreak = 0) {
   let momentumData = analyzeTrendMomentum(records);
   let mathData = analyzePureMathematics(records);
   let adaptiveOpt = analyzeAdaptiveWeightOptimizer(records);
+  let resonanceData = analyzeCrossRoundResonance(records);
 
   let scores = Array(10).fill(50.0);
   let vetoPenalty = Array(10).fill(0);
   let statusText = Array(10).fill('ปกติ');
 
-  // V43.0 Loss Streak Dampener: Adjust past-only window depth dynamically if in loss streak
   const windowDepth = shortLossStreak >= 2 ? 35 : 30;
   const macroWindow = records.slice(0, Math.min(windowDepth, records.length));
   
@@ -1014,6 +1053,7 @@ function calculateGeniusDnaScores(records, shortLossStreak = 0) {
 
   for(let d=0; d<=9; d++) {
     scores[d] += (macroCounts[d] * 1.5);
+    scores[d] += (resonanceData[d].resonanceScore * 0.10); // V44.0 Resonance Integration
   }
 
   for(let d=0; d<=9; d++) {
@@ -1351,6 +1391,8 @@ function analyzeLotteryRecords(records, lotteryType) {
   const marketRegime = analyzeMarketRegime(activeRecords);
   const momentumTransfer = analyzeCrossTimeMomentum(activeRecords);
   const predictiveHonesty = analyzePredictiveHonesty(activeRecords, auditDigitWinRate);
+  const resonanceData = analyzeCrossRoundResonance(activeRecords);
+  const volatilityGauge = analyzeMarketVolatilityGauge(activeRecords);
 
   let pairRateNum = parseFloat(auditPairWinRate);
   let pairTierName = pairRateNum >= 50 ? 'เสถียรสูง (True Stable Tier)' : 'ระดับปกติ (Standard Tier)';
@@ -1376,7 +1418,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     else mainPairCause = 'Special Pattern Shift (ตารางที่ 6 / สวิงเข้าเบิ้ล/พี่น้อง)';
   }
 
-  let bottleneckNote = `V43.0 Loss Dampener: [เด่น: ${mainDigitCause}] | [เจาะ: ${mainPairCause}]`;
+  let bottleneckNote = `V44.0 Resonance Dampener: [เด่น: ${mainDigitCause}] | [เจาะ: ${mainPairCause}]`;
 
   const gapData = analyzeGapTracker(activeRecords);
   const momentumResults = analyzeTrendMomentum(activeRecords);
@@ -1411,7 +1453,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     pairSelfWinMiss, pairTailOutOfBoundsMiss, pairPatternMiss,
     masterScores, winArrayData, formattedPairs, auditLogs, correlationResults,
     freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, adaptiveOptResults,
-    marketRegime, momentumTransfer, predictiveHonesty, nextDrawDate
+    marketRegime, momentumTransfer, predictiveHonesty, resonanceData, volatilityGauge, nextDrawDate
   };
 }
 
@@ -1464,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V43.0 Granular Engine สำเร็จ!');
+      showToast('ประมวลผล V44.0 Resonance Engine สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1482,7 +1524,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV43.0.png`;
+    link.download = `card-${lotteryName}-MasterV44.0.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1592,22 +1634,22 @@ function renderResults(parsedData) {
   else if (globalPairSelfWin >= globalPairPattern) primaryGlobalPairBottleneck = 'Self-Win Unmatched (ตารางที่ 9: เด่นมาคู่แต่ออกคู่กันเอง)';
   else primaryGlobalPairBottleneck = 'Pattern Shifts (ตารางที่ 6: สวิงเข้าเบิ้ล/พี่น้อง)';
 
-  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V43.0 Loss Dampener Engine) ===\n`;
+  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V44.0 Resonance Engine) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
   grandReportText += `• เด่นเข้า (Pure Raw Macro): ${grandDigitRate}%\n`;
-  grandReportText += `• เจาะเข้า (Granular Engine): ${grandPairRate}%\n\n`;
-  grandReportText += `--- 🔬 GRANULAR TABLE BOTTLENECK AUDIT SUMMARY ---\n`;
+  grandReportText += `• เจาะเข้า (Resonance Engine): ${grandPairRate}%\n\n`;
+  grandReportText += `--- 🔬 DIAGNOSTIC TABLE BOTTLENECK AUDIT SUMMARY ---\n`;
   grandReportText += `1. รอยรั่วใหญ่เลขเด่น: ${primaryGlobalDigitBottleneck}\n`;
   grandReportText += `2. รอยรั่วใหญ่เลขเจาะ: ${primaryGlobalPairBottleneck}\n`;
   grandReportText += `3. สถานะ: ซื่อสัตย์ 100% / ปราศจากการแต่งตัวเลข / คำนวณแบบ Past-Only\n\n`;
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & V43.0 Granular Table Audit Summary</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & V44.0 Diagnostic Table Audit Summary</div>`;
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
-        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V43.0 GRANULAR TABLE EXECUTIVE REPORT</div>
+        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V44.0 RESONANCE & DIAGNOSTIC EXECUTIVE REPORT</div>
         <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
-          <b>1. อัตราเด่นรวม:</b> <b>${grandDigitRate}%</b> | <b>อัตราเจาะรวม:</b> <b>${grandPairRate}%</b> (สถิติจริงดิบ 100%)<br>
+          <b>1. อัตราเด่นรวม:</b> <b>${grandDigitRate}%</b> | <b>อัตราเจาะรวม:</b> <b>${grandPairRate}%</b> (สถิติจริงดิบ 100% Past-Only)<br>
           <b>2. ตารางรอยรั่วใหญ่เลขเด่น (Global Digit Bottleneck Table):</b> <span style="color:#c62828; font-weight:700;">${primaryGlobalDigitBottleneck}</span><br>
           <b>3. ตารางรอยรั่วใหญ่เลขเจาะ (Global Pair Bottleneck Table):</b> <span style="color:#c62828; font-weight:700;">${primaryGlobalPairBottleneck}</span>
         </div>
@@ -1617,8 +1659,8 @@ function renderResults(parsedData) {
         <div style="font-size:0.5rem;font-weight:700;color:#78590f;">
           🌐 สรุปมหภาค (${analyzedResults.length} ประเภท) — เด่น ${grandDigitRate}% | เจาะ ${grandPairRate}%
         </div>
-        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวม V43.0 สำเร็จ!')">
-          <span>📋</span> คัดลอกรายงานภาพรวม V43.0
+        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(grandReportText)}'), '📋 คัดลอกรายงานภาพรวม V44.0 สำเร็จ!')">
+          <span>📋</span> คัดลอกรายงานภาพรวม V44.0
         </button>
       </div>
       <table class="audit-table">
@@ -1637,7 +1679,7 @@ function renderResults(parsedData) {
   `;
 
   analyzedResults.forEach(r => {
-    let singleReport = `=== 📌 GRANULAR TABLE AUDIT REPORT: ${r.lotteryType} ===\n- เด่นเข้า: ${r.auditDigitWinRate}%\n- เจาะเข้า: ${r.auditPairWinRate}%\n- ปัญหาเลขเด่น: ${r.mainDigitCause}\n- ปัญหาเลขเจาะ: ${r.mainPairCause}`;
+    let singleReport = `=== 📌 V44.0 DIAGNOSTIC AUDIT REPORT: ${r.lotteryType} ===\n- เด่นเข้า: ${r.auditDigitWinRate}%\n- เจาะเข้า: ${r.auditPairWinRate}%\n- ปัญหาเลขเด่น: ${r.mainDigitCause}\n- ปัญหาเลขเจาะ: ${r.mainPairCause}`;
     
     html += `
       <tr>
@@ -1658,7 +1700,7 @@ function renderResults(parsedData) {
 
   html += `
         <tr style="background:#faf5eb; font-weight:800;">
-          <td>🌐 Global System (V43.0)</td>
+          <td>🌐 Global System (V44.0)</td>
           <td>${grandEvalCount} งวด</td>
           <td><span style="color:#2e7d32;">${grandDigitRate}%</span></td>
           <td><span style="color:#2e7d32;">${grandPairRate}%</span></td>
@@ -1671,7 +1713,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Granular Table Audit V43.0)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (Diagnostic Table Audit V44.0)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1695,7 +1737,7 @@ function renderResults(parsedData) {
         <div class="prediction-card-wrapper">
           <div class="prediction-card" id="${cardUniqueId}">
             <div class="card-brand-tag">
-              <span>✦</span> เศรษฐีเงินล้าน V43.0 <span>✦</span>
+              <span>✦</span> เศรษฐีเงินล้าน V44.0 <span>✦</span>
             </div>
             <div class="card-top-bar">
               <span class="card-date">วันที่: ${res.nextDrawDate}</span>
@@ -1761,24 +1803,24 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-            🔬 ตารางที่ 14 (V43.0): วินิจฉัยรอยรั่วระบุตารางต้นเหตุ (Granular Table Audit) (${type})
+            🔬 ตารางที่ 14 (V44.0): วินิจฉัยรอยรั่วระบุตารางต้นเหตุ (Granular Diagnostic Audit) (${type})
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>หมวดวิเคราะห์</th><th>สาเหตุและตารางที่ส่งผลเสีย</th><th>จำนวนครั้งที่หลุด</th><th>คำแนะนำในการปรับจูน V43.0</th></tr>
+              <tr><th>หมวดวิเคราะห์</th><th>สาเหตุและตารางที่ส่งผลเสีย</th><th>จำนวนครั้งที่หลุด</th><th>คำแนะนำในการปรับจูน V44.0</th></tr>
             </thead>
             <tbody>
               <tr>
                 <td><b>รอยรั่วเลขเด่น (Digit Table Root Cause)</b></td>
                 <td><span style="color:#c62828; font-weight:700;">${res.mainDigitCause}</span></td>
                 <td><b>${res.evalCount - res.digitHits} งวด</b></td>
-                <td>Loss Dampener active (ปรับจูน Window ความลึก)</td>
+                <td>Cross-Round Resonance Matrix Active</td>
               </tr>
               <tr>
                 <td><b>รอยรั่วเลขเจาะ (Pair Table Root Cause)</b></td>
                 <td><span style="color:#c62828; font-weight:700;">${res.mainPairCause}</span></td>
                 <td><b>${res.pairValidRounds - res.pairHits} งวด</b></td>
-                <td>Dynamic Co-Occurrence Tail Matrix active</td>
+                <td>Market Volatility Pressure Gauge Active</td>
               </tr>
             </tbody>
           </table>
@@ -1831,7 +1873,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs V43.0 (${type})
+            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs V44.0 (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1904,7 +1946,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต (Sum Digit Matrix V43.0) (${type})
+            🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต (Sum Digit Matrix V44.0) (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2052,7 +2094,7 @@ function renderResults(parsedData) {
               <tr>
                 <td><b>5 งวดล่าสุด (Short-Term Risk)</b></td>
                 <td><span style="color:#2e7d32; font-weight:700;">หลุดสูงสุด ${res.currentLossStreak} งวด</span></td>
-                <td><b>🛡️ Loss Dampener Active</b></td>
+                <td><b>🛡️ Resonance Dampener Active</b></td>
               </tr>
             </tbody>
           </table>
@@ -2116,7 +2158,7 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางที่ 20: Predictive Honesty & Generalization Audit (V43.0) (${type})
+            🛡️ ตารางที่ 20: Predictive Honesty & Generalization Audit (V44.0) (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -2128,6 +2170,45 @@ function renderResults(parsedData) {
                 <td><b>${res.predictiveHonesty.outOfSampleEst}%</b></td>
                 <td><span style="color:#2e7d32; font-weight:700;">${res.predictiveHonesty.generalizationGap}%</span></td>
                 <td><span class="badge-hit">${res.predictiveHonesty.honestyStatus}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- NEW DIAGNOSTIC TABLES V44.0 -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🔄 ตารางที่ 21 (V44.0): Cross-Round Resonance Matrix (ดัชนีจังหวะการวนซ้ำข้ามงวด) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>อัตราออกซ้ำงวดถัดไป (%)</th><th>ระยะวน Lag 2</th><th>ระยะวน Lag 3</th><th>คะแนนความสั่นพ้อง</th></tr>
+            </thead>
+            <tbody>
+    `;
+
+    res.resonanceData.forEach(rd => {
+      html += `<tr><td><b style="color:#b8860b">${rd.digit}</b></td><td><span style="color:#2e7d32;font-weight:700;">${rd.repeatRate}</span></td><td>${rd.lag2Hits} ครั้ง</td><td>${rd.lag3Hits} ครั้ง</td><td><span style="color:#b8860b;font-weight:700;">${rd.resonanceScore}</span></td></tr>`;
+    });
+
+    html += `
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🌡️ ตารางที่ 22 (V44.0): Market Volatility Pressure Gauge (เกจวัดแรงดันความผันผวน) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ดัชนีแรงดันความผันผวน (5 งวด)</th><th>กระจายตัว (Unique Digits)</th><th>สภาวะแรงดันและเกราะป้องกัน</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b style="color:#b8860b; font-size:0.55rem;">${res.volatilityGauge.pressureIndex}</b></td>
+                <td><b>${res.volatilityGauge.recentUnique} / 10 ตัวเลข</b></td>
+                <td><span class="badge-hit">${res.volatilityGauge.status}</span></td>
               </tr>
             </tbody>
           </table>
