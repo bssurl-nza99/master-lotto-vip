@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V60.23 (True Walk-Forward Telemetry Engine)</title>
+<title>เศรษฐีเงินล้าน · Master V60.24 (Walk-Forward Complete Engine)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -592,17 +592,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V60.23)</b>
-        <small>True Walk-Forward Telemetry Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (V60.24)</b>
+        <small>Walk-Forward Complete Telemetry</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V60.23</div>
+    <div class="pill">เศรษฐีเงินล้าน V60.24</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V60.23 WALK-FORWARD SIMULATION</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V60.24 WALK-FORWARD ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>จำลองเหตุการณ์จริงแบบ Walk-Forward (ใช้เฉพาะข้อมูลในอดีตแต่ละงวดมาคำนวณ) สะท้อนความจริง 100% ไม่มีปรับแต่งข้อมูลย้อนหลัง</p>
+    <p>ระบบจำลองเหตุการณ์จริงแบบ Walk-Forward 100% (ข้อมูลย้อนหลังใช้เฉพาะข้อมูลก่อนงวดนั้นๆ จริง)</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -617,7 +617,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V60.23 Walk-Forward Telemetry
+        <span>⚡</span> ประมวลผล V60.24 Walk-Forward Telemetry
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -990,6 +990,90 @@ function analyzeMarketRegime(records) {
   return { entropyScore, regimeState };
 }
 
+function analyzeOverallFrequency(records) {
+  let counts = Array(10).fill(0), winStreaks = Array(10).fill(0), maxWins = Array(10).fill(0), maxLosses = Array(10).fill(0), tempLoss = Array(10).fill(0), lastStat = Array(10).fill(null);
+  const chron = [...records].reverse();
+  chron.forEach(r => {
+    let digits = (r.top3 + r.bottom2).split('');
+    for(let d=0; d<=9; d++) {
+      counts[d]++;
+      if(digits.includes(d.toString())) {
+        winStreaks[d]++; tempLoss[d] = 0;
+        if(winStreaks[d] > maxWins[d]) maxWins[d] = winStreaks[d];
+        lastStat[d] = 'เข้า';
+      } else {
+        tempLoss[d]++; winStreaks[d] = 0;
+        if(tempLoss[d] > maxLosses[d]) maxLosses[d] = tempLoss[d];
+        lastStat[d] = 'หลุด';
+      }
+    }
+  });
+  return counts.map((_, d) => ({ digit: d, hits: counts[d], maxWin: maxWins[d], maxLoss: maxLosses[d], status: lastStat[d] }));
+}
+
+function analyzePositionBreakdown(records) {
+  let pos = {};
+  for(let d=0; d<=9; d++) { pos[d] = { hundreds: { hits: 0 }, tens: { hits: 0 }, units: { hits: 0 } }; }
+  records.forEach(r => {
+    let t3 = r.top3, b2 = r.bottom2;
+    let h = t3[0], t = t3[1], u = t3[2], bTens = b2[0], bUnits = b2[1];
+    for(let d=0; d<=9; d++) {
+      let dStr = d.toString();
+      if(h === dStr) pos[d].hundreds.hits++;
+      if(t === dStr || bTens === dStr) pos[d].tens.hits++;
+      if(u === dStr || bUnits === dStr) pos[d].units.hits++;
+    }
+  });
+  return pos;
+}
+
+function analyzeOddEvenHighLow(records) {
+  let evenCount = 0, oddCount = 0, highCount = 0, lowCount = 0, total = records.length;
+  records.forEach(r => {
+    let top2 = parseInt(r.top3.slice(-2));
+    if(top2 % 2 === 0) evenCount++; else oddCount++;
+    if(top2 >= 50) highCount++; else lowCount++;
+  });
+  return {
+    evenRate: total > 0 ? ((evenCount / total) * 100).toFixed(1) : '0.0',
+    oddRate: total > 0 ? ((oddCount / total) * 100).toFixed(1) : '0.0',
+    highRate: total > 0 ? ((highCount / total) * 100).toFixed(1) : '0.0',
+    lowRate: total > 0 ? ((lowCount / total) * 100).toFixed(1) : '0.0',
+  };
+}
+
+function analyzeSpecialPatterns(records) {
+  let doubleCount = 0, harmCount = 0, sisterCount = 0, total = records.length;
+  records.forEach(r => {
+    let t3 = r.top3, top2 = t3.slice(-2);
+    if(t3[1] === t3[2]) doubleCount++;
+    if(t3[0] === t3[2]) harmCount++;
+    let d1 = parseInt(top2[0]), d2 = parseInt(top2[1]);
+    if(Math.abs(d1 - d2) === 1 || (d1 === 0 && d2 === 9) || (d1 === 9 && d2 === 0)) sisterCount++;
+  });
+  return {
+    doubleRate: total > 0 ? ((doubleCount / total) * 100).toFixed(1) : '0.0',
+    harmRate: total > 0 ? ((harmCount / total) * 100).toFixed(1) : '0.0',
+    sisterRate: total > 0 ? ((sisterCount / total) * 100).toFixed(1) : '0.0',
+  };
+}
+
+function analyzeSumMatrix(records) {
+  let top2Sums = {}, top3Sums = {};
+  records.forEach((r) => {
+    let t3 = r.top3;
+    let sTop3 = t3.split('').reduce((a,b) => a + parseInt(b), 0);
+    let sTop2 = parseInt(t3[1]) + parseInt(t3[2]);
+    top3Sums[sTop3] = (top3Sums[sTop3] || 0) + 1;
+    top2Sums[sTop2] = (top2Sums[sTop2] || 0) + 1;
+  });
+  let sortedTop2Sums = Object.entries(top2Sums).sort((a,b) => b[1]-a[1]);
+  let topTop2 = sortedTop2Sums[0] || [0,0];
+  let secondTop2 = sortedTop2Sums[1] || topTop2;
+  let topTop3 = Object.entries(top3Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
+  return { top2Sum: parseInt(topTop2[0]), secondTop2Sum: parseInt(secondTop2[0]), top3Sum: parseInt(topTop3[0]) };
+}
+
 function calculateGeniusDnaScores(records, shortLossStreak = 0) {
   let len = records.length;
   let wShort = records.slice(0, Math.min(8, len));
@@ -1227,7 +1311,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     // TRUE WALK-FORWARD PREDICTION (ใช้เฉพาะข้อมูลในอดีตก่อนงวดเป้าหมายจริงๆ 100%)
     const pastMaster = calculateGeniusDnaScores(past, currentLossStreak);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
-    topCandidates.sort((a,b) => a - b); // เรียงจากน้อยไปหามาก เพื่อความสะอาด
+    topCandidates.sort((a,b) => a - b);
     const pastD1 = topCandidates[0], pastD2 = topCandidates[1];
 
     const actualTop3 = target.top3, actualBottom2 = target.bottom2;
@@ -1443,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V60.23 Walk-Forward Telemetry สำเร็จ!');
+      showToast('ประมวลผล V60.24 Walk-Forward Telemetry สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1461,7 +1545,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV60.23.png`;
+    link.download = `card-${lotteryName}-MasterV60.24.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1572,8 +1656,8 @@ function renderResults(parsedData) {
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
   let grandWinRate = grandEvalCount > 0 ? ((totalWinHits / grandEvalCount) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 WEIGHT TUNING & WALK-FORWARD COMMAND TABLE (V60.23) ===\n`;
-  let grandReportText = `=== 🌐 GRAND WALK-FORWARD REPORT (V60.23) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n- ชุดวินเข้าภาพรวม: ${grandWinRate}% (${totalWinHits}/${grandEvalCount} ครั้ง)\n\n`;
+  let tuningCopyText = `=== 📊 WEIGHT TUNING & WALK-FORWARD COMMAND TABLE (V60.24) ===\n`;
+  let grandReportText = `=== 🌐 GRAND WALK-FORWARD REPORT (V60.24) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n- ชุดวินเข้าภาพรวม: ${grandWinRate}% (${totalWinHits}/${grandEvalCount} ครั้ง)\n\n`;
 
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
@@ -1586,12 +1670,12 @@ function renderResults(parsedData) {
     grandReportText += `[ ${r.lotteryType} ] งวด: ${r.total} | เด่นเข้า: ${r.auditDigitWinRate}% (${r.digitHits}/${r.evalCount}) | เจาะเข้า: ${r.auditPairWinRate}% (${r.pairHits}/${r.pairValidRounds}) | ชุดวินเข้า: ${r.auditWinRate}% (${r.winHits}/${r.evalCount}) | ชุดวิน: win : ${r.smartWinData.winStr}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Walk-Forward Dashboard (V60.23)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Walk-Forward Dashboard (V60.24)</div>`;
   
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:10px; margin-bottom:10px;">
-        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.23 WALK-FORWARD SIMULATION DASHBOARD</div>
+        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.24 WALK-FORWARD SIMULATION DASHBOARD</div>
         <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-top:6px; text-align:center;">
           <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
             <div style="font-size:0.4rem; color:#666;">งวดสะสมรวม</div>
@@ -1709,7 +1793,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.23 Walk-Forward Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.24 Walk-Forward Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
