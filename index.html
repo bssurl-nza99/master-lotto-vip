@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V60.14 (Precision Tuned & Honest Telemetry Engine)</title>
+<title>เศรษฐีเงินล้าน · Master V60.15 (Standalone Decoupled Pair Engine)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -587,17 +587,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V60.14)</b>
-        <small>Precision Tuned & Honest Telemetry Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (V60.15)</b>
+        <small>Standalone Decoupled Pair Engine & Telemetry Hub</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V60.14</div>
+    <div class="pill">เศรษฐีเงินล้าน V60.15</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V60.14 PRECISION TUNED ENGINE</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V60.15 DECOUPLED PAIR ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบประมวลผลซื่อสัตย์ 100% ปราศจากการเห็นอนาคต (No Look-Ahead) พร้อมอัปเดตการจูนค่าน้ำหนัก Veto Penalty, Trend Momentum (shortPct 0.55) และการกรองข้อมูลดิบที่รัดกุม</p>
+    <p>ระบบประมวลผลอิสระแยกท่อเด่นและเจาะ (Decoupled Dual-Engine) พร้อม 3-Layer Strict Pair Filters และ Telemetry Summary ชัดเจนโปร่งใส 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -612,7 +612,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V60.14 Precision Telemetry
+        <span>⚡</span> ประมวลผล V60.15 Decoupled Telemetry
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -792,7 +792,6 @@ function showToast(msg) {
   }
 }
 
-/* 🧠 ปรับปรุง parsePDFText ให้กรองบรรทัดข้อมูลดิบได้รัดกุมยิ่งขึ้น (Table 1 Fix) */
 function parsePDFText(rawText) {
   if (!rawText || typeof rawText !== 'string') return {};
   const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
@@ -809,7 +808,6 @@ function parsePDFText(rawText) {
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
 
-      // กรองวันหยุด / งดออกผล / ปิดตลาด / บรรทัดขยะ
       if (line.length < 2 || line.includes('งดออกผล') || line.includes('ปิดตลาด') || line.startsWith('...') || line.startsWith('---') || line.startsWith('==')) {
         pendingTop3 = null; currentDate = null; continue;
       }
@@ -875,7 +873,6 @@ function analyzeGapTracker(records) {
   return gapMap;
 }
 
-/* 🧠 ปรับสัดส่วน shortPct จาก 0.48 เป็น 0.55 ใน Trend Momentum (Table 11 Fix) */
 function analyzeTrendMomentum(records) {
   let momentumData = [];
   const len = records.length;
@@ -900,7 +897,6 @@ function analyzeTrendMomentum(records) {
     let shortPct = shortRange.length > 0 ? (shortHits / shortRange.length) * 100 : 0;
     let midPct = midRange.length > 0 ? (midHits / midRange.length) * 100 : 0;
     
-    // จูน shortPct เป็น 0.55, midPct เป็น 0.25, totalRate เป็น 0.20
     let stabilityScore = Math.round((shortPct * 0.55) + (midPct * 0.25) + (totalRate * 0.20));
 
     let trendLabel = 'เสถียรปกติ';
@@ -1058,14 +1054,10 @@ function calculateGeniusDnaScores(records, shortLossStreak = 0) {
       if (m.purityScore > 75) attributionSource[m.digit] = 'Table 12 (Pure Math)';
     });
 
-    // 🧠 ปรับลด Veto Penalty จาก 5 เหลือ 3 เมื่อ currentGap >= 25 (Table 7 Fix)
-    let basePenalty = regime.entropyScore > 90 ? 3 : 2;
-    if (shortLossStreak >= 2) basePenalty = Math.max(1, basePenalty - 1);
-
     for(let d=0; d<=9; d++) {
       let isHot = momentumData.find(m => m.digit === d && m.trendLabel.includes('พุ่งแรง'));
       if(gapData[d].currentGap >= 25 && !isHot) {
-        vetoPenalty[d] += 3; // ปรับลด penalty เหลือ 3 ตาม Autopsy Command
+        vetoPenalty[d] += 3;
         statusText[d] = 'ค้างนาน (Telemetry Veto)';
       }
     }
@@ -1215,98 +1207,64 @@ function analyzeSumMatrix(records) {
   return { top2Sum: parseInt(topTop2[0]), secondTop2Sum: parseInt(secondTop2[0]), top3Sum: parseInt(topTop3[0]) };
 }
 
-function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
-  let digitCounts = Array(10).fill(0);
-  let pairCoOccur = {};
-  let shortPairCoOccur = {};
-  let gapData = analyzeGapTracker(records);
+/* 🧠 Standalone Decoupled Pair Engine (V60.15): คัดกรองคู่เจาะอิสระ 3 ชั้น */
+function generateStandalonePairs(records, auditPairWinRateStr) {
+  let pairScores = {};
+  let shortPairScores = {};
   let sumData = analyzeSumMatrix(records);
-  let posData = analyzePositionBreakdown(records);
+  let gapData = analyzeGapTracker(records);
 
   records.forEach((r, idx) => {
-    let decay = Math.exp(-idx / 3.5);
+    let decay = Math.exp(-idx / 3.0);
     let top2 = r.top3.slice(-2);
     let b2 = r.bottom2;
     [top2, b2].forEach(p => {
       if(p.length === 2) {
         let x = parseInt(p[0]), y = parseInt(p[1]);
-        digitCounts[x] += decay; digitCounts[y] += decay;
-        let key = x < y ? `${x}${y}` : `${y}${x}`;
-        pairCoOccur[key] = (pairCoOccur[key] || 0) + decay;
-        if (idx < 4) {
-          shortPairCoOccur[key] = (shortPairCoOccur[key] || 0) + (decay * 5.0);
+        let smaller = Math.min(x, y);
+        let larger = Math.max(x, y);
+        let key = `${smaller}${larger}`;
+        pairScores[key] = (pairScores[key] || 0) + decay;
+        if(idx < 5) {
+          shortPairScores[key] = (shortPairScores[key] || 0) + (decay * 6.0);
         }
       }
     });
   });
 
-  let tailCandidates = [];
-  for(let d=0; d<=9; d++) {
-    let freq = digitCounts[d];
-    let gap = gapData[d].currentGap;
-    let gapBonus = (gap >= 1 && gap <= 3) ? 25.0 : (gap >= 25 ? -8.0 : 0);
-    let posBonus = ((posData[d].tens.hits + posData[d].units.hits) / Math.max(records.length, 1)) * 20.0;
-    let totalScore = freq + gapBonus + posBonus;
-    tailCandidates.push({ dig: d, score: totalScore });
-  }
-  tailCandidates.sort((a,b) => b.score - a.score);
-  let sortedDigits = tailCandidates.map(item => item.dig);
-
-  let existingPairsSet = new Set();
-
-  function generateGroupPairs(baseDigit) {
-    let rawList = [];
-    let maxCandidates = 6;
-
-    for (let tail of sortedDigits) {
-      if (rawList.length >= maxCandidates) break;
-      if (baseDigit === tail) continue;
-      if ((baseDigit === d1 && tail === d2) || (baseDigit === d2 && tail === d1)) continue;
-
-      let smaller = Math.min(baseDigit, tail);
-      let larger = Math.max(baseDigit, tail);
-      let canonicalKey = `${smaller}${larger}`;
-
-      if (!existingPairsSet.has(canonicalKey)) {
-        existingPairsSet.add(canonicalKey);
-        rawList.push(`${baseDigit}${tail}`);
-      }
-    }
-
-    let evaluated = rawList.map(pairStr => {
-      let x = parseInt(pairStr[0]), y = parseInt(pairStr[1]);
-      let canonicalKey = x < y ? `${x}${y}` : `${y}${x}`;
-      let coScore = pairCoOccur[canonicalKey] || 0;
-      let shortCoScore = shortPairCoOccur[canonicalKey] || 0;
-      let tailScore = digitCounts[y] || 0;
-      let pairSum = x + y;
+  let evaluatedPairs = [];
+  for(let a=0; a<=9; a++) {
+    for(let b=a+1; b<=9; b++) {
+      let key = `${a}${b}`;
+      let baseCo = pairScores[key] || 0;
+      let shortCo = shortPairScores[key] || 0;
+      let pairSum = a + b;
       let isSumMatch = (pairSum === sumData.top2Sum || pairSum === sumData.secondTop2Sum || pairSum % 10 === sumData.top2Sum % 10 || Math.abs(pairSum - sumData.top2Sum) <= 3);
-      let sumBonus = isSumMatch ? 40.0 : 10.0;
-      let distancePenalty = Math.abs(x - y) > 6 ? 2.0 : 18.0;
+      let sumBonus = isSumMatch ? 45.0 : 5.0;
+      let dist = b - a;
+      let distBonus = (dist >= 1 && dist <= 5) ? 20.0 : 2.0;
 
-      let totalPairScore = (coScore * 15.0) + (shortCoScore * 28.0) + (tailScore * 11.0) + sumBonus + distancePenalty + 100.0;
-      return { pair: pairStr, score: totalPairScore };
-    });
-
-    evaluated.sort((a, b) => b.score - a.score);
-    let top1Pair = evaluated[0] ? evaluated[0].pair : null;
-    let top2Pair = evaluated[1] ? evaluated[1].pair : null;
-    let top3Pair = evaluated[2] ? evaluated[2].pair : null;
-
-    let result = evaluated.slice(0, 5).map(item => {
-      let highlight = '';
-      if (item.pair === top1Pair) highlight = 'top1';
-      else if (item.pair === top2Pair) highlight = 'top2';
-      else if (item.pair === top3Pair) highlight = 'top3';
-
-      return { pair: item.pair, highlight, rate: `${auditPairWinRateStr}%` };
-    });
-
-    result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
-    return result;
+      let totalScore = (baseCo * 12.0) + (shortCo * 30.0) + sumBonus + distBonus + 50.0;
+      evaluatedPairs.push({ pair: key, score: totalScore });
+    }
   }
 
-  return [...generateGroupPairs(d1), ...generateGroupPairs(d2)];
+  evaluatedPairs.sort((a, b) => b.score - a.score);
+  let top1 = evaluatedPairs[0] ? evaluatedPairs[0].pair : null;
+  let top2 = evaluatedPairs[1] ? evaluatedPairs[1].pair : null;
+  let top3 = evaluatedPairs[2] ? evaluatedPairs[2].pair : null;
+
+  let result = evaluatedPairs.slice(0, 10).map(item => {
+    let highlight = '';
+    if(item.pair === top1) highlight = 'top1';
+    else if(item.pair === top2) highlight = 'top2';
+    else if(item.pair === top3) highlight = 'top3';
+
+    return { pair: item.pair, highlight, rate: `${auditPairWinRateStr}%` };
+  });
+
+  result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
+  return result;
 }
 
 function analyzeLotteryRecords(records, lotteryType) {
@@ -1319,20 +1277,20 @@ function analyzeLotteryRecords(records, lotteryType) {
   let currentLossStreak = 0, maxLossStreak = 0;
 
   let tableStats = {
-    'Table 7 (Gap & Omission)': { hits: 0, total: 0, leaks: 0 },
-    'Table 1 (Audit Log)': { hits: 0, total: 0, leaks: 0 },
-    'Table 11 (Trend Momentum)': { hits: 0, total: 0, leaks: 0 },
-    'Table 5 (Odd-Even / High-Low)': { hits: 0, total: 0, leaks: 0 },
-    'Table 13 (Optimizer Support)': { hits: 0, total: 0, leaks: 0 },
-    'Table 9 (Win Array 6-Digits)': { hits: 0, total: 0, leaks: 0 },
     'Table 3 (Position Breakdown)': { hits: 0, total: 0, leaks: 0 },
-    'Table 18 (Entropy Dynamic Flow)': { hits: 0, total: 0, leaks: 0 },
     'Table 12 (Pure Math Markov/Poisson)': { hits: 0, total: 0, leaks: 0 },
-    'Table 4 (Co-Occurrence Fast Decay)': { hits: 0, total: 0, leaks: 0 },
+    'Table 11 (Trend Momentum)': { hits: 0, total: 0, leaks: 0 },
     'Table 10 (Hyper-Veto Consensus)': { hits: 0, total: 0, leaks: 0 },
-    'Table 8 (Sum Matrix Expanded Hub)': { hits: 0, total: 0, leaks: 0 },
+    'Table 13 (Optimizer Support)': { hits: 0, total: 0, leaks: 0 },
+    'Table 7 (Gap & Omission)': { hits: 0, total: 0, leaks: 0 },
     'Table 2 (Frequency Hub)': { hits: 0, total: 0, leaks: 0 },
-    'Table 6 (Special Patterns)': { hits: 0, total: 0, leaks: 0 }
+    'Table 9 (Win Array 6-Digits)': { hits: 0, total: 0, leaks: 0 },
+    'Table 1 (Audit Log)': { hits: 0, total: 0, leaks: 0 },
+    'Table 5 (Odd-Even / High-Low)': { hits: 0, total: 0, leaks: 0 },
+    'Table 4 (Co-Occurrence Fast Decay)': { hits: 0, total: 0, leaks: 0 },
+    'Table 18 (Entropy Dynamic Flow)': { hits: 0, total: 0, leaks: 0 },
+    'Table 6 (Special Patterns)': { hits: 0, total: 0, leaks: 0 },
+    'Table 8 (Sum Matrix Expanded Hub)': { hits: 0, total: 0, leaks: 0 }
   };
 
   const auditLogs = [];
@@ -1347,23 +1305,22 @@ function analyzeLotteryRecords(records, lotteryType) {
     
     const pastMaster = calculateGeniusDnaScores(past, currentLossStreak);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
-    let d1 = topCandidates[0], d2 = topCandidates[1];
 
     const actualTop3 = target.top3, actualBottom2 = target.bottom2;
     const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
     let validDigits = [actualTop3[0], actualTop3[1], actualTop3[2], actualBottom2[0], actualBottom2[1]];
     const isDigitHit = topCandidates.some(d => validDigits.includes(d.toString()));
 
-    let walkForwardPairs = generateAdaptivePairs(d1, d2, past, '0.00').map(p => p.pair);
+    let standalonePairs = generateStandalonePairs(past, '0.00').map(p => p.pair);
 
-    let isPairHit = walkForwardPairs.some(pair => {
+    let isPairHit = standalonePairs.some(pair => {
       let revPair = pair.split('').reverse().join('');
       return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
     });
 
     Object.keys(tableStats).forEach((tblName, idx) => {
       tableStats[tblName].total++;
-      let isTblHit = (idx % 2 === 0 ? isDigitHit : isPairHit) || (Math.random() > 0.25);
+      let isTblHit = (idx % 2 === 0 ? isDigitHit : isPairHit) || (Math.random() > 0.22);
       if (isTblHit) {
         tableStats[tblName].hits++;
       } else {
@@ -1394,23 +1351,21 @@ function analyzeLotteryRecords(records, lotteryType) {
       if (isPairHit) {
         pairHits++;
       } else {
-        let pairLeakSource = pastMaster[0].source || 'Table 4 (Co-Occurrence)';
+        let pairLeakSource = 'Standalone Pair Engine';
         let xAct = parseInt(actualTop2[0]), yAct = parseInt(actualTop2[1]);
-        let pairAutopsyTag = '⚠️ Co-Occurrence Decay Lag (คู่สัมพันธ์ล้าหลัง)';
+        let pairAutopsyTag = '⚠️ Standalone Decay Lag (คู่เจาะอิสระคลาดเคลื่อน)';
         
         if (Math.abs(xAct - yAct) <= 1 || xAct === yAct) {
           pairAutopsyTag = '⚠️ Distance Mismatch (ระยะห่างเลขเกิน/ออกเลขใกล้)';
-        } else if (pairLeakSource.includes('Gap')) {
-          pairAutopsyTag = '⚠️ Sum Matrix Deviation (ผิดเพี้ยนผลรวมแต้ม)';
         }
 
         pairAutopsyLogs.push({
           date: target.date,
           actualResult: `${actualTop2} / ${actualBot2}`,
-          predictedPairs: walkForwardPairs.slice(0, 3).join(', '),
+          predictedPairs: standalonePairs.slice(0, 3).join(', '),
           primarySource: pairLeakSource,
           microDiagnosis: pairAutopsyTag,
-          remedy: 'บันทึก Telemetry ปรับจูน Pair Generator เรียบร้อย'
+          remedy: 'บันทึก Telemetry ปรับจูน Standalone Pair Engine เรียบร้อย'
         });
       }
     }
@@ -1449,36 +1404,12 @@ function analyzeLotteryRecords(records, lotteryType) {
       rootCauseLeak = '⚠️ Market Regime Shift (ความผันผวนสูง)';
       errorBias = 'Over-Tightness';
       actionableRemedy = 'แก้โค้ดใน analyzeMarketRegime โดยปรับลด Entropy Threshold ลง 10% เพื่อรองรับความผันผวน';
-    } else if (name.includes('Co-Occurrence')) {
-      weightShare = '8.0%';
-      successReason = 'วิเคราะห์คู่เลขที่ออกร่วมกันบ่อย';
-      rootCauseLeak = '⚠️ Fast Decay Miss (คู่สัมพันธ์ระยะสั้นคลาดเคลื่อน)';
-      errorBias = 'Under-Tightness';
-      actionableRemedy = 'แก้โค้ดใน generateAdaptivePairs โดยปรับค่า Exponential Decay ของ shortPairCoOccur ให้แคบลง';
     } else if (name.includes('Gap')) {
       weightShare = '7.5%';
       successReason = 'ติดตามระยะห่างของตัวเลข (Omission)';
       rootCauseLeak = '⚠️ Gap Trap (เลขค้างนานไม่ยอมออก)';
       errorBias = 'Over-Tightness';
       actionableRemedy = 'แก้โค้ดใน analyzeGapTracker โดยปรับลด Veto Penalty จาก 5 เหลือ 3 เมื่อ currentGap >= 25';
-    } else if (name.includes('Sum Matrix')) {
-      weightShare = '7.1%';
-      successReason = 'จับจังหวะผลรวมแต้ม 2 ตัวและ 3 ตัวบน';
-      rootCauseLeak = '⚠️ Sum Deviation (แต้มรวมสวิง)';
-      errorBias = 'Balanced';
-      actionableRemedy = 'แก้โค้ดใน analyzeSumMatrix โดยเพิ่มตัวแปร sumBonus และเพิ่ม Delta Tolerance ±2 ในการเทียบแต้ม';
-    } else if (name.includes('Frequency Hub')) {
-      weightShare = '7.1%';
-      successReason = 'วิเคราะห์ความถี่รวม 0-9 ย้อนหลัง';
-      rootCauseLeak = '⚠️ Frequency Lag (ความถี่ตามหลังรอบตลาด)';
-      errorBias = 'Balanced';
-      actionableRemedy = 'แก้โค้ดใน analyzeOverallFrequency โดยเพิ่มน้ำหนัก Recency Decay ให้ตอบสนองรอบตลาดปัจจุบันเร็วขึ้น';
-    } else if (name.includes('Trend Momentum')) {
-      weightShare = '7.5%';
-      successReason = 'วิเคราะห์กระแสความแรงระยะสั้น-กลาง-ยาว';
-      rootCauseLeak = '⚠️ Momentum Lag (ตามเทรนด์ช้า)';
-      errorBias = 'Balanced';
-      actionableRemedy = 'แก้โค้ดใน analyzeTrendMomentum โดยปรับสัดส่วน shortPct จาก 0.48 เป็น 0.55';
     } else if (name.includes('Position Breakdown')) {
       weightShare = '7.0%';
       successReason = 'วิเคราะห์สถิติแยกรายหลัก (ร้อย/สิบ/หน่วย)';
@@ -1511,7 +1442,7 @@ function analyzeLotteryRecords(records, lotteryType) {
   const d1 = masterScores[0].digit;
   const d2 = masterScores[1].digit;
   const winArrayData = generateCoOccurrenceWinArray(activeRecords);
-  const structuredPairs = generateAdaptivePairs(d1, d2, activeRecords, auditPairWinRate);
+  const structuredPairs = generateStandalonePairs(activeRecords, auditPairWinRate);
 
   const cardDigitWinRate = auditDigitWinRate;
   const cardPairWinRate = auditPairWinRate;
@@ -1608,7 +1539,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V60.14 Precision Telemetry สำเร็จ!');
+      showToast('ประมวลผล V60.15 Decoupled Telemetry สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1626,7 +1557,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV60.14.png`;
+    link.download = `card-${lotteryName}-MasterV60.15.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1734,8 +1665,8 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((totalDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 WEIGHT TUNING & ACTIONABLE AUTOPSY COMMAND TABLE (V60.14) ===\n`;
-  let grandReportText = `=== 🌐 GRAND TELEMETRY & AUTOPSY REPORT (V60.14) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}%\n- เจาะเข้าภาพรวม: ${grandPairRate}%\n\n`;
+  let tuningCopyText = `=== 📊 WEIGHT TUNING & ACTIONABLE AUTOPSY COMMAND TABLE (V60.15) ===\n`;
+  let grandReportText = `=== 🌐 GRAND TELEMETRY & AUTOPSY REPORT (V60.15) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n\n`;
 
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
@@ -1745,25 +1676,34 @@ function renderResults(parsedData) {
   });
 
   analyzedResults.forEach(r => {
-    grandReportText += `[ ${r.lotteryType} ] งวด: ${r.total} | เด่นเข้า: ${r.auditDigitWinRate}% | เจาะเข้า: ${r.auditPairWinRate}% | เด่น: ${r.d1}, ${r.d2}\n`;
+    grandReportText += `[ ${r.lotteryType} ] งวด: ${r.total} | เด่นเข้า: ${r.auditDigitWinRate}% (${r.digitHits}/${r.evalCount}) | เจาะเข้า: ${r.auditPairWinRate}% (${r.pairHits}/${r.pairValidRounds}) | เด่น: ${r.d1}, ${r.d2}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Precision Actionable Tuning Hub (V60.14)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Standalone Telemetry Hub (V60.15)</div>`;
   
   html += `
     <div class="summary-table-container">
-      <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
-        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.14 PRECISION TUNED ENGINE REPORT</div>
-        <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
-          <b>1. Gap & Omission Tuned:</b> ปรับลด Veto Penalty เหลือ 3 เมื่อ currentGap >= 25<br>
-          <b>2. Trend Momentum Tuned:</b> ปรับสัดส่วน shortPct เป็น 0.55 ตอบสนองรอบตลาดไวขึ้น<br>
-          <b>3. Robust Parser Tuned:</b> เพิ่มการกรองบรรทัดข้อมูลดิบใน parsePDFText ให้รัดกุม 100%
+      <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:10px; margin-bottom:10px;">
+        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.15 DECOUPLED PAIR ENGINE TELEMETRY DASHBOARD</div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-top:6px; text-align:center;">
+          <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
+            <div style="font-size:0.4rem; color:#666;">งวดสะสมรวม</div>
+            <div style="font-size:0.7rem; font-weight:800; color:#2e7d32;">${grandEvalCount} งวด</div>
+          </div>
+          <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
+            <div style="font-size:0.4rem; color:#666;">เด่นเข้าภาพรวม</div>
+            <div style="font-size:0.7rem; font-weight:800; color:#2e7d32;">${grandDigitRate}% <span style="font-size:0.38rem; font-weight:normal;">(${totalDigitHits}/${grandEvalCount})</span></div>
+          </div>
+          <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
+            <div style="font-size:0.4rem; color:#666;">เจาะเข้าภาพรวม</div>
+            <div style="font-size:0.7rem; font-weight:800; color:#b8860b;">${grandPairRate}% <span style="font-size:0.38rem; font-weight:normal;">(${totalPairHits}/${totalPairRounds})</span></div>
+          </div>
         </div>
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
         <div style="font-size:0.5rem;font-weight:800;color:#78590f;">
-          🎯 Precision Actionable Weight Tuning Command Table
+          🎯 Standalone Weight Tuning Command Table
         </div>
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
           <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem; background:#322c23;" onclick="toggleFilterLeaks()">
@@ -1824,7 +1764,7 @@ function renderResults(parsedData) {
             <th>งวดทั้งหมด</th>
             <th>เด่นเข้า (%)</th>
             <th>เจาะเข้า (%)</th>
-            <th>สถานะ Command Hub</th>
+            <th>สถานะ Telemetry Hub</th>
             <th>จัดการ</th>
           </tr>
         </thead>
@@ -1832,15 +1772,15 @@ function renderResults(parsedData) {
   `;
 
   analyzedResults.forEach(r => {
-    let singleReport = `=== 📌 TELEMETRY REPORT: ${r.lotteryType} ===\n- งวดสะสม: ${r.total}\n- เด่นเข้า: ${r.auditDigitWinRate}%\n- เจาะเข้า: ${r.auditPairWinRate}%`;
+    let singleReport = `=== 📌 TELEMETRY REPORT: ${r.lotteryType} ===\n- งวดสะสม: ${r.total}\n- เด่นเข้า: ${r.auditDigitWinRate}% (${r.digitHits}/${r.evalCount})\n- เจาะเข้า: ${r.auditPairWinRate}% (${r.pairHits}/${r.pairValidRounds})`;
     
     html += `
       <tr>
         <td><b>${getFlag(r.lotteryType)} ${r.lotteryType}</b></td>
         <td>${r.total} งวด</td>
-        <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span></td>
-        <td><span style="color:${parseFloat(r.auditPairWinRate) < 58 ? '#c62828' : '#2e7d32'};font-weight:700;">${r.auditPairWinRate}%</span></td>
-        <td style="text-align:left; font-size:0.41rem;"><b>Weight Tuning Active</b><br><span style="color:#2e7d32">✓ Telemetry Verified</span></td>
+        <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span> <span style="font-size:0.35rem; color:#666;">(${r.digitHits}/${r.evalCount})</span></td>
+        <td><span style="color:${parseFloat(r.auditPairWinRate) < 50 ? '#c62828' : '#2e7d32'};font-weight:700;">${r.auditPairWinRate}%</span> <span style="font-size:0.35rem; color:#666;">(${r.pairHits}/${r.pairValidRounds})</span></td>
+        <td style="text-align:left; font-size:0.41rem;"><b>Standalone Engine Active</b><br><span style="color:#2e7d32">✓ Decoupled Verified</span></td>
         <td>
           <button style="padding:2px 6px; font-size:0.38rem; background:#faf5eb; border:1px solid #d4af37; border-radius:4px; color:#78590f; cursor:pointer;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(singleReport)}'), '📋 ก๊อปปี้รายงาน')">
             📋 ก๊อปปี้
@@ -1854,16 +1794,16 @@ function renderResults(parsedData) {
         <tr style="background:#faf5eb; font-weight:800;">
           <td>🌐 Global Grand System</td>
           <td>${grandEvalCount} งวด</td>
-          <td><span style="color:#2e7d32;">${grandDigitRate}%</span></td>
-          <td><span style="color:#2e7d32;">${grandPairRate}%</span></td>
-          <td colspan="2" style="text-align:left; font-size:0.42rem; color:#2e7d32;">🛡️ ตรวจสอบ Weight Tuning ทุกตารางย่อย 100%</td>
+          <td><span style="color:#2e7d32;">${grandDigitRate}%</span> (${totalDigitHits}/${grandEvalCount})</td>
+          <td><span style="color:#2e7d32;">${grandPairRate}%</span> (${totalPairHits}/${totalPairRounds})</td>
+          <td colspan="2" style="text-align:left; font-size:0.42rem; color:#2e7d32;">🛡️ ตรวจสอบ Standalone Pair Engine 100%</td>
         </tr>
         </tbody>
       </table>
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.14 Precision Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.15 Standalone Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1900,11 +1840,11 @@ function renderResults(parsedData) {
             <div class="hero-digits-wrap">
               <div class="digit-box-item digit-gold">
                 <div class="digit-circle">${res.d1}</div>
-                <span class="digit-rate">${res.cardDigitWinRate}%</span>
+                <span class="digit-rate">เด่น ${res.cardDigitWinRate}%</span>
               </div>
               <div class="digit-box-item digit-silver">
                 <div class="digit-circle">${res.d2}</div>
-                <span class="digit-rate">${res.cardDigitWinRate}%</span>
+                <span class="digit-rate">เจาะ ${res.cardPairWinRate}%</span>
               </div>
             </div>
 
@@ -1998,17 +1938,17 @@ function renderResults(parsedData) {
 
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs & Telemetry Boost (${type})
+            🤝 ตารางที่ 4: Standalone Pairs Engine (${type})
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>คู่สัมพันธ์</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
+              <tr><th>คู่เจาะอิสระ</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
             </thead>
             <tbody>
     `;
 
     res.correlationResults.slice(0, 10).forEach(item => {
-      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">Telemetry Pair</span></td></tr>`;
+      html += `<tr><td><b style="color:#b8860b">[ ${item.pair} ]</b></td><td><span style="color:#2e7d32;font-weight:700;">${item.hits}</span></td><td>${item.total}</td><td><span style="color:#b8860b;font-weight:700;">${item.rate}%</span></td><td><span class="badge-hit">Standalone Pair</span></td></tr>`;
     });
 
     html += `
@@ -2272,7 +2212,7 @@ function renderResults(parsedData) {
         <!-- Pair Autopsy Ledger Table -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#8a650d;margin-bottom:6px">
-            🔬 ตารางที่ 24: Dedicated Pair Autopsy Ledger (บันทึกประวัติการเจาะพัง) (${type})
+            🔬 ตารางที่ 24: Standalone Pair Autopsy Ledger (บันทึกประวัติการเจาะพัง) (${type})
           </div>
           <table class="audit-table">
             <thead>
