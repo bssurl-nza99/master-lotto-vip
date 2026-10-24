@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V60.24 (Walk-Forward Complete Engine)</title>
+<title>เศรษฐีเงินล้าน · Master V60.25 (Full-Range Telemetry Engine)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -592,17 +592,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V60.24)</b>
-        <small>Walk-Forward Complete Telemetry</small>
+        <b>เศรษฐีเงินล้าน Mobile (V60.25)</b>
+        <small>Full-Range Independent Telemetry</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V60.24</div>
+    <div class="pill">เศรษฐีเงินล้าน V60.25</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V60.24 WALK-FORWARD ENGINE</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V60.25 FULL-RANGE ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบจำลองเหตุการณ์จริงแบบ Walk-Forward 100% (ข้อมูลย้อนหลังใช้เฉพาะข้อมูลก่อนงวดนั้นๆ จริง)</p>
+    <p>ระบบจำลอง Walk-Forward 100% พร้อมปลดล็อกเลขเจาะครอบคลุมครบทุกหลักหน่วย (0-9) อย่างสมบูรณ์</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -617,7 +617,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V60.24 Walk-Forward Telemetry
+        <span>⚡</span> ประมวลผล V60.25 Full-Range Telemetry
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1213,6 +1213,7 @@ function generateSmartWinArray(records) {
   return { winDigits, winStr, hits, total, winCoverageRate };
 }
 
+// 🛠️ แก้ไขให้ปลดล็อกเลือกหลักหน่วยครบ 0-9 อย่างอิสระ ไม่จำกัดแค่ 0-6 อีกต่อไป
 function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
   let groups = [d1, d2];
   let finalPairsList = [];
@@ -1232,29 +1233,31 @@ function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
   groups.forEach((anchor) => {
     let subPairs = [];
     for (let u = 0; u <= 9; u++) {
-      if (anchor === u) continue;
-      if ((anchor === d1 && u === d2) || (anchor === d2 && u === d1)) continue;
+      if (anchor === u) continue; // ข้ามเลขเบิ้ลตรงตัว
       subPairs.push(u);
     }
 
-    subPairs.sort((a, b) => a - b);
-    let selectedUnits = subPairs.slice(0, 5);
-
-    let scoredSubPairs = selectedUnits.map(u => {
-      let pairStr = `${anchor}${u}`;
+    // ให้คะแนนความน่าจะเป็นของทุกหน่วย (0-9) ตามสถิติจริง
+    let scoredSubPairs = subPairs.map(u => {
       let weightKey = `${Math.min(anchor, u)}${Math.max(anchor, u)}`;
-      let score = (pairWeights[weightKey] || 1) * 10 + (anchor * 2) + u;
-      return { pair: pairStr, score: score };
+      let freqScore = pairWeights[weightKey] || 1;
+      let score = freqScore * 10 + (anchor * 2) + u;
+      return { pair: `${anchor}${u}`, score: score, unit: u };
     });
 
+    // เรียงลำดับจากคะแนนสูงสุดไปต่ำสุด แล้วเลือก Top 5 ที่ดีที่สุด (ครอบคลุมทั้ง 0-9 ไม่ล็อกแค่ 0-6)
     scoredSubPairs.sort((a, b) => b.score - a.score);
+    let top5Units = scoredSubPairs.slice(0, 5);
+    
+    // เรียงหน่วยจากน้อยไปหามากตามความต้องการใช้งานจริง
+    top5Units.sort((a, b) => a.unit - b.unit);
 
     let rank1Pair = scoredSubPairs[0] ? scoredSubPairs[0].pair : null;
     let rank2Pair = scoredSubPairs[1] ? scoredSubPairs[1].pair : null;
     let rank3Pair = scoredSubPairs[2] ? scoredSubPairs[2].pair : null;
 
-    selectedUnits.forEach(u => {
-      let pairStr = `${anchor}${u}`;
+    top5Units.forEach(item => {
+      let pairStr = item.pair;
       let highlightClass = '';
       if (pairStr === rank1Pair) highlightClass = 'rank-1';
       else if (pairStr === rank2Pair) highlightClass = 'rank-2';
@@ -1308,7 +1311,6 @@ function analyzeLotteryRecords(records, lotteryType) {
     const past = chronCheck.slice(0, i);
     const target = chronCheck[i];
     
-    // TRUE WALK-FORWARD PREDICTION (ใช้เฉพาะข้อมูลในอดีตก่อนงวดเป้าหมายจริงๆ 100%)
     const pastMaster = calculateGeniusDnaScores(past, currentLossStreak);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
     topCandidates.sort((a,b) => a - b);
@@ -1414,9 +1416,9 @@ function analyzeLotteryRecords(records, lotteryType) {
       actionableRemedy = 'ปรับจูนฟังก์ชัน generateSmartWinArray ให้คัดกรองน้ำหนักคู่ที่มาด้วยกันให้เข้มข้นขึ้น';
     } else if (name.includes('Independent Group Matrix') || name.includes('Compliance')) {
       weightShare = '8.0%';
-      successReason = 'เด่นตัวละ 5 คู่ แยกไฮไลต์อิสระ อันดับ 1-3 ตามน้ำหนักจริง พร้อมตรรกะมนุษย์';
+      successReason = 'เด่นตัวละ 5 คู่ ครบถ้วนทุกหลักหน่วย 0-9 ตามสถิติจริง';
       rootCauseLeak = '⚠️ Pair Out-of-Range (ผลออกนอกกรอบ 5 คู่ที่เลือก)';
-      actionableRemedy = 'ปรับจูนฟังก์ชัน generateIndependentGroupPairs ให้ครอบคลุมหลักหน่วย';
+      actionableRemedy = 'ปรับจูนฟังก์ชัน generateIndependentGroupPairs ให้ครอบคลุมหลักหน่วย 0-9';
     }
 
     return {
@@ -1527,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V60.24 Walk-Forward Telemetry สำเร็จ!');
+      showToast('ประมวลผล V60.25 Full-Range Telemetry สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1545,7 +1547,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV60.24.png`;
+    link.download = `card-${lotteryName}-MasterV60.25.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1656,8 +1658,8 @@ function renderResults(parsedData) {
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
   let grandWinRate = grandEvalCount > 0 ? ((totalWinHits / grandEvalCount) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 WEIGHT TUNING & WALK-FORWARD COMMAND TABLE (V60.24) ===\n`;
-  let grandReportText = `=== 🌐 GRAND WALK-FORWARD REPORT (V60.24) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n- ชุดวินเข้าภาพรวม: ${grandWinRate}% (${totalWinHits}/${grandEvalCount} ครั้ง)\n\n`;
+  let tuningCopyText = `=== 📊 WEIGHT TUNING & FULL-RANGE COMMAND TABLE (V60.25) ===\n`;
+  let grandReportText = `=== 🌐 GRAND FULL-RANGE REPORT (V60.25) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n- ชุดวินเข้าภาพรวม: ${grandWinRate}% (${totalWinHits}/${grandEvalCount} ครั้ง)\n\n`;
 
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
@@ -1670,12 +1672,12 @@ function renderResults(parsedData) {
     grandReportText += `[ ${r.lotteryType} ] งวด: ${r.total} | เด่นเข้า: ${r.auditDigitWinRate}% (${r.digitHits}/${r.evalCount}) | เจาะเข้า: ${r.auditPairWinRate}% (${r.pairHits}/${r.pairValidRounds}) | ชุดวินเข้า: ${r.auditWinRate}% (${r.winHits}/${r.evalCount}) | ชุดวิน: win : ${r.smartWinData.winStr}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Walk-Forward Dashboard (V60.24)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Full-Range Dashboard (V60.25)</div>`;
   
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:10px; margin-bottom:10px;">
-        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.24 WALK-FORWARD SIMULATION DASHBOARD</div>
+        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.25 FULL-RANGE TELEMETRY DASHBOARD</div>
         <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-top:6px; text-align:center;">
           <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
             <div style="font-size:0.4rem; color:#666;">งวดสะสมรวม</div>
@@ -1698,7 +1700,7 @@ function renderResults(parsedData) {
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
         <div style="font-size:0.5rem;font-weight:800;color:#78590f;">
-          🎯 Weight Tuning Command Table (Walk-Forward Real Simulation)
+          🎯 Weight Tuning Command Table (Full-Range Unlocked)
         </div>
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
           <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem; background:#322c23;" onclick="toggleFilterLeaks()">
@@ -1793,7 +1795,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.24 Walk-Forward Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.25 Full-Range Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1911,18 +1913,18 @@ function renderResults(parsedData) {
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>กลุ่มเลขเด่น</th><th>คู่เจาะ (5 คู่ต่อเด่น เรียงหน่วยจากน้อยไปหามาก)</th><th>สถานะไฮไลต์อันดับ 1-3</th></tr>
+              <tr><th>กลุ่มเลขเด่น</th><th>คู่เจาะ (5 คู่ต่อเด่น เรียงหน่วยจากน้อยไปหามาก ครบถ้วน 0-9)</th><th>สถานะไฮไลต์อันดับ 1-3</th></tr>
             </thead>
             <tbody>
               <tr>
                 <td><b style="color:#b8860b">เด่น ${res.d1}</b></td>
                 <td>${res.formattedPairs.filter(p=>p.pair.startsWith(res.d1.toString())).map(p=>p.pair).join(', ')}</td>
-                <td><span class="badge-hit">แยกไฮไลต์อิสระ อันดับ 1-3 ตามน้ำหนักจริง</span></td>
+                <td><span class="badge-hit">ปลดล็อกครบทุกหลักหน่วย 0-9 อิสระ</span></td>
               </tr>
               <tr>
                 <td><b style="color:#b8860b">เด่น ${res.d2}</b></td>
                 <td>${res.formattedPairs.filter(p=>p.pair.startsWith(res.d2.toString())).map(p=>p.pair).join(', ')}</td>
-                <td><span class="badge-hit">แยกไฮไลต์อิสระ อันดับ 1-3 ตามน้ำหนักจริง</span></td>
+                <td><span class="badge-hit">ปลดล็อกครบทุกหลักหน่วย 0-9 อิสระ</span></td>
               </tr>
             </tbody>
           </table>
@@ -1938,7 +1940,7 @@ function renderResults(parsedData) {
               <tr><th>กฎกติกาการตรวจสอบ</th><th>สถานะระบบ</th><th>ผลลัพธ์เชิงตรรกะ</th></tr>
             </thead>
             <tbody>
-              <tr><td><b>เด่นตัวละ 5 คู่ (ตัดเบิ้ล/วินเอง)</b></td><td><span class="badge-hit">Active</span></td><td>หลักสิบเป็นเลขเด่น หน่วยเรียงน้อยไปมาก ตัดเบิ้ลและวินเอง 100%</td></tr>
+              <tr><td><b>เด่นตัวละ 5 คู่ (ปลดล็อก 0-9 / ตัดเบิ้ล)</b></td><td><span class="badge-hit">Active</span></td><td>หลักสิบเป็นเลขเด่น หน่วยเรียงน้อยไปมาก ครอบคลุม 0-9 ตัดเบิ้ล 100%</td></tr>
               <tr><td><b>เลขเด่นวินกันเอง (d1d2 / d2d1)</b></td><td><span class="badge-hit">Active</span></td><td>แม้ไม่แสดงบนการ์ด แต่หากผลออก ถือว่า "เข้า" 100% ทันที</td></tr>
             </tbody>
           </table>
