@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V60.18 (Independent Group Ranked Matrix & Telemetry)</title>
+<title>เศรษฐีเงินล้าน · Master V60.19 (Fixed Independent Percentage Matrix)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -576,17 +576,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V60.18)</b>
-        <small>Independent Group Ranked Matrix & Telemetry</small>
+        <b>เศรษฐีเงินล้าน Mobile (V60.19)</b>
+        <small>Independent Group Percentage Fixed Matrix</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V60.18</div>
+    <div class="pill">เศรษฐีเงินล้าน V60.19</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V60.18 INDEPENDENT RANKED MATRIX</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V60.19 FIXED PERCENTAGE MATRIX</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>เลขเด่นตัวละ 5 คู่เรียงหน่วยจากน้อยไปมาก ตัดเบิ้ลและวินกันเอง 100% | ไฮไลต์สีเน้น (ทอง, เงิน, โรสโกลด์) แยกอิสระตามน้ำหนักจริงของแต่ละกลุ่มเด่น พร้อมเชื่อมโยงสู่ตารางภาพรวมมหภาค</p>
+    <p>เลขเด่นตัวละ 5 คู่เรียงหน่วยจากน้อยไปหามาก ตัดเบิ้ลและวินกันเอง 100% | แยกเปอร์เซ็นต์อิสระระหว่างเลขเด่นและเลขเจาะอย่างถูกต้องแม่นยำ</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -601,7 +601,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V60.18 Independent Group Telemetry
+        <span>⚡</span> ประมวลผล V60.19 Fixed Percentage Telemetry
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1196,16 +1196,16 @@ function analyzeSumMatrix(records) {
   return { top2Sum: parseInt(topTop2[0]), secondTop2Sum: parseInt(secondTop2[0]), top3Sum: parseInt(topTop3[0]) };
 }
 
-/* 🎯 Independent Group Ranked Matrix (V60.18):
+/* 🎯 Independent Group Ranked Matrix (V60.19 Fixed Percentage):
    - เลขเด่น 1 ตัว มีเลขเจาะ 5 คู่ (รวม 2 เด่น = 10 คู่)
    - หลักสิบเป็นเลขเด่นเสมอ หลักหน่วยเรียงจากน้อยไปหามาก (ตัดเบิ้ล และตัดคู่เด่นวินกันเองออก 100%)
    - ไฮไลต์สีเน้น (ทอง, เงิน, โรสโกลด์ สำหรับ อันดับ 1, 2, 3) แยกอิสระเป็นของแต่ละกลุ่มเด่น ตามน้ำหนักคะแนนจริง
+   - เปอร์เซ็นต์เลขเด่นแสดงเปอร์เซ็นต์เด่น (auditDigitWinRate) และเลขเจาะใช้เปอร์เซ็นต์เจาะ (auditPairWinRate) ของตัวเอง
 */
 function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
   let groups = [d1, d2];
   let finalPairsList = [];
 
-  // วิเคราะห์น้ำหนักความถี่ของคู่เลขจากประวัติย้อนหลังเพื่อใช้จัดอันดับ
   let pairWeights = {};
   records.forEach(r => {
     let t2 = r.top3.slice(-2), b2 = r.bottom2;
@@ -1226,11 +1226,9 @@ function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
       subPairs.push(u);
     }
 
-    // สุ่มเลือกหรือจำกัดให้เหลือ 5 คู่ต่อ 1 เด่น (เรียงหน่วยจากน้อยไปมากตามระเบียบ)
     subPairs.sort((a, b) => a - b);
-    let selectedUnits = subPairs.slice(0, 5); // เลือก 5 คู่แรกตามลำดับหน่วยจากน้อยไปมาก
+    let selectedUnits = subPairs.slice(0, 5);
 
-    // คำนวณคะแนนน้ำหนักของแต่ละคู่ในกลุ่มนี้ เพื่อจัดอันดับ 1, 2, 3
     let scoredSubPairs = selectedUnits.map(u => {
       let pairStr = `${anchor}${u}`;
       let weightKey = `${Math.min(anchor, u)}${Math.max(anchor, u)}`;
@@ -1238,14 +1236,12 @@ function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
       return { pair: pairStr, score: score };
     });
 
-    // เรียงลำดับตามคะแนนจากมากไปน้อย เพื่อหาอันดับ 1, 2, 3 ของกลุ่มนี้
     scoredSubPairs.sort((a, b) => b.score - a.score);
 
     let rank1Pair = scoredSubPairs[0] ? scoredSubPairs[0].pair : null;
     let rank2Pair = scoredSubPairs[1] ? scoredSubPairs[1].pair : null;
     let rank3Pair = scoredSubPairs[2] ? scoredSubPairs[2].pair : null;
 
-    // จัดเรียงกลับคืนตามลำดับหลักหน่วยจากน้อยไปมากสำหรับการแสดงผลบนการ์ด
     selectedUnits.forEach(u => {
       let pairStr = `${anchor}${u}`;
       let highlightClass = '';
@@ -1314,7 +1310,6 @@ function analyzeLotteryRecords(records, lotteryType) {
     let indPairsObj = generateIndependentGroupPairs(pastD1, pastD2, past, '0.00');
     let indPairsList = indPairsObj.map(p => p.pair);
 
-    // 🎯 ตรรกะสำคัญ: ถึงแม้จะไม่มีคู่เด่นวินกันเองบนการ์ด แต่ถ้าผลออกคู่เด่นวินกันเอง (d1d2 / d2d1) ให้ถือว่าเข้าทันที 100%!
     let interWin1 = `${pastD1}${pastD2}`;
     let interWin2 = `${pastD2}${pastD1}`;
 
@@ -1513,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V60.18 Independent Telemetry สำเร็จ!');
+      showToast('ประมวลผล V60.19 Fixed Percentage สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1531,7 +1526,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV60.18.png`;
+    link.download = `card-${lotteryName}-MasterV60.19.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1628,7 +1623,7 @@ function renderResults(parsedData) {
 
     r.tableTelemetrySummary.forEach(ts => {
       if (!globalTableTelemetryAggregator[ts.name]) {
-        globalTableTelemetryAggregator[ts.name] = { hits: 0, total: 0, leaks: 0, weightShare: ts.weightShare, successReason: ts.successReason, rootCauseLeak: ts.rootCauseLeak, errorBias: ts.errorBias, actionableRemedy: ts.actionableRemedy };
+        globalTableTelemetryAggregator[ts.name] = { hits: 0, total: 0, leaks: 0, weightShare: ts.weightShare, successReason: ts.successReason, rootCauseLeak: ts.rootCauseLeak, actionableRemedy: ts.actionableRemedy };
       }
       globalTableTelemetryAggregator[ts.name].hits += ts.hits;
       globalTableTelemetryAggregator[ts.name].total += ts.total;
@@ -1639,8 +1634,8 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((totalDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 WEIGHT TUNING & ACTIONABLE AUTOPSY COMMAND TABLE (V60.18) ===\n`;
-  let grandReportText = `=== 🌐 GRAND TELEMETRY & AUTOPSY REPORT (V60.18) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n\n`;
+  let tuningCopyText = `=== 📊 WEIGHT TUNING & ACTIONABLE AUTOPSY COMMAND TABLE (V60.19) ===\n`;
+  let grandReportText = `=== 🌐 GRAND TELEMETRY & AUTOPSY REPORT (V60.19) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n\n`;
 
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
@@ -1653,12 +1648,12 @@ function renderResults(parsedData) {
     grandReportText += `[ ${r.lotteryType} ] งวด: ${r.total} | เด่นเข้า: ${r.auditDigitWinRate}% (${r.digitHits}/${r.evalCount}) | เจาะเข้า: ${r.auditPairWinRate}% (${r.pairHits}/${r.pairValidRounds}) | เด่น: ${r.d1}, ${r.d2}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Independent Group Telemetry Hub (V60.18)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Fixed Percentage Telemetry Hub (V60.19)</div>`;
   
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:10px; margin-bottom:10px;">
-        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.18 INDEPENDENT GROUP TELEMETRY DASHBOARD</div>
+        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.19 FIXED PERCENTAGE TELEMETRY DASHBOARD</div>
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-top:6px; text-align:center;">
           <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
             <div style="font-size:0.4rem; color:#666;">งวดสะสมรวม</div>
@@ -1677,7 +1672,7 @@ function renderResults(parsedData) {
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
         <div style="font-size:0.5rem;font-weight:800;color:#78590f;">
-          🎯 Independent Group Weight Tuning Command Table
+          🎯 Weight Tuning Command Table
         </div>
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
           <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem; background:#322c23;" onclick="toggleFilterLeaks()">
@@ -1754,7 +1749,7 @@ function renderResults(parsedData) {
         <td>${r.total} งวด</td>
         <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span> <span style="font-size:0.35rem; color:#666;">(${r.digitHits}/${r.evalCount})</span></td>
         <td><span style="color:${parseFloat(r.auditPairWinRate) < 50 ? '#c62828' : '#2e7d32'};font-weight:700;">${r.auditPairWinRate}%</span> <span style="font-size:0.35rem; color:#666;">(${r.pairHits}/${r.pairValidRounds})</span></td>
-        <td style="text-align:left; font-size:0.41rem;"><b>Independent Active</b><br><span style="color:#2e7d32">✓ Rank 1-3 Verified</span></td>
+        <td style="text-align:left; font-size:0.41rem;"><b>Percentage Fixed</b><br><span style="color:#2e7d32">✓ Independent Verified</span></td>
         <td>
           <button style="padding:2px 6px; font-size:0.38rem; background:#faf5eb; border:1px solid #d4af37; border-radius:4px; color:#78590f; cursor:pointer;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(singleReport)}'), '📋 ก๊อปปี้รายงาน')">
             📋 ก๊อปปี้
@@ -1770,14 +1765,14 @@ function renderResults(parsedData) {
           <td>${grandEvalCount} งวด</td>
           <td><span style="color:#2e7d32;">${grandDigitRate}%</span> (${totalDigitHits}/${grandEvalCount})</td>
           <td><span style="color:#2e7d32;">${grandPairRate}%</span> (${totalPairHits}/${totalPairRounds})</td>
-          <td colspan="2" style="text-align:left; font-size:0.42rem; color:#2e7d32;">🛡️ ตรวจสอบ Independent Group Pair ทุกตารางย่อย 100%</td>
+          <td colspan="2" style="text-align:left; font-size:0.42rem; color:#2e7d32;">🛡️ ตรวจสอบเปอร์เซ็นต์อิสระแยกเด่น/เจาะทุกตาราง 100%</td>
         </tr>
         </tbody>
       </table>
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.18 Independent Ranked Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.19 Fixed Percentage Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1811,14 +1806,15 @@ function renderResults(parsedData) {
               </div>
             </div>
 
+            <!-- FIXED: Both prominent digits show their own digit win rate percentage -->
             <div class="hero-digits-wrap">
               <div class="digit-box-item digit-gold">
                 <div class="digit-circle">${res.d1}</div>
-                <span class="digit-rate">เด่น ${res.cardDigitWinRate}%</span>
+                <span class="digit-rate">เด่น ${res.auditDigitWinRate}%</span>
               </div>
               <div class="digit-box-item digit-silver">
                 <div class="digit-circle">${res.d2}</div>
-                <span class="digit-rate">เจาะ ${res.cardPairWinRate}%</span>
+                <span class="digit-rate">เด่น ${res.auditDigitWinRate}%</span>
               </div>
             </div>
 
@@ -2088,7 +2084,7 @@ function renderResults(parsedData) {
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>กลุ่มเลขเด่น</th><th>คู่เจาะ (5 คู่ต่อเด่น เรียงหน่วยจากน้อยไปมาก)</th><th>สถานะไฮไลต์อันดับ 1-3</th></tr>
+              <tr><th>กลุ่มเลขเด่น</th><th>คู่เจาะ (5 คู่ต่อเด่น เรียงหน่วยจากน้อยไปหามาก)</th><th>สถานะไฮไลต์อันดับ 1-3</th></tr>
             </thead>
             <tbody>
               <tr>
