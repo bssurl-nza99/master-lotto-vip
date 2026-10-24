@@ -2,12 +2,12 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <meta name="theme-color" content="#d4af37">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V60.8 (Precision Actionable Tuning & Zoom Center)</title>
+<title>เศรษฐีเงินล้าน · Master V60.9 (Global Image-Like Zoom & Autopsy Center)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -39,84 +39,59 @@ body {
   color: var(--text-dark);
   font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
-  padding-bottom: 30px;
+  padding-bottom: 50px;
+  overflow-x: auto; /* อนุญาตให้เลื่อนซ้ายขวาได้อิสระ */
 }
 
-.shell {
+/* 🖼️ Global Shell Wrapper สำหรับทำ Global Image-Like Zoom */
+.global-zoom-wrapper {
   width: 100%;
   max-width: 650px;
   margin: 0 auto;
   padding: 9px 8px;
-}
-
-/* 🖼️ Image-Like Zoom & Pan Viewport Container */
-.image-zoom-viewport {
-  width: 100%;
-  max-width: 100%;
-  height: 480px;
-  border: 1.5px solid rgba(212, 175, 55, 0.6);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.95);
-  overflow: hidden;
-  position: relative;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow-lux);
-  touch-action: none;
-}
-
-.image-zoom-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  min-width: 780px;
-  padding: 8px;
-  transform-origin: 0 0;
+  transform-origin: top center;
   will-change: transform;
-  cursor: grab;
+  transition: transform 0.1s ease-out;
 }
 
-.image-zoom-content:active {
-  cursor: grabbing;
-}
-
-/* Floating Image Zoom Controls Helper Bar */
-.image-zoom-hud {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(50, 44, 35, 0.88);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(212, 175, 55, 0.5);
+/* Floating Image Zoom Dock ติดขอบจอเสมอเหมือนดูรูปภาพ */
+.floating-zoom-dock {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(50, 44, 35, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(212, 175, 55, 0.6);
   border-radius: 99px;
-  padding: 4px 10px;
+  padding: 6px 14px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  z-index: 20;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  gap: 10px;
+  z-index: 9999;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
 }
 
-.hud-btn {
+.dock-btn {
   background: transparent;
   border: 0;
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
-.hud-btn:active {
-  background: rgba(255,255,255,0.2);
+.dock-btn:active {
+  background: rgba(255,255,255,0.25);
 }
 
-.hud-label {
+.dock-label {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.45rem;
+  font-size: 0.55rem;
   color: #e6c875;
   font-weight: 700;
-  min-width: 32px;
+  min-width: 38px;
   text-align: center;
 }
 
@@ -570,13 +545,14 @@ body {
   background: #fff;
   padding: 8px;
   box-shadow: var(--shadow-lux);
+  overflow-x: auto; /* ให้ตารางเลื่อนซ้ายขวาได้ตามธรรมชาติเมื่อหน้าจอแคบ */
 }
 
 table.audit-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.45rem;
-  min-width: 460px;
+  min-width: 480px;
 }
 
 table.audit-table th,
@@ -637,7 +613,7 @@ table.audit-table th {
   font-weight: 600;
   transition: all 0.25s ease;
   pointer-events: none;
-  z-index: 999;
+  z-index: 9999;
   box-shadow: 0 3px 10px rgba(0,0,0,0.2);
   white-space: nowrap;
 }
@@ -651,22 +627,30 @@ table.audit-table th {
 </head>
 <body>
 
-<div class="shell">
+<!-- 🔍 Floating Zoom Dock ติดขอบจอเสมอเหมือนดูรูปภาพ -->
+<div class="floating-zoom-dock">
+  <button class="dock-btn" id="zoomOutBtn" title="ย่อออก">➖</button>
+  <span class="dock-label" id="zoomLabel">100%</span>
+  <button class="dock-btn" id="zoomInBtn" title="ขยายเข้า">➕</button>
+  <button class="dock-btn" id="zoomResetBtn" title="รีเซ็ต">🔄</button>
+</div>
+
+<div class="global-zoom-wrapper" id="globalWrapper">
   <div class="top">
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V60.8)</b>
-        <small>Precision Actionable Tuning & Zoom Center</small>
+        <b>เศรษฐีเงินล้าน Mobile (V60.9)</b>
+        <small>Global Image-Like Zoom & Autopsy Center</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V60.8</div>
+    <div class="pill">เศรษฐีเงินล้าน V60.9</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V60.8 PRECISION AUTOPSY & ZOOM HUB</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V60.9 GLOBAL IMAGE-LIKE ZOOM & AUTOPSY HUB</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบซูมแสดงผลแบบรูปภาพ (Pinch/Wheel Zoom & Drag Pan) พร้อมตารางชันสูตรและคำแนะนำวิธีแก้โค้ดเฉพาะเจาะจงรายตารางย่อยอย่างแม่นยำ</p>
+    <p>ระบบแสดงผลตารางเต็มพื้นที่ เลื่อนซ้าย-ขวา/ขึ้น-ลงได้ตามธรรมชาติ พร้อมปุ่มซูมภาพ (Global Image-Like Zoom) และตารางชันสูตรพร้อมวิธีแก้โค้ดเฉพาะจุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -681,7 +665,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V60.8 Precision Zoom Autopsy
+        <span>⚡</span> ประมวลผล V60.9 Global Zoom Autopsy
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1616,6 +1600,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sampleBtn = document.getElementById('sampleBtn');
   const clearBtn = document.getElementById('clearBtn');
 
+  initGlobalZoomEngine();
+
   inputData.addEventListener('input', () => {
     const parsed = parsePDFText(inputData.value);
     let totalCount = Object.values(parsed).reduce((acc, arr) => acc + arr.length, 0);
@@ -1651,124 +1637,46 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V60.8 Precision Zoom สำเร็จ!');
+      showToast('ประมวลผล V60.9 Global Zoom สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
   });
 });
 
-/* 🖼️ Image-Like Zoom & Pan Engine for Each Viewport */
-function initImageZoomPan() {
-  const viewports = document.querySelectorAll('.image-zoom-viewport');
-  
-  viewports.forEach(viewport => {
-    const content = viewport.querySelector('.image-zoom-content');
-    const zoomInBtn = viewport.querySelector('.hud-zoom-in');
-    const zoomOutBtn = viewport.querySelector('.hud-zoom-out');
-    const zoomResetBtn = viewport.querySelector('.hud-zoom-reset');
-    const zoomLabel = viewport.querySelector('.hud-label');
+/* 🔍 Global Image-Like Zoom Engine สำหรับซูมทั้งหน้าจอเหมือนดูรูปภาพ */
+function initGlobalZoomEngine() {
+  const wrapper = document.getElementById('globalWrapper');
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const zoomResetBtn = document.getElementById('zoomResetBtn');
+  const zoomLabel = document.getElementById('zoomLabel');
 
-    let scale = 1.0;
-    let posX = 0;
-    let posY = 0;
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
+  if (!wrapper) return;
 
-    let initialPinchDistance = null;
+  let currentScale = 1.0;
 
-    function updateTransform() {
-      const vWidth = viewport.clientWidth;
-      const vHeight = viewport.clientHeight;
-      const cWidth = content.scrollWidth * scale;
-      const cHeight = content.scrollHeight * scale;
+  function updateGlobalZoom() {
+    wrapper.style.transform = `scale(${currentScale})`;
+    if (zoomLabel) zoomLabel.innerText = `${Math.round(currentScale * 100)}%`;
+  }
 
-      if (cWidth > vWidth) {
-        posX = Math.min(0, Math.max(vWidth - cWidth, posX));
-      } else {
-        posX = (vWidth - cWidth) / 2;
-      }
-
-      if (cHeight > vHeight) {
-        posY = Math.min(0, Math.max(vHeight - cHeight, posY));
-      } else {
-        posY = (vHeight - cHeight) / 2;
-      }
-
-      content.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
-      if (zoomLabel) zoomLabel.innerText = `${Math.round(scale * 100)}%`;
-    }
-
-    content.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.clientX - posX;
-      startY = e.clientY - posY;
-      e.preventDefault();
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      posX = e.clientX - startX;
-      posY = e.clientY - startY;
-      updateTransform();
-    });
-
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        isDragging = true;
-        startX = e.touches[0].clientX - posX;
-        startY = e.touches[0].clientY - posY;
-      } else if (e.touches.length === 2) {
-        isDragging = false;
-        initialPinchDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches.length === 1) {
-        posX = e.touches[0].clientX - startX;
-        posY = e.touches[0].clientY - startY;
-        updateTransform();
-        e.preventDefault();
-      } else if (e.touches.length === 2 && initialPinchDistance !== null) {
-        let currentDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        let factor = currentDistance / initialPinchDistance;
-        scale = Math.max(0.5, Math.min(3.0, scale * factor));
-        initialPinchDistance = currentDistance;
-        updateTransform();
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchend', () => {
-      isDragging = false;
-      initialPinchDistance = null;
-    });
-
-    viewport.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
-      scale = Math.max(0.5, Math.min(3.0, scale * zoomFactor));
-      updateTransform();
-    }, { passive: false });
-
-    if (zoomInBtn) zoomInBtn.addEventListener('click', () => { scale = Math.min(3.0, scale * 1.2); updateTransform(); });
-    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { scale = Math.max(0.5, scale / 1.2); updateTransform(); });
-    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => { scale = 1.0; posX = 0; posY = 0; updateTransform(); });
-
-    updateTransform();
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => {
+    currentScale = Math.min(3.0, currentScale + 0.15);
+    updateGlobalZoom();
   });
+
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => {
+    currentScale = Math.max(0.5, currentScale - 0.15);
+    updateGlobalZoom();
+  });
+
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => {
+    currentScale = 1.0;
+    updateGlobalZoom();
+  });
+
+  updateGlobalZoom();
 }
 
 function captureCard(cardId, lotteryName) {
@@ -1782,7 +1690,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV60.8.png`;
+    link.download = `card-${lotteryName}-MasterV60.9.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1880,7 +1788,7 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((totalDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 WEIGHT TUNING & ACTIONABLE AUTOPSY COMMAND TABLE (V60.8) ===\n`;
+  let tuningCopyText = `=== 📊 WEIGHT TUNING & ACTIONABLE AUTOPSY COMMAND TABLE (V60.9) ===\n`;
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
   sortedAggregator.forEach(([tblName, data], idx) => {
@@ -1888,42 +1796,40 @@ function renderResults(parsedData) {
     tuningCopyText += `#${idx+1} ${tblName} | น้ำหนัก: ${data.weightShare} | ถูกต้อง: ${hitRate}% | เสียหาย: ${data.leaks} ครั้ง | วิธีแก้โค้ด: ${data.actionableRemedy}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Precision Actionable Tuning Hub (V60.8)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Precision Actionable Tuning Hub (V60.9)</div>`;
   
   html += `
-    <div class="image-zoom-viewport">
-      <div class="image-zoom-content">
-        <div class="summary-table-container">
-          <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
-            <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.8 PRECISION ACTIONABLE REMEDY REPORT</div>
-            <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
-              <b>1. Image-Like Zoom & Pan:</b> ใช้ 2 นิ้วถ่างซูม หรือใช้เมาส์/นิ้วลากเลื่อนดูตารางได้อิสระไม่หลุดขอบ<br>
-              <b>2. Precision Code Fix:</b> ระบุวิธีแก้โค้ดเฉพาะเจาะจงรายตารางย่อยพร้อมชื่อฟังก์ชันและตัวแปรที่ต้องแก้ไข<br>
-              <b>3. Dedicated Copy Button:</b> คัดลอกตารางเพื่อนำไปปรับปรุงโค้ดต่อได้ทันที
-            </div>
-          </div>
+    <div class="summary-table-container">
+      <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
+        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.9 GLOBAL ZOOM & PRECISION REMEDY REPORT</div>
+        <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
+          <b>1. Global Image-Like Zoom:</b> ใช้ปุ่มลอยมุมขวาล่างเพื่อซูมเข้า-ซูมออกทั้งหน้าจอได้เหมือนดูรูปภาพ<br>
+          <b>2. Natural Scrolling:</b> เลื่อนหน้าจอซ้าย-ขวา/ขึ้น-ลงได้ตามธรรมชาติ ไม่มีกรอบจำกัดพื้นที่<br>
+          <b>3. Precision Code Fix:</b> ระบุวิธีแก้โค้ดเฉพาะจุดรายตารางพร้อมชื่อฟังก์ชันและตัวแปรที่ชัดเจน
+        </div>
+      </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-            <div style="font-size:0.5rem;font-weight:800;color:#78590f;">
-              🎯 Precision Actionable Weight Tuning Command Table
-            </div>
-            <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(tuningCopyText)}'), '📋 คัดลอกตาราง Weight Tuning สำเร็จ!')">
-              <span>📋</span> คัดลอกตาราง Weight Tuning (Copy Table)
-            </button>
-          </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+        <div style="font-size:0.5rem;font-weight:800;color:#78590f;">
+          🎯 Precision Actionable Weight Tuning Command Table
+        </div>
+        <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(tuningCopyText)}'), '📋 คัดลอกตาราง Weight Tuning สำเร็จ!')">
+          <span>📋</span> คัดลอกตาราง Weight Tuning (Copy Table)
+        </button>
+      </div>
 
-          <table class="audit-table" style="margin-bottom:10px;">
-            <thead>
-              <tr>
-                <th>ชื่อตารางย่อย (Table Node)</th>
-                <th>น้ำหนัก (%)</th>
-                <th>ถูกต้อง (%)</th>
-                <th>เสียหาย (Leaks)</th>
-                <th>สาเหตุที่เสียหาย (Root-Cause Leak)</th>
-                <th>คำแนะนำวิธีแก้เฉพาะจุดในโค้ด (Precision Code Fix)</th>
-              </tr>
-            </thead>
-            <tbody>
+      <table class="audit-table" style="margin-bottom:10px;">
+        <thead>
+          <tr>
+            <th>ชื่อตารางย่อย (Table Node)</th>
+            <th>น้ำหนัก (%)</th>
+            <th>ถูกต้อง (%)</th>
+            <th>เสียหาย (Leaks)</th>
+            <th>สาเหตุที่เสียหาย (Root-Cause Leak)</th>
+            <th>คำแนะนำวิธีแก้เฉพาะจุดในโค้ด (Precision Code Fix)</th>
+          </tr>
+        </thead>
+        <tbody>
   `;
 
   sortedAggregator.forEach(([tblName, data], idx) => {
@@ -1942,21 +1848,21 @@ function renderResults(parsedData) {
   });
 
   html += `
-            </tbody>
-          </table>
+        </tbody>
+      </table>
 
-          <table class="audit-table">
-            <thead>
-              <tr>
-                <th>ประเภทหวย</th>
-                <th>งวดทั้งหมด</th>
-                <th>เด่นเข้า (%)</th>
-                <th>เจาะเข้า (%)</th>
-                <th>สถานะ Command Hub</th>
-                <th>จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>ประเภทหวย</th>
+            <th>งวดทั้งหมด</th>
+            <th>เด่นเข้า (%)</th>
+            <th>เจาะเข้า (%)</th>
+            <th>สถานะ Command Hub</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
   `;
 
   analyzedResults.forEach(r => {
@@ -1979,27 +1885,19 @@ function renderResults(parsedData) {
   });
 
   html += `
-            <tr style="background:#faf5eb; font-weight:800;">
-              <td>🌐 Global Grand System</td>
-              <td>${grandEvalCount} งวด</td>
-              <td><span style="color:#2e7d32;">${grandDigitRate}%</span></td>
-              <td><span style="color:#2e7d32;">${grandPairRate}%</span></td>
-              <td colspan="2" style="text-align:left; font-size:0.42rem; color:#2e7d32;">🛡️ ตรวจสอบ Weight Tuning ทุกตารางย่อย 100%</td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="image-zoom-hud">
-        <button class="hud-btn hud-zoom-out" title="ย่อออก">➖</button>
-        <span class="hud-label">100%</span>
-        <button class="hud-btn hud-zoom-in" title="ขยายเข้า">➕</button>
-        <button class="hud-btn hud-zoom-reset" title="รีเซ็ต">🔄</button>
-      </div>
+        <tr style="background:#faf5eb; font-weight:800;">
+          <td>🌐 Global Grand System</td>
+          <td>${grandEvalCount} งวด</td>
+          <td><span style="color:#2e7d32;">${grandDigitRate}%</span></td>
+          <td><span style="color:#2e7d32;">${grandPairRate}%</span></td>
+          <td colspan="2" style="text-align:left; font-size:0.42rem; color:#2e7d32;">🛡️ ตรวจสอบ Weight Tuning ทุกตารางย่อย 100%</td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.8 Precision Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.9 Precision Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -2067,18 +1965,15 @@ function renderResults(parsedData) {
           </div>
         </div>
 
-        <div class="image-zoom-viewport">
-          <div class="image-zoom-content">
-
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-                📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.auditDigitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.pairValidRounds} (${res.auditPairWinRate}%)
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>เลขเด่น</th><th>ผลเลขเด่น</th><th>ผลเลขเจาะ</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
+            📋 ตารางที่ 1: ตรวจสอบผลย้อนหลัง Audit Log (${type}) — เด่นเข้า ${res.digitHits}/${res.evalCount} (${res.auditDigitWinRate}%) | เจาะเข้า ${res.pairHits}/${res.pairValidRounds} (${res.auditPairWinRate}%)
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>เลขเด่น</th><th>ผลเลขเด่น</th><th>ผลเลขเจาะ</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.auditLogs.forEach(log => {
@@ -2086,19 +1981,19 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-                🧮 ตารางที่ 2: ความถี่รวมตัวเลข 0–9 (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ตัวเลข</th><th>มา (ครั้ง)</th><th>เข้าติดต่อสูงสุด</th><th>หลุดติดต่อสูงสุด</th><th>สถานะล่าสุด</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
+            🧮 ตารางที่ 2: ความถี่รวมตัวเลข 0–9 (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>มา (ครั้ง)</th><th>เข้าติดต่อสูงสุด</th><th>หลุดติดต่อสูงสุด</th><th>สถานะล่าสุด</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.freqResults.forEach(f => {
@@ -2106,19 +2001,19 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
-                📊 ตารางที่ 3: สถิติแยกรายหลัก 0–9 (ร้อย, สิบ, หน่วย) (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ตัวเลข</th><th>ตำแหน่ง</th><th>มา (ครั้ง)</th><th>สถานะความฟิต</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:5px">
+            📊 ตารางที่ 3: สถิติแยกรายหลัก 0–9 (ร้อย, สิบ, หน่วย) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>ตำแหน่ง</th><th>มา (ครั้ง)</th><th>สถานะความฟิต</th></tr>
+            </thead>
+            <tbody>
     `;
 
     for(let d=0; d<=9; d++) {
@@ -2131,19 +2026,19 @@ function renderResults(parsedData) {
     }
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs & Telemetry Boost (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>คู่สัมพันธ์</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🤝 ตารางที่ 4: คู่สัมพันธ์ Real Pairs & Telemetry Boost (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>คู่สัมพันธ์</th><th>มา (ครั้ง)</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.correlationResults.slice(0, 10).forEach(item => {
@@ -2151,50 +2046,50 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                📈 ตารางที่ 5: พฤติกรรม คู่-คี่ & สูง-ต่ำ (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ประเภทพฤติกรรม</th><th>สถิติ (%)</th><th>แนวโน้ม</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><b>เลขคู่ / เลขคี่ (2 ตัวบน)</b></td><td>คู่ <span style="color:#2e7d32">${res.oehlResults.evenRate}%</span> | คี่ <span style="color:#c62828">${res.oehlResults.oddRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
-                  <tr><td><b>สูง / ต่ำ ( >= 50 )</b></td><td>สูง <span style="color:#2e7d32">${res.oehlResults.highRate}%</span> | ต่ำ <span style="color:#c62828">${res.oehlResults.lowRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📈 ตารางที่ 5: พฤติกรรม คู่-คี่ & สูง-ต่ำ (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ประเภทพฤติกรรม</th><th>สถิติ (%)</th><th>แนวโน้ม</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>เลขคู่ / เลขคี่ (2 ตัวบน)</b></td><td>คู่ <span style="color:#2e7d32">${res.oehlResults.evenRate}%</span> | คี่ <span style="color:#c62828">${res.oehlResults.oddRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
+              <tr><td><b>สูง / ต่ำ ( >= 50 )</b></td><td>สูง <span style="color:#2e7d32">${res.oehlResults.highRate}%</span> | ต่ำ <span style="color:#c62828">${res.oehlResults.lowRate}%</span></td><td><span class="badge-hit">สมดุล</span></td></tr>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🧩 ตารางที่ 6: กลุ่มพิเศษ เบิ้ล / หาม / เลขพี่น้อง (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ประเภทกลุ่มพิเศษ</th><th>ความถี่ (%)</th><th>สถานะ</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><b>เลขเบิ้ล (00-99)</b></td><td><span style="color:#b8860b">${res.specialResults.doubleRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
-                  <tr><td><b>เลขหาม (หน้า-หลังเหมือน)</b></td><td><span style="color:#b8860b">${res.specialResults.harmRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
-                  <tr><td><b>เลขพี่น้อง / เลขเรียง</b></td><td><span style="color:#2e7d32">${res.specialResults.sisterRate}%</span></td><td><span class="badge-hit">เด่นชัด</span></td></tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🧩 ตารางที่ 6: กลุ่มพิเศษ เบิ้ล / หาม / เลขพี่น้อง (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ประเภทกลุ่มพิเศษ</th><th>ความถี่ (%)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>เลขเบิ้ล (00-99)</b></td><td><span style="color:#b8860b">${res.specialResults.doubleRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
+              <tr><td><b>เลขหาม (หน้า-หลังเหมือน)</b></td><td><span style="color:#b8860b">${res.specialResults.harmRate}%</span></td><td><span class="badge-hit">เกาะติด</span></td></tr>
+              <tr><td><b>เลขพี่น้อง / เลขเรียง</b></td><td><span style="color:#2e7d32">${res.specialResults.sisterRate}%</span></td><td><span class="badge-hit">เด่นชัด</span></td></tr>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                ⏳ ตารางที่ 7: ระยะเว้นช่วง / เลขดับ-เลขค้าง (Gap & Omission) (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ตัวเลข</th><th>ระยะเว้นช่วง (Gap)</th><th>สถานะความห่าง</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            ⏳ ตารางที่ 7: ระยะเว้นช่วง / เลขดับ-เลขค้าง (Gap & Omission) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>ระยะเว้นช่วง (Gap)</th><th>สถานะความห่าง</th></tr>
+            </thead>
+            <tbody>
     `;
 
     for(let d=0; d<=9; d++) {
@@ -2204,54 +2099,54 @@ function renderResults(parsedData) {
     }
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต & Table Audit (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>หมวดผลรวม</th><th>แต้มยอดฮิตสูงสุด (Top 1 & 2)</th><th>สถานะความเสียหาย</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><b>ผลรวม 2 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top2Sum} และ แต้ม ${res.sumResults.secondTop2Sum}</span></td><td><span class="badge-hit">ปกติ (0 Leaks)</span></td></tr>
-                  <tr><td><b>ผลรวม 3 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top3Sum}</span></td><td><span class="badge-hit">Connected Real Data</span></td></tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🔢 ตารางที่ 8: ผลรวมแต้มยอดฮิต & Table Audit (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>หมวดผลรวม</th><th>แต้มยอดฮิตสูงสุด (Top 1 & 2)</th><th>สถานะความเสียหาย</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>ผลรวม 2 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top2Sum} และ แต้ม ${res.sumResults.secondTop2Sum}</span></td><td><span class="badge-hit">ปกติ (0 Leaks)</span></td></tr>
+              <tr><td><b>ผลรวม 3 ตัวบน</b></td><td><span style="color:#b8860b;font-weight:700;">แต้ม ${res.sumResults.top3Sum}</span></td><td><span class="badge-hit">Connected Real Data</span></td></tr>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🎯 ตารางที่ 9: ชุดเลขวิน 6 ตัวจับคู่จริง Co-Occurrence (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ชุดเลขวิน 6 ตัว</th><th>เข้าเป้า</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><b style="color:#b8860b;font-size:0.65rem;letter-spacing:1px;">[ ${res.winArrayData.winDigits.join(' - ')} ]</b></td>
-                    <td><span style="color:#2e7d32;font-weight:700;">${res.winArrayData.hits}</span></td>
-                    <td>${res.winArrayData.total}</td>
-                    <td><span style="color:#b8860b;font-weight:700;">${res.winArrayData.winCoverageRate}%</span></td>
-                    <td><span class="badge-hit">Real Coverage</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🎯 ตารางที่ 9: ชุดเลขวิน 6 ตัวจับคู่จริง Co-Occurrence (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ชุดเลขวิน 6 ตัว</th><th>เข้าเป้า</th><th>ทั้งหมด</th><th>ความครอบคลุม (%)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b style="color:#b8860b;font-size:0.65rem;letter-spacing:1px;">[ ${res.winArrayData.winDigits.join(' - ')} ]</b></td>
+                <td><span style="color:#2e7d32;font-weight:700;">${res.winArrayData.hits}</span></td>
+                <td>${res.winArrayData.total}</td>
+                <td><span style="color:#b8860b;font-weight:700;">${res.winArrayData.winCoverageRate}%</span></td>
+                <td><span class="badge-hit">Real Coverage</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🧬 ตารางที่ 10: ดัชนี DNA นิ่งเสถียร & Source Attribution (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>อันดับ</th><th>ตัวเลข</th><th>คะแนน DNA</th><th>ที่มาหลัก (Source Table)</th><th>Gap</th><th>สถานะ</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🧬 ตารางที่ 10: ดัชนี DNA นิ่งเสถียร & Source Attribution (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>อันดับ</th><th>ตัวเลข</th><th>คะแนน DNA</th><th>ที่มาหลัก (Source Table)</th><th>Gap</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.masterScores.forEach((item, idx) => {
@@ -2262,19 +2157,19 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                📈 ตารางที่ 11: วิเคราะห์กระแสความแรง & ความเสถียร 0–9 (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ตัวเลข</th><th>ระยะสั้น (3-5)</th><th>ระยะกลาง (6-10)</th><th>ระยะยาว (11-20)</th><th>ความเสถียร</th><th>แนวโน้ม</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📈 ตารางที่ 11: วิเคราะห์กระแสความแรง & ความเสถียร 0–9 (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>ระยะสั้น (3-5)</th><th>ระยะกลาง (6-10)</th><th>ระยะยาว (11-20)</th><th>ความเสถียร</th><th>แนวโน้ม</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.momentumResults.forEach(m => {
@@ -2282,19 +2177,19 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                📐 ตารางที่ 12: ดัชนีคณิตศาสตร์บริสุทธิ์ 0–9 (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ตัวเลข</th><th>Markov Chain</th><th>Poisson Dist.</th><th>Modulo Pattern</th><th>คะแนนความบริสุทธิ์</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📐 ตารางที่ 12: ดัชนีคณิตศาสตร์บริสุทธิ์ 0–9 (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ตัวเลข</th><th>Markov Chain</th><th>Poisson Dist.</th><th>Modulo Pattern</th><th>คะแนนความบริสุทธิ์</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.mathResults.forEach(m => {
@@ -2302,19 +2197,19 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🎛️ ตารางที่ 13: Optimizer สนับสนุน 7% (Telemetry Support) (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>รูปแบบโปรไฟล์</th><th>น้ำหนักสนับสนุน (Weight)</th><th>สถานะการเชื่อมโยง</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🎛️ ตารางที่ 13: Optimizer สนับสนุน 7% (Telemetry Support) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>รูปแบบโปรไฟล์</th><th>น้ำหนักสนับสนุน (Weight)</th><th>สถานะการเชื่อมโยง</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.adaptiveOptResults.profiles.forEach((p, idx) => {
@@ -2323,19 +2218,19 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🔬 ตารางที่ 14: สรุปอัตรา ถูก / ผิด & Weight Tuning Autopsy แต่ละตารางย่อย (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>ชื่อตารางย่อย (Table Node)</th><th>น้ำหนัก (%)</th><th>ทำนายถูก (%)</th><th>ความเสียหาย (Leaks)</th><th>เหตุผลที่ถูกต้อง / สาเหตุที่พัง</th></tr>
-                </thead>
-                <tbody>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🔬 ตารางที่ 14: สรุปอัตรา ถูก / ผิด & Weight Tuning Autopsy แต่ละตารางย่อย (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>ชื่อตารางย่อย (Table Node)</th><th>น้ำหนัก (%)</th><th>ทำนายถูก (%)</th><th>ความเสียหาย (Leaks)</th><th>เหตุผลที่ถูกต้อง / สาเหตุที่พัง</th></tr>
+            </thead>
+            <tbody>
     `;
 
     res.tableTelemetrySummary.forEach(ts => {
@@ -2353,38 +2248,38 @@ function renderResults(parsedData) {
     });
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-                🩺 ตารางที่ 15: จัดเกรดสุขภาพและความเสถียรของระบบ (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>เกรดประสิทธิภาพ (Health Tier)</th><th>เกรดเลขเจาะ (Pair Tier)</th><th>สถานะ Telemetry</th></tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><b style="color:${res.tierColor}; font-size:0.55rem;">${res.healthTier}</b></td>
-                    <td><b style="color:${res.pairTierColor}; font-size:0.55rem;">${res.pairTierName} (${res.auditPairWinRate}%)</b></td>
-                    <td><b style="color:#2e7d32;">Verified 100%</b></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🩺 ตารางที่ 15: จัดเกรดสุขภาพและความเสถียรของระบบ (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>เกรดประสิทธิภาพ (Health Tier)</th><th>เกรดเลขเจาะ (Pair Tier)</th><th>สถานะ Telemetry</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b style="color:${res.tierColor}; font-size:0.55rem;">${res.healthTier}</b></td>
+                <td><b style="color:${res.pairTierColor}; font-size:0.55rem;">${res.pairTierName} (${res.auditPairWinRate}%)</b></td>
+                <td><b style="color:#2e7d32;">Verified 100%</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-            <!-- Single Digit Autopsy Center Table -->
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#c62828;margin-bottom:6px">
-                🎯 ตารางที่ 23: Single Digit Autopsy Center (บันทึกประวัติเลขเด่นหลุด) (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>งวดวันที่</th><th>ผลออกจริง</th><th>เด่นที่ระบบเลือก</th><th>ตารางต้นเรื่อง</th><th>สาเหตุความผิดพลาด (Root-Cause Tag)</th></tr>
-                </thead>
-                <tbody>
+        <!-- Single Digit Autopsy Center Table -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#c62828;margin-bottom:6px">
+            🎯 ตารางที่ 23: Single Digit Autopsy Center (บันทึกประวัติเลขเด่นหลุด) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>งวดวันที่</th><th>ผลออกจริง</th><th>เด่นที่ระบบเลือก</th><th>ตารางต้นเรื่อง</th><th>สาเหตุความผิดพลาด (Root-Cause Tag)</th></tr>
+            </thead>
+            <tbody>
     `;
 
     if (res.digitAutopsyLogs.length === 0) {
@@ -2404,20 +2299,20 @@ function renderResults(parsedData) {
     }
 
     html += `
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            <!-- Pair Autopsy Ledger Table -->
-            <div class="summary-table-container">
-              <div style="font-size:0.5rem;font-weight:700;color:#8a650d;margin-bottom:6px">
-                🔬 ตารางที่ 24: Dedicated Pair Autopsy Ledger (บันทึกประวัติการเจาะพัง) (${type})
-              </div>
-              <table class="audit-table">
-                <thead>
-                  <tr><th>งวดวันที่</th><th>ผลออกจริง</th><th>คู่เลขที่เลือก</th><th>ตารางต้นเรื่อง (Source)</th><th>การวินิจฉัยเชิงลึก (Pair Error Root-Cause)</th></tr>
-                </thead>
-                <tbody>
+        <!-- Pair Autopsy Ledger Table -->
+        <div class="summary-table-container">
+          <div style="font-size:0.5rem;font-weight:700;color:#8a650d;margin-bottom:6px">
+            🔬 ตารางที่ 24: Dedicated Pair Autopsy Ledger (บันทึกประวัติการเจาะพัง) (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>งวดวันที่</th><th>ผลออกจริง</th><th>คู่เลขที่เลือก</th><th>ตารางต้นเรื่อง (Source)</th><th>การวินิจฉัยเชิงลึก (Pair Error Root-Cause)</th></tr>
+            </thead>
+            <tbody>
     `;
 
     if (res.pairAutopsyLogs.length === 0) {
@@ -2437,25 +2332,16 @@ function renderResults(parsedData) {
     }
 
     html += `
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-          <div class="image-zoom-hud">
-            <button class="hud-btn hud-zoom-out" title="ย่อออก">➖</button>
-            <span class="hud-label">100%</span>
-            <button class="hud-btn hud-zoom-in" title="ขยายเข้า">➕</button>
-            <button class="hud-btn hud-zoom-reset" title="รีเซ็ต">🔄</button>
-          </div>
+            </tbody>
+          </table>
         </div>
+
       </div>
     `;
   });
 
   container.innerHTML = html;
-  initImageZoomPan();
-  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' };
 }
 </script>
 </body>
