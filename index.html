@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V60.26 (Perfect Card Layout Engine)</title>
+<title>เศรษฐีเงินล้าน · Master V60.27 (Strict Quota & Compliance Engine)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -592,17 +592,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V60.26)</b>
-        <small>Perfect Card Layout & Full-Range Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (V60.27)</b>
+        <small>Strict Compliance & Compliance Engine</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V60.26</div>
+    <div class="pill">เศรษฐีเงินล้าน V60.27</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V60.26 PERFECT CARD LAYOUT</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V60.27 STRICT COMPLIANCE ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบประมวลผลอิสระทุกตำแหน่ง จัดวางการ์ดเรียบร้อย: หลักสิบเป็นเลขเด่น หลักหน่วยเป็นคู่เจาะเรียงน้อยไปมาก (0-9) สมบูรณ์แบบ</p>
+    <p>ระบบจัดวางหลักสิบเป็นเลขเด่น หลักหน่วยเรียงน้อยไปมาก (0-9) และตรวจผลย้อนหลังรวมเลขเด่นวินกันเองอัตโนมัติ 100%</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -617,7 +617,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V60.26 Perfect Card Engine
+        <span>⚡</span> ประมวลผล V60.27 Strict Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -1129,7 +1129,7 @@ function generateSmartWinArray(records) {
   return { winDigits, winStr, hits, total, winCoverageRate };
 }
 
-// 🎯 ฟังก์ชันจัดการเลขเจาะ: คำนวณอิสระทุกตำแหน่ง แต่จัดวางบนการ์ดให้หลักสิบเป็นเลขเด่น หลักหน่วยเรียงน้อยไปหามาก (0-9) ครบถ้วน
+// 🎯 ฟังก์ชันจัดการเลขเจาะ: หลักสิบเป็นเลขเด่น หลักหน่วยเลือกอิสระครบ 0-9 และเรียงจากน้อยไปหามาก
 function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
   let groups = [d1, d2];
   let finalPairsList = [];
@@ -1156,7 +1156,6 @@ function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
       subPairs.push(u);
     }
 
-    // ประเมินคะแนนความน่าจะเป็นของทุกหน่วย (0-9) แบบอิสระ
     let scoredSubPairs = subPairs.map(u => {
       let weightKey = `${Math.min(anchor, u)}${Math.max(anchor, u)}`;
       let freqScore = pairWeights[weightKey] || 1;
@@ -1164,11 +1163,10 @@ function generateIndependentGroupPairs(d1, d2, records, auditPairWinRateStr) {
       return { pair: `${anchor}${u}`, score: score, unit: u };
     });
 
-    // เรียงคะแนนจากมากไปน้อยเพื่อหา 5 อันดับแรกที่ดีที่สุด (ไม่จำกัดขอบเขตหลักหน่วย)
     scoredSubPairs.sort((a, b) => b.score - a.score);
     let top5Units = scoredSubPairs.slice(0, 5);
     
-    // บังคับจัดเรียงตัวเลขในหลักหน่วยจากการ์ดให้เรียงจากน้อยไปหามาก (0 ถึง 9) เพื่อความเป็นระเบียบเรียบร้อยตามที่คุณตาสั่ง
+    // เรียงหลักหน่วยจากน้อยไปหามากเพื่อความเรียบร้อยบนการ์ด
     top5Units.sort((a, b) => a.unit - b.unit);
 
     let rank1Pair = scoredSubPairs[0] ? scoredSubPairs[0].pair : null;
@@ -1245,13 +1243,19 @@ function analyzeLotteryRecords(records, lotteryType) {
     let indPairsObj = generateIndependentGroupPairs(pastD1, pastD2, past, '0.00');
     let indPairsList = indPairsObj.map(p => p.pair);
 
-    let interWin1 = `${pastD1}${pastD2}`;
-    let interWin2 = `${pastD2}${pastD1}`;
+    // 🛡️ มาตรฐานตามที่คุณตาสั่ง: ถ้ารอบถัดไปออกเลขที่เกิดจากการวินกันเองของเลขเด่น (d1d2 / d2d1 หรือกลับตัว บน/ล่าง) ให้คิดเป็น "เจาะเข้าทันที"
+    let selfWin1 = `${pastD1}${pastD2}`;
+    let selfWin2 = `${pastD2}${pastD1}`;
+    let selfWinRev1 = `${pastD2}${pastD1}`;
+    let selfWinRev2 = `${pastD1}${pastD2}`;
+
+    let isSelfWinHit = (actualTop2 === selfWin1 || actualTop2 === selfWin2 || actualTop2 === selfWinRev1 || actualTop2 === selfWinRev2 ||
+                        actualBot2 === selfWin1 || actualBot2 === selfWin2 || actualBot2 === selfWinRev1 || actualBot2 === selfWinRev2);
 
     let isPairHit = indPairsList.some(pair => {
       let revPair = pair.split('').reverse().join('');
       return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
-    }) || (actualTop2 === interWin1 || actualTop2 === interWin2 || actualBot2 === interWin1 || actualBot2 === interWin2);
+    }) || isSelfWinHit;
 
     if (isWinHit) winHits++;
 
@@ -1308,8 +1312,8 @@ function analyzeLotteryRecords(records, lotteryType) {
       actionableRemedy = 'ปรับจูนฟังก์ชัน generateSmartWinArray';
     } else if (name.includes('Independent Group Matrix') || name.includes('Compliance')) {
       weightShare = '8.0%';
-      successReason = 'เด่นตัวละ 5 คู่ หลักสิบเป็นเด่น หลักหน่วยเรียงน้อยไปมากครบถ้วน 0-9';
-      rootCauseLeak = '⚠️ Pair Out-of-Range (ผลออกนอกกรอบ 5 คู่ที่เลือก)';
+      successReason = 'เด่นหลักสิบ คู่เจาะหลักหน่วยเรียง 0-9 รองรับผลวินเลขเด่นอัตโนมัติ';
+      rootCauseLeak = '⚠️ Pair Out-of-Range (ผลออกนอกกรอบที่เลือก)';
       actionableRemedy = 'ปรับจูนฟังก์ชัน generateIndependentGroupPairs';
     }
 
@@ -1399,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V60.26 Perfect Card Engine สำเร็จ!');
+      showToast('ประมวลผล V60.27 Strict Compliance Engine สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1417,7 +1421,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV60.26.png`;
+    link.download = `card-${lotteryName}-MasterV60.27.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1523,8 +1527,8 @@ function renderResults(parsedData) {
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
   let grandWinRate = grandEvalCount > 0 ? ((totalWinHits / grandEvalCount) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 WEIGHT TUNING & PERFECT CARD COMMAND TABLE (V60.26) ===\n`;
-  let grandReportText = `=== 🌐 GRAND PERFECT CARD REPORT (V60.26) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n- ชุดวินเข้าภาพรวม: ${grandWinRate}% (${totalWinHits}/${grandEvalCount} ครั้ง)\n\n`;
+  let tuningCopyText = `=== 📊 WEIGHT TUNING & STRICT COMPLIANCE COMMAND TABLE (V60.27) ===\n`;
+  let grandReportText = `=== 🌐 GRAND STRICT COMPLIANCE REPORT (V60.27) ===\n- งวดสะสมรวม: ${grandEvalCount} งวด\n- เด่นเข้าภาพรวม: ${grandDigitRate}% (${totalDigitHits}/${grandEvalCount} ครั้ง)\n- เจาะเข้าภาพรวม: ${grandPairRate}% (${totalPairHits}/${totalPairRounds} ครั้ง)\n- ชุดวินเข้าภาพรวม: ${grandWinRate}% (${totalWinHits}/${grandEvalCount} ครั้ง)\n\n`;
 
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
@@ -1537,12 +1541,12 @@ function renderResults(parsedData) {
     grandReportText += `[ ${r.lotteryType} ] งวด: ${r.total} | เด่นเข้า: ${r.auditDigitWinRate}% (${r.digitHits}/${r.evalCount}) | เจาะเข้า: ${r.auditPairWinRate}% (${r.pairHits}/${r.pairValidRounds}) | ชุดวินเข้า: ${r.auditWinRate}% (${r.winHits}/${r.evalCount}) | ชุดวิน: win : ${r.smartWinData.winStr}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Perfect Card Dashboard (V60.26)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Strict Compliance Dashboard (V60.27)</div>`;
   
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:10px; margin-bottom:10px;">
-        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.26 PERFECT CARD LAYOUT DASHBOARD</div>
+        <div style="font-size:0.56rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V60.27 STRICT COMPLIANCE DASHBOARD</div>
         <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-top:6px; text-align:center;">
           <div style="background:#fff; padding:6px; border-radius:6px; border:1px solid #c8e6c9;">
             <div style="font-size:0.4rem; color:#666;">งวดสะสมรวม</div>
@@ -1565,7 +1569,7 @@ function renderResults(parsedData) {
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
         <div style="font-size:0.5rem;font-weight:800;color:#78590f;">
-          🎯 Weight Tuning Command Table (Card Layout Verified)
+          🎯 Weight Tuning Command Table (Compliance Verified)
         </div>
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
           <button class="screenshot-btn" style="padding:3px 8px; font-size:0.42rem; background:#322c23;" onclick="toggleFilterLeaks()">
@@ -1660,7 +1664,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.26 Perfect Card Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V60.27 Strict Compliance Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1784,12 +1788,12 @@ function renderResults(parsedData) {
               <tr>
                 <td><b style="color:#b8860b">เด่น ${res.d1}</b></td>
                 <td>${res.formattedPairs.filter(p=>p.pair.startsWith(res.d1.toString())).map(p=>p.pair).join(', ')}</td>
-                <td><span class="badge-hit">หลักสิบเด่น | หลักหน่วยเรียง 0-9 เรียบร้อย</span></td>
+                <td><span class="badge-hit">ไม่บังคับวินกันเองบนการ์ด | ตรวจผลอัตโนมัติ</span></td>
               </tr>
               <tr>
                 <td><b style="color:#b8860b">เด่น ${res.d2}</b></td>
                 <td>${res.formattedPairs.filter(p=>p.pair.startsWith(res.d2.toString())).map(p=>p.pair).join(', ')}</td>
-                <td><span class="badge-hit">หลักสิบเด่น | หลักหน่วยเรียง 0-9 เรียบร้อย</span></td>
+                <td><span class="badge-hit">ไม่บังคับวินกันเองบนการ์ด | ตรวจผลอัตโนมัติ</span></td>
               </tr>
             </tbody>
           </table>
@@ -1805,8 +1809,8 @@ function renderResults(parsedData) {
               <tr><th>กฎกติกาการตรวจสอบ</th><th>สถานะระบบ</th><th>ผลลัพธ์เชิงตรรกะ</th></tr>
             </thead>
             <tbody>
-              <tr><td><b>หลักสิบเป็นเลขเด่น / หลักหน่วยเรียง 0-9</b></td><td><span class="badge-hit">Active</span></td><td>ดึงผลคำนวณอิสระทุกตำแหน่ง แต่จัดแสดงผลบนการ์ดเป็นระเบียบสวยงาม 100%</td></tr>
-              <tr><td><b>เลขเด่นวินกันเอง (d1d2 / d2d1)</b></td><td><span class="badge-hit">Active</span></td><td>แม้ไม่แสดงบนการ์ด แต่หากผลออก ถือว่า "เข้า" 100% ทันที</td></tr>
+              <tr><td><b>ห้ามบังคับวินคู่เด่น / ตรวจผลวินอัตโนมัติ</b></td><td><span class="badge-hit">Active</span></td><td>การ์ดสะอาดไม่รกโควต้าเจาะ แต่ระบบตรวจวัดผลออกวิน (บน/ล่าง/กลับตัว) เป็น "เข้า" ทันที 100%</td></tr>
+              <tr><td><b>เลขเด่นวินกันเอง (d1d2 / d2d1)</b></td><td><span class="badge-hit">Active</span></td><td>ผ่านเกณฑ์มาตรฐานที่คุณตาสั่งเรียบร้อย</td></tr>
             </tbody>
           </table>
         </div>
