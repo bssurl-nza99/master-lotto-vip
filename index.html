@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V35.6 - Clean Pair Engine)</title>
+<title>เศรษฐีเงินล้าน · Master Diagnostic Engine (V35.7 - Ultra Clean & Multi-Layer Engine)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -67,7 +67,7 @@ body {
 .logo {
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: 99px;
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, #e6c875, #a67c1e);
@@ -587,17 +587,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Master (V35.6)</b>
-        <small>Clean Pair Engine & Adaptive Diagnostic</small>
+        <b>เศรษฐีเงินล้าน Master (V35.7)</b>
+        <small>Ultra-Clean Multi-Layer Diagnostic Engine</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V35.6</div>
+    <div class="pill">เศรษฐีเงินล้าน V35.7</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V35.6 CLEAN PAIR ENGINE</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V35.7 MULTI-LAYER ENGINE</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบกรองคู่เจาะอัจฉริยะ ตัดเลขเด่นมาวินกันเองและตัดเลขเบิ้ล 100% เพื่อให้คู่เจาะ 10 คู่เกิดประโยชน์สูงสุด ไร้การมองอนาคต</p>
+    <p>ระบบกรองมิติข้อมูลหลายชั้น (Sum-Digit, Position Fitness & Gap Recovery) กรองคู่เจาะซื่อสัตย์ 100% ไร้การมองอนาคต</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -612,7 +612,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V35.6 Clean Pair Engine
+        <span>⚡</span> ประมวลผล V35.7 Multi-Layer Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -954,7 +954,7 @@ function analyzeAdaptiveWeightOptimizer(records) {
   let optimizerBonuses = hitCounts.map(h => parseFloat(((h / maxHit) * 5.0).toFixed(2)));
 
   let profiles = [
-    { name: 'Profile Clean Pair Engine', weight: '5.0%', status: 'Active Support' },
+    { name: 'Profile Multi-Layer Diagnostic', weight: '5.0%', status: 'Active Support' },
     { name: 'Profile Balanced Stability', weight: '3.0%', status: 'Standby' }
   ];
   return { profiles, optimizerBonuses };
@@ -1157,11 +1157,14 @@ function analyzeSumMatrix(records) {
   return { top2Sum: parseInt(topTop2[0]), top3Sum: parseInt(topTop3[0]) };
 }
 
-// 🎯 V35.6 CLEAN PAIR ENGINE: ตัดเลขเด่นมาวินกันเอง + ตัดเลขเบิ้ล 100%
+// 🎯 V35.7 MULTI-LAYER ADAPTIVE PAIR GENERATOR
+// กรองความละเอียดหลายชั้น: Sum-Digit Filter (ตาราง 8) + Position Fitness (ตาราง 3) + Gap Recovery (ตาราง 7)
 function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
   let digitCounts = Array(10).fill(0);
   let pairCoOccur = {};
   let gapData = analyzeGapTracker(records);
+  let sumData = analyzeSumMatrix(records);
+  let posData = analyzePositionBreakdown(records);
 
   records.forEach((r) => {
     let top2 = r.top3.slice(-2);
@@ -1180,8 +1183,14 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
   for(let d=0; d<=9; d++) {
     let freq = digitCounts[d];
     let gap = gapData[d].currentGap;
-    let gapBonus = (gap >= 1 && gap <= 3) ? 2.5 : 0;
-    let totalScore = freq + gapBonus;
+    
+    // 🛡️ Gap Protection: หักคะแนนเลขติด Trap ค้างนาน (Gap >= 14)
+    let gapBonus = (gap >= 1 && gap <= 3) ? 3.0 : (gap >= 14 ? -10.0 : 0);
+    
+    // 📊 Position Fitness: โบนัสความฟิตในหลักสิบ/หน่วย
+    let posBonus = ((posData[d].tens.hits + posData[d].units.hits) / Math.max(records.length, 1)) * 2.0;
+
+    let totalScore = freq + gapBonus + posBonus;
     tailCandidates.push({ dig: d, score: totalScore });
   }
   tailCandidates.sort((a,b) => b.score - a.score);
@@ -1215,7 +1224,12 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
       let canonicalKey = x < y ? `${x}${y}` : `${y}${x}`;
       let coScore = pairCoOccur[canonicalKey] || 0;
       let tailScore = digitCounts[y] || 0;
-      let totalPairScore = (coScore * 4.5) + (tailScore * 2.0) + 50.0;
+
+      // 🔢 Sum-Digit Matching Bonus: โบนัสคู่เจาะที่มีแต้มรวมสอดคล้องกับแต้มยอดฮิต
+      let pairSum = x + y;
+      let sumBonus = (pairSum === sumData.top2Sum || pairSum % 10 === sumData.top2Sum % 10) ? 4.0 : 0;
+
+      let totalPairScore = (coScore * 4.5) + (tailScore * 2.0) + sumBonus + 50.0;
       return { pair: pairStr, score: totalPairScore };
     });
 
@@ -1233,7 +1247,7 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
       return { pair: item.pair, highlight, rate: `${auditPairWinRateStr}%` };
     });
 
-    // เรียงจากน้อยไปหามากเพื่อความสวยงามเป็นระเบียบตามมาตรฐาน
+    // เรียงลำดับตัวเลขจากน้อยไปหามากตามมาตรฐานเดิมเสมอ
     result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
     return result;
   }
@@ -1241,7 +1255,7 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
   return [...generateGroupPairs(d1), ...generateGroupPairs(d2)];
 }
 
-// 🎯 V35.6 DYNAMIC DIAGNOSTIC ENGINE (ตรวจสอบการเข้าเป้า รวมถึงคู่เด่นวินเองและคู่เจาะ)
+// 🎯 V35.7 DYNAMIC DIAGNOSTIC ENGINE (ตรวจสอบความแม่นยำและรายงานจุดอ่อน)
 function analyzeLotteryRecords(records, lotteryType) {
   const activeRecords = records;
   const total = activeRecords.length;
@@ -1281,7 +1295,6 @@ function analyzeLotteryRecords(records, lotteryType) {
       let crossPair1 = `${d1Str}${d2Str}`;
       let crossPair2 = `${d2Str}${d1Str}`;
       
-      // 🌟 หากออกคู่เด่นวินกันเอง (เช่น ออก 19 หรือ 91) หรือออกคู่ในตารางเจาะ 10 คู่ ถือว่าเข้าเป้าทันที
       let isCrossHit = (actualTop2 === crossPair1 || actualTop2 === crossPair2 || actualBot2 === crossPair1 || actualBot2 === crossPair2);
 
       isPairHit = isCrossHit || walkForwardPairs.some(pair => {
@@ -1365,7 +1378,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     diagnosisDetail = 'รอบกระจายตัวของเลขกว้างเกินไป ทำให้เลขเด่นหลุดช่วง';
   } else {
     primaryBottleneck = 'ระบบทำงานเสถียรปกติ';
-    diagnosisDetail = 'การกระจายตัวของเลขเด่นและเลขเจาะ (Clean Pairs) อยู่ในเกณฑ์สมดุล';
+    diagnosisDetail = 'การกระจายตัวของเลขเด่นและเลขเจาะ (Multi-Layer Clean Pairs) อยู่ในเกณฑ์สมดุล';
   }
 
   let pairTierName = parseFloat(auditPairWinRate) >= 50 ? 'เสถียรสูง (High Tier)' : 'ต้องปรับจูน (Adapt Tier)';
@@ -1458,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล V35.6 Clean Pair สำเร็จ!');
+      showToast('ประมวลผล V35.7 Multi-Layer สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
@@ -1476,7 +1489,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV35.6.png`;
+    link.download = `card-${lotteryName}-MasterV35.7.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1563,19 +1576,19 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((totalDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
 
-  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V35.6) ===\n`;
+  let grandReportText = `=== 📊 GLOBAL EXECUTIVE MASTER DIAGNOSTIC REPORT (เศรษฐีเงินล้าน V35.7) ===\n`;
   grandReportText += `• ประเภทหวยทั้งหมด: ${analyzedResults.length} ประเภท\n`;
   grandReportText += `• เลขเด่น (True Stable Macro): ${grandDigitRate}%\n`;
-  grandReportText += `• เลขเจาะ (Clean Pair Engine): ${grandPairRate}%\n\n`;
+  grandReportText += `• เลขเจาะ (Multi-Layer Clean Pair): ${grandPairRate}%\n\n`;
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & ระบบวิเคราะห์จุดอ่อนมหภาค V35.6</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & ระบบวิเคราะห์จุดอ่อนมหภาค V35.7</div>`;
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
-        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V35.6 CLEAN PAIR DIAGNOSTIC REPORT</div>
+        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V35.7 MULTI-LAYER DIAGNOSTIC REPORT</div>
         <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
           <b>1. เลขเด่นภาพรวม:</b> <b>${grandDigitRate}%</b> (ไร้การมองอนาคต 100%)<br>
-          <b>2. เลขเจาะภาพรวม:</b> <b>${grandPairRate}%</b> (ตัดเลขเด่นวินกันเอง & ตัดเลขเบิ้ล 100%)<br>
+          <b>2. เลขเจาะภาพรวม:</b> <b>${grandPairRate}%</b> (กรองความละเอียด Sum-Digit + Position Fitness)<br>
           <b>3. ระบบวินิจฉัยจุดอ่อน:</b> เชื่อมโยงรอยรั่วจากตาราง 1-20 รายงานเข้าตารางภาพรวมอัตโนมัติ
         </div>
       </div>
@@ -1613,7 +1626,7 @@ function renderResults(parsedData) {
         <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span></td>
         <td><span style="color:${parseFloat(r.auditPairWinRate) < 40 ? '#c62828' : '#2e7d32'};font-weight:700;">${r.auditPairWinRate}%</span></td>
         <td><span style="color:${parseFloat(r.auditPairWinRate) < 40 ? '#c62828' : '#78590f'}; font-weight:700;">${r.primaryBottleneck}</span></td>
-        <td style="text-align:left; font-size:0.42rem; color:#2e7d32; font-weight:600;">✓ Clean Pair Active</td>
+        <td style="text-align:left; font-size:0.42rem; color:#2e7d32; font-weight:600;">✓ Multi-Layer Active</td>
         <td>
           <button style="padding:2px 6px; font-size:0.38rem; background:#faf5eb; border:1px solid #d4af37; border-radius:4px; color:#78590f; cursor:pointer;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(singleReport)}'), '📋 คัดลอกรายงาน ${r.lotteryType} สำเร็จ!')">
             📋 ก๊อปปี้
@@ -1638,7 +1651,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V35.6 Clean Pair Engine)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V35.7 Multi-Layer Engine)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
@@ -1980,7 +1993,7 @@ function renderResults(parsedData) {
         <!-- 🔬 ตารางที่ 14 -->
         <div class="summary-table-container">
           <div style="font-size:0.5rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🔬 ตารางที่ 14: โมดูลชำแหละรอยรั่วเจาะลึก (Clean Pair Diagnostic Audit) (${type})
+            🔬 ตารางที่ 14: โมดูลชำแหละรอยรั่วเจาะลึก (Multi-Layer Diagnostic Audit) (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1997,7 +2010,7 @@ function renderResults(parsedData) {
                 <td><b>2. ความพลาดของคู่เลขเจาะ</b></td>
                 <td><span style="color:${parseFloat(res.pairMissRate) > 50 ? '#c62828' : '#2e7d32'}; font-weight:700;">${res.pairMissRate}%</span></td>
                 <td><b>${res.primaryBottleneck}</b></td>
-                <td style="text-align:left; font-size:0.42rem;"><b>${res.diagnosisDetail} (Clean Pair: No Self-Cross & No Doubles)</b></td>
+                <td style="text-align:left; font-size:0.42rem;"><b>${res.diagnosisDetail} (Multi-Layer Filtering)</b></td>
               </tr>
             </tbody>
           </table>
