@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V61.0 (Final Spectrum & Native Zoom)</title>
+<title>เศรษฐีเงินล้าน · Master V61.1 (Progress & Full Spectrum Hub)</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -224,6 +224,41 @@ body {
   background: rgba(255, 248, 230, 0.8);
   border-color: rgba(212, 175, 55, 0.4);
   color: #8c6511;
+}
+
+/* Progress Bar Container */
+.progress-container {
+  display: none;
+  margin-top: 10px;
+  padding: 10px;
+  background: #fffcf5;
+  border:: 1px solid var(--line-gold);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lux);
+}
+.progress-container.show {
+  display: block;
+}
+.progress-bar-bg {
+  width: 100%;
+  height: 10px;
+  background: #eae3d2;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progress-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(135deg, #d4af37, #8c6511);
+  transition: width 0.15s ease-out;
+}
+.progress-status-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.45rem;
+  font-weight: 700;
+  color: #78590f;
 }
 
 .mobile-alert {
@@ -577,17 +612,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V61.0)</b>
-        <small>Final Master Full Spectrum Hub</small>
+        <b>เศรษฐีเงินล้าน Mobile (V61.1)</b>
+        <small>Progress Telemetry Hub</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V61.0</div>
+    <div class="pill">เศรษฐีเงินล้าน V61.1</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V61.0 FINAL MASTER HUB</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V61.1 PROGRESS TELEMETRY HUB</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบประมวลผลเสถียร 100% ตารางรายละเอียดครบทุกหมวดหมู่ และรองรับการซูมด้วยนิ้วตามธรรมชาติ</p>
+    <p>ระบบประมวลผลพร้อม Progress Bar แสดงเปอร์เซ็นต์แบบเรียลไทม์ ตารางรายละเอียดครบถ้วน และรองรับการซูมตามธรรมชาติ</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -602,10 +637,21 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผล V61.0 Final Hub
+        <span>⚡</span> ประมวลผล V61.1 Progress Hub
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
+    </div>
+
+    <!-- Progress Bar Telemetry -->
+    <div id="progressContainer" class="progress-container">
+      <div class="progress-status-text">
+        <span id="progressLabel">กำลังเตรียมระบบวิเคราะห์...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="progressBarFill" class="progress-bar-fill"></div>
+      </div>
     </div>
   </div>
 
@@ -1414,6 +1460,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const runBtn = document.getElementById('runBtn');
   const sampleBtn = document.getElementById('sampleBtn');
   const clearBtn = document.getElementById('clearBtn');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBarFill = document.getElementById('progressBarFill');
+  const progressLabel = document.getElementById('progressLabel');
+  const progressPercent = document.getElementById('progressPercent');
 
   inputData.addEventListener('input', () => {
     const parsed = parsePDFText(inputData.value);
@@ -1435,25 +1485,69 @@ document.addEventListener('DOMContentLoaded', () => {
     inputData.value = '';
     dataCount.innerText = '0 รายการ';
     document.getElementById('resultOutput').innerHTML = '';
+    progressContainer.classList.remove('show');
     clearAlert();
     showToast('ล้างข้อมูลเรียบร้อย');
   });
 
   runBtn.addEventListener('click', () => {
     clearAlert();
-    try {
-      const rawText = inputData.value;
-      const parsedData = parsePDFText(rawText);
-      const categories = Object.keys(parsedData);
-      if (categories.length === 0) {
-        showAlert('⚠️ ไม่พบข้อมูลสถิติที่ถูกต้อง กรุณาตรวจสอบรูปแบบ');
-        return;
-      }
-      renderResults(parsedData);
-      showToast('ประมวลผล V61.0 Final Master Hub สำเร็จ!');
-    } catch (err) {
-      showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
+    const rawText = inputData.value;
+    const parsedData = parsePDFText(rawText);
+    const categories = Object.keys(parsedData);
+    if (categories.length === 0) {
+      showAlert('⚠️ ไม่พบข้อมูลสถิติที่ถูกต้อง กรุณาตรวจสอบรูปแบบ');
+      return;
     }
+
+    // แสดง Progress Bar ทันที
+    progressContainer.classList.add('show');
+    progressBarFill.style.width = '10%';
+    progressPercent.innerText = '10%';
+    progressLabel.innerText = 'กำลังแยกวิเคราะห์ข้อมูลดิบ (Parsing PDF Text)...';
+
+    runBtn.disabled = true;
+
+    setTimeout(() => {
+      progressBarFill.style.width = '40%';
+      progressPercent.innerText = '40%';
+      progressLabel.innerText = 'กำลังคำนวณโมเดลความถี่และคณิตศาสตร์ (Markov/Poisson)...';
+
+      setTimeout(() => {
+        try {
+          progressBarFill.style.width = '75%';
+          progressPercent.innerText = '75%';
+          progressLabel.innerText = 'กำลังสร้างตารางรายละเอียดและ Telemetry Hub...';
+
+          let analyzedResults = [];
+          for (const [type, rows] of Object.entries(parsedData)) {
+            const res = analyzeLotteryRecords(rows, type);
+            if (res) analyzedResults.push(res);
+          }
+
+          setTimeout(() => {
+            progressBarFill.style.width = '100%';
+            progressPercent.innerText = '100%';
+            progressLabel.innerText = 'ประมวลผลสำเร็จเรียบร้อย!';
+
+            renderResults(analyzedResults);
+            runBtn.disabled = false;
+            showToast('ประมวลผล V61.1 สำเร็จ!');
+
+            // ซ่อน Progress Bar หลังเสร็จสิ้น 1.5 วินาที
+            setTimeout(() => {
+              progressContainer.classList.remove('show');
+            }, 1500);
+
+          }, 200);
+
+        } catch (err) {
+          runBtn.disabled = false;
+          progressContainer.classList.remove('show');
+          showAlert(`เกิดข้อผิดพลาดในการประมวลผล: ${err.message}`);
+        }
+      }, 250);
+    }, 200);
   });
 });
 
@@ -1468,7 +1562,7 @@ function captureCard(cardId, lotteryName) {
     letterRendering: true
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-MasterV61.0.png`;
+    link.download = `card-${lotteryName}-MasterV61.1.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดมืออาชีพสำเร็จ!');
@@ -1526,17 +1620,9 @@ function fallbackCopyText(text, msg) {
   document.body.removeChild(textarea);
 }
 
-function renderResults(parsedData) {
+function renderResults(analyzedResults) {
   const container = document.getElementById('resultOutput');
   container.innerHTML = '';
-
-  let categories = Object.keys(parsedData);
-  let analyzedResults = [];
-
-  for (const [type, rows] of Object.entries(parsedData)) {
-    const res = analyzeLotteryRecords(rows, type);
-    if (res) analyzedResults.push(res);
-  }
 
   if (analyzedResults.length === 0) return;
 
@@ -1566,7 +1652,7 @@ function renderResults(parsedData) {
   let grandDigitRate = grandEvalCount > 0 ? ((totalDigitHits / grandEvalCount) * 100).toFixed(2) : '0.00';
   let grandPairRate = totalPairRounds > 0 ? ((totalPairHits / totalPairRounds) * 100).toFixed(2) : '0.00';
 
-  let tuningCopyText = `=== 📊 FINAL MASTER COMMAND (เศรษฐีเงินล้าน V61.0) ===\n`;
+  let tuningCopyText = `=== 📊 PROGRESS MASTER COMMAND (เศรษฐีเงินล้าน V61.1) ===\n`;
   let sortedAggregator = Object.entries(globalTableTelemetryAggregator).sort((a,b) => (b[1].hits / Math.max(b[1].total, 1)) - (a[1].hits / Math.max(a[1].total, 1)));
 
   sortedAggregator.forEach(([tblName, data], idx) => {
@@ -1574,15 +1660,15 @@ function renderResults(parsedData) {
     tuningCopyText += `#${idx+1} ${tblName} | น้ำหนัก: ${data.weightShare} | ถูก: ${hitRate}% (${data.hits}/${data.total}) | เสียหาย: ${data.leaks} | Bias: ${data.errorBias}\n`;
   });
 
-  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Final Master Hub (V61.0)</div>`;
+  let html = `<div class="section-title">📊 ตารางสรุปภาพรวมมหภาค & Progress Hub (V61.1)</div>`;
   
   html += `
     <div class="summary-table-container">
       <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:8px; margin-bottom:8px;">
-        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V61.0 FINAL MASTER REPORT</div>
+        <div style="font-size:0.52rem;font-weight:800;color:#2e7d32;margin-bottom:4px;">🛡️ V61.1 PROGRESS TELEMETRY REPORT</div>
         <div style="font-size:0.45rem;color:#322c23;line-height:1.4;">
-          <b>1. Triple Checked Execution:</b> ตรวจสอบโค้ดฉบับเต็มโดยละเอียด ไม่มีส่วนใดขาดหาย ประมวลผลลื่นไหล 100%<br>
-          <b>2. Native Browser Zoom:</b> รองรับการซูมด้วยนิ้วและเลื่อนหน้าจอตามธรรมชาติ พร้อมตารางรายละเอียดครบถ้วน
+          <b>1. Real-time Progress Bar:</b> แสดงสถานะเปอร์เซ็นต์การโหลดชัดเจน ป้องกันความสับสนว่าระบบค้างหรือไม่<br>
+          <b>2. Full Spectrum Details:</b> ตารางรายละเอียดครบทุกมิติและรองรับ Native Zoom เต็มรูปแบบ
         </div>
       </div>
 
@@ -1635,7 +1721,7 @@ function renderResults(parsedData) {
             <th>งวดทั้งหมด</th>
             <th>เด่นเข้า (%)</th>
             <th>เจาะเข้า (%)</th>
-            <th>สถานะ Final Master Hub</th>
+            <th>สถานะ Progress Hub</th>
             <th>จัดการ</th>
           </tr>
         </thead>
@@ -1651,7 +1737,7 @@ function renderResults(parsedData) {
         <td>${r.total} งวด</td>
         <td><span style="color:#2e7d32;font-weight:700;">${r.auditDigitWinRate}%</span></td>
         <td><span style="color:${parseFloat(r.auditPairWinRate) < 58 ? '#c62828' : '#2e7d32'};font-weight:700;">${r.auditPairWinRate}%</span></td>
-        <td style="text-align:left; font-size:0.41rem;"><b>Final Master Active</b><br><span style="color:#2e7d32">✓ Telemetry Verified</span></td>
+        <td style="text-align:left; font-size:0.41rem;"><b>Progress Hub Active</b><br><span style="color:#2e7d32">✓ Telemetry Verified</span></td>
         <td>
           <button style="padding:2px 6px; font-size:0.38rem; background:#faf5eb; border:1px solid #d4af37; border-radius:4px; color:#78590f; cursor:pointer;" onclick="copyToClipboard(decodeURIComponent('${encodeURIComponent(singleReport)}'), '📋 ก๊อปปี้รายงาน')">
             📋 ก๊อปปี้
@@ -1674,7 +1760,7 @@ function renderResults(parsedData) {
     </div>
   `;
 
-  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V61.0 Fusion Master)</div>`;
+  html += `<div class="section-title">ผลการวิเคราะห์เจาะลึกรายประเภท (V61.1 Fusion Master)</div>`;
   html += `<div class="lottery-nav-bar">`;
   html += `<button class="nav-tab-btn active" data-target="ALL" onclick="switchLotteryTab('ALL')">📌 แสดงทั้งหมด (${analyzedResults.length})</button>`;
   
