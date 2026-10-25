@@ -1185,7 +1185,7 @@ function analyzeSumMatrix(records) {
   return { top2Sum: parseInt(topTop2[0]), secondTop2Sum: parseInt(secondTop2[0]), top3Sum: parseInt(topTop3[0]) };
 }
 
-// 🎯 อัปเดตฟังก์ชัน generateAdaptivePairs ให้คำนวณ Path B (เลขเจาะ) แม่นยำขึ้นโดยไม่มี Overfitting
+// 🎯 อัปเกรดฟังก์ชัน generateAdaptivePairs ฉบับสมบูรณ์ (Dynamic Sum Pool, Short-to-Mid Co-Occurrence, Adaptive Distance)
 function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
   let digitCounts = Array(10).fill(0);
   let pairCoOccur = {};
@@ -1196,10 +1196,15 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
   let posData = analyzePositionBreakdown(records);
   let marketRegime = analyzeMarketRegime(records);
 
+  let sumFrequencyMap = {};
   records.forEach((r, idx) => {
-    let decay = Math.exp(-idx / 7);
+    let decay = Math.exp(-idx / 6);
     let top2 = r.top3.slice(-2);
     let b2 = r.bottom2;
+    if (top2.length === 2) {
+      let s = parseInt(top2[0]) + parseInt(top2[1]);
+      sumFrequencyMap[s] = (sumFrequencyMap[s] || 0) + decay;
+    }
     [top2, b2].forEach(p => {
       if(p.length === 2) {
         let x = parseInt(p[0]), y = parseInt(p[1]);
@@ -1207,21 +1212,24 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
         let key = x < y ? `${x}${y}` : `${y}${x}`;
         pairCoOccur[key] = (pairCoOccur[key] || 0) + decay;
         if (!pairWindowCounts[key]) pairWindowCounts[key] = [0, 0, 0];
-        let windowIndex = idx < 8 ? 0 : (idx < 24 ? 1 : 2);
+        let windowIndex = idx < 6 ? 0 : (idx < 20 ? 1 : 2);
         pairWindowCounts[key][windowIndex] += 1;
-        if (idx < 8) {
-          shortPairCoOccur[key] = (shortPairCoOccur[key] || 0) + (decay * 3.0);
+        if (idx < 6) {
+          shortPairCoOccur[key] = (shortPairCoOccur[key] || 0) + (decay * 3.5);
         }
       }
     });
   });
 
+  let sortedSums = Object.entries(sumFrequencyMap).sort((a,b) => b[1] - a[1]);
+  let validSumPool = new Set(sortedSums.slice(0, 4).map(item => parseInt(item[0])));
+
   let tailCandidates = [];
   for(let d=0; d<=9; d++) {
     let freq = digitCounts[d];
     let gap = gapData[d].currentGap;
-    let gapBonus = (gap >= 1 && gap <= 3) ? 14.0 : (gap >= 18 ? -30.0 : 0);
-    let posBonus = ((posData[d].tens.hits + posData[d].units.hits) / Math.max(records.length, 1)) * 12.0;
+    let gapBonus = (gap >= 1 && gap <= 3) ? 15.0 : (gap >= 18 ? -35.0 : 0);
+    let posBonus = ((posData[d].tens.hits + posData[d].units.hits) / Math.max(records.length, 1)) * 14.0;
     let totalScore = freq + gapBonus + posBonus;
     tailCandidates.push({ dig: d, score: totalScore });
   }
@@ -1232,7 +1240,7 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
 
   function generateGroupPairs(baseDigit) {
     let rawList = [];
-    let maxCandidates = 7;
+    let maxCandidates = 8;
 
     for (let tail of sortedDigits) {
       if (rawList.length >= maxCandidates) break;
@@ -1257,17 +1265,16 @@ function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr) {
       let tailScore = digitCounts[y] || 0;
       let pairSum = x + y;
       
-      let isExactSumMatch = (pairSum === sumData.top2Sum || pairSum === sumData.secondTop2Sum);
-      let isModuloSumMatch = (pairSum % 10 === sumData.top2Sum % 10);
-      let sumBonus = isExactSumMatch ? 35.0 : (isModuloSumMatch ? 15.0 : -10.0);
+      let isPoolSumMatch = validSumPool.has(pairSum);
+      let sumBonus = isPoolSumMatch ? 30.0 : (pairSum % 10 === sumData.top2Sum % 10 ? 12.0 : -15.0);
       
-      let distancePenalty = Math.abs(x - y) > 7 ? -8.0 : 10.0;
+      let distancePenalty = Math.abs(x - y) > 7 ? -5.0 : 12.0;
       let windows = pairWindowCounts[canonicalKey] || [0, 0, 0];
       let activeWindows = windows.filter(count => count > 0).length;
       let minPositiveWindow = activeWindows > 0 ? Math.min(...windows.filter(count => count > 0)) : 0;
-      let consistencyBonus = (activeWindows * 2.5) + (minPositiveWindow * 1.0);
+      let consistencyBonus = (activeWindows * 3.0) + (minPositiveWindow * 1.2);
 
-      let totalPairScore = (Math.sqrt(coScore) * 20.0) + (shortCoScore * 10.0) + (tailScore * 3.0) + sumBonus + distancePenalty + consistencyBonus + 80.0;
+      let totalPairScore = (Math.sqrt(coScore) * 22.0) + (shortCoScore * 12.0) + (tailScore * 3.5) + sumBonus + distancePenalty + consistencyBonus + 85.0;
       return { pair: pairStr, score: totalPairScore };
     });
 
