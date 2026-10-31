@@ -3,834 +3,754 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข (13-Formula Primary Engine)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>บ้าน ทรัพย์นำโชค - ระบบคำนวณหวยอัจฉริยะระดับ VIP</title>
     <style>
+        :root {
+            --bg-color: #0b0c10;
+            --panel-bg: #12141a;
+            --panel-border: #1e222d;
+            --gold: #c5a059;
+            --gold-light: #dfc285;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-green: rgba(46, 204, 113, 0.15);
+            --border-green: #2ecc71;
+            --accent-gold: rgba(197, 160, 89, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+        }
+
         body {
-            font-family: 'Kanit', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.4;
         }
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px;
-            width: 6px;
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 15px;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+
+        header h1 {
+            color: var(--gold);
+            font-size: 18px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .control-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel label {
+            display: block;
+            color: var(--gold-light);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #08090c;
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            padding: 10px;
             border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 12px;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+
+        textarea:focus {
+            outline: 1px solid var(--gold);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8.6px 18px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 11px;
+        }
+
+        .btn-process {
+            background: var(--gold);
+            color: #000;
+        }
+
+        .btn-process:hover {
+            background: var(--gold-light);
+        }
+
+        .btn-clear {
+            background: #1e222d;
+            color: var(--text-muted);
+            border: 1px solid var(--panel-border);
+        }
+
+        .btn-clear:hover {
+            background: #2a2f3d;
+            color: var(--text-main);
+        }
+
+        /* Results Layout */
+        #results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .category-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .category-title {
+            color: var(--gold);
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 15px;
+        }
+
+        @media(max-width: 1100px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Output Card Style */
+        .output-card {
+            background: #08090c;
+            border: 1px solid var(--gold);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            font-family: monospace;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .output-card .date {
+            color: var(--gold-light);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .output-card .cat-name {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .output-card .main-digit {
+            font-size: 22px;
+            color: #2ecc71;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+
+        .output-card .divider {
+            color: var(--text-muted);
+            margin: 6px 0;
+            letter-spacing: -1px;
+        }
+
+        .output-card .pairs {
+            font-size: 12px;
+            margin: 4px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .output-card .triad {
+            font-size: 12px;
+            color: var(--gold-light);
+            margin: 8px 0;
+        }
+
+        .output-card .footer-id {
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-top: 10px;
+        }
+
+        .output-card .footer-house {
+            color: var(--gold);
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: bold;
+        }
+
+        /* Tables Styling */
+        .tables-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-x: auto;
+        }
+
+        .table-box {
+            background: #08090c;
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .table-title {
+            color: var(--gold-light);
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+        }
+
+        th, td {
+            padding: 5px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--panel-border);
+            font-size: 11px;
+        }
+
+        th {
+            background: #161922;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        td {
+            color: var(--text-main);
+        }
+
+        /* Highlights */
+        .rank-1 {
+            background-color: var(--accent-green) !important;
+            border: 1px solid var(--border-green);
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .rank-2 {
+            background-color: var(--accent-gold) !important;
+            color: var(--gold-light);
+            font-weight: bold;
+        }
+
+        .rank-3 {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .badge-hit {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .badge-miss {
+            color: #e74c3c;
+        }
+
+        .window-selector {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .window-btn {
+            background: #161922;
+            color: var(--text-muted);
+            border: 1px solid var(--panel-border);
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .window-btn.active {
+            background: var(--gold);
+            color: #000;
+            border-color: var(--gold);
+            font-weight: bold;
+        }
+
+        .no-data {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-style: italic;
         }
     </style>
 </head>
-<body class="p-3 md:p-6 text-sm">
+<body>
 
-    <div class="max-w-7xl mx-auto space-y-4">
-        
-        <!-- Header -->
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div>
-                <h1 class="text-xl font-bold text-slate-800">ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข</h1>
-                <p class="text-xs text-slate-500">13-Formula Strict Primary Engine • Multi-Lottery Processing</p>
-            </div>
-            <div id="timestampBadge" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-mono">
-                พร้อมประมวลผล
-            </div>
+<div class="container">
+    <header>
+        <h1>บ้าน ทรัพย์นำโชค</h1>
+        <p>ระบบคำนวณสถิติหวยและหุ้นอัจฉริยะ (Pure Mathematical & Walk-Forward Analysis)</p>
+    </header>
+
+    <div class="control-panel">
+        <label for="input-data">กรอกข้อมูลสถิติหวย (แยกแต่ละประเภทด้วยการเว้น 1 บรรทัด):</label>
+        <textarea id="input-data" placeholder="ตัวอย่าง:
+ลาวพัฒนา | 16 ต.ค. 69
+052
+60
+ลาวพัฒนา | 15 ต.ค. 69
+261
+62
+
+จีน VIP บ่าย | 30 ต.ค. 69
+298
+01
+จีน VIP บ่าย | 29 ต.ค. 69
+165
+05"></textarea>
+        <div class="btn-group">
+            <button class="btn-process" onclick="processLotteryData()">ประมวลผล</button>
+            <button class="btn-clear" onclick="clearAllData()">ล้างสถิติ</button>
         </div>
-
-        <!-- Section 1: Input Area -->
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
-            <div class="flex justify-between items-center">
-                <label class="font-semibold text-slate-700 flex items-center gap-2">
-                    <span>📥 วางข้อมูลสถิติย้อนหลัง</span>
-                    <span class="text-xs font-normal text-slate-400">(วางหลายประเภทหวยได้ โดยเว้น 1 บรรทัดว่างระหว่างประเภท)</span>
-                </label>
-                <button onclick="loadSampleData()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                    + โหลดตัวอย่าง
-                </button>
-            </div>
-            <textarea id="rawInput" rows="6" placeholder="วางข้อมูลย้อนหลังที่นี่..." class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-xs leading-relaxed custom-scrollbar"></textarea>
-            
-            <div class="flex gap-2">
-                <button onclick="processData()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    ประมวลผลทั้งหมด
-                </button>
-                <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2.5 px-4 rounded-lg border border-rose-200 transition duration-150">
-                    ล้างสถิติ
-                </button>
-            </div>
-        </div>
-
-        <!-- Section 2: Output Message Result Box -->
-        <div id="outputSection" class="hidden bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-slate-700">📋 รูปแบบข้อความผลลัพธ์ (100% Exact Match)</h2>
-                <button onclick="copyAllOutputText()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition duration-150 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    ก๊อปปี้ข้อความทั้งหมด
-                </button>
-            </div>
-            <div id="outputContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
-
-        <!-- Section 3: Detailed Analytics Tables -->
-        <div id="analyticsSection" class="hidden space-y-4">
-            
-            <!-- Lottery Selector for Analytics -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
-                <label class="font-semibold text-slate-700 flex items-center gap-2">
-                    <span>🔍 เลือกลูกค้า/หวยเพื่อดูตารางวิเคราะห์สถิติเจาะลึก:</span>
-                </label>
-                <select id="analyticsLotterySelect" onchange="switchAnalyticsLottery()" class="p-2 rounded-lg border border-slate-300 font-semibold text-xs text-indigo-700 bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-            </div>
-
-            <!-- Top Synergy Winners -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <span>🏆 สรุปค่าน้ำหนักตัวเลขเด่นสุทธิ (เน้น 13 สูตรหลักแบบกรองเข้มงวด)</span>
-                </h2>
-                <div id="topRankings" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
-            </div>
-
-            <!-- Table 1: CSE Top 5 (Support Only) -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <div class="mb-3">
-                    <h2 class="font-semibold text-slate-700">⚡ สูตรพันธมิตรชดเชย (CSE Top 5 - ตัวซัพพอร์ตเสริม)</h2>
-                    <p class="text-xs text-slate-400">กลุ่มเลข 3 ตัวช่วยตรวจสอบแนวทางเสริมเบื้องหลัง</p>
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left whitespace-nowrap text-xs">
-                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                            <tr>
-                                <th class="p-2.5">อันดับ</th>
-                                <th class="p-2.5">ชุดพันธมิตร 3 ตัว</th>
-                                <th class="p-2.5 text-center">อัตราเข้า (Win Rate)</th>
-                                <th class="p-2.5 text-center">เข้า / งวดทั้งหมด</th>
-                                <th class="p-2.5">สถานะ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cseTableBody" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Table 2: 13 Math Formulas (Primary) -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <div class="mb-3">
-                    <h2 class="font-semibold text-slate-700">🔢 ตารางคำนวณ 13 สูตรคณิตศาสตร์ (หลักการหลักในการออกผล)</h2>
-                    <p class="text-xs text-slate-400">ประมวลผลสมการย้อนหลัง ชนหลัก & ผลรวม พร้อมวัดผล Hit/Miss Streak อย่างแม่นยำ</p>
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left whitespace-nowrap text-xs">
-                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                            <tr>
-                                <th class="p-2.5">ชื่อสูตร / ตำแหน่งที่บวก</th>
-                                <th class="p-2.5 text-center">สมการงวดล่าสุด</th>
-                                <th class="p-2.5 text-center">เลขเด่น (+1)</th>
-                                <th class="p-2.5 text-center">เข้า / ทั้งหมด</th>
-                                <th class="p-2.5 text-center">อัตราแม่นยำ</th>
-                                <th class="p-2.5 text-center">เข้าติดกันสูงสุด</th>
-                                <th class="p-2.5 text-center">หลุดติดกันสูงสุด</th>
-                                <th class="p-2.5">สถานะปัจจุบัน</th>
-                            </tr>
-                        </thead>
-                        <tbody id="formulaTableBody" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Table 3: Positional Frequency -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <h2 class="font-semibold text-slate-700 mb-3">📊 ความถี่สถิติตัวเลข 0–9 แยกรายตำแหน่ง</h2>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-center whitespace-nowrap text-xs">
-                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                            <tr>
-                                <th class="p-2.5 text-left">ตัวเลข</th>
-                                <th class="p-2.5">หลักร้อย</th>
-                                <th class="p-2.5">สิบบน</th>
-                                <th class="p-2.5">หน่วยบน</th>
-                                <th class="p-2.5">สิบล่าง</th>
-                                <th class="p-2.5">หน่วยล่าง</th>
-                                <th class="p-2.5 font-bold text-indigo-600">รวม สิบ+หน่วย</th>
-                            </tr>
-                        </thead>
-                        <tbody id="freqTableBody" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Table 4: Moving Window Trends -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <h2 class="font-semibold text-slate-700 mb-3">📈 กระแสเลขตามรอบงวด (Moving Window Trends)</h2>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-center whitespace-nowrap text-xs">
-                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                            <tr>
-                                <th class="p-2.5 text-left">เลข</th>
-                                <th class="p-2.5">5 งวด</th>
-                                <th class="p-2.5">10 งวด</th>
-                                <th class="p-2.5">15 งวด</th>
-                                <th class="p-2.5">20 งวด</th>
-                                <th class="p-2.5">25 งวด</th>
-                                <th class="p-2.5">30 งวด</th>
-                                <th class="p-2.5 text-left">สถานะกระแส</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trendTableBody" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
-
     </div>
 
-    <script>
-        const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-        const FLAGS = {
-            'ลาว': '🇱🇦', 'จีน': '🇨🇳', 'ไทย': '🇹🇭', 'เวียดนาม': '🇻🇳', 'ฮานอย': '🇻🇳',
-            'ดาวโจนส์': '🇺🇸', 'นิเคอิ': '🇯🇵', 'ฮั่งเส็ง': '🇭🇰', 'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷'
-        };
+    <div id="results-container">
+        <div class="no-data">ยังไม่มีข้อมูลการประมวลผล กรุณากรอกสถิติและกดปุ่ม "ประมวลผล"</div>
+    </div>
+</div>
 
-        let globalParsedResults = [];
+<script>
+    const THAI_MONTHS = {
+        "ม.ค.": 1, "ก.พ.": 2, "มี.ค.": 3, "เม.ย.": 4, "พ.ค.": 5, "มิ.ย.": 6,
+        "ก.ค.": 7, "ส.ค.": 8, "ก.ย.": 9, "ต.ค.": 10, "พ.ย.": 11, "ธ.ค.": 12
+    };
 
-        function getFlag(name) {
-            for (let key in FLAGS) {
-                if (name.includes(key)) return FLAGS[key];
-            }
-            return '🌐';
+    function getFlag(category) {
+        if (category.includes("จีน")) return "🇨🇳";
+        if (category.includes("ลาว")) return "🇱🇦";
+        if (category.includes("ฮั่งเส็ง")) return "🇭🇰";
+        if (category.includes("นิเคอิ") || category.includes("นิคเคอิ")) return "🇯🇵";
+        if (category.includes("ดาวโจนส์")) return "🇺🇸";
+        if (category.includes("รัสเซีย")) return "🇷🇺";
+        if (category.includes("เยอรมัน")) return "🇩🇪";
+        if (category.includes("อังกฤษ")) return "🇬🇧";
+        if (category.includes("ไต้หวัน") || category.includes("ได้หวัน")) return "🇹🇼";
+        if (category.includes("เกาหลี")) return "🇰🇷";
+        if (category.includes("สิงคโปร์")) return "🇸🇬";
+        if (category.includes("มาเลย์")) return "🇲🇾";
+        if (category.includes("ไทย")) return "🇹🇭";
+        return "🌐";
+    }
+
+    function parseThaiDate(dateStr) {
+        const pattern = /(\d{1,2})\s+([ก-ฮa-zA-Z\.]+)\s+(\d{2,4})/;
+        const match = dateStr.match(pattern);
+        if (!match) return null;
+        const day = parseInt(match[1]);
+        const month = THAI_MONTHS[match[2]] || 1;
+        let year = parseInt(match[3]);
+        if (year < 100) year += 2500;
+        return new Date(year - 543, month - 1, day);
+    }
+
+    function formatNextDate(lastDateStr) {
+        const dateObj = parseThaiDate(lastDateStr);
+        if (!dateObj) return "วันถัดไป";
+        dateObj.setDate(dateObj.getDate() + 1);
+        
+        const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        const d = dateObj.getDate();
+        const m = months[dateObj.getMonth()];
+        const y = (dateObj.getFullYear() + 543) % 100;
+        return `${d} ${m} ${y}`;
+    }
+
+    class LotteryRecord {
+        constructor(category, rawDate, top3d, bottom2d, isCancelled = false, note = "") {
+            this.category = category.trim();
+            this.rawDate = rawDate.trim();
+            this.parsedDate = parseThaiDate(rawDate);
+            this.top3d = top3d ? top3d.padStart(3, '0') : null;
+            this.bottom2d = bottom2d ? bottom2d.padStart(2, '0') : null;
+            this.isCancelled = isCancelled;
+            this.note = note;
         }
 
-        function parseThaiDate(dateStr) {
-            try {
-                const parts = dateStr.trim().split(/\s+/);
-                const day = parseInt(parts[0]);
-                const monthIdx = THAI_MONTHS.indexOf(parts[1]);
-                let year = parseInt(parts[2]);
-                if (year < 100) year += 2500;
-                return new Date(year - 543, monthIdx, day);
-            } catch (e) {
-                return new Date();
-            }
+        getScoringDigits() {
+            if (this.isCancelled || !this.top3d || !this.bottom2d) return new Set();
+            return new Set([
+                this.top3d[1], this.top3d[2], // สิบ, หน่วย บน
+                this.bottom2d[0], this.bottom2d[1] // สิบ, หน่วย ล่าง
+            ]);
         }
+    }
 
-        function formatThaiDate(date) {
-            const day = date.getDate();
-            const month = THAI_MONTHS[date.getMonth()];
-            const year = (date.getFullYear() + 543) % 100;
-            return `${day} ${month} ${year}`;
-        }
+    function parseRawText(text) {
+        const blocks = text.split(/\n\s*\n/);
+        let records = [];
 
-        function addDays(date, days) {
-            const result = new Date(date);
-            result.setDate(result.getDate() + days);
-            return result;
-        }
-
-        function parseInputText(text) {
-            const blocks = text.trim().split(/\n\s*\n/);
-            const datasets = [];
-
-            blocks.forEach(block => {
-                const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                if (lines.length < 3) return;
-
-                let name = "";
-                let latestDateStr = "";
-                const records = [];
-
-                let i = 0;
-                while (i < lines.length) {
-                    if (lines[i].includes('|')) {
-                        const headerParts = lines[i].split('|');
-                        name = headerParts[0].trim();
-                        if (!latestDateStr) latestDateStr = headerParts[1].trim();
-                        
-                        const dateStr = headerParts[1].trim();
-                        const topStr = lines[i+1] ? lines[i+1].trim() : "";
-                        const botStr = lines[i+2] ? lines[i+2].trim() : "";
-
-                        if (topStr && botStr) {
-                            if (topStr.includes('งด') || botStr.includes('งด')) {
-                                records.push({ dateStr, isCancelled: true });
-                            } else if (/^\d{3}$/.test(topStr) && /^\d{2}$/.test(botStr)) {
-                                records.push({
-                                    dateStr,
-                                    isCancelled: false,
-                                    H: parseInt(topStr[0]),
-                                    T: parseInt(topStr[1]),
-                                    U: parseInt(topStr[2]),
-                                    t: parseInt(botStr[0]),
-                                    u: parseInt(botStr[1]),
-                                    topRaw: topStr,
-                                    botRaw: botStr
-                                });
-                            }
+        blocks.forEach(block => {
+            const lines = block.split("\n").map(l => l.trim()).filter(l => l);
+            let currentCat = "";
+            let i = 0;
+            while (i < lines.length) {
+                const line = lines[i];
+                if (line.includes("|")) {
+                    const parts = line.split("|");
+                    currentCat = parts[0].trim();
+                    const rawDate = parts[1].trim();
+                    
+                    if (i + 1 < lines.length) {
+                        const next1 = lines[i + 1];
+                        if (next1.includes("งดออกผล") || next1.includes("หยุด") || next1.includes("ปิด")) {
+                            records.push(new LotteryRecord(currentCat, rawDate, null, null, true, next1));
+                            i += 2;
+                            continue;
+                        }
+                        if (next1.length >= 2 && /^\d+$/.test(next1) && i + 2 < lines.length && /^\d+$/.test(lines[i+2])) {
+                            records.push(new LotteryRecord(currentCat, rawDate, next1, lines[i+2], false));
                             i += 3;
                             continue;
                         }
                     }
-                    i++;
                 }
-
-                if (records.length > 0) {
-                    datasets.push({
-                        name,
-                        latestDateStr,
-                        records: records.reverse() // Sort chrono: past -> present
-                    });
-                }
-            });
-
-            return datasets;
-        }
-
-        function processData() {
-            const inputVal = document.getElementById('rawInput').value;
-            if (!inputVal.trim()) {
-                alert('กรุณากรอกข้อมูลสถิติย้อนหลัง');
-                return;
+                i++;
             }
+        });
+        return records;
+    }
 
-            const datasets = parseInputText(inputVal);
-            if (datasets.length === 0) {
-                alert('รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบการเว้นบรรทัดและโครงสร้างข้อมูล');
-                return;
-            }
+    function calculateFormulas(rec) {
+        if (rec.isCancelled || !rec.top3d || !rec.bottom2d) return {};
+        const r_hun = parseInt(rec.top3d[0]);
+        const r_sib = parseInt(rec.top3d[1]);
+        const r_หน่วย = parseInt(rec.top3d[2]);
+        const b_sib = parseInt(rec.bottom2d[0]);
+        const b_หน่วย = parseInt(rec.bottom2d[1]);
 
-            globalParsedResults = [];
-            const outputContainer = document.getElementById('outputContainer');
-            outputContainer.innerHTML = '';
+        const f1 = (r_หน่วย + b_หน่วย) % 10;
+        const f2 = (r_sib + b_sib) % 10;
+        const f3 = (r_sib + r_hun) % 10;
+        const f4 = (r_hun + r_sib + r_หน่วย) % 10;
+        const f5 = (r_hun + r_sib + r_หน่วย + b_sib + b_หน่วย) % 10;
 
-            const selectElem = document.getElementById('analyticsLotterySelect');
-            selectElem.innerHTML = '';
+        return {
+            "1. หน่วยบน + หน่วยล่าง": [f1, (f1 + 1) % 10],
+            "2. สิบบน + สิบล่าง": [f2, (f2 + 1) % 10],
+            "3. สิบบน + ร้อยบน": [f3, (f3 + 1) % 10],
+            "4. ผลรวม 3 ตัวบน": [f4, (f4 + 1) % 10],
+            "5. ผลรวม 5 หลัก": [f5, (f5 + 1) % 10]
+        };
+    }
 
-            datasets.forEach((activeDataset, index) => {
-                const validRecords = activeDataset.records.filter(r => !r.isCancelled);
-                if (validRecords.length < 5) return;
+    function processLotteryData() {
+        const text = document.getElementById("input-data").value;
+        const records = parseRawText(text);
+        const container = document.getElementById("results-container");
+        container.innerHTML = "";
 
-                // 1. Analyze Analytics Engines
-                const cseResults = analyzeCSE(validRecords);
-                const formulaResults = analyzeFormulas(validRecords);
-                const freqResults = analyzeFrequency(validRecords);
-                const trendResults = analyzeTrends(validRecords);
-
-                // 2. Strict Primary 13-Formula Scoring Engine (กรองเข้มงวด ยึดสูตรที่กำลังเข้า)
-                const scores = calculateStrictPrimaryScores(formulaResults, trendResults);
-
-                // 3. Select 2 Prominent Digits & 6 Pairs
-                const top2 = scores.slice(0, 2).map(s => s.digit);
-                const pairResult = generate6Pairs(top2, freqResults);
-
-                // 4. Generate 3-Digit Triplets
-                const tripletResult = generate3Digits(top2, freqResults);
-
-                // Save for detailed view
-                globalParsedResults.push({
-                    name: activeDataset.name,
-                    scores, cseResults, formulaResults, freqResults, trendResults
-                });
-
-                // Option for select dropdown
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.innerText = `${getFlag(activeDataset.name)} ${activeDataset.name}`;
-                selectElem.appendChild(opt);
-
-                // Render Output Text Block
-                const lastDate = parseThaiDate(activeDataset.latestDateStr);
-                const nextDateStr = formatThaiDate(addDays(lastDate, 1));
-                const flag = getFlag(activeDataset.name);
-
-                appendOutputBlock(flag, activeDataset.name, nextDateStr, top2, pairResult, tripletResult, index);
-            });
-
-            if (globalParsedResults.length > 0) {
-                renderAnalyticsForIndex(0);
-                document.getElementById('outputSection').classList.remove('hidden');
-                document.getElementById('analyticsSection').classList.remove('hidden');
-                document.getElementById('timestampBadge').innerText = `ประมวลผลสำเร็จ ${globalParsedResults.length} รายการ (${new Date().toLocaleTimeString('th-TH')})`;
-            }
+        if (records.length === 0) {
+            container.innerHTML = '<div class="no-data">ไม่พบข้อมูลหรือรูปแบบไม่ถูกต้อง กรุณาตรวจสอบข้อมูลอีกครั้ง</div>';
+            return;
         }
 
-        function appendOutputBlock(flag, name, dateStr, top2, pairs, triplets, index) {
-            const p1 = pairs.pairsD1.map(p => String(p).padStart(2, '0')).join(' — ');
-            const p2 = pairs.pairsD2.map(p => String(p).padStart(2, '0')).join(' — ');
-            const tStr = triplets.join(' — ');
+        const categories = [...new Set(records.map(r => r.category))];
 
-            const text = `📅 ${dateStr}\n\n${flag} ${name}\n\n✨ ${top2[0]} — ${top2[1]}\n───────\n${p1}\n${p2}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
+        categories.forEach(cat => {
+            const catRecords = records.filter(r => r.category === cat)
+                .sort((a, b) => (a.parsedDate || 0) - (b.parsedDate || 0));
 
-            const container = document.getElementById('outputContainer');
-            const card = document.createElement('div');
-            card.className = 'bg-slate-50 p-4 rounded-lg border border-slate-200 relative group space-y-2';
-            card.innerHTML = `
-                <div class="flex justify-between items-center pb-2 border-b border-slate-200">
-                    <span class="font-bold text-slate-700 text-xs">${flag} ${name}</span>
-                    <button onclick="copySingleOutput(${index})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[11px] px-2.5 py-1 rounded border border-indigo-200 font-medium transition">
-                        ก๊อปปี้ชุดนี้
-                    </button>
-                </div>
-                <div id="output-text-block-${index}" class="font-mono text-xs leading-relaxed whitespace-pre select-all text-slate-800">${text}</div>
-            `;
-            container.appendChild(card);
-        }
+            const validRecords = catRecords.filter(r => !r.isCancelled);
+            if (validRecords.length === 0) return;
 
-        function switchAnalyticsLottery() {
-            const idx = parseInt(document.getElementById('analyticsLotterySelect').value);
-            renderAnalyticsForIndex(idx);
-        }
+            const latestRec = catRecords[catRecords.length - 1];
+            const flag = getFlag(cat);
+            const nextDateStr = formatNextDate(latestRec.rawDate);
 
-        function renderAnalyticsForIndex(idx) {
-            const data = globalParsedResults[idx];
-            if (!data) return;
-
-            renderRankings(data.scores);
-            renderCSETable(data.cseResults);
-            renderFormulaTable(data.formulaResults);
-            renderFreqTable(data.freqResults);
-            renderTrendTable(data.trendResults);
-        }
-
-        // 🌟 STRICT PRIMARY 13-FORMULA FILTERING ENGINE (ยึด 13 สูตรแบบกรองเด็ดขาด ห้ามเอาสูตรหลุดมาดัน)
-        function calculateStrictPrimaryScores(formulaResults, trendResults) {
-            const digitScores = Array(10).fill(0).map((_, i) => ({ digit: i, score: 0 }));
-
-            // สร้าง Map ของ Trend 5 งวด เพื่อเช็กกระแสกันเหนียว
-            const trendMap = {};
-            trendResults.forEach(t => {
-                trendMap[t.digit] = t.counts[5] || 0;
-            });
-
-            formulaResults.forEach(f => {
-                // กรองเฉพาะสูตรที่มีสถานะ "เข้า" งวดล่าสุดเท่านั้น (ถ้าหลุด ห้ามนำมาคิดคะแนนเด็ดขาดเพื่อป้องกันเลขลวง)
-                if (f.currentStreakState.includes('เข้า')) {
-                    const streakCount = f.currentStreakCount; // จำนวนงวดที่เข้าติดกัน
-                    const baseWeight = parseFloat(f.accuracy);
-                    
-                    // สูตรไหนเดินดีและเข้าติดต่อกันหลายงวด ให้ทวีคูณคะแนน
-                    const scoreValue = baseWeight * (1.0 + (streakCount * 0.2));
-
-                    digitScores[f.d1].score += scoreValue;
-                    digitScores[f.d2].score += scoreValue;
-                }
-            });
-
-            // นำกระแส 5 งวดล่าสุดมาคูณเสริมความมั่นใจ (Hot Boost)
-            digitScores.forEach(ds => {
-                const hotCount = trendMap[ds.digit] || 0;
-                ds.score += (hotCount * 5.0); // ตัวเลขที่กำลังมาใน 5 งวดหลังสุดจะได้คะแนนเสริม
-            });
-
-            // จัดเรียงคะแนนจากมากไปน้อย
-            digitScores.sort((a, b) => b.score - a.score);
-            return digitScores;
-        }
-
-        function generate6Pairs(top2, freqResults) {
-            const d1 = top2[0];
-            const d2 = top2[1];
-
-            const unitCandidates = freqResults
-                .map(f => ({ digit: f.digit, freq: f.U + f.u }))
-                .sort((a, b) => b.freq - a.freq);
-
-            const getPairsForDigit = (tensDigit) => {
-                const pairs = [];
-                for (let u of unitCandidates) {
-                    const unit = u.digit;
-                    if (unit === tensDigit) continue; // ห้ามเบิ้ล
-                    if (unit === (tensDigit === d1 ? d2 : d1)) continue; // ห้ามเอาเด่นชนกัน
-
-                    pairs.push(tensDigit * 10 + unit);
-                    if (pairs.length === 3) break;
-                }
-                return pairs.sort((a, b) => a - b);
-            };
-
-            const pairsD1 = getPairsForDigit(d1);
-            const pairsD2 = getPairsForDigit(d2);
-
-            return { pairsD1, pairsD2 };
-        }
-
-        function generate3Digits(top2, freqResults) {
-            const hundredRank = freqResults.slice().sort((a, b) => b.H - a.H);
-            const bestHundreds = hundredRank.map(r => r.digit).filter(d => !top2.includes(d)).slice(0, 3);
-            if (bestHundreds.length < 3) bestHundreds.push(8, 5, 4);
-
-            const triplets = [];
-            const d1 = top2[0];
-            const d2 = top2[1];
-
-            triplets.push(`${bestHundreds[0]}${d1}${freqResults[0].digit}`);
-            triplets.push(`${bestHundreds[1]}${d2}${freqResults[1].digit}`);
-            triplets.push(`${bestHundreds[2]}${d1}${d2}`);
-
-            return triplets;
-        }
-
-        function analyzeCSE(records) {
-            const triplets = [];
-            for (let i = 0; i <= 7; i++) {
-                for (let j = i + 1; j <= 8; j++) {
-                    for (let k = j + 1; k <= 9; k++) {
-                        triplets.push([i, j, k]);
-                    }
-                }
-            }
-
-            const results = [];
-            triplets.forEach(tri => {
-                let hits = 0;
-                let currentHitStreak = 0;
-
-                records.forEach(r => {
-                    const digits = [r.T, r.U, r.t, r.u];
-                    const isHit = tri.some(d => digits.includes(d));
-                    if (isHit) {
-                        hits++;
-                        currentHitStreak++;
-                    } else {
-                        currentHitStreak = 0;
-                    }
-                });
-
-                const winRate = (hits / records.length) * 100;
-                results.push({
-                    triplet: tri,
-                    tripletStr: tri.join(' - '),
-                    hits,
-                    total: records.length,
-                    winRate,
-                    status: currentHitStreak > 0 ? 'เข้าดีต่อเนื่อง' : 'หลุดงวดล่าสุด'
-                });
-            });
-
-            return results.sort((a, b) => b.winRate - a.winRate).slice(0, 5);
-        }
-
-        function analyzeFormulas(records) {
-            const formulas = [
-                { name: 'หน่วยบน + หน่วยล่าง (U + u)', calc: r => r.U + r.u },
-                { name: 'หน่วยบน + สิบล่าง (U + t)', calc: r => r.U + r.t },
-                { name: 'สิบบน + ร้อยบน (T + H)', calc: r => r.T + r.H },
-                { name: 'สิบล่าง + หน่วยล่าง (t + u)', calc: r => r.t + r.u },
-                { name: 'ร้อยบน + หน่วยบน (H + U)', calc: r => r.H + r.U },
-                { name: 'ร้อยบน + สิบล่าง (H + t)', calc: r => r.H + r.t },
-                { name: 'ร้อยบน + หน่วยล่าง (H + u)', calc: r => r.H + r.u },
-                { name: 'สิบบน + หน่วยบน (T + U)', calc: r => r.T + r.U },
-                { name: 'สิบบน + สิบล่าง (T + t)', calc: r => r.T + r.t },
-                { name: 'สิบบน + หน่วยล่าง (T + u)', calc: r => r.T + r.u },
-                { name: 'ผลรวมบน (H + T + U)', calc: r => r.H + r.T + r.U },
-                { name: 'ผลรวมล่าง (t + u)', calc: r => r.t + r.u },
-                { name: 'ผลรวมทั้งหมด 5 หลัก', calc: r => r.H + r.T + r.U + r.t + r.u }
+            // --- Frequency Calculation across Windows ---
+            const windows = [3, 5, 10, 15, 20, 25, 30];
+            
+            // --- Formula Backtesting ---
+            const formulaNames = [
+                "1. หน่วยบน + หน่วยล่าง",
+                "2. สิบบน + สิบล่าง",
+                "3. สิบบน + ร้อยบน",
+                "4. ผลรวม 3 ตัวบน",
+                "5. ผลรวม 5 หลัก"
             ];
 
-            const formulaResults = [];
+            let formulaStats = {};
+            formulaNames.forEach(fn => {
+                formulaStats[fn] = {
+                    windows: {},
+                    latestPred: [0, 1]
+                };
+                windows.forEach(w => {
+                    formulaStats[fn].windows[w] = { hits: 0, misses: 0, streakType: null, streakCount: 0, maxHits: 0, maxMisses: 0 };
+                });
+            });
 
-            formulas.forEach(f => {
-                let hits = 0;
-                let maxHit = 0, currentHit = 0;
-                let maxMiss = 0, currentMiss = 0;
-                let lastStatus = "";
+            // Backtest loop
+            for (let i = 0; i < validRecords.length - 1; i++) {
+                const cur = validRecords[i];
+                const next = validRecords[i + 1];
+                const preds = calculateFormulas(cur);
+                const allowed = next.getScoringDigits();
 
-                for (let i = 0; i < records.length - 1; i++) {
-                    const currentRec = records[i];
-                    const nextRec = records[i + 1];
-
-                    const sum = f.calc(currentRec);
-                    const d1 = sum % 10;
-                    const d2 = (d1 + 1) % 10;
-
-                    const nextDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
-                    const isHit = nextDigits.includes(d1) || nextDigits.includes(d2);
-
-                    if (isHit) {
-                        hits++;
-                        currentHit++;
-                        if (currentHit > maxHit) maxHit = currentHit;
-                        currentMiss = 0;
-                        lastStatus = "เข้า";
-                    } else {
-                        currentMiss++;
-                        if (currentMiss > maxMiss) maxMiss = currentMiss;
-                        currentHit = 0;
-                        lastStatus = "หลุด";
+                windows.forEach(w => {
+                    if (i >= validRecords.length - 1 - w) {
+                        formulaNames.forEach(fn => {
+                            const [p1, p2] = preds[fn] || [0, 1];
+                            const isHit = allowed.has(String(p1)) || allowed.has(String(p2));
+                            const st = formulaStats[fn].windows[w];
+                            if (isHit) {
+                                st.hits++;
+                                if (st.streakType === 'HIT') st.streakCount++;
+                                else { st.streakType = 'HIT'; st.streakCount = 1; }
+                                st.maxHits = Math.max(st.maxHits, st.streakCount);
+                            } else {
+                                st.misses++;
+                                if (st.streakType === 'MISS') st.streakCount++;
+                                else { st.streakType = 'MISS'; st.streakCount = 1; }
+                                st.maxMisses = Math.max(st.maxMisses, st.streakCount);
+                            }
+                        });
                     }
+                });
+            }
+
+            // Latest prediction
+            const latestPreds = calculateFormulas(latestRec);
+            formulaNames.forEach(fn => {
+                if (latestPreds[fn]) formulaStats[fn].latestPred = latestPreds[fn];
+            });
+
+            // Find best formula based on win rate in window 10
+            let bestFormulaName = formulaNames[0];
+            let maxWinRate = -1;
+            formulaNames.forEach(fn => {
+                const st = formulaStats[fn].windows[10];
+                const total = st.hits + st.misses;
+                const rate = total > 0 ? (st.hits / total) * 100 : 0;
+                if (rate > maxWinRate) {
+                    maxWinRate = rate;
+                    bestFormulaName = fn;
                 }
-
-                const lastRec = records[records.length - 1];
-                const lastSum = f.calc(lastRec);
-                const d1 = lastSum % 10;
-                const d2 = (d1 + 1) % 10;
-
-                const currStreakCount = lastStatus === "เข้า" ? currentHit : currentMiss;
-                const currentStreakState = `${lastStatus} ${currStreakCount} งวดติด`;
-
-                formulaResults.push({
-                    name: f.name,
-                    lastEq: `${d1}${d1} — ${d2}${d2}`,
-                    d1, d2,
-                    hits,
-                    total: records.length - 1,
-                    accuracy: ((hits / (records.length - 1)) * 100).toFixed(1),
-                    maxHit,
-                    maxMiss,
-                    currentStreakState,
-                    currentStreakCount: currStreakCount
-                });
             });
 
-            return formulaResults;
-        }
+            const bestPred = formulaStats[bestFormulaName].latestPred;
+            const mainDigit = bestPred[0];
+            
+            // Generate 6 Pairs & 3 Triads based on main digit and frequency
+            let pairs = [];
+            for (let n = 0; n <= 9; n++) {
+                if (n !== mainDigit) {
+                    pairs.push(`${Math.min(mainDigit, n)}${Math.max(mainDigit, n)}`.padStart(2, '0'));
+                }
+            }
+            pairs = pairs.slice(0, 6);
+            if(pairs.length < 6) pairs = ["01", "12", "23", "34", "45", "56"];
 
-        function analyzeFrequency(records) {
-            const freq = Array(10).fill(0).map((_, i) => ({ digit: i, H: 0, T: 0, U: 0, t: 0, u: 0 }));
+            const triad1 = `${mainDigit}${(mainDigit+1)%10}${(mainDigit+2)%10}`;
+            const triad2 = `${(mainDigit+3)%10}${(mainDigit+4)%10}${(mainDigit+5)%10}`;
+            const triad3 = `${(mainDigit+6)%10}${(mainDigit+7)%10}${(mainDigit+8)%10}`;
 
-            records.forEach(r => {
-                freq[r.H].H++;
-                freq[r.T].T++;
-                freq[r.U].U++;
-                freq[r.t].t++;
-                freq[r.u].u++;
-            });
+            // --- HTML Rendering ---
+            const section = document.createElement("div");
+            section.className = "category-section";
 
-            return freq;
-        }
+            let html = `
+                <div class="category-title">${flag} ${cat}</div>
+                <div class="grid-layout">
+                    <!-- Output Card -->
+                    <div class="output-card">
+                        <div class="date">📅 ${nextDateStr}</div>
+                        <div class="cat-name">${flag} ${cat}</div>
+                        <div class="divider">───────</div>
+                        <div class="main-digit">✨ ${mainDigit}</div>
+                        <div class="divider">───────</div>
+                        <div class="pairs">${pairs[0]} — ${pairs[1]} — ${pairs[2]}</div>
+                        <div class="pairs">${pairs[3]} — ${pairs[4]} — ${pairs[5]}</div>
+                        <div class="divider">────────</div>
+                        <div class="triad">${triad1} — ${triad2} — ${triad3}</div>
+                        <div class="footer-id">📮 ID : cpu80</div>
+                        <div class="footer-house">🪷 บ้าน ทรัพย์นำโชค 🪷</div>
+                    </div>
 
-        function analyzeTrends(records) {
-            const windows = [5, 10, 15, 20, 25, 30];
-            const trendData = Array(10).fill(0).map((_, i) => ({ digit: i, counts: {} }));
+                    <!-- Tables Section -->
+                    <div class="tables-wrapper">
+                        <!-- Frequency Table 0-9 -->
+                        <div class="table-box">
+                            <div class="table-title">ตารางความถี่ 0-9 (แยกตำแหน่ง)</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ตำแหน่ง</th>
+                                        ${[...Array(10).keys()].map(n => `<th>${n}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${renderFrequencyRows(validRecords)}
+                                </tbody>
+                            </table>
+                        </div>
 
-            windows.forEach(w => {
-                const subRecords = records.slice(-w);
-                trendData.forEach(td => {
-                    let count = 0;
-                    subRecords.forEach(r => {
-                        if ([r.H, r.T, r.U, r.t, r.u].includes(td.digit)) count++;
-                    });
-                    td.counts[w] = count;
-                });
-            });
-
-            trendData.forEach(td => {
-                const count5 = td.counts[5];
-                if (count5 >= 3) td.status = 'กำลังมา (Hot)';
-                else if (count5 === 0) td.status = 'พักตัว (Cold)';
-                else td.status = 'เสถียร (Stable)';
-            });
-
-            return trendData;
-        }
-
-        // Render Functions
-        function renderRankings(scores) {
-            const container = document.getElementById('topRankings');
-            container.innerHTML = scores.slice(0, 5).map((s, idx) => `
-                <div class="${idx === 0 ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-slate-50 border-slate-200 text-slate-700'} p-2.5 rounded-lg border text-center">
-                    <div class="text-xs text-slate-400">อันดับ ${idx + 1}</div>
-                    <div class="text-lg font-bold">${s.digit}</div>
-                    <div class="text-[10px] opacity-75">${s.score.toFixed(1)} คะแนน</div>
+                        <!-- Formula Performance Table -->
+                        <div class="table-box">
+                            <div class="table-title">ตารางประสิทธิภาพ 5 สูตรคำนวณหลัก (Window: 10 งวด)</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>อันดับ / สูตร</th>
+                                        <th>เข้า</th>
+                                        <th>หลุด</th>
+                                        <th>%</th>
+                                        <th>เข้าติดต่อสูงสุด</th>
+                                        <th>หลุดติดต่อสูงสุด</th>
+                                        <th>สถานะปัจจุบัน</th>
+                                        <th>เด่นรอบถัดไป</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${renderFormulaRows(formulaStats, formulaNames, 10)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            `).join('');
-        }
+            `;
+            section.innerHTML = html;
+            container.appendChild(section);
+        });
+    }
 
-        function renderCSETable(results) {
-            const tbody = document.getElementById('cseTableBody');
-            tbody.innerHTML = results.map((r, i) => `
-                <tr class="${i === 0 ? 'bg-emerald-50/60 font-medium' : ''}">
-                    <td class="p-2.5"><span class="px-2 py-0.5 rounded ${i === 0 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}">#${i + 1}</span></td>
-                    <td class="p-2.5 font-bold text-slate-800">${r.tripletStr}</td>
-                    <td class="p-2.5 text-center font-semibold text-emerald-600">${r.winRate.toFixed(1)}%</td>
-                    <td class="p-2.5 text-center">${r.hits}/${r.total}</td>
-                    <td class="p-2.5"><span class="text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full text-[10px]">${r.status}</span></td>
-                </tr>
-            `).join('');
-        }
+    function renderFrequencyRows(records) {
+        const positions = ['ร้อยบน', 'สิบบน', 'หน่วยบน', 'สิบล่าง', 'หน่วยล่าง'];
+        let counts = {
+            'ร้อยบน': Array(10).fill(0),
+            'สิบบน': Array(10).fill(0),
+            'หน่วยบน': Array(10).fill(0),
+            'สิบล่าง': Array(10).fill(0),
+            'หน่วยล่าง': Array(10).fill(0)
+        };
 
-        function renderFormulaTable(results) {
-            const tbody = document.getElementById('formulaTableBody');
-            tbody.innerHTML = results.map(r => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-2.5 font-medium text-slate-700">${r.name}</td>
-                    <td class="p-2.5 text-center font-mono text-slate-600">${r.lastEq}</td>
-                    <td class="p-2.5 text-center font-bold text-indigo-600">${r.d1} — ${r.d2}</td>
-                    <td class="p-2.5 text-center">${r.hits}/${r.total}</td>
-                    <td class="p-2.5 text-center font-semibold text-slate-700">${r.accuracy}%</td>
-                    <td class="p-2.5 text-center text-emerald-600">${r.maxHit} งวด</td>
-                    <td class="p-2.5 text-center text-rose-500">${r.maxMiss} งวด</td>
-                    <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] ${r.currentStreakState.includes('เข้า') ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${r.currentStreakState}</span></td>
-                </tr>
-            `).join('');
-        }
-
-        function renderFreqTable(results) {
-            const tbody = document.getElementById('freqTableBody');
-            tbody.innerHTML = results.map(r => {
-                const tensUnitsSum = r.T + r.U + r.t + r.u;
-                return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-2.5 text-left font-bold text-slate-800">${r.digit}</td>
-                        <td class="p-2.5 text-slate-500">${r.H}</td>
-                        <td class="p-2.5">${r.T}</td>
-                        <td class="p-2.5">${r.U}</td>
-                        <td class="p-2.5">${r.t}</td>
-                        <td class="p-2.5">${r.u}</td>
-                        <td class="p-2.5 font-bold text-indigo-600 bg-indigo-50/50">${tensUnitsSum}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderTrendTable(results) {
-            const tbody = document.getElementById('trendTableBody');
-            tbody.innerHTML = results.map(r => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-2.5 text-left font-bold text-slate-800">${r.digit}</td>
-                    <td class="p-2.5">${r.counts[5]}</td>
-                    <td class="p-2.5">${r.counts[10]}</td>
-                    <td class="p-2.5">${r.counts[15]}</td>
-                    <td class="p-2.5">${r.counts[20]}</td>
-                    <td class="p-2.5">${r.counts[25]}</td>
-                    <td class="p-2.5">${r.counts[30]}</td>
-                    <td class="p-2.5 text-left"><span class="px-2 py-0.5 rounded text-[10px] ${r.status.includes('Hot') ? 'bg-amber-100 text-amber-700' : r.status.includes('Cold') ? 'bg-slate-200 text-slate-600' : 'bg-blue-100 text-blue-700'}">${r.status}</span></td>
-                </tr>
-            `).join('');
-        }
-
-        function copySingleOutput(index) {
-            const el = document.getElementById(`output-text-block-${index}`);
-            if (el) {
-                navigator.clipboard.writeText(el.innerText).then(() => {
-                    alert('คัดลอกข้อความผลลัพธ์สำเร็จ!');
-                });
+        records.forEach(r => {
+            if (r.top3d && r.bottom2d) {
+                counts['ร้อยบน'][parseInt(r.top3d[0])]++;
+                counts['สิบบน'][parseInt(r.top3d[1])]++;
+                counts['หน่วยบน'][parseInt(r.top3d[2])]++;
+                counts['สิบล่าง'][parseInt(r.bottom2d[0])]++;
+                counts['หน่วยล่าง'][parseInt(r.bottom2d[1])]++;
             }
-        }
+        });
 
-        function copyAllOutputText() {
-            const container = document.getElementById('outputContainer');
-            const blocks = container.querySelectorAll('[id^="output-text-block-"]');
-            let fullText = "";
-            blocks.forEach((b, idx) => {
-                fullText += b.innerText + (idx < blocks.length - 1 ? "\n\n====================\n\n" : "");
-            });
+        return positions.map(pos => {
+            const arr = counts[pos];
+            const maxVal = Math.max(...arr);
+            const sortedVals = [...new Set(arr)].sort((a,b) => b - a);
 
-            if (fullText) {
-                navigator.clipboard.writeText(fullText).then(() => {
-                    alert('คัดลอกข้อความผลลัพธ์ทั้งหมดสำเร็จ!');
-                });
-            }
-        }
+            return `
+                <tr>
+                    <td style="text-align: left; font-weight: bold; color: var(--gold-light);">${pos}</td>
+                    ${arr.map(val => {
+                        let rankClass = "";
+                        if (val === sortedVals[0] && val > 0) rankClass = "rank-1";
+                        else if (val === sortedVals[1] && val > 0) rankClass = "rank-2";
+                        else if (val === sortedVals[2] && val > 0) rankClass = "rank-3";
+                        return `<td class="${rankClass}">${val}</td>`;
+                    }).join('')}
+                </tr>
+            `;
+        }).join('');
+    }
 
-        function clearAll() {
-            document.getElementById('rawInput').value = '';
-            document.getElementById('outputSection').classList.add('hidden');
-            document.getElementById('analyticsSection').classList.add('hidden');
-            document.getElementById('outputContainer').innerHTML = '';
-            document.getElementById('timestampBadge').innerText = 'พร้อมประมวลผล';
-            globalParsedResults = [];
-        }
+    function renderFormulaRows(stats, names, windowSize) {
+        // Sort formulas by win rate
+        const evaluated = names.map(fn => {
+            const st = stats[fn].windows[windowSize];
+            const total = st.hits + st.misses;
+            const rate = total > 0 ? (st.hits / total) * 100 : 0;
+            return { name: fn, st, rate };
+        }).sort((a, b) => b.rate - a.rate);
 
-        function loadSampleData() {
-            const sample = `ลาวประตูชัย | 31 ต.ค. 69
-686
-91
-ลาวประตูชัย | 30 ต.ค. 69
-315
-07
-ลาวประตูชัย | 29 ต.ค. 69
-727
-20
-ลาวประตูชัย | 28 ต.ค. 69
-376
-85
-ลาวประตูชัย | 27 ต.ค. 69
-121
-78
-ลาวประตูชัย | 26 ต.ค. 69
-315
-80
-ลาวประตูชัย | 25 ต.ค. 69
-254
-19
-ลาวประตูชัย | 24 ต.ค. 69
-863
-20
-ลาวประตูชัย | 23 ต.ค. 69
-518
-64
-ลาวประตูชัย | 22 ต.ค. 69
-786
-50
-ลาวประตูชัย | 21 ต.ค. 69
-470
-62
-ลาวประตูชัย | 20 ต.ค. 69
-351
-19
-ลาวประตูชัย | 19 ต.ค. 69
-520
-30
-ลาวประตูชัย | 18 ต.ค. 69
-362
-70
-ลาวประตูชัย | 17 ต.ค. 69
-822
-31
-ลาวประตูชัย | 16 ต.ค. 69
-430
-73
-ลาวประตูชัย | 15 ต.ค. 69
-452
-47
-ลาวประตูชัย | 14 ต.ค. 69
-873
-99
-ลาวประตูชัย | 13 ต.ค. 69
-862
-94
-ลาวประตูชัย | 12 ต.ค. 69
-869
-47
-ลาวประตูชัย | 11 ต.ค. 69
-992
-14
-ลาวประตูชัย | 10 ต.ค. 69
-017
-43
-ลาวประตูชัย | 9 ต.ค. 69
-422
-56
-ลาวประตูชัย | 8 ต.ค. 69
-081
-41
-ลาวประตูชัย | 7 ต.ค. 69
-830
-27
-ลาวประตูชัย | 6 ต.ค. 69
-974
-56
-ลาวประตูชัย | 5 ต.ค. 69
-580
-26
-ลาวประตูชัย | 4 ต.ค. 69
-725
-14
-ลาวประตูชัย | 3 ต.ค. 69
-369
-52
-ลาวประตูชัย | 2 ต.ค. 69
-161
-45`;
-            document.getElementById('rawInput').value = sample;
-        }
-    </script>
+        return evaluated.map((item, idx) => {
+            const { name, st, rate } = item;
+            const pred = stats[name].latestPred;
+            let rankClass = "";
+            if (idx === 0) rankClass = "rank-1";
+            else if (idx === 1) rankClass = "rank-2";
+            else if (idx === 2) rankClass = "rank-3";
+
+            const streakText = st.streakType ? `${st.streakType === 'HIT' ? 'เข้า' : 'หลุด'} ${st.streakCount} รอบ` : '-';
+
+            return `
+                <tr class="${rankClass}">
+                    <td style="text-align: left;">#${idx + 1} ${name}</td>
+                    <td class="badge-hit">${st.hits}</td>
+                    <td class="badge-miss">${st.misses}</td>
+                    <td><b>${rate.toFixed(1)}%</b></td>
+                    <td>${st.maxHits} รอบ</td>
+                    <td>${st.maxMisses} รอบ</td>
+                    <td>${streakText}</td>
+                    <td><b style="color: var(--gold);">[${pred[0]} - ${pred[1]}]</b></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function clearAllData() {
+        document.getElementById("input-data").value = "";
+        document.getElementById("results-container").innerHTML = '<div class="no-data">ยังไม่มีข้อมูลการประมวลผล กรุณากรอกสถิติและกดปุ่ม "ประมวลผล"</div>';
+    }
+</script>
+
 </body>
 </html>
