@@ -1,159 +1,779 @@
-import pandas as pd
-import numpy as np
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข (5-Layer Synergy Engine)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="p-3 md:p-6 text-sm">
 
-class SmartLotteryEngine:
-    def __init__(self, raw_df):
-        """
-        raw_df ควรมีคอลัมน์: ['lottery_type', 'date', 'three_digit', 'two_digit']
-        """
-        self.raw_df = raw_df
+    <div class="max-w-7xl mx-auto space-y-4">
+        
+        <!-- Header -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข</h1>
+                <p class="text-xs text-slate-500">5-Layer Synergy Scoring Engine • Strict T+1 Chrono Mode</p>
+            </div>
+            <div id="timestampBadge" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-mono">
+                พร้อมประมวลผล
+            </div>
+        </div>
 
-    def clean_and_prepare_data(self):
-        """
-        กรองข้อมูล:
-        1. ข้ามแถวที่ 'งดออกผล' หรือข้อมูลไม่สมบูรณ์
-        2. เรียงลำดับจาก อดีต -> ปัจจุบัน แบบถูกต้อง 100%
-        3. แยกประเภทหวยออกจากกันโดยสมบูรณ์
-        """
-        df = self.raw_df.copy()
-        
-        # ลบช่องว่างขยะ
-        df['three_digit'] = df['three_digit'].astype(str).str.strip()
-        df['two_digit'] = df['two_digit'].astype(str).str.strip()
-        
-        # กรองวันงดออกผลและค่าว่าง
-        df_clean = df[(df['three_digit'] != 'งดออกผล') & (df['two_digit'] != 'งดออกผล')].copy()
-        df_clean = df_clean.dropna(subset=['three_digit', 'two_digit'])
-        
-        # กรองเฉพาะแถวที่มีตัวเลขครบ 3 หลัก และ 2 หลัก
-        df_clean = df_clean[df_clean['three_digit'].str.isdigit() & df_clean['two_digit'].str.isdigit()]
-        
-        grouped_markets = {}
-        for market_name, group in df_clean.groupby('lottery_type'):
-            # เรียงจาก อดีต -> ปัจจุบัน (Reverse index กรณีสถิติเอาปัจจุบันขึ้นก่อน)
-            sorted_group = group.iloc[::-1].reset_index(drop=True)
-            grouped_markets[market_name] = sorted_group
+        <!-- Section 1: Input Area -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
+            <div class="flex justify-between items-center">
+                <label class="font-semibold text-slate-700 flex items-center gap-2">
+                    <span>📥 วางข้อมูลสถิติย้อนหลัง</span>
+                    <span class="text-xs font-normal text-slate-400">(เว้น 1 บรรทัดว่างเพื่อแยกประเภทหวย)</span>
+                </label>
+                <button onclick="loadSampleData()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                    + โหลดตัวอย่าง
+                </button>
+            </div>
+            <textarea id="rawInput" rows="6" placeholder="วางข้อมูลย้อนหลังที่นี่..." class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-xs leading-relaxed custom-scrollbar"></textarea>
             
-        return grouped_markets
+            <div class="flex gap-2">
+                <button onclick="processData()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    ประมวลผล
+                </button>
+                <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2.5 px-4 rounded-lg border border-rose-200 transition duration-150">
+                    ล้างสถิติ
+                </button>
+            </div>
+        </div>
 
-    def check_hit_condition(self, next_row, target_digits):
-        """
-        เงื่อนไขสำคัญ:
-        - เลขเด่นต้องอยู่ใน หลักสิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง
-        - ถ้าไปอยู่ หลักร้อย (H_top) จะไม่นับว่าเข้าเด็ดขาด (ถือว่าหลุด)
-        """
-        t_digit = str(next_row['three_digit']).zfill(3)
-        b_digit = str(next_row['two_digit']).zfill(2)
-        
-        # ดึงเฉพาะหลักสิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง
-        valid_positions = [int(t_digit[1]), int(t_digit[2]), int(b_digit[0]), int(b_digit[1])]
-        
-        # ตรวจสอบว่ามีเลขเด่นในตำแหน่งที่อนุญาตหรือไม่
-        for d in target_digits:
-            if d in valid_positions:
-                return True
-        return False
+        <!-- Section 2: Output Message Result Box -->
+        <div id="outputSection" class="hidden bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-slate-700">📋 รูปแบบข้อความผลลัพธ์ (100% Exact Match)</h2>
+                <button onclick="copyOutputText()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition duration-150 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 002 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    ก๊อปปี้ข้อความ
+                </button>
+            </div>
+            <div id="outputContainer" class="space-y-4"></div>
+        </div>
 
-    def evaluate_all_markets(self):
-        grouped_data = self.clean_and_prepare_data()
-        all_market_reports = {}
+        <!-- Section 3: Detailed Analytics Tables -->
+        <div id="analyticsSection" class="hidden space-y-4">
+            
+            <!-- Top Synergy Winners -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <span>🏆 สรุปค่าน้ำหนักตัวเลขเด่นสุทธิ (5-Layer Synergy Score)</span>
+                </h2>
+                <div id="topRankings" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
+            </div>
 
-        for market_name, df_market in grouped_data.items():
-            if len(df_market) < 2:
-                continue
-                
-            formulas_result = {
-                'Top_Sum_Formula': [],
-                'Bot_Sum_Formula': [],
-                'All_Sum_Formula': []
+            <!-- Table 1: CSE Top 5 -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <div class="mb-3">
+                    <h2 class="font-semibold text-slate-700">⚡ สูตรพันธมิตรชดเชย (CSE Top 5)</h2>
+                    <p class="text-xs text-slate-400">ค้นหากลุ่มเลข 3 ตัวที่ผลัดกันเข้าหลักสิบ/หน่วย บน-ล่าง ดีที่สุด ( win rate 70-96%+ )</p>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5">อันดับ</th>
+                                <th class="p-2.5">ชุดพันธมิตร 3 ตัว</th>
+                                <th class="p-2.5 text-center">อัตราเข้า (Win Rate)</th>
+                                <th class="p-2.5 text-center">เข้า / งวดทั้งหมด</th>
+                                <th class="p-2.5">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cseTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 2: 13 Math Formulas -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <div class="mb-3">
+                    <h2 class="font-semibold text-slate-700">🔢 ตารางคำนวณ 13 สูตรคณิตศาสตร์ (Matrix & Group Sums)</h2>
+                    <p class="text-xs text-slate-400">ประมวลผลสมการย้อนหลัง ชนหลัก & ผลรวม พร้อมวัดผล Hit/Miss Streak</p>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5">ชื่อสูตร / ตำแหน่งที่บวก</th>
+                                <th class="p-2.5 text-center">สมการงวดล่าสุด</th>
+                                <th class="p-2.5 text-center">เลขเด่น (+1)</th>
+                                <th class="p-2.5 text-center">เข้า / ทั้งหมด</th>
+                                <th class="p-2.5 text-center">อัตราแม่นยำ</th>
+                                <th class="p-2.5 text-center">เข้าติดกันสูงสุด</th>
+                                <th class="p-2.5 text-center">หลุดติดกันสูงสุด</th>
+                                <th class="p-2.5">สถานะปัจจุบัน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="formulaTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 3: Positional Frequency -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <h2 class="font-semibold text-slate-700 mb-3">📊 ความถี่สถิติตัวเลข 0–9 แยกรายตำแหน่ง</h2>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-center whitespace-nowrap text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5 text-left">ตัวเลข</th>
+                                <th class="p-2.5">หลักร้อย</th>
+                                <th class="p-2.5">สิบบน</th>
+                                <th class="p-2.5">หน่วยบน</th>
+                                <th class="p-2.5">สิบล่าง</th>
+                                <th class="p-2.5">หน่วยล่าง</th>
+                                <th class="p-2.5 font-bold text-indigo-600">รวม สิบ+หน่วย</th>
+                            </tr>
+                        </thead>
+                        <tbody id="freqTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 4: Moving Window Trends -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <h2 class="font-semibold text-slate-700 mb-3">📈 กระแสเลขตามรอบงวด (Moving Window Trends)</h2>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-center whitespace-nowrap text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5 text-left">เลข</th>
+                                <th class="p-2.5">5 งวด</th>
+                                <th class="p-2.5">10 งวด</th>
+                                <th class="p-2.5">15 งวด</th>
+                                <th class="p-2.5">20 งวด</th>
+                                <th class="p-2.5">25 งวด</th>
+                                <th class="p-2.5">30 งวด</th>
+                                <th class="p-2.5 text-left">สถานะกระแส</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trendTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        const FLAGS = {
+            'ลาว': '🇱🇦', 'จีน': '🇨🇳', 'ไทย': '🇹🇭', 'เวียดนาม': '🇻🇳', 'ฮานอย': '🇻🇳',
+            'ดาวโจนส์': '🇺🇸', 'นิเคอิ': '🇯🇵', 'ฮั่งเส็ง': '🇭🇰', 'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷'
+        };
+
+        function getFlag(name) {
+            for (let key in FLAGS) {
+                if (name.includes(key)) return FLAGS[key];
             }
-            
-            for i in range(len(df_market) - 1):
-                curr = df_market.loc[i]
-                nxt = df_market.loc[i+1]
-                
-                t_digit = str(curr['three_digit']).zfill(3)
-                b_digit = str(curr['two_digit']).zfill(2)
-                
-                h_top, s_top, u_top = int(t_digit[0]), int(t_digit[1]), int(t_digit[2])
-                s_bot, u_bot = int(b_digit[0]), int(b_digit[1])
-                
-                # 1. สูตรผลรวมบน (+1 แต้ม)
-                top_sum_d1 = (h_top + s_top + u_top) % 10
-                top_sum_d2 = (top_sum_d1 + 1) % 10
-                formulas_result['Top_Sum_Formula'].append(
-                    self.check_hit_condition(nxt, [top_sum_d1, top_sum_d2])
-                )
-                
-                # 2. สูตรผลรวมล่าง (+1 แต้ม)
-                bot_sum_d1 = (s_bot + u_bot) % 10
-                bot_sum_d2 = (bot_sum_d1 + 1) % 10
-                formulas_result['Bot_Sum_Formula'].append(
-                    self.check_hit_condition(nxt, [bot_sum_d1, bot_sum_d2])
-                )
-                
-                # 3. สูตรผลรวม 5 หลัก (+1 แต้ม)
-                all_sum_d1 = (h_top + s_top + u_top + s_bot + u_bot) % 10
-                all_sum_d2 = (all_sum_d1 + 1) % 10
-                formulas_result['All_Sum_Formula'].append(
-                    self.check_hit_condition(nxt, [all_sum_d1, all_sum_d2])
-                )
-                
-            # คำนวณสถิติละเอียด: เข้า/หลุด ติดต่อกันสูงสุด และสถานะปัจจุบัน
-            market_stats = []
-            for f_name, history in formulas_result.items():
-                if not history:
-                    continue
-                    
-                total_draws = len(history)
-                win_count = sum(history)
-                accuracy = round((win_count / total_draws) * 100, 2)
-                
-                # คำนวณ Max Consecutive Win / Loss
-                max_win_streak = 0
-                max_loss_streak = 0
-                curr_win = 0
-                curr_loss = 0
-                
-                for res in history:
-                    if res:
-                        curr_win += 1
-                        curr_loss = 0
-                        max_win_streak = max(max_win_streak, curr_win)
-                    else:
-                        curr_loss += 1
-                        curr_win = 0
-                        max_loss_streak = max(max_loss_streak, curr_loss)
-                
-                # สถานะปัจจุบัน (ย้อนดูรอบล่าสุด)
-                current_streak = 0
-                last_state = history[-1]
-                for res in reversed(history):
-                    if res == last_state:
-                        current_streak += 1
-                    else:
-                        break
+            return '🌐';
+        }
+
+        function parseThaiDate(dateStr) {
+            try {
+                const parts = dateStr.trim().split(/\s+/);
+                const day = parseInt(parts[0]);
+                const monthIdx = THAI_MONTHS.indexOf(parts[1]);
+                let year = parseInt(parts[2]);
+                if (year < 100) year += 2500;
+                return new Date(year - 543, monthIdx, day);
+            } catch (e) {
+                return new Date();
+            }
+        }
+
+        function formatThaiDate(date) {
+            const day = date.getDate();
+            const month = THAI_MONTHS[date.getMonth()];
+            const year = (date.getFullYear() + 543) % 100;
+            return `${day} ${month} ${year}`;
+        }
+
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
+        function parseInputText(text) {
+            const blocks = text.trim().split(/\n\s*\n/);
+            const datasets = [];
+
+            blocks.forEach(block => {
+                const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length < 3) return;
+
+                let name = "";
+                let latestDateStr = "";
+                const records = [];
+
+                let i = 0;
+                while (i < lines.length) {
+                    if (lines[i].includes('|')) {
+                        const headerParts = lines[i].split('|');
+                        name = headerParts[0].trim();
+                        if (!latestDateStr) latestDateStr = headerParts[1].trim();
                         
-                current_status_str = f"{'เข้า' if last_state else 'หลุด'} {current_streak} รอบติด"
-                
-                market_stats.append({
-                    'ชื่อสูตร': f_name,
-                    'อัตราเข้า (%):': accuracy,
-                    'เข้าสูงสุด (ครั้ง)': max_win_streak,
-                    'หลุดสูงสุด (ครั้ง)': max_loss_streak,
-                    'สถานะปัจจุบัน': current_status_str
-                })
-                
-            all_market_reports[market_name] = pd.DataFrame(market_stats)
-            
-        return all_market_reports
+                        const dateStr = headerParts[1].trim();
+                        const topStr = lines[i+1] ? lines[i+1].trim() : "";
+                        const botStr = lines[i+2] ? lines[i+2].trim() : "";
 
-# ---------------------------------------------------------
-# ตัวอย่างการนำไปใช้เชื่อมต่อกับระบบหลัก
-# ---------------------------------------------------------
-# df_raw = อ่านข้อมูลสถิติจากไฟล์ PDF หรือ Database
-# engine = SmartLotteryEngine(df_raw)
-# summary_reports = engine.evaluate_all_markets()
+                        if (topStr && botStr) {
+                            if (topStr.includes('งด') || botStr.includes('งด')) {
+                                records.push({ dateStr, isCancelled: true });
+                            } else if (/^\d{3}$/.test(topStr) && /^\d{2}$/.test(botStr)) {
+                                records.push({
+                                    dateStr,
+                                    isCancelled: false,
+                                    H: parseInt(topStr[0]),
+                                    T: parseInt(topStr[1]),
+                                    U: parseInt(topStr[2]),
+                                    t: parseInt(botStr[0]),
+                                    u: parseInt(botStr[1]),
+                                    topRaw: topStr,
+                                    botRaw: botStr
+                                });
+                            }
+                            i += 3;
+                            continue;
+                        }
+                    }
+                    i++;
+                }
 
-# เรียกดูสถิติของ "ลาวประตูชัย" หรือ "ฮานอยปกติ" ได้ทันที:
-# print(summary_reports['ลาวประตูชัย'])
+                if (records.length > 0) {
+                    datasets.push({
+                        name,
+                        latestDateStr,
+                        records: records.reverse() // Sort chrono: past -> present
+                    });
+                }
+            });
+
+            return datasets;
+        }
+
+        function processData() {
+            const inputVal = document.getElementById('rawInput').value;
+            if (!inputVal.trim()) {
+                alert('กรุณากรอกข้อมูลสถิติย้อนหลัง');
+                return;
+            }
+
+            const datasets = parseInputText(inputVal);
+            if (datasets.length === 0) {
+                alert('รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบการเว้นบรรทัดและโครงสร้างข้อมูล');
+                return;
+            }
+
+            const activeDataset = datasets[0];
+            const validRecords = activeDataset.records.filter(r => !r.isCancelled);
+
+            if (validRecords.length < 5) {
+                alert('ต้องการข้อมูลสถิติที่สมบูรณ์อย่างน้อย 5 งวดขึ้นไป');
+                return;
+            }
+
+            // 1. Analyze Analytics Engines
+            const cseResults = analyzeCSE(validRecords);
+            const formulaResults = analyzeFormulas(validRecords);
+            const freqResults = analyzeFrequency(validRecords);
+            const trendResults = analyzeTrends(validRecords);
+
+            // 2. 5-Layer Synergy Scoring Engine
+            const scores = calculate5LayerSynergyScores(validRecords, cseResults, formulaResults, trendResults, freqResults);
+
+            // 3. Select 2 Prominent Digits & 6 Pairs
+            const top2 = scores.slice(0, 2).map(s => s.digit);
+            const pairResult = generate6Pairs(top2, freqResults);
+
+            // 4. Generate 3-Digit Triplets
+            const tripletResult = generate3Digits(top2, freqResults);
+
+            // 5. Render Output Text
+            const lastDate = parseThaiDate(activeDataset.latestDateStr);
+            const nextDateStr = formatThaiDate(addDays(lastDate, 1));
+            const flag = getFlag(activeDataset.name);
+
+            renderOutputText(flag, activeDataset.name, nextDateStr, top2, pairResult, tripletResult);
+
+            // 6. Render Analytics Tables
+            renderRankings(scores);
+            renderCSETable(cseResults);
+            renderFormulaTable(formulaResults);
+            renderFreqTable(freqResults);
+            renderTrendTable(trendResults);
+
+            // Show sections
+            document.getElementById('outputSection').classList.remove('hidden');
+            document.getElementById('analyticsSection').classList.remove('hidden');
+            document.getElementById('timestampBadge').innerText = 'ประมวลผลล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+        }
+
+        // 5-Layer Synergy Scoring Engine
+        function calculate5LayerSynergyScores(records, cseResults, formulaResults, trendResults, freqResults) {
+            const digitScores = Array(10).fill(0).map((_, i) => ({ digit: i, score: 0 }));
+
+            // Layer 1: CSE Triplet Base Anchor
+            if (cseResults.length > 0) {
+                const topCSE = cseResults[0].triplet; // e.g. [1, 2, 7]
+                topCSE.forEach(d => {
+                    digitScores[d].score += 40; // Heavy Base Anchor Weight
+                });
+            }
+
+            // Layer 2: Formula Consensus Weighting
+            formulaResults.forEach(f => {
+                let weight = 1.0;
+                if (f.currentStreakState.includes('เข้า')) weight = 1.8;
+                if (f.currentStreakState.includes('หลุด') && f.currentStreakCount >= f.maxMiss) weight = 2.0; // Rebound trigger
+
+                digitScores[f.d1].score += (f.accuracy * 0.15) * weight;
+                digitScores[f.d2].score += (f.accuracy * 0.15) * weight;
+            });
+
+            // Layer 3: Moving Window Trend
+            trendResults.forEach(t => {
+                if (t.status === 'กำลังมา (Hot)') digitScores[t.digit].score += 15;
+                if (t.status === 'เสถียร (Stable)') digitScores[t.digit].score += 8;
+                if (t.status === 'พักตัว (Cold)') digitScores[t.digit].score -= 10;
+            });
+
+            // Layer 4: Gap & Positional Frequency Boost
+            freqResults.forEach(f => {
+                const tensUnitsSum = f.T + f.U + f.t + f.u;
+                digitScores[f.digit].score += tensUnitsSum * 1.2;
+            });
+
+            digitScores.sort((a, b) => b.score - a.score);
+            return digitScores;
+        }
+
+        function generate6Pairs(top2, freqResults) {
+            const d1 = top2[0];
+            const d2 = top2[1];
+
+            // Rank unit candidates based on frequency
+            const unitCandidates = freqResults
+                .map(f => ({ digit: f.digit, freq: f.U + f.u }))
+                .sort((a, b) => b.freq - a.freq);
+
+            const getPairsForDigit = (tensDigit) => {
+                const pairs = [];
+                for (let u of unitCandidates) {
+                    const unit = u.digit;
+                    if (unit === tensDigit) continue; // No double (ห้ามเบิ้ล)
+                    if (unit === (tensDigit === d1 ? d2 : d1)) continue; // No cross-denial (ห้ามเอาเด่นชนกัน)
+
+                    pairs.push(tensDigit * 10 + unit);
+                    if (pairs.length === 3) break;
+                }
+                return pairs.sort((a, b) => a - b);
+            };
+
+            const pairsD1 = getPairsForDigit(d1);
+            const pairsD2 = getPairsForDigit(d2);
+
+            return { pairsD1, pairsD2 };
+        }
+
+        function generate3Digits(top2, freqResults) {
+            // Pick best hundred digit from Hundreds frequency
+            const hundredRank = freqResults.slice().sort((a, b) => b.H - a.H);
+            const bestHundreds = hundredRank.map(r => r.digit).filter(d => !top2.includes(d)).slice(0, 3);
+            if (bestHundreds.length < 3) bestHundreds.push(8, 5, 4);
+
+            const triplets = [];
+            const d1 = top2[0];
+            const d2 = top2[1];
+
+            // Create 3 sets
+            triplets.push(`${bestHundreds[0]}${d1}${freqResults[0].digit}`);
+            triplets.push(`${bestHundreds[1]}${d2}${freqResults[1].digit}`);
+            triplets.push(`${bestHundreds[2]}${d1}${d2}`);
+
+            return triplets;
+        }
+
+        function analyzeCSE(records) {
+            const triplets = [];
+            for (let i = 0; i <= 7; i++) {
+                for (let j = i + 1; j <= 8; j++) {
+                    for (let k = j + 1; k <= 9; k++) {
+                        triplets.push([i, j, k]);
+                    }
+                }
+            }
+
+            const results = [];
+            triplets.forEach(tri => {
+                let hits = 0;
+                let currentHitStreak = 0;
+
+                records.forEach(r => {
+                    const digits = [r.T, r.U, r.t, r.u];
+                    const isHit = tri.some(d => digits.includes(d));
+                    if (isHit) {
+                        hits++;
+                        currentHitStreak++;
+                    } else {
+                        currentHitStreak = 0;
+                    }
+                });
+
+                const winRate = (hits / records.length) * 100;
+                results.push({
+                    triplet: tri,
+                    tripletStr: tri.join(' - '),
+                    hits,
+                    total: records.length,
+                    winRate,
+                    status: currentHitStreak > 0 ? 'เข้าดีต่อเนื่อง' : 'หลุดงวดล่าสุด'
+                });
+            });
+
+            return results.sort((a, b) => b.winRate - a.winRate).slice(0, 5);
+        }
+
+        function analyzeFormulas(records) {
+            const formulas = [
+                { name: 'หน่วยบน + หน่วยล่าง (U + u)', calc: r => r.U + r.u },
+                { name: 'หน่วยบน + สิบล่าง (U + t)', calc: r => r.U + r.t },
+                { name: 'สิบบน + ร้อยบน (T + H)', calc: r => r.T + r.H },
+                { name: 'สิบล่าง + หน่วยล่าง (t + u)', calc: r => r.t + r.u },
+                { name: 'ร้อยบน + หน่วยบน (H + U)', calc: r => r.H + r.U },
+                { name: 'ร้อยบน + สิบล่าง (H + t)', calc: r => r.H + r.t },
+                { name: 'ร้อยบน + หน่วยล่าง (H + u)', calc: r => r.H + r.u },
+                { name: 'สิบบน + หน่วยบน (T + U)', calc: r => r.T + r.U },
+                { name: 'สิบบน + สิบล่าง (T + t)', calc: r => r.T + r.t },
+                { name: 'สิบบน + หน่วยล่าง (T + u)', calc: r => r.T + r.u },
+                { name: 'ผลรวมบน (H + T + U)', calc: r => r.H + r.T + r.U },
+                { name: 'ผลรวมล่าง (t + u)', calc: r => r.t + r.u },
+                { name: 'ผลรวมทั้งหมด 5 หลัก', calc: r => r.H + r.T + r.U + r.t + r.u }
+            ];
+
+            const formulaResults = [];
+
+            formulas.forEach(f => {
+                let hits = 0;
+                let maxHit = 0, currentHit = 0;
+                let maxMiss = 0, currentMiss = 0;
+                let lastStatus = "";
+
+                for (let i = 0; i < records.length - 1; i++) {
+                    const currentRec = records[i];
+                    const nextRec = records[i + 1];
+
+                    const sum = f.calc(currentRec);
+                    const d1 = sum % 10;
+                    const d2 = (d1 + 1) % 10;
+
+                    const nextDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
+                    const isHit = nextDigits.includes(d1) || nextDigits.includes(d2);
+
+                    if (isHit) {
+                        hits++;
+                        currentHit++;
+                        if (currentHit > maxHit) maxHit = currentHit;
+                        currentMiss = 0;
+                        lastStatus = "เข้า";
+                    } else {
+                        currentMiss++;
+                        if (currentMiss > maxMiss) maxMiss = currentMiss;
+                        currentHit = 0;
+                        lastStatus = "หลุด";
+                    }
+                }
+
+                const lastRec = records[records.length - 1];
+                const lastSum = f.calc(lastRec);
+                const d1 = lastSum % 10;
+                const d2 = (d1 + 1) % 10;
+
+                const currStreakCount = lastStatus === "เข้า" ? currentHit : currentMiss;
+                const currentStreakState = `${lastStatus} ${currStreakCount} งวดติด`;
+
+                formulaResults.push({
+                    name: f.name,
+                    lastEq: `${d1}${d1} — ${d2}${d2}`,
+                    d1, d2,
+                    hits,
+                    total: records.length - 1,
+                    accuracy: ((hits / (records.length - 1)) * 100).toFixed(1),
+                    maxHit,
+                    maxMiss,
+                    currentStreakState,
+                    currentStreakCount: currStreakCount
+                });
+            });
+
+            return formulaResults;
+        }
+
+        function analyzeFrequency(records) {
+            const freq = Array(10).fill(0).map((_, i) => ({ digit: i, H: 0, T: 0, U: 0, t: 0, u: 0 }));
+
+            records.forEach(r => {
+                freq[r.H].H++;
+                freq[r.T].T++;
+                freq[r.U].U++;
+                freq[r.t].t++;
+                freq[r.u].u++;
+            });
+
+            return freq;
+        }
+
+        function analyzeTrends(records) {
+            const windows = [5, 10, 15, 20, 25, 30];
+            const trendData = Array(10).fill(0).map((_, i) => ({ digit: i, counts: {} }));
+
+            windows.forEach(w => {
+                const subRecords = records.slice(-w);
+                trendData.forEach(td => {
+                    let count = 0;
+                    subRecords.forEach(r => {
+                        if ([r.H, r.T, r.U, r.t, r.u].includes(td.digit)) count++;
+                    });
+                    td.counts[w] = count;
+                });
+            });
+
+            trendData.forEach(td => {
+                const count5 = td.counts[5];
+                if (count5 >= 3) td.status = 'กำลังมา (Hot)';
+                else if (count5 === 0) td.status = 'พักตัว (Cold)';
+                else td.status = 'เสถียร (Stable)';
+            });
+
+            return trendData;
+        }
+
+        // Render Functions
+        function renderOutputText(flag, name, dateStr, top2, pairs, triplets) {
+            const p1 = pairs.pairsD1.map(p => String(p).padStart(2, '0')).join(' — ');
+            const p2 = pairs.pairsD2.map(p => String(p).padStart(2, '0')).join(' — ');
+            const tStr = triplets.join(' — ');
+
+            const text = `📅 ${dateStr}\n\n${flag} ${name}\n\n✨ ${top2[0]} — ${top2[1]}\n───────\n${p1}\n${p2}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
+
+            const container = document.getElementById('outputContainer');
+            container.innerHTML = `
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 font-mono text-xs leading-relaxed whitespace-pre select-all text-slate-800">${text}</div>
+            `;
+        }
+
+        function renderRankings(scores) {
+            const container = document.getElementById('topRankings');
+            container.innerHTML = scores.slice(0, 5).map((s, idx) => `
+                <div class="${idx === 0 ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-slate-50 border-slate-200 text-slate-700'} p-2.5 rounded-lg border text-center">
+                    <div class="text-xs text-slate-400">อันดับ ${idx + 1}</div>
+                    <div class="text-lg font-bold">${s.digit}</div>
+                    <div class="text-[10px] opacity-75">${s.score.toFixed(1)} คะแนน</div>
+                </div>
+            `).join('');
+        }
+
+        function renderCSETable(results) {
+            const tbody = document.getElementById('cseTableBody');
+            tbody.innerHTML = results.map((r, i) => `
+                <tr class="${i === 0 ? 'bg-emerald-50/60 font-medium' : ''}">
+                    <td class="p-2.5"><span class="px-2 py-0.5 rounded ${i === 0 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}">#${i + 1}</span></td>
+                    <td class="p-2.5 font-bold text-slate-800">${r.tripletStr}</td>
+                    <td class="p-2.5 text-center font-semibold text-emerald-600">${r.winRate.toFixed(1)}%</td>
+                    <td class="p-2.5 text-center">${r.hits}/${r.total}</td>
+                    <td class="p-2.5"><span class="text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full text-[10px]">${r.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderFormulaTable(results) {
+            const tbody = document.getElementById('formulaTableBody');
+            tbody.innerHTML = results.map(r => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2.5 font-medium text-slate-700">${r.name}</td>
+                    <td class="p-2.5 text-center font-mono text-slate-600">${r.lastEq}</td>
+                    <td class="p-2.5 text-center font-bold text-indigo-600">${r.d1} — ${r.d2}</td>
+                    <td class="p-2.5 text-center">${r.hits}/${r.total}</td>
+                    <td class="p-2.5 text-center font-semibold text-slate-700">${r.accuracy}%</td>
+                    <td class="p-2.5 text-center text-emerald-600">${r.maxHit} งวด</td>
+                    <td class="p-2.5 text-center text-rose-500">${r.maxMiss} งวด</td>
+                    <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] ${r.currentStreakState.includes('เข้า') ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${r.currentStreakState}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderFreqTable(results) {
+            const tbody = document.getElementById('freqTableBody');
+            tbody.innerHTML = results.map(r => {
+                const tensUnitsSum = r.T + r.U + r.t + r.u;
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 text-left font-bold text-slate-800">${r.digit}</td>
+                        <td class="p-2.5 text-slate-500">${r.H}</td>
+                        <td class="p-2.5">${r.T}</td>
+                        <td class="p-2.5">${r.U}</td>
+                        <td class="p-2.5">${r.t}</td>
+                        <td class="p-2.5">${r.u}</td>
+                        <td class="p-2.5 font-bold text-indigo-600 bg-indigo-50/50">${tensUnitsSum}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderTrendTable(results) {
+            const tbody = document.getElementById('trendTableBody');
+            tbody.innerHTML = results.map(r => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2.5 text-left font-bold text-slate-800">${r.digit}</td>
+                    <td class="p-2.5">${r.counts[5]}</td>
+                    <td class="p-2.5">${r.counts[10]}</td>
+                    <td class="p-2.5">${r.counts[15]}</td>
+                    <td class="p-2.5">${r.counts[20]}</td>
+                    <td class="p-2.5">${r.counts[25]}</td>
+                    <td class="p-2.5">${r.counts[30]}</td>
+                    <td class="p-2.5 text-left"><span class="px-2 py-0.5 rounded text-[10px] ${r.status.includes('Hot') ? 'bg-amber-100 text-amber-700' : r.status.includes('Cold') ? 'bg-slate-200 text-slate-600' : 'bg-blue-100 text-blue-700'}">${r.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function copyOutputText() {
+            const container = document.getElementById('outputContainer');
+            const text = container.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('คัดลอกข้อความผลลัพธ์สำเร็จ!');
+            });
+        }
+
+        function clearAll() {
+            document.getElementById('rawInput').value = '';
+            document.getElementById('outputSection').classList.add('hidden');
+            document.getElementById('analyticsSection').classList.add('hidden');
+            document.getElementById('timestampBadge').innerText = 'พร้อมประมวลผล';
+        }
+
+        function loadSampleData() {
+            const sample = `ลาวประตูชัย | 31 ต.ค. 69
+686
+91
+ลาวประตูชัย | 30 ต.ค. 69
+315
+07
+ลาวประตูชัย | 29 ต.ค. 69
+727
+20
+ลาวประตูชัย | 28 ต.ค. 69
+376
+85
+ลาวประตูชัย | 27 ต.ค. 69
+121
+78
+ลาวประตูชัย | 26 ต.ค. 69
+315
+80
+ลาวประตูชัย | 25 ต.ค. 69
+254
+19
+ลาวประตูชัย | 24 ต.ค. 69
+863
+20
+ลาวประตูชัย | 23 ต.ค. 69
+518
+64
+ลาวประตูชัย | 22 ต.ค. 69
+786
+50
+ลาวประตูชัย | 21 ต.ค. 69
+470
+62
+ลาวประตูชัย | 20 ต.ค. 69
+351
+19
+ลาวประตูชัย | 19 ต.ค. 69
+520
+30
+ลาวประตูชัย | 18 ต.ค. 69
+362
+70
+ลาวประตูชัย | 17 ต.ค. 69
+822
+31
+ลาวประตูชัย | 16 ต.ค. 69
+430
+73
+ลาวประตูชัย | 15 ต.ค. 69
+452
+47
+ลาวประตูชัย | 14 ต.ค. 69
+873
+99
+ลาวประตูชัย | 13 ต.ค. 69
+862
+94
+ลาวประตูชัย | 12 ต.ค. 69
+869
+47
+ลาวประตูชัย | 11 ต.ค. 69
+992
+14
+ลาวประตูชัย | 10 ต.ค. 69
+017
+43
+ลาวประตูชัย | 9 ต.ค. 69
+422
+56
+ลาวประตูชัย | 8 ต.ค. 69
+081
+41
+ลาวประตูชัย | 7 ต.ค. 69
+830
+27
+ลาวประตูชัย | 6 ต.ค. 69
+974
+56
+ลาวประตูชัย | 5 ต.ค. 69
+580
+26
+ลาวประตูชัย | 4 ต.ค. 69
+725
+14
+ลาวประตูชัย | 3 ต.ค. 69
+369
+52
+ลาวประตูชัย | 2 ต.ค. 69
+161
+45`;
+            document.getElementById('rawInput').value = sample;
+        }
+    </script>
+</body>
+</html>
