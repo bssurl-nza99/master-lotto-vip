@@ -1,64 +1,159 @@
-<!doctype html>
-<html lang="th">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>2D Research Desk v21 Smart Engine — Exponential Decay & Positional Matrix</title>
-<style>
-:root{--bg:#f3f5f7;--panel:#fff;--ink:#17212b;--muted:#667085;--line:#e3e7ed;--accent:#176b5b;--noon:#1d4ed8;--eve:#7c3aed;--gold:#a86612;--red:#b42318;--green:#087443}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,sans-serif}
-.wrap{max-width:1250px;margin:auto;padding:22px 16px 42px}
-header{display:flex;justify-content:space-between;align-items:center;background:var(--panel);padding:16px 20px;border-radius:16px;border:1px solid var(--line);margin-bottom:16px}
-.title{font-size:21px;font-weight:800}.sub{color:var(--muted);font-size:13px}
-.pill{border:1px solid var(--line);border-radius:99px;padding:6px 12px;background:#fff;color:var(--muted);font-size:12px}
-.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 2px 8px #10182805;margin-bottom:16px}
-.card h2{font-size:17px;margin:0 0 6px}
-textarea{width:100%;height:280px;resize:vertical;border:1px solid #ccd3dd;border-radius:10px;padding:12px;font:13px/1.6 monospace;background:#fcfcfd}
-button{font:inherit;border-radius:99px;padding:10px 16px;border:1px solid var(--line);cursor:pointer;background:#fff;color:var(--ink);font-weight:700}
-button.primary{background:var(--accent);border-color:var(--accent);color:white}
-button:hover{opacity:.9}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
-.metric{background:#f8fafb;border:1px solid var(--line);border-radius:10px;padding:11px}
-.metric b{font-size:20px;display:block;line-height:1.2}
-.metric span{font-size:12px;color:var(--muted)}
-.grid-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-.session-box{border:1px solid var(--line);border-radius:12px;padding:14px;background:#f8fafc}
-.session-box.noon{border-top:4px solid var(--noon)}
-.session-box.eve{border-top:4px solid var(--eve)}
-.session-box.all{border-top:4px solid var(--gold)}
-.session-title{font-size:15px;font-weight:800;margin-bottom:8px}
-.session-title.noon{color:var(--noon)}.session-title.eve{color:var(--eve)}.session-title.all{color:var(--gold)}
-.tag-group{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.tag{background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-weight:800;font-size:14px;font-family:monospace}
-.tag.main{border-color:#38bdf8;color:#0284c7;background:#f0f9ff;font-size:16px}
-.tag.tens{border-color:#bfdbfe;color:#1e40af}
-.tag.ones{border-color:#fbcfe8;color:#be185d}
-.pair-sec{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}
-.pair-sec-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
-.pair-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-.pair-item{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:6px 2px;text-align:center;font-weight:800;font-family:monospace;font-size:13px}
-.tablewrap{overflow:auto;max-height:380px;border:1px solid var(--line);border-radius:10px;margin-top:10px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-th{position:sticky;top:0;background:#f8fafc;color:#475467}
-.hit{color:var(--green);font-weight:750}.miss{color:var(--red);font-weight:750}
-.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:20px}
-@media(max-width:900px){.layout,.grid-3col{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
-</style>
-</head>
-<body>
-<div class="wrap">
-<header>
-  <div>
-    <div class="title">2D Research Desk v21 Smart Engine</div>
-    <div class="sub">Exponential Decay (λ=0.98) · เด่น 3 ตัว · เจาะ 15 คู่ไม่เบิ้ล · แสดง % ซื่อตรง 100%</div>
-  </div>
-  <div class="pill">v21 Production Engine</div>
-</header>
+import pandas as pd
+import numpy as np
 
-<div class="layout">
-  <section class="card">
-    <h2>🗓 ข้อมูลสถิติย้อนหลัง</h2>
-    <p class="
+class SmartLotteryEngine:
+    def __init__(self, raw_df):
+        """
+        raw_df ควรมีคอลัมน์: ['lottery_type', 'date', 'three_digit', 'two_digit']
+        """
+        self.raw_df = raw_df
+
+    def clean_and_prepare_data(self):
+        """
+        กรองข้อมูล:
+        1. ข้ามแถวที่ 'งดออกผล' หรือข้อมูลไม่สมบูรณ์
+        2. เรียงลำดับจาก อดีต -> ปัจจุบัน แบบถูกต้อง 100%
+        3. แยกประเภทหวยออกจากกันโดยสมบูรณ์
+        """
+        df = self.raw_df.copy()
+        
+        # ลบช่องว่างขยะ
+        df['three_digit'] = df['three_digit'].astype(str).str.strip()
+        df['two_digit'] = df['two_digit'].astype(str).str.strip()
+        
+        # กรองวันงดออกผลและค่าว่าง
+        df_clean = df[(df['three_digit'] != 'งดออกผล') & (df['two_digit'] != 'งดออกผล')].copy()
+        df_clean = df_clean.dropna(subset=['three_digit', 'two_digit'])
+        
+        # กรองเฉพาะแถวที่มีตัวเลขครบ 3 หลัก และ 2 หลัก
+        df_clean = df_clean[df_clean['three_digit'].str.isdigit() & df_clean['two_digit'].str.isdigit()]
+        
+        grouped_markets = {}
+        for market_name, group in df_clean.groupby('lottery_type'):
+            # เรียงจาก อดีต -> ปัจจุบัน (Reverse index กรณีสถิติเอาปัจจุบันขึ้นก่อน)
+            sorted_group = group.iloc[::-1].reset_index(drop=True)
+            grouped_markets[market_name] = sorted_group
+            
+        return grouped_markets
+
+    def check_hit_condition(self, next_row, target_digits):
+        """
+        เงื่อนไขสำคัญ:
+        - เลขเด่นต้องอยู่ใน หลักสิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง
+        - ถ้าไปอยู่ หลักร้อย (H_top) จะไม่นับว่าเข้าเด็ดขาด (ถือว่าหลุด)
+        """
+        t_digit = str(next_row['three_digit']).zfill(3)
+        b_digit = str(next_row['two_digit']).zfill(2)
+        
+        # ดึงเฉพาะหลักสิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง
+        valid_positions = [int(t_digit[1]), int(t_digit[2]), int(b_digit[0]), int(b_digit[1])]
+        
+        # ตรวจสอบว่ามีเลขเด่นในตำแหน่งที่อนุญาตหรือไม่
+        for d in target_digits:
+            if d in valid_positions:
+                return True
+        return False
+
+    def evaluate_all_markets(self):
+        grouped_data = self.clean_and_prepare_data()
+        all_market_reports = {}
+
+        for market_name, df_market in grouped_data.items():
+            if len(df_market) < 2:
+                continue
+                
+            formulas_result = {
+                'Top_Sum_Formula': [],
+                'Bot_Sum_Formula': [],
+                'All_Sum_Formula': []
+            }
+            
+            for i in range(len(df_market) - 1):
+                curr = df_market.loc[i]
+                nxt = df_market.loc[i+1]
+                
+                t_digit = str(curr['three_digit']).zfill(3)
+                b_digit = str(curr['two_digit']).zfill(2)
+                
+                h_top, s_top, u_top = int(t_digit[0]), int(t_digit[1]), int(t_digit[2])
+                s_bot, u_bot = int(b_digit[0]), int(b_digit[1])
+                
+                # 1. สูตรผลรวมบน (+1 แต้ม)
+                top_sum_d1 = (h_top + s_top + u_top) % 10
+                top_sum_d2 = (top_sum_d1 + 1) % 10
+                formulas_result['Top_Sum_Formula'].append(
+                    self.check_hit_condition(nxt, [top_sum_d1, top_sum_d2])
+                )
+                
+                # 2. สูตรผลรวมล่าง (+1 แต้ม)
+                bot_sum_d1 = (s_bot + u_bot) % 10
+                bot_sum_d2 = (bot_sum_d1 + 1) % 10
+                formulas_result['Bot_Sum_Formula'].append(
+                    self.check_hit_condition(nxt, [bot_sum_d1, bot_sum_d2])
+                )
+                
+                # 3. สูตรผลรวม 5 หลัก (+1 แต้ม)
+                all_sum_d1 = (h_top + s_top + u_top + s_bot + u_bot) % 10
+                all_sum_d2 = (all_sum_d1 + 1) % 10
+                formulas_result['All_Sum_Formula'].append(
+                    self.check_hit_condition(nxt, [all_sum_d1, all_sum_d2])
+                )
+                
+            # คำนวณสถิติละเอียด: เข้า/หลุด ติดต่อกันสูงสุด และสถานะปัจจุบัน
+            market_stats = []
+            for f_name, history in formulas_result.items():
+                if not history:
+                    continue
+                    
+                total_draws = len(history)
+                win_count = sum(history)
+                accuracy = round((win_count / total_draws) * 100, 2)
+                
+                # คำนวณ Max Consecutive Win / Loss
+                max_win_streak = 0
+                max_loss_streak = 0
+                curr_win = 0
+                curr_loss = 0
+                
+                for res in history:
+                    if res:
+                        curr_win += 1
+                        curr_loss = 0
+                        max_win_streak = max(max_win_streak, curr_win)
+                    else:
+                        curr_loss += 1
+                        curr_win = 0
+                        max_loss_streak = max(max_loss_streak, curr_loss)
+                
+                # สถานะปัจจุบัน (ย้อนดูรอบล่าสุด)
+                current_streak = 0
+                last_state = history[-1]
+                for res in reversed(history):
+                    if res == last_state:
+                        current_streak += 1
+                    else:
+                        break
+                        
+                current_status_str = f"{'เข้า' if last_state else 'หลุด'} {current_streak} รอบติด"
+                
+                market_stats.append({
+                    'ชื่อสูตร': f_name,
+                    'อัตราเข้า (%):': accuracy,
+                    'เข้าสูงสุด (ครั้ง)': max_win_streak,
+                    'หลุดสูงสุด (ครั้ง)': max_loss_streak,
+                    'สถานะปัจจุบัน': current_status_str
+                })
+                
+            all_market_reports[market_name] = pd.DataFrame(market_stats)
+            
+        return all_market_reports
+
+# ---------------------------------------------------------
+# ตัวอย่างการนำไปใช้เชื่อมต่อกับระบบหลัก
+# ---------------------------------------------------------
+# df_raw = อ่านข้อมูลสถิติจากไฟล์ PDF หรือ Database
+# engine = SmartLotteryEngine(df_raw)
+# summary_reports = engine.evaluate_all_markets()
+
+# เรียกดูสถิติของ "ลาวประตูชัย" หรือ "ฮานอยปกติ" ได้ทันที:
+# print(summary_reports['ลาวประตูชัย'])
