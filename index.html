@@ -36,7 +36,7 @@
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข</h1>
-                <p class="text-xs text-slate-500">13-Formula Primary Engine (ยึด 13 สูตรหลัก) • Multi-Lottery Processing</p>
+                <p class="text-xs text-slate-500">13-Formula Strict Primary Engine • Multi-Lottery Processing</p>
             </div>
             <div id="timestampBadge" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล
@@ -93,7 +93,7 @@
             <!-- Top Synergy Winners -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                 <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <span>🏆 สรุปค่าน้ำหนักตัวเลขเด่นสุทธิ (เน้น 13 สูตรหลัก)</span>
+                    <span>🏆 สรุปค่าน้ำหนักตัวเลขเด่นสุทธิ (เน้น 13 สูตรหลักแบบกรองเข้มงวด)</span>
                 </h2>
                 <div id="topRankings" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
             </div>
@@ -322,8 +322,8 @@
                 const freqResults = analyzeFrequency(validRecords);
                 const trendResults = analyzeTrends(validRecords);
 
-                // 2. Primary 13-Formula Scoring Engine (ยึด 13 สูตรเป็นหลัก 100%)
-                const scores = calculatePrimaryFormulaScores(formulaResults, freqResults, cseResults);
+                // 2. Strict Primary 13-Formula Scoring Engine (กรองเข้มงวด ยึดสูตรที่กำลังเข้า)
+                const scores = calculateStrictPrimaryScores(formulaResults, trendResults);
 
                 // 3. Select 2 Prominent Digits & 6 Pairs
                 const top2 = scores.slice(0, 2).map(s => s.digit);
@@ -398,34 +398,35 @@
             renderTrendTable(data.trendResults);
         }
 
-        // 🌟 PRIMARY 13-FORMULA SCORING ENGINE (ยึด 13 สูตรเป็นแกนหลัก)
-        function calculatePrimaryFormulaScores(formulaResults, freqResults, cseResults) {
+        // 🌟 STRICT PRIMARY 13-FORMULA FILTERING ENGINE (ยึด 13 สูตรแบบกรองเด็ดขาด ห้ามเอาสูตรหลุดมาดัน)
+        function calculateStrictPrimaryScores(formulaResults, trendResults) {
             const digitScores = Array(10).fill(0).map((_, i) => ({ digit: i, score: 0 }));
 
-            // 1. 13 สูตรคณิตศาสตร์เป็นตัวให้คะแนนหลัก (Primary Weight)
-            formulaResults.forEach(f => {
-                let multiplier = 1.0;
-                // สูตรไหนกำลังเข้าติดต่อกัน หรือแม่นยำสูง ให้เพิ่มน้ำหนักตามความจริง
-                if (f.currentStreakState.includes('เข้า')) {
-                    multiplier = 1.5 + (f.currentStreakCount * 0.1); 
-                } else if (f.currentStreakState.includes('หลุด') && f.currentStreakCount >= f.maxMiss) {
-                    multiplier = 2.0; // สัญญาณ Rebound จากสถิติอดีต
-                }
-
-                const formulaScore = parseFloat(f.accuracy) * multiplier;
-                
-                // ให้คะแนนเต็มกับเลขเด่นทั้ง 2 ตัวจากสูตรนั้นๆ ตรงๆ ไม่มีบิดเบือน
-                digitScores[f.d1].score += formulaScore;
-                digitScores[f.d2].score += formulaScore;
+            // สร้าง Map ของ Trend 5 งวด เพื่อเช็กกระแสกันเหนียว
+            const trendMap = {};
+            trendResults.forEach(t => {
+                trendMap[t.digit] = t.counts[5] || 0;
             });
 
-            // 2. ใช้ CSE (ชุดพันธมิตร 3 ตัว) และความถี่ตำแหน่ง เป็นแค่ตัวสนับสนุนเบื้องหลัง (Support Filter เล็กน้อย)
-            if (cseResults.length > 0) {
-                const topCSE = cseResults[0].triplet; // เช่น [1, 6, 9]
-                topCSE.forEach(d => {
-                    digitScores[d].score += 10; // โบนัสเสริมเบาๆ ไม่ให้ครอบงำผลรวมสูตรหลัก
-                });
-            }
+            formulaResults.forEach(f => {
+                // กรองเฉพาะสูตรที่มีสถานะ "เข้า" งวดล่าสุดเท่านั้น (ถ้าหลุด ห้ามนำมาคิดคะแนนเด็ดขาดเพื่อป้องกันเลขลวง)
+                if (f.currentStreakState.includes('เข้า')) {
+                    const streakCount = f.currentStreakCount; // จำนวนงวดที่เข้าติดกัน
+                    const baseWeight = parseFloat(f.accuracy);
+                    
+                    // สูตรไหนเดินดีและเข้าติดต่อกันหลายงวด ให้ทวีคูณคะแนน
+                    const scoreValue = baseWeight * (1.0 + (streakCount * 0.2));
+
+                    digitScores[f.d1].score += scoreValue;
+                    digitScores[f.d2].score += scoreValue;
+                }
+            });
+
+            // นำกระแส 5 งวดล่าสุดมาคูณเสริมความมั่นใจ (Hot Boost)
+            digitScores.forEach(ds => {
+                const hotCount = trendMap[ds.digit] || 0;
+                ds.score += (hotCount * 5.0); // ตัวเลขที่กำลังมาใน 5 งวดหลังสุดจะได้คะแนนเสริม
+            });
 
             // จัดเรียงคะแนนจากมากไปน้อย
             digitScores.sort((a, b) => b.score - a.score);
