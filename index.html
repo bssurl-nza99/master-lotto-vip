@@ -36,7 +36,7 @@
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข</h1>
-                <p class="text-xs text-slate-500">5-Layer Synergy Scoring Engine • Strict T+1 Chrono Mode</p>
+                <p class="text-xs text-slate-500">5-Layer Synergy Scoring Engine • Multi-Lottery Processing (รองรับ 6-70+ หวย)</p>
             </div>
             <div id="timestampBadge" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล
@@ -48,7 +48,7 @@
             <div class="flex justify-between items-center">
                 <label class="font-semibold text-slate-700 flex items-center gap-2">
                     <span>📥 วางข้อมูลสถิติย้อนหลัง</span>
-                    <span class="text-xs font-normal text-slate-400">(เว้น 1 บรรทัดว่างเพื่อแยกประเภทหวย)</span>
+                    <span class="text-xs font-normal text-slate-400">(วางหลายประเภทหวยได้ โดยเว้น 1 บรรทัดว่างระหว่างประเภท)</span>
                 </label>
                 <button onclick="loadSampleData()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
                     + โหลดตัวอย่าง
@@ -59,7 +59,7 @@
             <div class="flex gap-2">
                 <button onclick="processData()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    ประมวลผล
+                    ประมวลผลทั้งหมด
                 </button>
                 <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2.5 px-4 rounded-lg border border-rose-200 transition duration-150">
                     ล้างสถิติ
@@ -71,17 +71,25 @@
         <div id="outputSection" class="hidden bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-slate-700">📋 รูปแบบข้อความผลลัพธ์ (100% Exact Match)</h2>
-                <button onclick="copyOutputText()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition duration-150 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 002 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    ก๊อปปี้ข้อความ
+                <button onclick="copyAllOutputText()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition duration-150 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    ก๊อปปี้ข้อความทั้งหมด
                 </button>
             </div>
-            <div id="outputContainer" class="space-y-4"></div>
+            <div id="outputContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
         <!-- Section 3: Detailed Analytics Tables -->
         <div id="analyticsSection" class="hidden space-y-4">
             
+            <!-- Lottery Selector for Analytics -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <label class="font-semibold text-slate-700 flex items-center gap-2">
+                    <span>🔍 เลือกลูกค้า/หวยเพื่อดูตารางวิเคราะห์สถิติเจาะลึก:</span>
+                </label>
+                <select id="analyticsLotterySelect" onchange="switchAnalyticsLottery()" class="p-2 rounded-lg border border-slate-300 font-semibold text-xs text-indigo-700 bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+            </div>
+
             <!-- Top Synergy Winners -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                 <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
@@ -191,6 +199,8 @@
             'ดาวโจนส์': '🇺🇸', 'นิเคอิ': '🇯🇵', 'ฮั่งเส็ง': '🇭🇰', 'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷'
         };
 
+        let globalParsedResults = [];
+
         function getFlag(name) {
             for (let key in FLAGS) {
                 if (name.includes(key)) return FLAGS[key];
@@ -295,83 +305,135 @@
                 return;
             }
 
-            const activeDataset = datasets[0];
-            const validRecords = activeDataset.records.filter(r => !r.isCancelled);
+            globalParsedResults = [];
+            const outputContainer = document.getElementById('outputContainer');
+            outputContainer.innerHTML = '';
 
-            if (validRecords.length < 5) {
-                alert('ต้องการข้อมูลสถิติที่สมบูรณ์อย่างน้อย 5 งวดขึ้นไป');
-                return;
+            const selectElem = document.getElementById('analyticsLotterySelect');
+            selectElem.innerHTML = '';
+
+            datasets.forEach((activeDataset, index) => {
+                const validRecords = activeDataset.records.filter(r => !r.isCancelled);
+                if (validRecords.length < 5) return;
+
+                // 1. Analyze Analytics Engines
+                const cseResults = analyzeCSE(validRecords);
+                const formulaResults = analyzeFormulas(validRecords);
+                const freqResults = analyzeFrequency(validRecords);
+                const trendResults = analyzeTrends(validRecords);
+
+                // 2. 5-Layer Synergy Scoring Engine
+                const scores = calculate5LayerSynergyScores(validRecords, cseResults, formulaResults, trendResults, freqResults);
+
+                // 3. Select 2 Prominent Digits & 6 Pairs
+                const top2 = scores.slice(0, 2).map(s => s.digit);
+                const pairResult = generate6Pairs(top2, freqResults);
+
+                // 4. Generate 3-Digit Triplets
+                const tripletResult = generate3Digits(top2, freqResults);
+
+                // Save for detailed view
+                globalParsedResults.push({
+                    name: activeDataset.name,
+                    scores, cseResults, formulaResults, freqResults, trendResults
+                });
+
+                // Option for select dropdown
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.innerText = `${getFlag(activeDataset.name)} ${activeDataset.name}`;
+                selectElem.appendChild(opt);
+
+                // Render Output Text Block
+                const lastDate = parseThaiDate(activeDataset.latestDateStr);
+                const nextDateStr = formatThaiDate(addDays(lastDate, 1));
+                const flag = getFlag(activeDataset.name);
+
+                appendOutputBlock(flag, activeDataset.name, nextDateStr, top2, pairResult, tripletResult, index);
+            });
+
+            if (globalParsedResults.length > 0) {
+                // Render Detailed Analytics Tables for the first item
+                renderAnalyticsForIndex(0);
+
+                // Show sections
+                document.getElementById('outputSection').classList.remove('hidden');
+                document.getElementById('analyticsSection').classList.remove('hidden');
+                document.getElementById('timestampBadge').innerText = `ประมวลผลสำเร็จ ${globalParsedResults.length} รายการ (${new Date().toLocaleTimeString('th-TH')})`;
             }
-
-            // 1. Analyze Analytics Engines
-            const cseResults = analyzeCSE(validRecords);
-            const formulaResults = analyzeFormulas(validRecords);
-            const freqResults = analyzeFrequency(validRecords);
-            const trendResults = analyzeTrends(validRecords);
-
-            // 2. 5-Layer Synergy Scoring Engine
-            const scores = calculate5LayerSynergyScores(validRecords, cseResults, formulaResults, trendResults, freqResults);
-
-            // 3. Select 2 Prominent Digits & 6 Pairs
-            const top2 = scores.slice(0, 2).map(s => s.digit);
-            const pairResult = generate6Pairs(top2, freqResults);
-
-            // 4. Generate 3-Digit Triplets
-            const tripletResult = generate3Digits(top2, freqResults);
-
-            // 5. Render Output Text
-            const lastDate = parseThaiDate(activeDataset.latestDateStr);
-            const nextDateStr = formatThaiDate(addDays(lastDate, 1));
-            const flag = getFlag(activeDataset.name);
-
-            renderOutputText(flag, activeDataset.name, nextDateStr, top2, pairResult, tripletResult);
-
-            // 6. Render Analytics Tables
-            renderRankings(scores);
-            renderCSETable(cseResults);
-            renderFormulaTable(formulaResults);
-            renderFreqTable(freqResults);
-            renderTrendTable(trendResults);
-
-            // Show sections
-            document.getElementById('outputSection').classList.remove('hidden');
-            document.getElementById('analyticsSection').classList.remove('hidden');
-            document.getElementById('timestampBadge').innerText = 'ประมวลผลล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
         }
 
-        // 5-Layer Synergy Scoring Engine
+        function appendOutputBlock(flag, name, dateStr, top2, pairs, triplets, index) {
+            const p1 = pairs.pairsD1.map(p => String(p).padStart(2, '0')).join(' — ');
+            const p2 = pairs.pairsD2.map(p => String(p).padStart(2, '0')).join(' — ');
+            const tStr = triplets.join(' — ');
+
+            const text = `📅 ${dateStr}\n\n${flag} ${name}\n\n✨ ${top2[0]} — ${top2[1]}\n───────\n${p1}\n${p2}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
+
+            const container = document.getElementById('outputContainer');
+            const card = document.createElement('div');
+            card.className = 'bg-slate-50 p-4 rounded-lg border border-slate-200 relative group space-y-2';
+            card.innerHTML = `
+                <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <span class="font-bold text-slate-700 text-xs">${flag} ${name}</span>
+                    <button onclick="copySingleOutput(${index})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[11px] px-2.5 py-1 rounded border border-indigo-200 font-medium transition">
+                        ก๊อปปี้ชุดนี้
+                    </button>
+                </div>
+                <div id="output-text-block-${index}" class="font-mono text-xs leading-relaxed whitespace-pre select-all text-slate-800">${text}</div>
+            `;
+            container.appendChild(card);
+        }
+
+        function switchAnalyticsLottery() {
+            const idx = parseInt(document.getElementById('analyticsLotterySelect').value);
+            renderAnalyticsForIndex(idx);
+        }
+
+        function renderAnalyticsForIndex(idx) {
+            const data = globalParsedResults[idx];
+            if (!data) return;
+
+            renderRankings(data.scores);
+            renderCSETable(data.cseResults);
+            renderFormulaTable(data.formulaResults);
+            renderFreqTable(data.freqResults);
+            renderTrendTable(data.trendResults);
+        }
+
+        // 5-Layer Synergy Scoring Engine (Optimized Rebound & Trend Balance)
         function calculate5LayerSynergyScores(records, cseResults, formulaResults, trendResults, freqResults) {
             const digitScores = Array(10).fill(0).map((_, i) => ({ digit: i, score: 0 }));
 
             // Layer 1: CSE Triplet Base Anchor
             if (cseResults.length > 0) {
-                const topCSE = cseResults[0].triplet; // e.g. [1, 2, 7]
+                const topCSE = cseResults[0].triplet; 
                 topCSE.forEach(d => {
-                    digitScores[d].score += 40; // Heavy Base Anchor Weight
+                    digitScores[d].score += 45; 
                 });
             }
 
             // Layer 2: Formula Consensus Weighting
             formulaResults.forEach(f => {
                 let weight = 1.0;
-                if (f.currentStreakState.includes('เข้า')) weight = 1.8;
-                if (f.currentStreakState.includes('หลุด') && f.currentStreakCount >= f.maxMiss) weight = 2.0; // Rebound trigger
+                if (f.currentStreakState.includes('เข้า')) weight = 1.7;
+                if (f.currentStreakState.includes('หลุด') && f.currentStreakCount >= f.maxMiss) weight = 2.2; // Enhanced Rebound Trigger
 
                 digitScores[f.d1].score += (f.accuracy * 0.15) * weight;
                 digitScores[f.d2].score += (f.accuracy * 0.15) * weight;
             });
 
-            // Layer 3: Moving Window Trend
+            // Layer 3: Moving Window Trend & Stability Check
             trendResults.forEach(t => {
-                if (t.status === 'กำลังมา (Hot)') digitScores[t.digit].score += 15;
-                if (t.status === 'เสถียร (Stable)') digitScores[t.digit].score += 8;
-                if (t.status === 'พักตัว (Cold)') digitScores[t.digit].score -= 10;
+                if (t.status === 'กำลังมา (Hot)') digitScores[t.digit].score += 18;
+                if (t.status === 'เสถียร (Stable)') digitScores[t.digit].score += 12;
+                if (t.status === 'พักตัว (Cold)') digitScores[t.digit].score -= 5; // Reduced penalty to allow stable rebound recovery
             });
 
             // Layer 4: Gap & Positional Frequency Boost
             freqResults.forEach(f => {
                 const tensUnitsSum = f.T + f.U + f.t + f.u;
-                digitScores[f.digit].score += tensUnitsSum * 1.2;
+                digitScores[f.digit].score += tensUnitsSum * 1.3;
             });
 
             digitScores.sort((a, b) => b.score - a.score);
@@ -382,7 +444,6 @@
             const d1 = top2[0];
             const d2 = top2[1];
 
-            // Rank unit candidates based on frequency
             const unitCandidates = freqResults
                 .map(f => ({ digit: f.digit, freq: f.U + f.u }))
                 .sort((a, b) => b.freq - a.freq);
@@ -407,7 +468,6 @@
         }
 
         function generate3Digits(top2, freqResults) {
-            // Pick best hundred digit from Hundreds frequency
             const hundredRank = freqResults.slice().sort((a, b) => b.H - a.H);
             const bestHundreds = hundredRank.map(r => r.digit).filter(d => !top2.includes(d)).slice(0, 3);
             if (bestHundreds.length < 3) bestHundreds.push(8, 5, 4);
@@ -416,7 +476,6 @@
             const d1 = top2[0];
             const d2 = top2[1];
 
-            // Create 3 sets
             triplets.push(`${bestHundreds[0]}${d1}${freqResults[0].digit}`);
             triplets.push(`${bestHundreds[1]}${d2}${freqResults[1].digit}`);
             triplets.push(`${bestHundreds[2]}${d1}${d2}`);
@@ -579,19 +638,6 @@
         }
 
         // Render Functions
-        function renderOutputText(flag, name, dateStr, top2, pairs, triplets) {
-            const p1 = pairs.pairsD1.map(p => String(p).padStart(2, '0')).join(' — ');
-            const p2 = pairs.pairsD2.map(p => String(p).padStart(2, '0')).join(' — ');
-            const tStr = triplets.join(' — ');
-
-            const text = `📅 ${dateStr}\n\n${flag} ${name}\n\n✨ ${top2[0]} — ${top2[1]}\n───────\n${p1}\n${p2}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
-
-            const container = document.getElementById('outputContainer');
-            container.innerHTML = `
-                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 font-mono text-xs leading-relaxed whitespace-pre select-all text-slate-800">${text}</div>
-            `;
-        }
-
         function renderRankings(scores) {
             const container = document.getElementById('topRankings');
             container.innerHTML = scores.slice(0, 5).map((s, idx) => `
@@ -666,19 +712,37 @@
             `).join('');
         }
 
-        function copyOutputText() {
+        function copySingleOutput(index) {
+            const el = document.getElementById(`output-text-block-${index}`);
+            if (el) {
+                navigator.clipboard.writeText(el.innerText).then(() => {
+                    alert('คัดลอกข้อความผลลัพธ์สำเร็จ!');
+                });
+            }
+        }
+
+        function copyAllOutputText() {
             const container = document.getElementById('outputContainer');
-            const text = container.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('คัดลอกข้อความผลลัพธ์สำเร็จ!');
+            const blocks = container.querySelectorAll('[id^="output-text-block-"]');
+            let fullText = "";
+            blocks.forEach((b, idx) => {
+                fullText += b.innerText + (idx < blocks.length - 1 ? "\n\n====================\n\n" : "");
             });
+
+            if (fullText) {
+                navigator.clipboard.writeText(fullText).then(() => {
+                    alert('คัดลอกข้อความผลลัพธ์ทั้งหมดสำเร็จ!');
+                });
+            }
         }
 
         function clearAll() {
             document.getElementById('rawInput').value = '';
             document.getElementById('outputSection').classList.add('hidden');
             document.getElementById('analyticsSection').classList.add('hidden');
+            document.getElementById('outputContainer').innerHTML = '';
             document.getElementById('timestampBadge').innerText = 'พร้อมประมวลผล';
+            globalParsedResults = [];
         }
 
         function loadSampleData() {
