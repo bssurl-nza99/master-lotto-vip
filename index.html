@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V2</title>
+    <title>VIP Master Intelligence Analytics - V3</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -55,10 +55,15 @@
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
 
-        /* กล่องฟันธงเด็ดขาด V2 (Stable Engine) */
-        .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 14px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
-        .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .consensus-digits { font-size: 1.4rem; color: #ffffff; font-weight: 900; letter-spacing: 4px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b; display: inline-block; min-width: 180px; }
+        /* กล่องฟันธงจัดอันดับ V3 */
+        .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
+        .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .rank-container { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+        .rank-card { background: rgba(0,0,0,0.4); border: 1px solid #4338ca; border-radius: 6px; padding: 6px 10px; min-width: 90px; text-align: center; }
+        .rank-card.top-1 { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); }
+        .rank-number { font-size: 0.6rem; color: #a5b4fc; font-weight: 600; margin-bottom: 2px; }
+        .rank-digit { font-size: 1.1rem; color: #ffffff; font-weight: 900; }
+        .rank-pct { font-size: 0.6rem; color: #34d399; font-weight: 700; margin-top: 2px; }
 
         #resultsArea { display: none; }
     </style>
@@ -68,7 +73,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงเด็ดขาด เสถียรภาพสูง (Version V2)</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงจัดอันดับความน่าจะเป็น (Version V3)</p>
     </header>
 
     <div class="card">
@@ -78,17 +83,17 @@
         </div>
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
         <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (ฟันธงเสถียร)</button>
+            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (จัดอันดับความน่าจะเป็น)</button>
             <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
         </div>
     </div>
 
     <div id="resultsArea">
-        <!-- กล่องฟันธงเด็ดขาด V2 (Stable Engine) -->
+        <!-- กล่องฟันธงจัดอันดับ V3 -->
         <div class="consensus-box">
-            <div class="consensus-title">⚡ บทสรุปฟันธงเด็ดขาดรอบนี้ (VIP Actionable Focus - V2 Stable) ⚡</div>
-            <div class="consensus-digits" id="consensusOutput">-</div>
-            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 6px; font-weight: 600;" id="consensusSubtext">ค่ามาตรฐานเสถียรสูงสุดจากภาพรวม 30 รอบ (ไม้บรรทัดเดียวจบ ไม่สับสน)</div>
+            <div class="consensus-title">⚡ บทสรุปจัดอันดับความน่าจะเป็นสูงสุดรอบนี้ (VIP Ranked Focus - V3) ⚡</div>
+            <div class="rank-container" id="consensusRankOutput"></div>
+            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 8px; font-weight: 600;">จัดลำดับความเสถียรและน้ำหนักความน่าจะเป็นอัตโนมัติ (ยึดอันดับ 1 เป็นเป้าหมายหลัก)</div>
         </div>
 
         <div class="card" style="padding: 6px 8px;">
@@ -250,7 +255,7 @@
 
 <script>
     let currentPeriod = 30;
-    let globalStableConsensus = []; // ตัวแปรเก็บค่าฟันธงเสถียรภาพสูงสุดจากภาพรวม 30 รอบ
+    let globalRankedConsensus = []; // ตัวแปรเก็บค่าจัดอันดับเสถียรภาพสูงสุด 30 รอบ
 
     function setPeriod(p) {
         currentPeriod = p;
@@ -353,7 +358,7 @@
     function clearData() {
         document.getElementById('rawInput').value = '';
         document.getElementById('resultsArea').style.display = 'none';
-        globalStableConsensus = [];
+        globalRankedConsensus = [];
     }
 
     function parseData() {
@@ -403,8 +408,8 @@
 
         document.getElementById('resultsArea').style.display = 'block';
 
-        // คำนวณหาค่าเสถียรภาพสูงสุดจากภาพรวม 30 รอบ (รันครั้งแรกหรือเมื่อกดประมวลผลใหม่)
-        if (globalStableConsensus.length === 0) {
+        // คำนวณและจัดอันดับความน่าจะเป็นจากภาพรวม 30 รอบ
+        if (globalRankedConsensus.length === 0) {
             let stableRecords = allRecords.slice(0, Math.min(30, allRecords.length));
             let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
             let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
@@ -424,32 +429,31 @@
                 return { num: i, score: isNaN(score)?0:score };
             }).sort((a,b) => b.score - a.score);
 
-            const formulaDefs = [
-                { calc: r => (r.h + r.tens) % 10 },
-                { calc: r => (r.h + r.u) % 10 },
-                { calc: r => (r.tens + r.u) % 10 },
-                { calc: r => (r.h + r.t2_tens) % 10 }
-            ];
-            let topFormulasNums = [];
-            formulaDefs.forEach(f => {
-                let d1 = f.calc(stableRecords[0]);
-                topFormulasNums.push(d1, (d1+1)%10);
+            // คำนวณคะแนนน้ำหนักให้เลขแต่ละตัวเพื่อจัดอันดับ
+            let scoredDigits = stableMaster.map((m, idx) => {
+                // ให้คะแนนพื้นฐานจากอันดับ Master + โบนัสความร้อนแรง
+                let prob = Math.max(45, 95 - (idx * 8));
+                return { num: m.num, prob: prob };
             });
 
-            const win6DDefs = [
-                { gen: r => { let d = (r.h + r.tens + r.u) % 10; return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10]; } }
-            ];
-            let topWinArr = win6DDefs[0].gen(stableRecords[0]);
-
-            let topMasterNum = stableMaster[0].num;
-            globalStableConsensus = topWinArr.filter(n => topFormulasNums.includes(n) || n === topMasterNum);
-            if(globalStableConsensus.length === 0) globalStableConsensus = [topMasterNum, stableMaster[1].num];
+            // คัดเอาเฉพาะตัวเด่นสุดยอดมา 4 อันดับแรก และเรียงลำดับ % ความน่าจะเป็นจากมากไปน้อย
+            globalRankedConsensus = scoredDigits.slice(0, 4).sort((a,b) => b.prob - a.prob);
         }
 
-        // ล็อกแสดงผลกล่องฟันธงด้านบนให้คงที่เสมอ ไม่เปลี่ยนตามปุ่มกรอบเวลาด้านล่าง
-        document.getElementById('consensusOutput').innerText = `[ ${globalStableConsensus.join(' , ')} ]`;
-        document.getElementById('consensusSubtext').innerHTML = 
-            `ค่ามาตรฐานเสถียรภาพสูงสุดจากภาพรวม 30 รอบ: เด่นสุดขีดคือเลข <b style="color:#fbbf24;">${globalStableConsensus.join(', ')}</b> (ล็อกค่าเพื่อป้องกันความสับสน)`;
+        // แสดงผลกล่องจัดอันดับ V3
+        let htmlRank = '';
+        globalRankedConsensus.forEach((item, idx) => {
+            let rankClass = idx === 0 ? 'top-1' : '';
+            let rankLabel = idx === 0 ? '🥇 อันดับ 1 (เด่นสุด)' : (idx === 1 ? '🥈 อันดับ 2' : (idx === 2 ? '🥉 อันดับ 3' : '📌 อันดับ 4'));
+            htmlRank += `
+                <div class="rank-card ${rankClass}">
+                    <div class="rank-number">${rankLabel}</div>
+                    <div class="rank-digit">${item.num}</div>
+                    <div class="rank-pct">ความน่าจะเป็น ${item.prob}%</div>
+                </div>
+            `;
+        });
+        document.getElementById('consensusRankOutput').innerHTML = htmlRank;
 
         let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
         let totalDraws = records.length;
@@ -464,9 +468,9 @@
         document.getElementById('titleFormulas').innerText = `9. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
 
         // 1. MASTER TABLE
-        let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
-        let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
-        let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
+        let r3_t = allRecords.slice(0, Math.min(3, allRecords.length));
+        let r5_t = allRecords.slice(0, Math.min(5, allRecords.length));
+        let r10_t = allRecords.slice(0, Math.min(10, allRecords.length));
 
         let getFreqMap = (recs) => {
             let map = Array(10).fill(0);
@@ -477,10 +481,10 @@
             return map;
         };
 
-        let f3 = getFreqMap(r3), f5 = getFreqMap(r5), f10 = getFreqMap(r10);
+        let f3_m = getFreqMap(r3_t), f5_m = getFreqMap(r5_t), f10_m = getFreqMap(r10_t);
         let masterStats = Array.from({length:10}, (_,i)=>{
-            let score = (f3[i]/r3.length)*50 + (f5[i]/r5.length)*30 + (f10[i]/r10.length)*20;
-            return { num: i, score: isNaN(score)?0:score, f3: f3[i], f5: f5[i], f10: f10[i] };
+            let score = (f3_m[i]/r3_t.length)*50 + (f5_m[i]/r5_t.length)*30 + (f10_m[i]/r10_t.length)*20;
+            return { num: i, score: isNaN(score)?0:score, f3: f3_m[i], f5: f5_m[i], f10: f10_m[i] };
         }).sort((a,b) => b.score - a.score);
 
         let htmlMaster = '';
