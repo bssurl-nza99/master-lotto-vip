@@ -55,6 +55,9 @@
         .digit-pill { display: inline-block; padding: 2px 6px; margin: 1px; border-radius: 4px; font-weight: 700; }
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+        /* ซ่อนพื้นที่ผลลัพธ์ทั้งหมดเป็นค่าเริ่มต้นตอนโหลดหน้าเว็บหรือกดล้างข้อมูล */
+        #resultsArea { display: none; }
     </style>
 </head>
 <body>
@@ -62,7 +65,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • เลือกรอบวิเคราะห์ตารางทั่วไปได้อิสระ (3-30 รอบ)</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • ซ่อนตารางอัตโนมัติเมื่อยังไม่ประมวลผล</p>
     </header>
 
     <div class="card">
@@ -77,108 +80,111 @@
         </div>
     </div>
 
-    <!-- Controls for Period Selection (สำหรับตารางทั่วไป) -->
-    <div class="card" style="padding: 6px 8px;">
-        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางทั่วไป (2 ถึง 6):</div>
-        <div class="period-bar" id="periodSelector">
-            <button class="period-btn" onclick="setPeriod(3)">3 รอบ</button>
-            <button class="period-btn" onclick="setPeriod(5)">5 รอบ</button>
-            <button class="period-btn" onclick="setPeriod(10)">10 รอบ</button>
-            <button class="period-btn" onclick="setPeriod(15)">15 รอบ</button>
-            <button class="period-btn" onclick="setPeriod(20)">20 รอบ</button>
-            <button class="period-btn" onclick="setPeriod(25)">25 รอบ</button>
-            <button class="period-btn active" onclick="setPeriod(30)">30 รอบ</button>
+    <!-- พื้นที่แสดงผลทั้งหมด จะถูกซ่อนไว้จนกว่าจะกดประมวลผล -->
+    <div id="resultsArea">
+        <!-- Controls for Period Selection (สำหรับตารางทั่วไป) -->
+        <div class="card" style="padding: 6px 8px;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางทั่วไป:</div>
+            <div class="period-bar" id="periodSelector">
+                <button class="period-btn" onclick="setPeriod(3)">3 รอบ</button>
+                <button class="period-btn" onclick="setPeriod(5)">5 รอบ</button>
+                <button class="period-btn" onclick="setPeriod(10)">10 รอบ</button>
+                <button class="period-btn" onclick="setPeriod(15)">15 รอบ</button>
+                <button class="period-btn" onclick="setPeriod(20)">20 รอบ</button>
+                <button class="period-btn" onclick="setPeriod(25)">25 รอบ</button>
+                <button class="period-btn active" onclick="setPeriod(30)">30 รอบ</button>
+            </div>
         </div>
-    </div>
 
-    <!-- 1. MASTER TABLE (คงที่ 3-5-10 รอบ) -->
-    <div class="card" style="border: 1px solid #4338ca; background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%);">
-        <div class="section-title" style="color: #a5b4fc;">1. ตาราง MASTER สรุปเลขติดเด่น - ติดดับ (ประเมินสถิติ 3-5-10 รอบ)</div>
-        <div class="table-responsive">
-            <table id="tableMaster">
-                <thead>
-                    <tr>
-                        <th class="text-left">เลข (0-9)</th>
-                        <th>ดัชนีความเด่นรวม</th>
-                        <th>สถานะระยะสั้น (3-5 รอบ)</th>
-                        <th>สถานะระยะยาว (10 รอบ)</th>
-                        <th>การประเมินผล VIP</th>
-                        <th>อันดับความเด่น</th>
-                    </tr>
-                </thead>
-                <tbody><tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr></tbody>
-            </table>
+        <!-- 1. MASTER TABLE (3-5-10 รอบคงที่) -->
+        <div class="card" style="border: 1px solid #4338ca; background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%);">
+            <div class="section-title" style="color: #a5b4fc;">1. ตาราง MASTER สรุปเลขติดเด่น - ติดดับ (ประเมินสถิติ 3-5-10 รอบ)</div>
+            <div class="table-responsive">
+                <table id="tableMaster">
+                    <thead>
+                        <tr>
+                            <th class="text-left">เลข (0-9)</th>
+                            <th>ดัชนีความเด่นรวม</th>
+                            <th>สถานะระยะสั้น (3-5 รอบ)</th>
+                            <th>สถานะระยะยาว (10 รอบ)</th>
+                            <th>การประเมินผล VIP</th>
+                            <th>อันดับความเด่น</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- 2. OVERVIEW TABLE -->
-    <div class="card">
-        <div class="section-title" id="titleOverview">2. ตารางความถี่ภาพรวม 0-9 (อิงตามกรอบเวลาที่เลือก)</div>
-        <div class="table-responsive">
-            <table id="tableOverview">
-                <thead>
-                    <tr><th class="text-left">เลข</th><th>ความถี่รวม</th><th>% ความแม่นยำ</th><th>เข้าต่อเนื่อง</th><th>หลุดต่อเนื่อง</th><th>สถานะปัจจุบัน</th><th>อันดับ</th></tr>
-                </thead>
-                <tbody><tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr></tbody>
-            </table>
+        <!-- 2. OVERVIEW TABLE -->
+        <div class="card">
+            <div class="section-title" id="titleOverview">2. ตารางความถี่ภาพรวม 0-9</div>
+            <div class="table-responsive">
+                <table id="tableOverview">
+                    <thead>
+                        <tr><th class="text-left">เลข</th><th>ความถี่รวม</th><th>% ความแม่นยำ</th><th>เข้าต่อเนื่อง</th><th>หลุดต่อเนื่อง</th><th>สถานะปัจจุบัน</th><th>อันดับ</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- 3. POSITIONS TABLE -->
-    <div class="card">
-        <div class="section-title" id="titlePosition">3. ตารางความถี่แยกรายหลัก (ร้อย/สิบ/หน่วย)</div>
-        <div class="table-responsive">
-            <table id="tablePosition">
-                <thead>
-                    <tr><th class="text-left">เลข</th><th>หลักร้อย</th><th>หลักสิบ</th><th>หลักหน่วย</th><th>รวมออกทุกหลัก</th><th>อันดับ</th></tr>
-                </thead>
-                <tbody><tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr></tbody>
-            </table>
+        <!-- 3. POSITIONS TABLE -->
+        <div class="card">
+            <div class="section-title" id="titlePosition">3. ตารางความถี่แยกรายหลัก (ร้อย/สิบ/หน่วย)</div>
+            <div class="table-responsive">
+                <table id="tablePosition">
+                    <thead>
+                        <tr><th class="text-left">เลข</th><th>หลักร้อย</th><th>หลักสิบ</th><th>หลักหน่วย</th><th>รวมออกทุกหลัก</th><th>อันดับ</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- 4. EVEN/ODD & HIGH/LOW -->
-    <div class="card">
-        <div class="section-title" id="titleEvenOdd">4. ตารางเลขคู่ / เลขคี่ และ สูง / ต่ำ</div>
-        <div class="table-responsive">
-            <table id="tableEvenOdd">
-                <thead>
-                    <tr><th class="text-left">ประเภท</th><th>ความถี่ออก</th><th>% ความแม่นยำ</th><th>แนวโน้มสถิติ</th><th>อันดับ</th></tr>
-                </thead>
-                <tbody><tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr></tbody>
-            </table>
+        <!-- 4. EVEN/ODD & HIGH/LOW -->
+        <div class="card">
+            <div class="section-title" id="titleEvenOdd">4. ตารางเลขคู่ / เลขคี่ และ สูง / ต่ำ</div>
+            <div class="table-responsive">
+                <table id="tableEvenOdd">
+                    <thead>
+                        <tr><th class="text-left">ประเภท</th><th>ความถี่ออก</th><th>% ความแม่นยำ</th><th>แนวโน้มสถิติ</th><th>อันดับ</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- 5. SYNERGY TABLE -->
-    <div class="card">
-        <div class="section-title" id="titleSynergy">5. ตารางเลขชุดชดเชย 3 ตัว และ 2 ตัว (เด่นอัจฉริยะ)</div>
-        <div class="table-responsive">
-            <table id="tableSynergy">
-                <thead>
-                    <tr><th class="text-left">สูตรชุดชดเชย</th><th>ชุดเลข</th><th>% ความแม่นยำรวม</th><th>สถานะการทำงาน</th><th>อันดับ</th></tr>
-                </thead>
-                <tbody><tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr></tbody>
-            </table>
+        <!-- 5. SYNERGY TABLE -->
+        <div class="card">
+            <div class="section-title" id="titleSynergy">5. ตารางเลขชุดชดเชย 3 ตัว และ 2 ตัว (เด่นอัจฉริยะ)</div>
+            <div class="table-responsive">
+                <table id="tableSynergy">
+                    <thead>
+                        <tr><th class="text-left">สูตรชุดชดเชย</th><th>ชุดเลข</th><th>% ความแม่นยำรวม</th><th>สถานะการทำงาน</th><th>อันดับ</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- 6. FORMULAS TABLE -->
-    <div class="card">
-        <div class="section-title" id="titleFormulas">6. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ</div>
-        <div class="table-responsive">
-            <table id="tableFormulas">
-                <thead>
-                    <tr><th class="text-left">ชื่อสูตรคำนวณ</th><th>% ความแม่นยำรวม</th><th>เข้าสูงสุด</th><th>หลุดสูงสุด</th><th>สถานะสถิติ</th><th>อันดับ</th></tr>
-                </thead>
-                <tbody><tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr></tbody>
-            </table>
+        <!-- 6. FORMULAS TABLE -->
+        <div class="card">
+            <div class="section-title" id="titleFormulas">6. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ</div>
+            <div class="table-responsive">
+                <table id="tableFormulas">
+                    <thead>
+                        <tr><th class="text-left">ชื่อสูตรคำนวณ</th><th>% ความแม่นยำรวม</th><th>เข้าสูงสุด</th><th>หลุดสูงสุด</th><th>สถานะสถิติ</th><th>อันดับ</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    let currentPeriod = 30; // ค่าเริ่มต้น 30 รอบ
+    let currentPeriod = 30;
 
     function setPeriod(p) {
         currentPeriod = p;
@@ -188,105 +194,103 @@
     }
 
     function loadSampleData() {
-        document.getElementById('rawInput').value = `ลาวประตูชัย | 31 ต.ค. 69
-686
-91
-ลาวประตูชัย | 30 ต.ค. 69
-315
-07
-ลาวประตูชัย | 29 ต.ค. 69
-727
-20
-ลาวประตูชัย | 28 ต.ค. 69
-376
-85
-ลาวประตูชัย | 27 ต.ค. 69
-121
-78
-ลาวประตูชัย | 26 ต.ค. 69
-315
-80
-ลาวประตูชัย | 25 ต.ค. 69
-254
-19
-ลาวประตูชัย | 24 ต.ค. 69
-863
-20
-ลาวประตูชัย | 23 ต.ค. 69
-518
-64
-ลาวประตูชัย | 22 ต.ค. 69
-786
-50
-ลาวประตูชัย | 21 ต.ค. 69
-470
-62
-ลาวประตูชัย | 20 ต.ค. 69
-351
-19
-ลาวประตูชัย | 19 ต.ค. 69
-520
-30
-ลาวประตูชัย | 18 ต.ค. 69
-362
-70
-ลาวประตูชัย | 17 ต.ค. 69
-822
-31
-ลาวประตูชัย | 16 ต.ค. 69
-430
-73
-ลาวประตูชัย | 15 ต.ค. 69
-452
-47
-ลาวประตูชัย | 14 ต.ค. 69
-873
-99
-ลาวประตูชัย | 13 ต.ค. 69
-862
-94
-ลาวประตูชัย | 12 ต.ค. 69
-869
-47
-ลาวประตูชัย | 11 ต.ค. 69
-992
-14
-ลาวประตูชัย | 10 ต.ค. 69
-017
-43
-ลาวประตูชัย | 9 ต.ค. 69
-422
-56
-ลาวประตูชัย | 8 ต.ค. 69
-081
+        document.getElementById('rawInput').value = `จีน VIP เช้า | 31 ต.ค. 69
+371
+79
+จีน VIP เช้า | 30 ต.ค. 69
+762
 41
-ลาวประตูชัย | 7 ต.ค. 69
-830
-27
-ลาวประตูชัย | 6 ต.ค. 69
-974
-56
-ลาวประตูชัย | 5 ต.ค. 69
-580
-26
-ลาวประตูชัย | 4 ต.ค. 69
-725
+จีน VIP เช้า | 29 ต.ค. 69
+924
+33
+จีน VIP เช้า | 28 ต.ค. 69
+720
+30
+จีน VIP เช้า | 27 ต.ค. 69
+800
 14
-ลาวประตูชัย | 3 ต.ค. 69
-369
-52`;
+จีน VIP เช้า | 26 ต.ค. 69
+426
+64
+จีน VIP เช้า | 25 ต.ค. 69
+028
+30
+จีน VIP เช้า | 24 ต.ค. 69
+568
+96
+จีน VIP เช้า | 23 ต.ค. 69
+282
+19
+จีน VIP เช้า | 22 ต.ค. 69
+622
+26
+จีน VIP เช้า | 21 ต.ค. 69
+871
+90
+จีน VIP เช้า | 20 ต.ค. 69
+767
+16
+จีน VIP เช้า | 19 ต.ค. 69
+738
+58
+จีน VIP เช้า | 18 ต.ค. 69
+325
+92
+จีน VIP เช้า | 17 ต.ค. 69
+866
+86
+จีน VIP เช้า | 16 ต.ค. 69
+538
+32
+จีน VIP เช้า | 15 ต.ค. 69
+249
+25
+จีน VIP เช้า | 14 ต.ค. 69
+534
+78
+จีน VIP เช้า | 13 ต.ค. 69
+594
+24
+จีน VIP เช้า | 12 ต.ค. 69
+865
+25
+จีน VIP เช้า | 11 ต.ค. 69
+437
+79
+จีน VIP เช้า | 10 ต.ค. 69
+076
+45
+จีน VIP เช้า | 9 ต.ค. 69
+703
+41
+จีน VIP เช้า | 8 ต.ค. 69
+704
+79
+จีน VIP เช้า | 7 ต.ค. 69
+101
+91
+จีน VIP เช้า | 6 ต.ค. 69
+141
+80
+จีน VIP เช้า | 5 ต.ค. 69
+291
+10
+จีน VIP เช้า | 4 ต.ค. 69
+454
+65
+จีน VIP เช้า | 3 ต.ค. 69
+117
+61
+จีน VIP เช้า | 2 ต.ค. 69
+408
+18`;
         runAnalysis();
     }
 
     function clearData() {
         document.getElementById('rawInput').value = '';
-        const emptyRow = (cols) => `<tr><td colspan="${cols}" style="text-align:center; color: var(--text-muted); padding: 10px;">รอข้อมูลประมวลผล</td></tr>`;
-        document.querySelector('#tableMaster tbody').innerHTML = emptyRow(6);
-        document.querySelector('#tableOverview tbody').innerHTML = emptyRow(7);
-        document.querySelector('#tablePosition tbody').innerHTML = emptyRow(6);
-        document.querySelector('#tableEvenOdd tbody').innerHTML = emptyRow(5);
-        document.querySelector('#tableSynergy tbody').innerHTML = emptyRow(5);
-        document.querySelector('#tableFormulas tbody').innerHTML = emptyRow(6);
+        // ซ่อนพื้นที่ตารางผลลัพธ์ทั้งหมดทันทีเมื่อกดล้างข้อมูล
+        document.getElementById('resultsArea').style.display = 'none';
     }
 
     function parseData() {
@@ -330,21 +334,23 @@
         let allRecords = parseData();
         if (allRecords.length === 0) {
             alert("ไม่พบรูปแบบข้อมูลที่ถูกต้อง กรุณาตรวจสอบการวางข้อมูลสถิติ");
+            document.getElementById('resultsArea').style.display = 'none';
             return;
         }
 
-        // ตัดขอบเขตข้อมูลสำหรับตารางทั่วไปตาม period ที่ผู้ใช้เลือก
+        // แสดงผลตารางทั้งหมดเมื่อกดประมวลผล
+        document.getElementById('resultsArea').style.display = 'block';
+
         let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
         let totalDraws = records.length;
 
-        // อัปเดตข้อความหัวข้อตารางให้รู้ว่ากำลังดูอยู่กี่รอบ
         document.getElementById('titleOverview').innerText = `2. ตารางความถี่ภาพรวม 0-9 (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titlePosition').innerText = `3. ตารางความถี่แยกรายหลัก (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleEvenOdd').innerText = `4. ตารางเลขคู่/คี่ และ สูง/ต่ำ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleSynergy').innerText = `5. ตารางเลขชุดชดเชย (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleFormulas').innerText = `6. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
 
-        // --- 1. MASTER TABLE (ประเมินแบบ 3-5-10 รอบคงที่เสมอตามกฎของคุณ) ---
+        // 1. MASTER TABLE (3-5-10 รอบคงที่)
         let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
         let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
         let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
@@ -384,7 +390,7 @@
         });
         document.querySelector('#tableMaster tbody').innerHTML = htmlMaster;
 
-        // --- 2. OVERVIEW TABLE (ตาม Period ที่เลือก) ---
+        // 2. OVERVIEW TABLE
         let stats09 = Array.from({length:10}, (_,i)=>({num:i, freq:0, history:[]}));
         records.forEach(r => {
             let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
@@ -413,7 +419,7 @@
         });
         document.querySelector('#tableOverview tbody').innerHTML = htmlOverview;
 
-        // --- 3. POSITIONS TABLE (ตาม Period ที่เลือก) ---
+        // 3. POSITIONS TABLE
         let pos = Array.from({length:10}, (_,i)=>({num:i, h:0, tens:0, u:0, total:0}));
         records.forEach(r => {
             pos[r.h].h++; pos[r.tens].tens++; pos[r.u].u++;
@@ -426,7 +432,7 @@
         });
         document.querySelector('#tablePosition tbody').innerHTML = htmlPos;
 
-        // --- 4. EVEN/ODD & HIGH/LOW (ตาม Period ที่เลือก) ---
+        // 4. EVEN/ODD & HIGH/LOW
         let totalNumbers = totalDraws * 4;
         let evenCount = 0, lowCount = 0;
         records.forEach(r => {
@@ -444,7 +450,7 @@
             <tr><td class="text-left">เลขต่ำ (0-4)</td><td>${lowCount}</td><td>${((lowCount/totalNumbers)*100).toFixed(1)}%</td><td><span class="badge-hit">🟢 เด่นสถิติ</span></td><td>#1</td></tr>
             <tr><td class="text-left">เลขสูง (5-9)</td><td>${highCount}</td><td>${((highCount/totalNumbers)*100).toFixed(1)}%</td><td><span class="badge-miss">🔴 รองสถิติ</span></td><td>#2</td></tr>`;
 
-        // --- 5. SYNERGY TABLE (ตาม Period ที่เลือก) ---
+        // 5. SYNERGY TABLE
         const syn3D = [
             { name: "VIP 3D Alpha", set: [0, 6, 8] },
             { name: "VIP 3D Beta", set: [1, 6, 8] },
@@ -471,7 +477,7 @@
         });
         document.querySelector('#tableSynergy tbody').innerHTML = htmlSyn;
 
-        // --- 6. FORMULAS TABLE (ตาม Period ที่เลือก) ---
+        // 6. FORMULAS TABLE
         const formulaDefs = [
             { name: 'สูตรชน: หน่วยบน + หน่วยล่าง', calc: r => (r.u + r.t2_u) % 10 },
             { name: 'สูตรผลรวม: 3 ตัวบน', calc: r => (r.h + r.tens + r.u) % 10 },
@@ -508,9 +514,8 @@
         });
         document.querySelector('#tableFormulas tbody').innerHTML = htmlFormulas;
     }
-
-    window.onload = loadSampleData;
 </script>
 
 </body>
 </html>
+
