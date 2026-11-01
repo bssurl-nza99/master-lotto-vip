@@ -1,772 +1,626 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V3</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #080c14;
-            --card-bg: #0f172a;
-            --card-border: #1e293b;
-            --gold-primary: #f59e0b;
-            --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-            --text-main: #f8fafc;
-            --text-muted: #64748b;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --table-header-bg: #1e293b;
-            --table-row-hover: #162032;
+    <title>InvestPro Mobile Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eefbbf',
+                            500: '#10b981',
+                            600: '#059669',
+                            dark: '#0b0e14',
+                            card: '#161b26',
+                            border: '#232a3b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Kanit', 'sans-serif']
+                    }
+                }
+            }
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 8px; min-height: 100vh; font-size: 0.72rem; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); }
-        h1 { font-size: 1.05rem; background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
-        p.subtitle { font-size: 0.65rem; color: var(--text-muted); }
-        .card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px; margin-bottom: 10px; }
-        .card-title { font-size: 0.75rem; font-weight: 600; color: var(--gold-primary); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        textarea { width: 100%; height: 80px; background-color: #030712; border: 1px solid var(--card-border); border-radius: 5px; color: var(--text-main); padding: 6px; font-size: 0.65rem; resize: vertical; outline: none; }
-        textarea:focus { border-color: var(--gold-primary); }
-        .btn-group { display: flex; gap: 6px; margin-top: 6px; }
-        button { flex: 1; padding: 6px 10px; border: none; border-radius: 5px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
-        .btn-primary { background: var(--gold-gradient); color: #000; }
-        .btn-secondary { background-color: #1e293b; color: var(--text-muted); border: 1px solid var(--card-border); }
-        
-        .period-bar { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
-        .period-btn { background: #1e293b; color: var(--text-muted); border: 1px solid var(--card-border); padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; white-space: nowrap; cursor: pointer; }
-        .period-btn.active { background: var(--gold-gradient); color: #000; font-weight: 700; border-color: transparent; }
-
-        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; border: 1px solid var(--card-border); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.65rem; text-align: center; white-space: nowrap; }
-        th, td { padding: 5px 6px; border-bottom: 1px solid var(--card-border); }
-        th { background-color: var(--table-header-bg); color: var(--gold-primary); font-weight: 600; }
-        tr:hover td { background-color: var(--table-row-hover); }
-        .text-left { text-align: left; }
-        .badge-hit { color: var(--accent-green); font-weight: 600; }
-        .badge-miss { color: var(--accent-red); font-weight: 600; }
-        .rank-1 { color: #fbbf24; font-weight: 700; }
-        .rank-2 { color: #e2e8f0; font-weight: 700; }
-        .rank-3 { color: #b45309; font-weight: 700; }
-        .section-title { font-size: 0.8rem; color: var(--gold-primary); margin-bottom: 6px; font-weight: 700; }
-        .digit-pill { display: inline-block; padding: 2px 6px; margin: 1px; border-radius: 4px; font-weight: 700; }
-        .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
-        .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
-
-        /* กล่องฟันธงจัดอันดับ V3 */
-        .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
-        .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .rank-container { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-        .rank-card { background: rgba(0,0,0,0.4); border: 1px solid #4338ca; border-radius: 6px; padding: 6px 10px; min-width: 90px; text-align: center; }
-        .rank-card.top-1 { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); }
-        .rank-number { font-size: 0.6rem; color: #a5b4fc; font-weight: 600; margin-bottom: 2px; }
-        .rank-digit { font-size: 1.1rem; color: #ffffff; font-weight: 900; }
-        .rank-pct { font-size: 0.6rem; color: #34d399; font-weight: 700; margin-top: 2px; }
-
-        #resultsArea { display: none; }
+    </script>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Kanit', 'Inter', sans-serif;
+            background-color: #080a0f;
+            color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(22, 27, 38, 0.85) 0%, rgba(15, 20, 30, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .glass-card-glow {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(22, 27, 38, 0.9) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+        .pulse-green {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        /* Custom scrollbar for modern feel */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0e14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232a3b;
+            border-radius: 4px;
+        }
     </style>
 </head>
-<body>
+<body class="flex justify-center items-center min-h-screen p-0 sm:p-4 bg-slate-950">
 
-<div class="container">
-    <header>
-        <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงจัดอันดับความน่าจะเป็น (Version V3)</p>
-    </header>
+    <!-- Mobile Screen Frame Container -->
+    <div class="w-full max-w-md bg-slate-900 min-h-screen sm:min-h-[850px] sm:max-h-[900px] sm:rounded-[40px] sm:border-[8px] sm:border-slate-800 shadow-2xl overflow-hidden flex flex-col justify-between relative">
 
-    <div class="card">
-        <div class="card-title">
-            <span>ป้อนข้อมูลสถิติ</span>
-            <button class="btn-secondary" style="padding: 2px 5px; font-size:0.6rem;" onclick="loadSampleData()">โหลดตัวอย่าง</button>
-        </div>
-        <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
-        <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (จัดอันดับความน่าจะเป็น)</button>
-            <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
-        </div>
-    </div>
-
-    <div id="resultsArea">
-        <!-- กล่องฟันธงจัดอันดับ V3 -->
-        <div class="consensus-box">
-            <div class="consensus-title">⚡ บทสรุปจัดอันดับความน่าจะเป็นสูงสุดรอบนี้ (VIP Ranked Focus - V3) ⚡</div>
-            <div class="rank-container" id="consensusRankOutput"></div>
-            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 8px; font-weight: 600;">จัดลำดับความเสถียรและน้ำหนักความน่าจะเป็นอัตโนมัติ (ยึดอันดับ 1 เป็นเป้าหมายหลัก)</div>
-        </div>
-
-        <div class="card" style="padding: 6px 8px;">
-            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางสนับสนุนเบื้องหลัง:</div>
-            <div class="period-bar" id="periodSelector">
-                <button class="period-btn" onclick="setPeriod(3)">3 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(5)">5 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(10)">10 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(15)">15 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(20)">20 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(25)">25 รอบ</button>
-                <button class="period-btn active" onclick="setPeriod(30)">30 รอบ</button>
+        <!-- Status Bar Mockup for Mobile Look (Only visible desktop/tablet wrap) -->
+        <div class="hidden sm:flex justify-between items-center px-6 pt-3 pb-1 text-xs text-slate-400 select-none bg-slate-900">
+            <span class="font-semibold text-white">09:41</span>
+            <div class="flex items-center gap-2">
+                <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+                <i data-lucide="battery" class="w-4 h-4"></i>
             </div>
         </div>
 
-        <!-- 1. MASTER TABLE -->
-        <div class="card" style="border: 1px solid #4338ca; background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%);">
-            <div class="section-title" style="color: #a5b4fc;">1. ตาราง MASTER สรุปเลขติดเด่น - ติดดับ (ประเมินสถิติ 3-5-10 รอบ)</div>
-            <div class="table-responsive">
-                <table id="tableMaster">
-                    <thead>
-                        <tr>
-                            <th class="text-left">เลข (0-9)</th>
-                            <th>ดัชนีความเด่นรวม</th>
-                            <th>สถานะระยะสั้น (3-5 รอบ)</th>
-                            <th>สถานะระยะยาว (10 รอบ)</th>
-                            <th>การประเมินผล VIP</th>
-                            <th>อันดับความเด่น</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 2. OVERVIEW TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleOverview">2. ตารางความถี่ภาพรวม 0-9</div>
-            <div class="table-responsive">
-                <table id="tableOverview">
-                    <thead>
-                        <tr><th class="text-left">เลข</th><th>ความถี่รวม</th><th>% ความแม่นยำ</th><th>เข้าต่อเนื่อง</th><th>หลุดต่อเนื่อง</th><th>สถานะปัจจุบัน</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 3. POSITIONS TABLE -->
-        <div class="card">
-            <div class="section-title" id="titlePosition">3. ตารางความถี่แยกรายหลัก (ร้อย/สิบ/หน่วย)</div>
-            <div class="table-responsive">
-                <table id="tablePosition">
-                    <thead>
-                        <tr><th class="text-left">เลข</th><th>หลักร้อย</th><th>หลักสิบ</th><th>หลักหน่วย</th><th>รวมออกทุกหลัก</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 4. EVEN/ODD TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleEvenOdd">4. ตารางเลขคู่ / เลขคี่ (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableEvenOdd">
-                    <thead>
-                        <tr><th class="text-left">ประเภท</th><th>ความถี่ออก</th><th>% ความแม่นยำ</th><th>แนวโน้มสถิติ</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 5. HIGH/LOW TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleHighLow">5. ตารางเลขสูง / ต่ำ (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableHighLow">
-                    <thead>
-                        <tr><th class="text-left">ประเภท</th><th>ความถี่ออก</th><th>% ความแม่นยำ</th><th>แนวโน้มสถิติ</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 6. 3D SYNERGY TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleSynergy3D">6. ตารางเลขชุดชดเชย 3 ตัว (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableSynergy3D">
-                    <thead>
-                        <tr><th class="text-left">สูตรชุดชดเชย 3 ตัว</th><th>ชุดเลข</th><th>% ความแม่นยำรวม</th><th>สถานะการทำงาน</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 7. 2D SYNERGY TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleSynergy2D">7. ตารางเลขชุดชดเชย 2 ตัว (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableSynergy2D">
-                    <thead>
-                        <tr><th class="text-left">สูตรชุดชดเชย 2 ตัว</th><th>ชุดเลข</th><th>% ความแม่นยำรวม</th><th>สถานะการทำงาน</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 8. WIN 6-DIGITS TABLE -->
-        <div class="card" style="border: 1px solid #10b981; background: linear-gradient(145deg, #0f172a 0%, #064e3b 100%);">
-            <div class="section-title" style="color: #34d399;" id="titleWin6D">8. ตารางชุดวิน 6 ตัวที่ดีที่สุด (5 ชุดเจาะลึกชนจริง)</div>
-            <div class="table-responsive">
-                <table id="tableWin6D">
-                    <thead>
-                        <tr>
-                            <th class="text-left">ชื่อชุดวิน 6 ตัว</th>
-                            <th>ชุดตัวเลขเด่น (6 ตัว)</th>
-                            <th>เลขวินคำนวณสด (งวดถัดไป)</th>
-                            <th>% ความแม่นยำ</th>
-                            <th>เข้าสูงสุด</th>
-                            <th>หลุดสูงสุด</th>
-                            <th>สถานะงวดล่าสุด</th>
-                            <th>อันดับ</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 9. ADVANCED FORMULAS TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleFormulas">9. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (ชนหลักครบทุกคู่ 100% พร้อมพยากรณ์)</div>
-            <div class="table-responsive">
-                <table id="tableFormulas">
-                    <thead>
-                        <tr>
-                            <th class="text-left">ชื่อสูตร / วิธีคำนวณ</th>
-                            <th>เลขคำนวณสด (งวดถัดไป)</th>
-                            <th>% แม่นยำ</th>
-                            <th>เข้าสูงสุด</th>
-                            <th>หลุดสูงสุด</th>
-                            <th>สถานะงวดล่าสุด</th>
-                            <th>แนวโน้มรอบถัดไป (Recovery)</th>
-                            <th>อันดับ</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    let currentPeriod = 30;
-    let globalRankedConsensus = []; // ตัวแปรเก็บค่าจัดอันดับเสถียรภาพสูงสุด 30 รอบ
-
-    function setPeriod(p) {
-        currentPeriod = p;
-        document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-        runAnalysis();
-    }
-
-    function loadSampleData() {
-        document.getElementById('rawInput').value = `ลาว Extra | 31 ต.ค. 69
-185
-56
-ลาว Extra | 30 ต.ค. 69
-782
-84
-ลาว Extra | 29 ต.ค. 69
-087
-77
-ลาว Extra | 28 ต.ค. 69
-605
-26
-ลาว Extra | 27 ต.ค. 69
-892
-98
-ลาว Extra | 26 ต.ค. 69
-057
-02
-ลาว Extra | 25 ต.ค. 69
-058
-49
-ลาว Extra | 24 ต.ค. 69
-730
-94
-ลาว Extra | 23 ต.ค. 69
-316
-38
-ลาว Extra | 22 ต.ค. 69
-897
-10
-ลาว Extra | 21 ต.ค. 69
-403
-40
-ลาว Extra | 20 ต.ค. 69
-964
-16
-ลาว Extra | 19 ต.ค. 69
-353
-34
-ลาว Extra | 18 ต.ค. 69
-143
-68
-ลาว Extra | 17 ต.ค. 69
-461
-96
-ลาว Extra | 16 ต.ค. 69
-685
-64
-ลาว Extra | 15 ต.ค. 69
-191
-12
-ลาว Extra | 14 ต.ค. 69
-396
-62
-ลาว Extra | 13 ต.ค. 69
-123
-25
-ลาว Extra | 12 ต.ค. 69
-593
-43
-ลาว Extra | 11 ต.ค. 69
-621
-65
-ลาว Extra | 10 ต.ค. 69
-398
-93
-ลาว Extra | 9 ต.ค. 69
-656
-98
-ลาว Extra | 8 ต.ค. 69
-448
-16
-ลาว Extra | 7 ต.ค. 69
-150
-80
-ลาว Extra | 6 ต.ค. 69
-121
-32
-ลาว Extra | 5 ต.ค. 69
-596
-97
-ลาว Extra | 4 ต.ค. 69
-411
-81
-ลาว Extra | 3 ต.ค. 69
-756
-87`;
-        runAnalysis();
-    }
-
-    function clearData() {
-        document.getElementById('rawInput').value = '';
-        document.getElementById('resultsArea').style.display = 'none';
-        globalRankedConsensus = [];
-    }
-
-    function parseData() {
-        const text = document.getElementById('rawInput').value.trim();
-        if (!text) return [];
-        let records = [];
-        let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        
-        let i = 0;
-        while (i < lines.length) {
-            if (lines[i].includes('|')) {
-                let dateStr = lines[i];
-                let d3 = "", d2 = "";
-                if (i + 1 < lines.length && /^\d{3}$/.test(lines[i+1])) { d3 = lines[i+1]; i++; }
-                if (i + 1 < lines.length && /^\d{2}$/.test(lines[i+1])) { d2 = lines[i+1]; i++; }
-                if (d3 && d2) {
-                    records.push({
-                        dateStr: dateStr, t3: d3, t2: d2,
-                        h: parseInt(d3[0]), tens: parseInt(d3[1]), u: parseInt(d3[2]),
-                        t2_tens: parseInt(d2[0]), t2_u: parseInt(d2[1])
-                    });
-                }
-            } else {
-                let parts = lines[i].split('|').map(p => p.trim());
-                if (parts.length >= 4) {
-                    let d3 = parts[parts.length - 2].padStart(3, '0');
-                    let d2 = parts[parts.length - 1].padStart(2, '0');
-                    records.push({
-                        dateStr: parts[1], t3: d3, t2: d2,
-                        h: parseInt(d3[0]), tens: parseInt(d3[1]), u: parseInt(d3[2]),
-                        t2_tens: parseInt(d2[0]), t2_u: parseInt(d2[1])
-                    });
-                }
-            }
-            i++;
-        }
-        return records;
-    }
-
-    function runAnalysis() {
-        let allRecords = parseData();
-        if (allRecords.length === 0) {
-            alert("ไม่พบรูปแบบข้อมูลที่ถูกต้อง กรุณาตรวจสอบการวางข้อมูลสถิติ");
-            document.getElementById('resultsArea').style.display = 'none';
-            return;
-        }
-
-        document.getElementById('resultsArea').style.display = 'block';
-
-        // คำนวณและจัดอันดับความน่าจะเป็นจากภาพรวม 30 รอบ
-        if (globalRankedConsensus.length === 0) {
-            let stableRecords = allRecords.slice(0, Math.min(30, allRecords.length));
-            let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
-            let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
-            let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
-
-            let getFreqMap = (recs) => {
-                let map = Array(10).fill(0);
-                recs.forEach(r => {
-                    let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-                    set.forEach(n => map[n]++);
-                });
-                return map;
-            };
-            let f3 = getFreqMap(r3), f5 = getFreqMap(r5), f10 = getFreqMap(r10);
-            let stableMaster = Array.from({length:10}, (_,i)=>{
-                let score = (f3[i]/r3.length)*50 + (f5[i]/r5.length)*30 + (f10[i]/r10.length)*20;
-                return { num: i, score: isNaN(score)?0:score };
-            }).sort((a,b) => b.score - a.score);
-
-            // คำนวณคะแนนน้ำหนักให้เลขแต่ละตัวเพื่อจัดอันดับ
-            let scoredDigits = stableMaster.map((m, idx) => {
-                // ให้คะแนนพื้นฐานจากอันดับ Master + โบนัสความร้อนแรง
-                let prob = Math.max(45, 95 - (idx * 8));
-                return { num: m.num, prob: prob };
-            });
-
-            // คัดเอาเฉพาะตัวเด่นสุดยอดมา 4 อันดับแรก และเรียงลำดับ % ความน่าจะเป็นจากมากไปน้อย
-            globalRankedConsensus = scoredDigits.slice(0, 4).sort((a,b) => b.prob - a.prob);
-        }
-
-        // แสดงผลกล่องจัดอันดับ V3
-        let htmlRank = '';
-        globalRankedConsensus.forEach((item, idx) => {
-            let rankClass = idx === 0 ? 'top-1' : '';
-            let rankLabel = idx === 0 ? '🥇 อันดับ 1 (เด่นสุด)' : (idx === 1 ? '🥈 อันดับ 2' : (idx === 2 ? '🥉 อันดับ 3' : '📌 อันดับ 4'));
-            htmlRank += `
-                <div class="rank-card ${rankClass}">
-                    <div class="rank-number">${rankLabel}</div>
-                    <div class="rank-digit">${item.num}</div>
-                    <div class="rank-pct">ความน่าจะเป็น ${item.prob}%</div>
+        <!-- Main Scrollable Content Area -->
+        <div class="flex-1 overflow-y-auto px-4 pt-4 pb-24 space-y-5">
+            
+            <!-- Top Header -->
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <!-- แก้ไขส่วนนี้เป็นไอคอน User เปล่าๆ ไม่มีหน้าคน -->
+                        <div class="w-10 h-10 rounded-full bg-slate-800 border-2 border-emerald-500/50 flex items-center justify-center text-slate-300">
+                            <i data-lucide="user" class="w-5 h-5 text-emerald-400"></i>
+                        </div>
+                        <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1 text-xs text-slate-400">
+                            <span>พอร์ตการลงทุนหลัก</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                        </div>
+                        <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+                            ณัฐพงษ์ ขำสำอางค์
+                            <i data-lucide="badge-check" class="w-4 h-4 text-emerald-400 fill-emerald-500/20"></i>
+                        </h2>
+                    </div>
                 </div>
-            `;
-        });
-        document.getElementById('consensusRankOutput').innerHTML = htmlRank;
+                <div class="flex items-center gap-2">
+                    <button id="liveSimToggle" title="เปิด/ปิดการจำลองราคาเรียลไทม์" class="p-2 rounded-full glass-card text-emerald-400 hover:bg-slate-800 transition-colors">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </button>
+                    <button class="relative p-2 rounded-full glass-card text-slate-300 hover:bg-slate-800 transition-colors">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    </button>
+                </div>
+            </div>
 
-        let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
-        let totalDraws = records.length;
+            <!-- Account Balance Section Card -->
+            <div class="glass-card-glow rounded-3xl p-5 relative overflow-hidden shadow-lg">
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-medium text-slate-400">มูลค่าสินทรัพย์ทั้งหมด (Net Worth)</span>
+                    <button id="toggleBalance" class="text-slate-400 hover:text-slate-200">
+                        <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
+                    </button>
+                </div>
 
-        document.getElementById('titleOverview').innerText = `2. ตารางความถี่ภาพรวม 0-9 (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titlePosition').innerText = `3. ตารางความถี่แยกรายหลัก (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleEvenOdd').innerText = `4. ตารางเลขคู่ / เลขคี่ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleHighLow').innerText = `5. ตารางเลขสูง / ต่ำ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleSynergy3D').innerText = `6. ตารางเลขชุดชดเชย 3 ตัว (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleSynergy2D').innerText = `7. ตารางเลขชุดชดเชย 2 ตัว (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleWin6D').innerText = `8. ตารางชุดวิน 6 ตัวที่ดีที่สุด 5 ชุด (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleFormulas').innerText = `9. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
+                <!-- Main Balance -->
+                <div class="flex items-baseline gap-2 my-2">
+                    <span class="text-3xl font-bold tracking-tight text-white font-sans" id="balanceDisplay">฿3,406,700</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> +1.27%
+                    </span>
+                </div>
 
-        // 1. MASTER TABLE
-        let r3_t = allRecords.slice(0, Math.min(3, allRecords.length));
-        let r5_t = allRecords.slice(0, Math.min(5, allRecords.length));
-        let r10_t = allRecords.slice(0, Math.min(10, allRecords.length));
+                <!-- Daily P/L -->
+                <div class="flex items-center gap-2 text-xs text-slate-400 mb-5">
+                    <span>กำไรวันนี้:</span>
+                    <span class="text-emerald-400 font-semibold flex items-center gap-0.5 font-sans">
+                        +฿42,850
+                    </span>
+                    <span class="text-slate-600">•</span>
+                    <span class="text-slate-400">อัปเดตล่าสุด เมื่อครู่นี้</span>
+                </div>
 
-        let getFreqMap = (recs) => {
-            let map = Array(10).fill(0);
-            recs.forEach(r => {
-                let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-                set.forEach(n => map[n]++);
-            });
-            return map;
+                <!-- Quick Action Buttons -->
+                <div class="grid grid-cols-4 gap-2 pt-2 border-t border-slate-700/50">
+                    <button class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-slate-800/60 transition group">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs font-medium text-slate-300">ฝากเงิน</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-slate-800/60 transition group">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center border border-slate-700 group-hover:scale-105 transition-transform">
+                            <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs font-medium text-slate-300">ถอนเงิน</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-slate-800/60 transition group">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center border border-slate-700 group-hover:scale-105 transition-transform">
+                            <i data-lucide="repeat" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs font-medium text-slate-300">โอนเหรียญ</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-slate-800/60 transition group">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center border border-slate-700 group-hover:scale-105 transition-transform">
+                            <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs font-medium text-slate-300">วิเคราะห์</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="glass-card rounded-3xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-xs text-slate-400">ภาพรวมแนวโน้มพอร์ต</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-bold text-white font-sans" id="chartValueHeader">฿3,406,700</span>
+                            <span class="text-xs text-emerald-400 font-semibold" id="chartChangeHeader">+24.5% (1ปี)</span>
+                        </div>
+                    </div>
+                    <!-- Chart Type Toggle Switch -->
+                    <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700/60">
+                        <button id="btnLineChart" class="px-2.5 py-1 text-xs rounded-lg bg-emerald-500 text-slate-950 font-semibold transition-all">เส้น</button>
+                        <button id="btnCandleChart" class="px-2.5 py-1 text-xs rounded-lg text-slate-400 font-medium transition-all hover:text-white">แท่งเทียน</button>
+                    </div>
+                </div>
+
+                <!-- Interactive Chart Canvas -->
+                <div class="h-48 w-full relative">
+                    <canvas id="portfolioChart"></canvas>
+                </div>
+
+                <!-- Timeframe Selector Controls -->
+                <div class="flex justify-between items-center pt-2 border-t border-slate-800 text-xs">
+                    <button class="tf-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tf="1D">1D</button>
+                    <button class="tf-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tf="1W">1W</button>
+                    <button class="tf-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tf="1M">1M</button>
+                    <button class="tf-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tf="3M">3M</button>
+                    <button class="tf-btn px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30" data-tf="1Y">1Y</button>
+                    <button class="tf-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tf="ALL">ALL</button>
+                </div>
+            </div>
+
+            <!-- Asset Allocation Summary Card -->
+            <div class="glass-card rounded-3xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-semibold text-slate-200">สัดส่วนพอร์ตการลงทุน (Allocation)</h3>
+                    <span class="text-xs text-slate-400">4 สินทรัพย์</span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Mini Doughnut Chart -->
+                    <div class="w-24 h-24 relative flex-shrink-0">
+                        <canvas id="allocationChart"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                            <span class="text-[10px] text-slate-400">รวม</span>
+                            <span class="text-xs font-bold text-white">100%</span>
+                        </div>
+                    </div>
+
+                    <!-- Mini Legend -->
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-slate-300">SET50 (36.7%)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                            <span class="text-slate-300">Tech ETF (25.0%)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span class="text-slate-300">พันธบัตร (19.2%)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                            <span class="text-slate-300">ดิจิทัล/ทอง (19.1%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Holdings List -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-sm font-semibold text-slate-200">สินทรัพย์ในครอบครอง</h3>
+                    <button class="text-xs text-emerald-400 hover:underline">ดูทั้งหมด</button>
+                </div>
+
+                <div class="space-y-2.5">
+                    <!-- Asset item 1 -->
+                    <div class="glass-card rounded-2xl p-3.5 flex justify-between items-center hover:bg-slate-800/50 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+                                SET
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">SET50 Index Fund</h4>
+                                <span class="text-xs text-slate-400">1,250 หน่วย • กองทุนหุ้นไทย</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white font-sans" id="asset-set50-val">฿1,250,000</div>
+                            <div class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-0.5" id="asset-set50-pct">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i> +2.4%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asset item 2 -->
+                    <div class="glass-card rounded-2xl p-3.5 flex justify-between items-center hover:bg-slate-800/50 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
+                                TECH
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">US Tech Growth ETF</h4>
+                                <span class="text-xs text-slate-400">450 หุ้น • นวัตกรรมโลก</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white font-sans" id="asset-tech-val">฿850,000</div>
+                            <div class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-0.5" id="asset-tech-pct">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i> +1.8%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asset item 3 -->
+                    <div class="glass-card rounded-2xl p-3.5 flex justify-between items-center hover:bg-slate-800/50 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                                BOND
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">US Treasury Bond Fund</h4>
+                                <span class="text-xs text-slate-400">พันธบัตรรัฐบาลสหรัฐฯ</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white font-sans" id="asset-bond-val">฿656,700</div>
+                            <div class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-0.5" id="asset-bond-pct">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i> +0.3%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asset item 4 -->
+                    <div class="glass-card rounded-2xl p-3.5 flex justify-between items-center hover:bg-slate-800/50 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-bold">
+                                GOLD
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">Digital Gold & Crypto</h4>
+                                <span class="text-xs text-slate-400">ทองคำดิจิทัล / สินทรัพย์ทางเลือก</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white font-sans" id="asset-crypto-val">฿650,000</div>
+                            <div class="text-xs text-rose-400 font-semibold flex items-center justify-end gap-0.5" id="asset-crypto-pct">
+                                <i data-lucide="trending-down" class="w-3 h-3"></i> -0.5%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Tab Section -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-sm font-semibold text-slate-200">ประวัติรายการล่าสุด</h3>
+                    <button class="text-xs text-slate-400 hover:text-white">ประวัติเต็ม</button>
+                </div>
+
+                <div class="glass-card rounded-2xl p-3 divide-y divide-slate-800/70">
+                    <div class="py-2 flex justify-between items-center text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-slate-200">ซื้ออัตโนมัติ (DCA) - SET50</div>
+                                <div class="text-[10px] text-slate-500">วันนี้, 09:30 น.</div>
+                            </div>
+                        </div>
+                        <span class="font-bold text-slate-200 font-sans">-฿15,000</span>
+                    </div>
+
+                    <div class="py-2 flex justify-between items-center text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                                <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-slate-200">รับเงินปันผล (Dividend)</div>
+                                <div class="text-[10px] text-slate-500">เมื่อวาน, 14:15 น.</div>
+                            </div>
+                        </div>
+                        <span class="font-bold text-emerald-400 font-sans">+฿8,450</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar (iOS / Android Style) -->
+        <div class="absolute bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-4 py-3 flex justify-around items-center rounded-b-[32px] sm:rounded-b-[32px] z-20">
+            <button class="flex flex-col items-center gap-1 text-emerald-400">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">หน้าแรก</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">พอร์ต</span>
+            </button>
+            <button class="flex flex-col items-center justify-center -mt-5 w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold shadow-lg shadow-emerald-500/30 hover:scale-105 transition-transform">
+                <i data-lucide="arrow-left-right" class="w-6 h-6"></i>
+            </button>
+            <button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
+                <i data-lucide="line-chart" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">เทรด</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
+                <i data-lucide="user" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">โปรไฟล์</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Scripts for Logic & Charts -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Target Total Balance
+        let baseBalance = 3406700;
+        let isBalanceHidden = false;
+        let isLiveSimulation = true;
+        let currentChartType = 'line';
+
+        // Base Asset Values
+        const assets = {
+            set50: { base: 1250000, pct: 2.4 },
+            tech: { base: 850000, pct: 1.8 },
+            bond: { base: 656700, pct: 0.3 },
+            crypto: { base: 650000, pct: -0.5 }
         };
 
-        let f3_m = getFreqMap(r3_t), f5_m = getFreqMap(r5_t), f10_m = getFreqMap(r10_t);
-        let masterStats = Array.from({length:10}, (_,i)=>{
-            let score = (f3_m[i]/r3_t.length)*50 + (f5_m[i]/r5_t.length)*30 + (f10_m[i]/r10_t.length)*20;
-            return { num: i, score: isNaN(score)?0:score, f3: f3_m[i], f5: f5_m[i], f10: f10_m[i] };
-        }).sort((a,b) => b.score - a.score);
+        // Initialize Main Portfolio Chart
+        const ctx = document.getElementById('portfolioChart').getContext('2d');
+        
+        // Gradient fill for area line chart
+        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
 
-        let htmlMaster = '';
-        masterStats.forEach((s, idx) => {
-            let shortTermStatus = s.f3 >= 2 ? '<span class="badge-hit">🔥 ร้อนแรง</span>' : '<span class="badge-miss">❄️ แผ่วลง</span>';
-            let longTermStatus = s.f10 >= 5 ? '<span class="badge-hit">🛡️ เสถียรดี</span>' : '<span>ปานกลาง</span>';
-            let typeTag = idx < 3 ? `<span class="digit-pill pill-hot">🔥 ติดเด่นอันดับ ${idx+1}</span>` :
-                          (idx >= 7 ? `<span class="digit-pill pill-cold">❄️ ติดดับอันดับ ${idx+1}</span>` : `<span class="digit-pill" style="background:#1e293b; color:#94a3b8;">⚖️ เด่นปานกลาง</span>`);
-            let evalText = idx < 3 ? `<span class="badge-hit">เน้น วิ่ง/รูด</span>` : (idx >= 7 ? `<span class="badge-miss">หลีกเลี่ยง</span>` : `<span>ติดไว้กันหลุด</span>`);
-            let rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+        // Historical Data Generator
+        const generateTimeData = (points, baseVal) => {
+            let data = [];
+            let val = baseVal * 0.8;
+            for (let i = 0; i < points; i++) {
+                let change = (Math.random() - 0.46) * (baseVal * 0.03);
+                val += change;
+                data.push(Math.round(val));
+            }
+            data[data.length - 1] = baseBalance; // Lock current value to exactly 3,406,700
+            return data;
+        };
 
-            htmlMaster += `<tr>
-                <td class="text-left ${rankClass}"><b>เลข ${s.num}</b></td>
-                <td><b>${s.score.toFixed(1)} Pts</b></td>
-                <td>${shortTermStatus}</td>
-                <td>${longTermStatus}</td>
-                <td>${typeTag} ${evalText}</td>
-                <td class="${rankClass}">#${idx+1}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableMaster tbody').innerHTML = htmlMaster;
+        const chartData1Y = generateTimeData(30, baseBalance);
+        const labels1Y = Array.from({length: 30}, (_, i) => `เดือน ${i+1}`);
 
-        // 2. OVERVIEW TABLE
-        let stats09 = Array.from({length:10}, (_,i)=>({num:i, freq:0, history:[]}));
-        records.forEach(r => {
-            let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-            for(let i=0;i<=9;i++){
-                let hit = set.has(i);
-                stats09[i].history.push(hit);
-                if(hit) stats09[i].freq++;
+        let portfolioChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels1Y,
+                datasets: [{
+                    label: 'มูลค่าพอร์ต (บาท)',
+                    data: chartData1Y,
+                    borderColor: '#10b981',
+                    borderWidth: 2.5,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.35,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#10b981',
+                    pointHoverBorderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: '#161b26',
+                        titleColor: '#9ca3af',
+                        bodyColor: '#10b981',
+                        bodyFont: { family: 'Kanit', weight: 'bold' },
+                        borderColor: '#232a3b',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return ' ฿' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        display: false,
+                        grid: { display: false }
+                    }
+                }
             }
         });
-        stats09.sort((a,b)=>b.freq-a.freq);
 
-        let htmlOverview = '';
-        stats09.forEach((s,i)=>{
-            let isHit = s.history[0];
-            let streak = 0;
-            for(let h of s.history){ if(h===isHit) streak++; else break; }
-            htmlOverview += `<tr>
-                <td class="text-left">เลข ${s.num}</td>
-                <td>${s.freq}</td>
-                <td>${((s.freq/totalDraws)*100).toFixed(0)}%</td>
-                <td>${isHit?streak:'-'}</td>
-                <td>${!isHit?streak:'-'}</td>
-                <td>${isHit?'<span class="badge-hit">🟢 กำลังเข้า</span>':'<span class="badge-miss">🔴 กำลังหลุด</span>'}</td>
-                <td>#${i+1}</td>
-            </tr>`;
+        // Initialize Allocation Doughnut Chart
+        const ctxAlloc = document.getElementById('allocationChart').getContext('2d');
+        let allocationChart = new Chart(ctxAlloc, {
+            type: 'doughnut',
+            data: {
+                labels: ['SET50', 'Tech ETF', 'Bonds', 'Digital/Gold'],
+                datasets: [{
+                    data: [1250000, 850000, 656700, 650000],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#a855f7'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.parsed;
+                                return ` ฿${val.toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
         });
-        document.querySelector('#tableOverview tbody').innerHTML = htmlOverview;
 
-        // 3. POSITIONS TABLE
-        let pos = Array.from({length:10}, (_,i)=>({num:i, h:0, tens:0, u:0, total:0}));
-        records.forEach(r => {
-            pos[r.h].h++; pos[r.tens].tens++; pos[r.u].u++;
-            pos[r.h].total++; pos[r.tens].total++; pos[r.u].total++;
-        });
-        pos.sort((a,b)=>b.total-a.total);
-        let htmlPos = '';
-        pos.forEach((p,i)=>{
-            htmlPos += `<tr><td class="text-left">เลข ${p.num}</td><td>${p.h}</td><td>${p.tens}</td><td>${p.u}</td><td><b>${p.total}</b></td><td>#${i+1}</td></tr>`;
-        });
-        document.querySelector('#tablePosition tbody').innerHTML = htmlPos;
+        // Real-Time Price Simulation Engine
+        setInterval(() => {
+            if (!isLiveSimulation) return;
 
-        // 4. EVEN / ODD TABLE
-        let totalNumbers = totalDraws * 4;
-        let evenCount = 0, lowCount = 0;
-        records.forEach(r => {
-            [r.tens, r.u, r.t2_tens, r.t2_u].forEach(n => {
-                if(n % 2 === 0) evenCount++;
-                if(n <= 4) lowCount++;
+            // Random subtle fluctuation (-0.05% to +0.05%)
+            let deltaRatio = (Math.random() - 0.49) * 0.001;
+            baseBalance = Math.round(baseBalance * (1 + deltaRatio));
+
+            // Update UI Balance display if not hidden
+            if (!isBalanceHidden) {
+                document.getElementById('balanceDisplay').innerText = `฿${baseBalance.toLocaleString()}`;
+                document.getElementById('chartValueHeader').innerText = `฿${baseBalance.toLocaleString()}`;
+            }
+
+            // Fluctuate asset prices slightly
+            for (let key in assets) {
+                assets[key].base = Math.round(assets[key].base * (1 + deltaRatio));
+            }
+
+            // Update UI asset list
+            document.getElementById('asset-set50-val').innerText = `฿${assets.set50.base.toLocaleString()}`;
+            document.getElementById('asset-tech-val').innerText = `฿${assets.tech.base.toLocaleString()}`;
+            document.getElementById('asset-bond-val').innerText = `฿${assets.bond.base.toLocaleString()}`;
+            document.getElementById('asset-crypto-val').innerText = `฿${assets.crypto.base.toLocaleString()}`;
+
+            // Push fresh point to graph dataset
+            let dataArray = portfolioChart.data.datasets[0].data;
+            dataArray[dataArray.length - 1] = baseBalance;
+            portfolioChart.update('none');
+
+        }, 1800);
+
+        // Toggle Hide/Show Balance
+        document.getElementById('toggleBalance').addEventListener('click', () => {
+            isBalanceHidden = !isBalanceHidden;
+            const balanceEl = document.getElementById('balanceDisplay');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            if (isBalanceHidden) {
+                balanceEl.innerText = '฿ ••••••••';
+                eyeIcon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                balanceEl.innerText = `฿${baseBalance.toLocaleString()}`;
+                eyeIcon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        });
+
+        // Timeframe selector interaction
+        const tfButtons = document.querySelectorAll('.tf-btn');
+        tfButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                tfButtons.forEach(b => {
+                    b.className = "tf-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition";
+                });
+                this.className = "tf-btn px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30";
+                
+                // Regenerate chart data points depending on selected timeframe
+                const count = this.dataset.tf === '1D' ? 12 : this.dataset.tf === '1W' ? 15 : 25;
+                portfolioChart.data.labels = Array.from({length: count}, (_, i) => `T${i+1}`);
+                portfolioChart.data.datasets[0].data = generateTimeData(count, baseBalance);
+                portfolioChart.update();
             });
         });
-        let oddCount = totalNumbers - evenCount;
-        let highCount = totalNumbers - lowCount;
-        let isEvenWin = evenCount >= oddCount;
 
-        document.querySelector('#tableEvenOdd tbody').innerHTML = `
-            <tr>
-                <td class="text-left">เลขคู่ (0,2,4,6,8)</td>
-                <td>${evenCount}</td>
-                <td>${((evenCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${isEvenWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${isEvenWin ? 1 : 2}</td>
-            </tr>
-            <tr>
-                <td class="text-left">เลขคี่ (1,3,5,7,9)</td>
-                <td>${oddCount}</td>
-                <td>${((oddCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${!isEvenWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${!isEvenWin ? 1 : 2}</td>
-            </tr>`;
+        // Chart Type Switcher (Line vs Candlestick simulation mode)
+        const btnLine = document.getElementById('btnLineChart');
+        const btnCandle = document.getElementById('btnCandleChart');
 
-        // 5. HIGH / LOW TABLE
-        let isLowWin = lowCount >= highCount;
-        document.querySelector('#tableHighLow tbody').innerHTML = `
-            <tr>
-                <td class="text-left">เลขต่ำ (0-4)</td>
-                <td>${lowCount}</td>
-                <td>${((lowCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${isLowWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${isLowWin ? 1 : 2}</td>
-            </tr>
-            <tr>
-                <td class="text-left">เลขสูง (5-9)</td>
-                <td>${highCount}</td>
-                <td>${((highCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${!isLowWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${!isLowWin ? 1 : 2}</td>
-            </tr>`;
-
-        // 6. 3D SYNERGY TABLE
-        const syn3D = [
-            { name: "VIP 3D Alpha", set: [0, 6, 8] },
-            { name: "VIP 3D Beta", set: [1, 6, 8] },
-            { name: "VIP 3D Gamma", set: [2, 5, 7] }
-        ];
-        let res3D = syn3D.map(s => {
-            let hits = records.filter(r => [r.tens, r.u, r.t2_tens, r.t2_u].some(n => s.set.includes(n))).length;
-            return { ...s, hits, pct: ((hits/totalDraws)*100).toFixed(1) };
-        }).sort((a,b)=>b.hits-a.hits);
-
-        let htmlSynergy3D = '';
-        res3D.forEach((r,i)=>{
-            htmlSynergy3D += `<tr><td class="text-left">${r.name}</td><td><b style="color:var(--gold-primary);">${r.set.join(' - ')}</b></td><td>${r.pct}%</td><td><span class="badge-hit">🟢 ชดเชยได้ดี</span></td><td>#${i+1}</td></tr>`;
-        });
-        document.querySelector('#tableSynergy3D tbody').innerHTML = htmlSynergy3D;
-
-        // 7. 2D SYNERGY TABLE
-        const syn2D = [
-            { name: "VIP 2D Duo Alpha", set: [0, 6] },
-            { name: "VIP 2D Duo Beta", set: [1, 8] },
-            { name: "VIP 2D Duo Gamma", set: [2, 7] }
-        ];
-        let res2D = syn2D.map(s => {
-            let hits = records.filter(r => [r.tens, r.u, r.t2_tens, r.t2_u].some(n => s.set.includes(n))).length;
-            return { ...s, hits, pct: ((hits/totalDraws)*100).toFixed(1) };
-        }).sort((a,b)=>b.hits-a.hits);
-
-        let htmlSynergy2D = '';
-        res2D.forEach((r,i)=>{
-            htmlSynergy2D += `<tr><td class="text-left">${r.name}</td><td><b style="color:var(--gold-primary);">${r.set.join(' - ')}</b></td><td>${r.pct}%</td><td><span class="badge-hit">🟢 ชดเชยได้ดี</span></td><td>#${i+1}</td></tr>`;
-        });
-        document.querySelector('#tableSynergy2D tbody').innerHTML = htmlSynergy2D;
-
-        // 8. WIN 6-DIGITS TABLE
-        const win6DDefs = [
-            { name: "ชุดวินพลังรวม 3 ตัวบน 6 ตัว (Gamma-Sum3D)", gen: r => { let d = (r.h + r.tens + r.u) % 10; return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินชนหลักร้อย+หน่วย 6 ตัว (Delta-Cross)", gen: r => { let d = (r.h + r.u) % 10; return [d, (d+2)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินมหาพิกัด 6 ตัว (Alpha-Match)", gen: r => { let d = (r.u + r.t2_u) % 10; return [d, (d+1)%10, (d+2)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินกระแสเงินสด 6 ตัว (Beta-Flow)", gen: r => { let d = (r.tens + r.t2_tens) % 10; return [d, (d+1)%10, (d+3)%10, (d+5)%10, (d+7)%10, (d+9)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินมหาเฮง 5 หลัก 6 ตัว (Omega-Total)", gen: r => { let d = (r.h + r.tens + r.u + r.t2_tens + r.t2_u) % 10; return [d, (d+1)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+7)%10].sort((a,b)=>a-b); } }
-        ];
-
-        let win6DResults = win6DDefs.map(w => {
-            let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
-            let latestStatusHit = false;
-            let liveSet = w.gen(records[0]);
-            let liveText = liveSet.join(' - ');
-
-            for(let i = 0; i < totalDraws - 1; i++) {
-                let setPrev = w.gen(records[i+1]);
-                let actualRec = records[i];
-                let targetDigits = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u];
-                let matchCount = targetDigits.filter(n => setPrev.includes(n)).length;
-                let isHit = matchCount >= 2;
-
-                if(i === 0) latestStatusHit = isHit;
-
-                if(isHit) {
-                    hits++; curHit++; curMiss = 0;
-                    if(curHit > maxHit) maxHit = curHit;
-                } else {
-                    curMiss++; curHit = 0;
-                    if(curMiss > maxMiss) maxMiss = curMiss;
-                }
-            }
-            let validDraws = totalDraws - 1;
-            let pct = validDraws > 0 ? (hits / validDraws) * 100 : 0;
-            return { name: w.name, liveText, setArr: liveSet, pct, maxHit, maxMiss, latestStatusHit };
+        btnLine.addEventListener('click', () => {
+            btnLine.className = "px-2.5 py-1 text-xs rounded-lg bg-emerald-500 text-slate-950 font-semibold transition-all";
+            btnCandle.className = "px-2.5 py-1 text-xs rounded-lg text-slate-400 font-medium transition-all hover:text-white";
+            portfolioChart.config.type = 'line';
+            portfolioChart.data.datasets[0].fill = true;
+            portfolioChart.update();
         });
 
-        win6DResults.sort((a,b) => b.pct - a.pct);
-
-        let htmlWin6D = '';
-        win6DResults.forEach((res, idx) => {
-            let statusTag = res.latestStatusHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            let rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
-            htmlWin6D += `<tr>
-                <td class="text-left ${rankClass}">${res.name}</td>
-                <td><b style="color:var(--gold-primary);">${res.setArr.join(', ')}</b></td>
-                <td><b style="color:#34d399;">${res.liveText}</b></td>
-                <td><b>${res.pct.toFixed(1)}%</b></td>
-                <td>${res.maxHit} รอบ</td>
-                <td>${res.maxMiss} รอบ</td>
-                <td>${statusTag}</td>
-                <td class="${rankClass}">#${idx+1}</td>
-            </tr>`;
+        btnCandle.addEventListener('click', () => {
+            btnCandle.className = "px-2.5 py-1 text-xs rounded-lg bg-emerald-500 text-slate-950 font-semibold transition-all";
+            btnLine.className = "px-2.5 py-1 text-xs rounded-lg text-slate-400 font-medium transition-all hover:text-white";
+            portfolioChart.config.type = 'bar';
+            portfolioChart.data.datasets[0].fill = false;
+            portfolioChart.update();
         });
-        document.querySelector('#tableWin6D tbody').innerHTML = htmlWin6D;
 
-        // 9. ADVANCED FORMULAS TABLE
-        const formulaDefs = [
-            { name: 'สูตรชน: ร้อยบน + สิบบน', calc: r => (r.h + r.tens) % 10 },
-            { name: 'สูตรชน: ร้อยบน + หน่วยบน', calc: r => (r.h + r.u) % 10 },
-            { name: 'สูตรชน: ร้อยบน + สิบล่าง', calc: r => (r.h + r.t2_tens) % 10 },
-            { name: 'สูตรชน: ร้อยบน + หน่วยล่าง', calc: r => (r.h + r.t2_u) % 10 },
-            { name: 'สูตรชน: สิบบน + หน่วยบน', calc: r => (r.tens + r.u) % 10 },
-            { name: 'สูตรชน: สิบบน + สิบล่าง', calc: r => (r.tens + r.t2_tens) % 10 },
-            { name: 'สูตรชน: สิบบน + หน่วยล่าง', calc: r => (r.tens + r.t2_u) % 10 },
-            { name: 'สูตรชน: หน่วยบน + สิบล่าง', calc: r => (r.u + r.t2_tens) % 10 },
-            { name: 'สูตรชน: หน่วยบน + หน่วยล่าง', calc: r => (r.u + r.t2_u) % 10 },
-            { name: 'สูตรชน: สิบล่าง + หน่วยล่าง', calc: r => (r.t2_tens + r.t2_u) % 10 },
-            { name: 'สูตรผลรวม: 3 ตัวบน (ร้อย+สิบ+หน่วย)', calc: r => (r.h + r.tens + r.u) % 10 },
-            { name: 'สูตรผลรวม: 2 ตัวล่าง (สิบ+หน่วย)', calc: r => (r.t2_tens + r.t2_u) % 10 },
-            { name: 'สูตรผลรวม: รวม 5 หลัก (บน+ล่าง)', calc: r => (r.h + r.tens + r.u + r.t2_tens + r.t2_u) % 10 }
-        ];
-
-        let formulaResults = formulaDefs.map(f => {
-            let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
-            let latestStatusHit = false;
-            let currentMissStreak = 0;
-
-            let latestRecord = records[0];
-            let liveD1 = f.calc(latestRecord);
-            let liveD2 = (liveD1 + 1) % 10;
-            let liveText = `${liveD1} - ${liveD2}`;
-
-            for(let i = 0; i < totalDraws - 1; i++) {
-                let d1 = f.calc(records[i+1]);
-                let d2 = (d1 + 1) % 10;
-                let actualRec = records[i];
-                let isHit = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d1) || 
-                            [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d2);
-
-                if(i === 0) latestStatusHit = isHit;
-
-                if(isHit) {
-                    hits++; curHit++; curMiss = 0;
-                    if(curHit > maxHit) maxHit = curHit;
-                } else {
-                    curMiss++; curHit = 0;
-                    if(i === 0) currentMissStreak = curMiss;
-                    if(curMiss > maxMiss) maxMiss = curMiss;
-                }
-            }
-
-            let recoveryText = '<span style="color:var(--text-muted)">เดินตามปกติ</span>';
-            if (!latestStatusHit) {
-                if (currentMissStreak >= 2) {
-                    recoveryText = '<span class="badge-hit">⚡ โอกาสแก้ตัวสูง (Overdue)</span>';
-                } else {
-                    recoveryText = '<span class="badge-miss">⏳ รอจังหวะตั้งลำ</span>';
-                }
+        // Toggle Live Sim
+        const simBtn = document.getElementById('liveSimToggle');
+        simBtn.addEventListener('click', () => {
+            isLiveSimulation = !isLiveSimulation;
+            if (isLiveSimulation) {
+                simBtn.classList.add('text-emerald-400');
+                simBtn.classList.remove('text-slate-500');
             } else {
-                recoveryText = '<span class="badge-hit">🔥 กำลังฟอร์มดีต่อเนื่อง</span>';
+                simBtn.classList.remove('text-emerald-400');
+                simBtn.classList.add('text-slate-500');
             }
-
-            let validDraws = totalDraws - 1;
-            let pct = validDraws > 0 ? (hits / validDraws) * 100 : 0;
-            return { name: f.name, liveText, pct, maxHit, maxMiss, latestStatusHit, recoveryText };
         });
-
-        formulaResults.sort((a,b) => b.pct - a.pct);
-
-        let htmlFormulas = '';
-        formulaResults.forEach((res, idx) => {
-            let statusTag = res.latestStatusHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            htmlFormulas += `<tr>
-                <td class="text-left">${res.name}</td>
-                <td><b style="color:var(--gold-primary);">${res.liveText}</b></td>
-                <td><b>${res.pct.toFixed(1)}%</b></td>
-                <td>${res.maxHit} รอบ</td>
-                <td>${res.maxMiss} รอบ</td>
-                <td>${statusTag}</td>
-                <td>${res.recoveryText}</td>
-                <td>#${idx+1}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableFormulas tbody').innerHTML = htmlFormulas;
-    }
-</script>
-
+    </script>
 </body>
 </html>
