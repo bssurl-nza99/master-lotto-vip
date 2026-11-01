@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V3</title>
+    <title>VIP Master Intelligence Analytics - V4</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -55,8 +55,8 @@
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
 
-        /* กล่องฟันธงจัดอันดับ V3 */
-        .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
+        /* กล่องฟันธงจัดอันดับ V4 */
+        .consensus-box { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
         .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.5px; }
         .rank-container { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
         .rank-card { background: rgba(0,0,0,0.4); border: 1px solid #4338ca; border-radius: 6px; padding: 6px 10px; min-width: 90px; text-align: center; }
@@ -73,7 +73,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงจัดอันดับความน่าจะเป็น (Version V3)</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมด Adaptive Momentum & Reversal (Version V4)</p>
     </header>
 
     <div class="card">
@@ -83,17 +83,17 @@
         </div>
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
         <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (จัดอันดับความน่าจะเป็น)</button>
+            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (Adaptive V4 Engine)</button>
             <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
         </div>
     </div>
 
     <div id="resultsArea">
-        <!-- กล่องฟันธงจัดอันดับ V3 -->
+        <!-- กล่องฟันธงจัดอันดับ V4 -->
         <div class="consensus-box">
-            <div class="consensus-title">⚡ บทสรุปจัดอันดับความน่าจะเป็นสูงสุดรอบนี้ (VIP Ranked Focus - V3) ⚡</div>
+            <div class="consensus-title">⚡ บทสรุปจัดอันดับความน่าจะเป็น V4 (Momentum + Reversal) ⚡</div>
             <div class="rank-container" id="consensusRankOutput"></div>
-            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 8px; font-weight: 600;">จัดลำดับความเสถียรและน้ำหนักความน่าจะเป็นอัตโนมัติ (ยึดอันดับ 1 เป็นเป้าหมายหลัก)</div>
+            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 8px; font-weight: 600;">ผสานน้ำหนักกระแสสั้น 50% + ตัวกรองกลับตัว Overdue 30% + ภาพรวม 20%</div>
         </div>
 
         <div class="card" style="padding: 6px 8px;">
@@ -255,7 +255,7 @@
 
 <script>
     let currentPeriod = 30;
-    let globalRankedConsensus = []; // ตัวแปรเก็บค่าจัดอันดับเสถียรภาพสูงสุด 30 รอบ
+    let globalRankedConsensus = [];
 
     function setPeriod(p) {
         currentPeriod = p;
@@ -408,39 +408,48 @@
 
         document.getElementById('resultsArea').style.display = 'block';
 
-        // คำนวณและจัดอันดับความน่าจะเป็นจากภาพรวม 30 รอบ
-        if (globalRankedConsensus.length === 0) {
-            let stableRecords = allRecords.slice(0, Math.min(30, allRecords.length));
-            let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
-            let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
-            let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
+        let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
+        let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
+        let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
+        let r30 = allRecords.slice(0, Math.min(30, allRecords.length));
 
-            let getFreqMap = (recs) => {
-                let map = Array(10).fill(0);
-                recs.forEach(r => {
-                    let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-                    set.forEach(n => map[n]++);
-                });
-                return map;
-            };
-            let f3 = getFreqMap(r3), f5 = getFreqMap(r5), f10 = getFreqMap(r10);
-            let stableMaster = Array.from({length:10}, (_,i)=>{
-                let score = (f3[i]/r3.length)*50 + (f5[i]/r5.length)*30 + (f10[i]/r10.length)*20;
-                return { num: i, score: isNaN(score)?0:score };
-            }).sort((a,b) => b.score - a.score);
-
-            // คำนวณคะแนนน้ำหนักให้เลขแต่ละตัวเพื่อจัดอันดับ
-            let scoredDigits = stableMaster.map((m, idx) => {
-                // ให้คะแนนพื้นฐานจากอันดับ Master + โบนัสความร้อนแรง
-                let prob = Math.max(45, 95 - (idx * 8));
-                return { num: m.num, prob: prob };
+        let getFreqMap = (recs) => {
+            let map = Array(10).fill(0);
+            recs.forEach(r => {
+                let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
+                set.forEach(n => map[n]++);
             });
+            return map;
+        };
 
-            // คัดเอาเฉพาะตัวเด่นสุดยอดมา 4 อันดับแรก และเรียงลำดับ % ความน่าจะเป็นจากมากไปน้อย
-            globalRankedConsensus = scoredDigits.slice(0, 4).sort((a,b) => b.prob - a.prob);
+        let f3 = getFreqMap(r3), f5 = getFreqMap(r5), f10 = getFreqMap(r10), f30 = getFreqMap(r30);
+
+        // คำนวณหาจำนวนรอบที่หลุดต่อเนื่องเพื่อทำ Overdue Reversal Score
+        let overdueMap = Array(10).fill(0);
+        for(let i=0; i<=9; i++) {
+            let missCount = 0;
+            for(let r of r30) {
+                let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
+                if(!set.has(i)) missCount++;
+                else break;
+            }
+            overdueMap[i] = missCount;
         }
 
-        // แสดงผลกล่องจัดอันดับ V3
+        // V4 Adaptive Scoring: Momentum (50%) + Overdue Reversal (30%) + Long-term (20%)
+        let adaptiveScored = Array.from({length:10}, (_,i)=>{
+            let momentumScore = ((f3[i]/r3.length)*0.6 + (f5[i]/r5.length)*0.4) * 50;
+            let reversalScore = Math.min(1, overdueMap[i] / 4) * 30; // ถ้าหลุดมา 3-4 รอบ จะได้โบนัสการกลับตัวสูง
+            let longTermScore = (f10[i]/r10.length) * 20;
+            let total = momentumScore + reversalScore + longTermScore;
+            return { num: i, score: total };
+        }).sort((a,b) => b.score - a.score);
+
+        globalRankedConsensus = adaptiveScored.slice(0, 4).map((item, idx) => ({
+            num: item.num,
+            prob: Math.max(50, Math.round(96 - (idx * 8)))
+        }));
+
         let htmlRank = '';
         globalRankedConsensus.forEach((item, idx) => {
             let rankClass = idx === 0 ? 'top-1' : '';
@@ -468,22 +477,9 @@
         document.getElementById('titleFormulas').innerText = `9. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
 
         // 1. MASTER TABLE
-        let r3_t = allRecords.slice(0, Math.min(3, allRecords.length));
-        let r5_t = allRecords.slice(0, Math.min(5, allRecords.length));
-        let r10_t = allRecords.slice(0, Math.min(10, allRecords.length));
-
-        let getFreqMap = (recs) => {
-            let map = Array(10).fill(0);
-            recs.forEach(r => {
-                let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-                set.forEach(n => map[n]++);
-            });
-            return map;
-        };
-
-        let f3_m = getFreqMap(r3_t), f5_m = getFreqMap(r5_t), f10_m = getFreqMap(r10_t);
+        let f3_m = getFreqMap(r3), f5_m = getFreqMap(r5), f10_m = getFreqMap(r10);
         let masterStats = Array.from({length:10}, (_,i)=>{
-            let score = (f3_m[i]/r3_t.length)*50 + (f5_m[i]/r5_t.length)*30 + (f10_m[i]/r10_t.length)*20;
+            let score = ((f3_m[i]/r3.length)*0.6 + (f5_m[i]/r5.length)*0.4)*50 + Math.min(1, overdueMap[i]/4)*30 + (f10_m[i]/r10.length)*20;
             return { num: i, score: isNaN(score)?0:score, f3: f3_m[i], f5: f5_m[i], f10: f10_m[i] };
         }).sort((a,b) => b.score - a.score);
 
