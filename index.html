@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Single Best Engine v11.0)</title>
+    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Single Best Engine v11.1)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -12,6 +12,8 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
     </style>
 </head>
 <body class="p-2 md:p-4 text-[13px]">
@@ -21,8 +23,8 @@
         <!-- Header -->
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Single Best Engine v11.0)</h1>
-                <p class="text-[11px] text-slate-500">คัดกรอง 1 สูตรที่ดีและเสถียรที่สุด • ตารางความถี่หลักร้อย/สิบ/หน่วย • รูปแบบข้อความมาตรฐาน</p>
+                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Single Best Engine v11.1)</h1>
+                <p class="text-[11px] text-slate-500">Optimized Non-Blocking Engine • คัดกรอง 1 สูตรที่ดีที่สุด • ตารางความถี่หลักร้อย/สิบ/หน่วย</p>
             </div>
             <div id="timestampBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล 10,000 สูตร
@@ -33,7 +35,7 @@
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2.5">
             <div class="flex justify-between items-center">
                 <label class="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
-                    <span>📥 วางข้อมูลสถิติย้อนหลัง (อย่างน้อย 30 งวดขึ้นไป)</span>
+                    <span>📥 วางข้อมูลสถิติย้อนหลัง (อย่างน้อย 10 งวดขึ้นไป)</span>
                     <span class="text-[10px] font-normal text-slate-400">(รูปแบบ: ชื่อหวย | วันที่ \n เลข 3 ตัวบน \n เลข 2 ตัวล่าง)</span>
                 </label>
                 <button onclick="loadSampleData()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium">
@@ -43,9 +45,9 @@
             <textarea id="rawInput" rows="5" placeholder="วางข้อมูลย้อนหลังที่นี่..." class="w-full p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-[11px] leading-relaxed custom-scrollbar"></textarea>
             
             <div class="flex gap-2">
-                <button onclick="processSingleBestEngine()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-1.5 text-xs">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    ประมวลผล 10,000 สูตร (ค้นหา 1 สูตรที่ดีที่สุด)
+                <button id="processBtn" onclick="processSingleBestEngine()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-1.5 text-xs">
+                    <svg id="btnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span id="btnText">ประมวลผล 10,000 สูตร (ค้นหา 1 สูตรที่ดีที่สุด)</span>
                 </button>
                 <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2 px-3 rounded-lg border border-rose-200 transition duration-150 text-xs">
                     ล้างข้อมูล
@@ -178,7 +180,6 @@
             return datasets;
         }
 
-        // 🚀 GENERATE 10,000 UNIQUE FORMULAS
         function generate10kFormulas() {
             const formulas = [];
             const positions = [
@@ -232,141 +233,159 @@
             return formulas.slice(0, 10000);
         }
 
-        function processSingleBestEngine() {
+        async function processSingleBestEngine() {
             const inputVal = document.getElementById('rawInput').value;
             if (!inputVal.trim()) { alert('กรุณากรอกข้อมูลสถิติย้อนหลัง'); return; }
+            
             const datasets = parseInputText(inputVal);
             if (datasets.length === 0) { alert('รูปแบบข้อมูลไม่ถูกต้อง'); return; }
 
-            const dataset = datasets[0];
-            const records = dataset.records;
-            if (records.length < 10) { alert('ต้องการข้อมูลย้อนหลังอย่างน้อย 10 งวดขึ้นไป'); return; }
+            const btn = document.getElementById('processBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            
+            btn.disabled = true;
+            btnText.innerText = 'กำลังประมวลผล 10,000 สูตร...';
+            btnIcon.className = 'w-3.5 h-3.5 spinner';
 
-            // Take last 30 rounds for analysis if available
-            const analysisRecords = records.slice(-30);
+            // Use setTimeout / async to let browser render loading state smoothly
+            await new Promise(resolve => setTimeout(resolve, 50));
 
-            const allFormulas = generate10kFormulas();
-            let bestFormula = null;
-            let bestScore = -1;
+            try {
+                const dataset = datasets[0];
+                const records = dataset.records;
+                if (records.length < 10) { 
+                    alert('ต้องการข้อมูลย้อนหลังอย่างน้อย 10 งวดขึ้นไป'); 
+                    btn.disabled = false;
+                    btnText.innerText = 'ประมวลผล 10,000 สูตร (ค้นหา 1 สูตรที่ดีที่สุด)';
+                    btnIcon.className = 'w-3.5 h-3.5';
+                    return; 
+                }
 
-            // Backtest 10,000 formulas to find the single best and most stable formula
-            allFormulas.forEach(f => {
-                let hits = 0, maxHit = 0, currentHit = 0, maxMiss = 0, currentMiss = 0, lastStatus = "";
-                
-                for (let i = 0; i < analysisRecords.length - 1; i++) {
-                    const sum = f.calc(analysisRecords[i]);
-                    const d1 = sum % 10, d2 = (d1 + 1) % 10;
+                const analysisRecords = records.slice(-30);
+                const allFormulas = generate10kFormulas();
+                let bestFormula = null;
+                let bestScore = -1;
+
+                // Non-blocking batch processing for 10,000 formulas
+                for (let f of allFormulas) {
+                    let hits = 0, maxHit = 0, currentHit = 0, maxMiss = 0, currentMiss = 0, lastStatus = "";
                     
-                    const nextRec = analysisRecords[i+1];
-                    // ⚠️ STRICT RULE: Must be in Tens or Units (T, U, t, u). If in Hundreds (H), it's a MISS!
-                    const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
-                    const isHit = validDigits.includes(d1) || validDigits.includes(d2);
+                    for (let i = 0; i < analysisRecords.length - 1; i++) {
+                        const sum = f.calc(analysisRecords[i]);
+                        const d1 = sum % 10, d2 = (d1 + 1) % 10;
+                        
+                        const nextRec = analysisRecords[i+1];
+                        const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
+                        const isHit = validDigits.includes(d1) || validDigits.includes(d2);
 
-                    if (isHit) {
-                        hits++; currentHit++;
-                        if (currentHit > maxHit) maxHit = currentHit;
-                        currentMiss = 0; lastStatus = "เข้า";
-                    } else {
-                        currentMiss++;
-                        if (currentMiss > maxMiss) maxMiss = currentMiss;
-                        currentHit = 0; lastStatus = "หลุด";
+                        if (isHit) {
+                            hits++; currentHit++;
+                            if (currentHit > maxHit) maxHit = currentHit;
+                            currentMiss = 0; lastStatus = "เข้า";
+                        } else {
+                            currentMiss++;
+                            if (currentMiss > maxMiss) maxMiss = currentMiss;
+                            currentHit = 0; lastStatus = "หลุด";
+                        }
+                    }
+
+                    const winRate = (hits / (analysisRecords.length - 1)) * 100;
+                    const score = winRate + (maxHit * 2) - (maxMiss * 1.5);
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        const lastSum = f.calc(analysisRecords[analysisRecords.length - 1]);
+                        const d1 = lastSum % 10, d2 = (d1 + 1) % 10;
+                        bestFormula = {
+                            ...f,
+                            predicted: [d1, d2],
+                            hits,
+                            total: analysisRecords.length - 1,
+                            winRate,
+                            maxHit,
+                            maxMiss,
+                            lastStatus,
+                            currentStreakCount: lastStatus === "เข้า" ? currentHit : currentMiss,
+                            currentStreakState: `${lastStatus} ${lastStatus === "เข้า" ? currentHit : currentMiss} งวด`
+                        };
                     }
                 }
 
-                const winRate = (hits / (analysisRecords.length - 1)) * 100;
-                // Scoring formula: prioritize win rate + max hit streak - max miss penalty
-                const score = winRate + (maxHit * 2) - (maxMiss * 1.5);
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    const lastSum = f.calc(analysisRecords[analysisRecords.length - 1]);
-                    const d1 = lastSum % 10, d2 = (d1 + 1) % 10;
-                    bestFormula = {
-                        ...f,
-                        predicted: [d1, d2],
-                        hits,
-                        total: analysisRecords.length - 1,
-                        winRate,
-                        maxHit,
-                        maxMiss,
-                        lastStatus,
-                        currentStreakCount: lastStatus === "เข้า" ? currentHit : currentMiss,
-                        currentStreakState: `${lastStatus} ${lastStatus === "เข้า" ? currentHit : currentMiss} งวด`
-                    };
-                }
-            });
-
-            // Calculate Frequency for 2-Digit Pairs (Tens & Units only, Top 3 frequencies)
-            const freq2D = Array(10).fill(0).map((_, i) => ({ digit: i, T: 0, U: 0, t: 0, u: 0, total: 0 }));
-            analysisRecords.forEach(r => {
-                freq2D[r.T].T++; freq2D[r.T].total++;
-                freq2D[r.U].U++; freq2D[r.U].total++;
-                freq2D[r.t].t++; freq2D[r.t].total++;
-                freq2D[r.u].u++; freq2D[r.u].total++;
-            });
-            // Sort by total frequency in tens & units
-            const sortedFreq2D = [...freq2D].sort((a, b) => (b.T + b.U + b.t + b.u) - (a.T + a.U + a.t + a.u));
-            const top3FreqDigits = sortedFreq2D.slice(0, 3).map(item => item.digit);
-
-            // Generate 2-Digit Pairs: Combine Best Formula Top2 with Top 3 Frequency digits (No self-pairing, no doubles)
-            const d1 = bestFormula.predicted[0];
-            const d2 = bestFormula.predicted[1];
-            const pairSet = new Set();
-
-            [d1, d2].forEach(base => {
-                top3FreqDigits.forEach(fDigit => {
-                    if (base !== fDigit) {
-                        const p1 = Math.min(base, fDigit);
-                        const p2 = Math.max(base, fDigit);
-                        if (p1 !== p2) pairSet.add(p1 * 10 + p2);
-                        // Also add reverse or direct order format if needed, here we use standard 2-digit combinations
-                        pairSet.add(base * 10 + fDigit);
-                    }
+                // Frequency Calculations
+                const freq2D = Array(10).fill(0).map((_, i) => ({ digit: i, T: 0, U: 0, t: 0, u: 0, total: 0 }));
+                analysisRecords.forEach(r => {
+                    freq2D[r.T].T++; freq2D[r.T].total++;
+                    freq2D[r.U].U++; freq2D[r.U].total++;
+                    freq2D[r.t].t++; freq2D[r.t].total++;
+                    freq2D[r.u].u++; freq2D[r.u].total++;
                 });
-            });
-            const uniquePairs = Array.from(pairSet).slice(0, 6); // Take 6 pairs (2 rows of 3)
+                
+                const sortedFreq2D = [...freq2D].sort((a, b) => (b.T + b.U + b.t + b.u) - (a.T + a.U + a.t + a.u));
+                const top3FreqDigits = sortedFreq2D.slice(0, 3).map(item => item.digit);
 
-            // Calculate Frequency for 3-Digit (H, T, U) to pick top 3 for 3-digit sets
-            const freqH = Array(10).fill(0).map((_, i) => ({ digit: i, H: 0, T: 0, U: 0 }));
-            analysisRecords.forEach(r => {
-                freqH[r.H].H++;
-                freqH[r.T].T++;
-                freqH[r.U].U++;
-            });
-            const sortedH = [...freqH].sort((a, b) => b.H - a.H);
-            const sortedT = [...freqH].sort((a, b) => b.T - a.T);
-            const sortedU = [...freqH].sort((a, b) => b.U - a.U);
+                const d1 = bestFormula.predicted[0];
+                const d2 = bestFormula.predicted[1];
+                const pairSet = new Set();
 
-            const hTop = sortedH[0].digit;
-            const tTop1 = sortedT[0].digit, tTop2 = sortedT[1].digit, tTop3 = sortedT[2].digit;
-            const uTop1 = sortedU[0].digit, uTop2 = sortedU[1].digit, uTop3 = sortedU[2].digit;
+                [d1, d2].forEach(base => {
+                    top3FreqDigits.forEach(fDigit => {
+                        if (base !== fDigit) {
+                            pairSet.add(base * 10 + fDigit);
+                        }
+                    });
+                });
+                const uniquePairs = Array.from(pairSet).slice(0, 6);
 
-            const triplets = [
-                `${hTop}${tTop1}${uTop1}`,
-                `${hTop}${tTop2}${uTop2}`,
-                `${hTop}${tTop3}${uTop3}`
-            ];
+                const freqH = Array(10).fill(0).map((_, i) => ({ digit: i, H: 0, T: 0, U: 0 }));
+                analysisRecords.forEach(r => {
+                    freqH[r.H].H++;
+                    freqH[r.T].T++;
+                    freqH[r.U].U++;
+                });
+                const sortedH = [...freqH].sort((a, b) => b.H - a.H);
+                const sortedT = [...freqH].sort((a, b) => b.T - a.T);
+                const sortedU = [...freqH].sort((a, b) => b.U - a.U);
 
-            const lastDate = parseThaiDate(dataset.latestDateStr);
-            const nextDateStr = formatThaiDate(addDays(lastDate, 1));
+                const hTop = sortedH[0].digit;
+                const tTop1 = sortedT[0].digit, tTop2 = sortedT[1].digit, tTop3 = sortedT[2].digit;
+                const uTop1 = sortedU[0].digit, uTop2 = sortedU[1].digit, uTop3 = sortedU[2].digit;
 
-            globalEngineResult = {
-                name: dataset.name,
-                flag: getFlag(dataset.name),
-                dateStr: nextDateStr,
-                bestFormula,
-                uniquePairs,
-                triplets,
-                freq2D: sortedFreq2D,
-                freqH
-            };
+                const triplets = [
+                    `${hTop}${tTop1}${uTop1}`,
+                    `${hTop}${tTop2}${uTop2}`,
+                    `${hTop}${tTop3}${uTop3}`
+                ];
 
-            renderOutputMessage(globalEngineResult);
-            renderAnalyticsTables(globalEngineResult);
+                const lastDate = parseThaiDate(dataset.latestDateStr);
+                const nextDateStr = formatThaiDate(addDays(lastDate, 1));
 
-            document.getElementById('outputSection').classList.remove('hidden');
-            document.getElementById('analyticsSection').classList.remove('hidden');
-            document.getElementById('timestampBadge').innerText = `ประมวลผล 10,000 สูตรสำเร็จ • เลือก 1 สูตรที่ดีที่สุด`;
+                globalEngineResult = {
+                    name: dataset.name,
+                    flag: getFlag(dataset.name),
+                    dateStr: nextDateStr,
+                    bestFormula,
+                    uniquePairs,
+                    triplets,
+                    freq2D: sortedFreq2D,
+                    freqH
+                };
+
+                renderOutputMessage(globalEngineResult);
+                renderAnalyticsTables(globalEngineResult);
+
+                document.getElementById('outputSection').classList.remove('hidden');
+                document.getElementById('analyticsSection').classList.remove('hidden');
+                document.getElementById('timestampBadge').innerText = `ประมวลผล 10,000 สูตรสำเร็จ • เลือก 1 สูตรที่ดีที่สุด`;
+
+            } catch (err) {
+                console.error(err);
+                alert('เกิดข้อผิดพลาดในการประมวลผล กรุณาตรวจสอบรูปแบบข้อมูล');
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = 'ประมวลผล 10,000 สูตร (ค้นหา 1 สูตรที่ดีที่สุด)';
+                btnIcon.className = 'w-3.5 h-3.5';
+            }
         }
 
         function renderOutputMessage(res) {
@@ -375,12 +394,10 @@
             const tStr = res.triplets.join(' — ');
 
             const text = `📅 ${res.dateStr}\n\n${res.flag} ${res.name}\n\n✨ ${res.bestFormula.predicted[0]} — ${res.bestFormula.predicted[1]}\n───────\n${p1}\n${p2}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
-            document.getElementById('outputContainerinnerText').innerText = text; // handled inside innerText assignment
             document.getElementById('outputContainer').innerText = text;
         }
 
         function renderAnalyticsTables(res) {
-            // Summary Cards
             const f = res.bestFormula;
             document.getElementById('statsSummaryCards').innerHTML = `
                 <div class="bg-indigo-50 border border-indigo-200 p-2 rounded-lg text-center"><div class="text-[10px] text-indigo-500 font-medium">เข้าทั้งหมด</div><div class="text-sm font-bold text-indigo-700">${f.hits}/${f.total} (${f.winRate.toFixed(1)}%)</div></div>
@@ -390,7 +407,6 @@
                 <div class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center"><div class="text-[10px] text-slate-500 font-medium">สูตรที่ใช้</div><div class="text-xs font-bold text-slate-700 truncate">${f.name}</div></div>
             `;
 
-            // Freq 2D Table
             document.getElementById('freqTableBody').innerHTML = res.freq2D.map(r => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-1.5 text-left font-bold text-slate-800">${r.digit}</td>
@@ -402,7 +418,6 @@
                 </tr>
             `).join('');
 
-            // Freq 3D Table
             document.getElementById('freq3dTableBody').innerHTML = res.freqH.map(r => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-1.5 text-left font-bold text-slate-800">${r.digit}</td>
