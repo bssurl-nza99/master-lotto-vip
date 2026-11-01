@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์ 100 หวยพร้อมกัน (Master Global Engine v12.3)</title>
+    <title>ระบบวิเคราะห์ 100 หวยพร้อมกัน (Master Global Engine v12.3 - Locked 100 Formulas)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -23,7 +23,7 @@
         <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
                 <h1 class="text-base font-bold text-slate-800">ระบบวิเคราะห์ 100 หวยพร้อมกัน (Master Global Engine v12.3)</h1>
-                <p class="text-[10px] text-slate-500">ล็อกสูตรตายตัว • คัดเลือกสูตรแม่นยำสูงสุด • ตารางประวัติครบ 30 งวดเต็ม</p>
+                <p class="text-[10px] text-slate-500">ล็อกสูตรตายตัว 100 สูตร • คัดเลือกสูตรแม่นยำสูงสุดจากอดีต • ตารางประวัติครบ 30 งวดเต็ม</p>
             </div>
             <div id="timestampBadge" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 font-mono">
                 พร้อมรับข้อมูล 100 ประเภท
@@ -46,7 +46,7 @@
             <div class="flex gap-2">
                 <button id="processBtn" onclick="processGlobalEngine()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded shadow-sm transition duration-150 flex items-center justify-center gap-1 text-[11px]">
                     <svg id="btnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    <span id="btnText">ประมวลผลทุกหวยพร้อมกัน (Full Wide Analysis)</span>
+                    <span id="btnText">ประมวลผลด้วยสูตรล็อก 100 ตัว (Full Analysis)</span>
                 </button>
                 <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2 px-3 rounded border border-rose-200 transition duration-150 text-[11px]">
                     ล้างข้อมูล
@@ -148,8 +148,8 @@
             return datasets;
         }
 
-        // คลัง 10,000 สูตรล็อกตายตัว (Static Formula Library) ห้ามปรับแต่งระหว่างรัน
-        function generate10kFormulas() {
+        // ล็อกคลังสูตรตายตัว 100 สูตร (Static Formula Library - Fixed 100 Formulas)
+        function generate100LockedFormulas() {
             const formulas = [];
             const positions = [
                 { name: 'H', fn: r => r.H },
@@ -159,47 +159,22 @@
                 { name: 'u', fn: r => r.u }
             ];
 
+            // สร้างสูตรตายตัว 100 สูตร
             let id = 1;
-            for (let i = 0; i < positions.length; i++) {
-                for (let j = 0; j < positions.length; j++) {
-                    for (let k = 0; k < positions.length; k++) {
-                        const p1 = positions[i], p2 = positions[j], p3 = positions[k];
-                        formulas.push({
-                            id: `F-${id++}`,
-                            name: `สูตรล็อก (${p1.name} + ${p2.name} + ${p3.name})`,
-                            calc: r => (p1.fn(r) + p2.fn(r) + p3.fn(r))
-                        });
-                    }
-                }
-            }
-
-            for (let m = 1; m <= 9; m++) {
-                for (let i = 0; i < positions.length; i++) {
-                    for (let j = 0; j < positions.length; j++) {
-                        const p1 = positions[i], p2 = positions[j];
-                        formulas.push({
-                            id: `F-${id++}`,
-                            name: `สูตรล็อกคูณ (${m}×${p1.name} + ${p2.name})`,
-                            calc: r => (m * p1.fn(r) + p2.fn(r))
-                        });
-                        if (formulas.length >= 10000) break;
-                    }
-                    if (formulas.length >= 10000) break;
-                }
-                if (formulas.length >= 10000) break;
-            }
-
-            while (formulas.length < 10000) {
-                const idx = formulas.length + 1;
-                const pA = positions[idx % 5], pB = positions[(idx * 3) % 5];
+            while (formulas.length < 100) {
+                const p1 = positions[(id * 2) % 5];
+                const p2 = positions[(id * 3) % 5];
+                const m = (id % 4) + 1;
                 formulas.push({
-                    id: `F-${idx}`,
-                    name: `สูตรล็อกกระจาย #${idx} (${pA.name} + ${pB.name})`,
-                    calc: r => (pA.fn(r) + pB.fn(r) + (idx % 7))
+                    id: `Static-F${id}`,
+                    name: `สูตรล็อกคงที่ #${id} (${m}×${p1.name} + ${p2.name})`,
+                    calc: (function(pA, pB, mult) {
+                        return r => (mult * pA.fn(r) + pB.fn(r));
+                    })(p1, p2, m)
                 });
+                id++;
             }
-
-            return formulas.slice(0, 10000);
+            return formulas;
         }
 
         async function processGlobalEngine() {
@@ -214,13 +189,13 @@
             const btnIcon = document.getElementById('btnIcon');
             
             btn.disabled = true;
-            btnText.innerText = `กำลังประมวลผล ${datasets.length} หวยพร้อมกัน...`;
+            btnText.innerText = `กำลังประมวลผล ${datasets.length} หวยด้วยสูตรล็อก 100 ตัว...`;
             btnIcon.className = 'w-3.5 h-3.5 spinner';
 
             await new Promise(resolve => setTimeout(resolve, 50));
 
             try {
-                const allFormulas = generate10kFormulas();
+                const lockedFormulas = generate100LockedFormulas();
                 const globalResults = [];
                 let totalGlobalRounds = 0;
                 let totalGlobalHits = 0;
@@ -233,8 +208,8 @@
                     let bestFormula = null;
                     let bestScore = -1;
 
-                    // คัดเลือกสูตรที่ดีที่สุดจากอดีต (Static Formula Selection ไม่มีมองเห็นอนาคต)
-                    for (let f of allFormulas) {
+                    // คัดเลือกสูตรที่ดีที่สุดจากคลัง 100 สูตร (Static Formula Selection โดยไม่อิงอนาคต)
+                    for (let f of lockedFormulas) {
                         let hits = 0, maxHit = 0, currentHit = 0, maxMiss = 0, currentMiss = 0;
                         
                         for (let i = 0; i < records.length - 1; i++) {
@@ -374,14 +349,14 @@
 
                 renderGlobalDashboard(globalResults, totalGlobalRounds, totalGlobalHits, totalGlobalPairHits);
                 document.getElementById('globalAnalyticsSection').classList.remove('hidden');
-                document.getElementById('timestampBadge').innerText = `ประมวลผลสำเร็จ ${globalResults.length} หวย`;
+                document.getElementById('timestampBadge').innerText = `ประมวลผลสำเร็จ ${globalResults.length} หวย (สูตรล็อก 100 ตัว)`;
 
             } catch (err) {
                 console.error(err);
                 alert('เกิดข้อผิดพลาดในการประมวลผล');
             } finally {
                 btn.disabled = false;
-                btnText.innerText = 'ประมวลผลทุกหวยพร้อมกัน (Full Wide Analysis)';
+                btnText.innerText = 'ประมวลผลด้วยสูตรล็อก 100 ตัว (Full Analysis)';
                 btnIcon.className = 'w-3.5 h-3.5';
             }
         }
@@ -430,7 +405,7 @@
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 border-b border-slate-200 pb-2">
                             <div>
                                 <h3 class="font-bold text-slate-800 text-xs">${res.flag} ${res.name}</h3>
-                                <p class="text-[10px] text-slate-500">สูตร: <span class="font-semibold text-indigo-600">${res.bestFormula.name}</span> | Win Rate เด่น: <span class="text-emerald-600 font-bold">${res.stats.winRate.toFixed(1)}%</span> | Win Rate เจาะ: <span class="text-blue-600 font-bold">${res.stats.pairWinRate.toFixed(1)}%</span></p>
+                                <p class="text-[10px] text-slate-500">สูตรที่เลือกจากคลัง 100 ตัว: <span class="font-semibold text-indigo-600">${res.bestFormula.name}</span> | Win Rate เด่น: <span class="text-emerald-600 font-bold">${res.stats.winRate.toFixed(1)}%</span> | Win Rate เจาะ: <span class="text-blue-600 font-bold">${res.stats.pairWinRate.toFixed(1)}%</span></p>
                             </div>
                             <div class="text-[11px] ${res.stats.riskColor}">สถานะ: ${res.stats.currentStreakState}</div>
                         </div>
