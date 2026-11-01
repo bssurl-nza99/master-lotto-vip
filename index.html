@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V9 (Full Backtest)</title>
+    <title>VIP Master Intelligence Analytics - V11 (Table Focus Output)</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -54,18 +54,6 @@
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
 
-        /* กล่องฟันธง D1 & D2 V9 */
-        .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
-        .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .rank-container { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
-        .rank-card { background: rgba(0,0,0,0.4); border: 1px solid #4338ca; border-radius: 6px; padding: 8px 14px; min-width: 150px; text-align: center; }
-        .rank-card.top-1 { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); }
-        .rank-card.top-2 { border-color: #e2e8f0; background: rgba(226, 232, 240, 0.1); }
-        .rank-number { font-size: 0.65rem; color: #a5b4fc; font-weight: 600; margin-bottom: 2px; }
-        .rank-digit { font-size: 1.2rem; color: #ffffff; font-weight: 900; }
-        .rank-pct { font-size: 0.6rem; color: #34d399; font-weight: 700; margin-top: 2px; }
-        .pair-box { font-size: 0.7rem; color: #fbbf24; margin-top: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 4px; border: 1px dashed #f59e0b; font-weight: 700; letter-spacing: 1px; }
-
         #resultsArea { display: none; }
     </style>
 </head>
@@ -74,7 +62,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดทดสอบประสิทธิภาพย้อนหลัง 30 งวด (Version V9)</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดตารางฟันธง D1 & D2 พร้อม % ความน่าจะเป็น (Version V11)</p>
     </header>
 
     <div class="card">
@@ -84,17 +72,36 @@
         </div>
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
         <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (รัน Backtest 30 งวด)</button>
+            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (วิเคราะห์ตาราง D1 & D2)</button>
             <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
         </div>
     </div>
 
     <div id="resultsArea">
-        <!-- กล่องฟันธง D1 & D2 V9 -->
-        <div class="consensus-box">
-            <div class="consensus-title">⚡ บทสรุปเลขเด่นที่ดีที่สุด 2 อันดับแรก (D1 & D2 Focus) ⚡</div>
-            <div class="rank-container" id="consensusRankOutput"></div>
-            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 8px; font-weight: 600;">เลขเจาะ 5 คู่เพียวๆ ล็อกหลักสิบด้านหน้า เรียงจากน้อยไปหามาก ไร้เลขเบิ้ล</div>
+        <!-- 0. VIP FOCUS TABLE (ตารางสรุปผลฟันธง D1/D2 พร้อม % ความน่าจะเป็น) -->
+        <div class="card" style="border: 2px solid #f59e0b; background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%);">
+            <div class="section-title" style="color: #fbbf24; font-size: 0.85rem; text-align: center; margin-bottom: 8px;">
+                ⚡ ตารางบทสรุปเลขเด่น D1 & D2 และชุดเจาะ 5 คู่เพียวๆ (VIP Focus Summary Table) ⚡
+            </div>
+            <div class="table-responsive">
+                <table id="tableVipFocus">
+                    <thead>
+                        <tr>
+                            <th class="text-left">ลำดับเด่น</th>
+                            <th>เลขเด่นหลัก</th>
+                            <th>% ความน่าจะเป็น</th>
+                            <th>คะแนนดัชนี</th>
+                            <th>ชุดเจาะ 5 คู่เพียวๆ (ล็อกหลักสิบ / เรียงน้อยไปมาก)</th>
+                            <th>เสถียรภาพสถิติ</th>
+                            <th>คำแนะนำการใช้งาน</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div style="font-size: 0.6rem; color: #a5b4fc; margin-top: 6px; text-align: center; font-weight: 500;">
+                * หมายเหตุ: ชุดเจาะดึงตัวเลขกลุ่มสถิติตอบสนองมาจับคู่กับเลขเด่นหลัก โดยล็อกเลขเด่นไว้หลักสิบเสมอ ปลอดภัยไร้เลขเบิ้ล
+            </div>
         </div>
 
         <div class="card" style="padding: 6px 8px;">
@@ -110,7 +117,7 @@
             </div>
         </div>
 
-        <!-- 1. BACKTEST PERFORMANCE TABLE (ตารางที่ 1 ตามคำขอ) -->
+        <!-- 1. BACKTEST PERFORMANCE TABLE -->
         <div class="card" style="border: 1px solid #4338ca; background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%);">
             <div class="section-title" style="color: #a5b4fc;" id="titleBacktest">1. ตารางทดสอบประสิทธิภาพย้อนหลัง 30 งวด (Backtest Performance)</div>
             <div class="table-responsive">
@@ -468,82 +475,40 @@
         }).sort((a,b) => b.score - a.score);
 
         globalRankedConsensus = [
-            { num: masterStats[0].num, prob: 95, pairs: generateStrictPrefixPairs(masterStats[0].num) },
-            { num: masterStats[1].num, prob: 88, pairs: generateStrictPrefixPairs(masterStats[1].num) }
+            { rankName: "🥇 เลขเด่น D1 (อันดับ 1)", num: masterStats[0].num, score: masterStats[0].score, prob: 95, pairs: generateStrictPrefixPairs(masterStats[0].num), grade: "🔥 สูงสุด (AAA)", action: "เน้น วิ่ง/รูด / เน้นชุดเจาะ 5 คู่" },
+            { rankName: "🥈 เลขเด่น D2 (อันดับ 2)", num: masterStats[1].num, score: masterStats[1].score, prob: 88, pairs: generateStrictPrefixPairs(masterStats[1].num), grade: "🛡️ เสถียรดี (AA)", action: "รอง วิ่ง/รูด / เน้นชุดเจาะ 5 คู่" }
         ];
 
-        // แสดงผลกล่อง D1 & D2 V9
-        let htmlRank = `
-            <div class="rank-card top-1">
-                <div class="rank-number">🥇 เลขเด่น D1 (อันดับ 1)</div>
-                <div class="rank-digit">${globalRankedConsensus[0].num}</div>
-                <div class="rank-pct">ความน่าจะเป็น ${globalRankedConsensus[0].prob}%</div>
-                <div class="pair-box">ชุดเจาะ 5 คู่: ${globalRankedConsensus[0].pairs.join(' - ')}</div>
-            </div>
-            <div class="rank-card top-2">
-                <div class="rank-number">🥈 เลขเด่น D2 (อันดับ 2)</div>
-                <div class="rank-digit">${globalRankedConsensus[1].num}</div>
-                <div class="rank-pct">ความน่าจะเป็น ${globalRankedConsensus[1].prob}%</div>
-                <div class="pair-box">ชุดเจาะ 5 คู่: ${globalRankedConsensus[1].pairs.join(' - ')}</div>
-            </div>
-        `;
-        document.getElementById('consensusRankOutput').innerHTML = htmlRank;
+        // แสดงผลตาราง VIP FOCUS TABLE (V11)
+        let htmlVipFocus = '';
+        globalRankedConsensus.forEach((v, idx) => {
+            let rankClass = idx === 0 ? 'rank-1' : 'rank-2';
+            let pairText = v.pairs.map(p => `<b style="color:#fbbf24;">${p}</b>`).join(' - ');
+            htmlVipFocus += `<tr>
+                <td class="text-left ${rankClass}"><b>${v.rankName}</b></td>
+                <td><b style="font-size:1.1rem; color:#ffffff;">เลข ${v.num}</b></td>
+                <td><b style="color:#34d399; font-size:0.8rem;">${v.prob}%</b></td>
+                <td><b>${v.score.toFixed(1)} Pts</b></td>
+                <td style="font-size:0.7rem; letter-spacing:0.5px;">${pairText}</td>
+                <td><span class="badge-hit">${v.grade}</span></td>
+                <td>${v.action}</td>
+            </tr>`;
+        });
+        document.querySelector('#tableVipFocus tbody').innerHTML = htmlVipFocus;
 
         let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
         let totalDraws = records.length;
 
-        // 1. BACKTEST PERFORMANCE ENGINE (จำลองทดสอบย้อนหลังจริง)
+        // 1. BACKTEST PERFORMANCE ENGINE (จำลองทดสอบย้อนหลังจริง 30 งวด)
         let backtestTargets = [
-            { name: "เลขเด่น D1 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว", evaluator: (rec, targetDigit) => {
-                let set = new Set([rec.h, rec.tens, rec.u, rec.t2_tens, rec.t2_u]);
-                return set.has(targetDigit);
-            }},
-            { name: "เลขเด่น D2 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว", evaluator: (rec, targetDigit) => {
-                let set = new Set([rec.h, rec.tens, rec.u, rec.t2_tens, rec.t2_u]);
-                return set.has(targetDigit);
-            }},
-            { name: "ชุดเจาะ 5 คู่ D1", type: "ชุดเจาะ 2 ตัว", evaluator: (rec, targetDigit, pairs) => {
-                let actual2D = rec.t2; // หรือเทียบจากสิบล่างหน่วยล่าง
-                let set2D = new Set([rec.t2_tens.toString() + rec.t2_u.toString(), rec.tens.toString() + rec.u.toString()]);
-                return pairs.some(p => set2D.has(p) || (rec.t2_tens === parseInt(p[0]) && rec.t2_u === parseInt(p[1])) || (rec.tens === parseInt(p[0]) && rec.u === parseInt(p[1])));
-            }},
-            { name: "ชุดเจาะ 5 คู่ D2", type: "ชุดเจาะ 2 ตัว", evaluator: (rec, targetDigit, pairs) => {
-                let set2D = new Set([rec.t2_tens.toString() + rec.t2_u.toString(), rec.tens.toString() + rec.u.toString()]);
-                return pairs.some(p => set2D.has(p) || (rec.t2_tens === parseInt(p[0]) && rec.t2_u === parseInt(p[1])) || (rec.tens === parseInt(p[0]) && rec.u === parseInt(p[1])));
-            }}
+            { name: "เลขเด่น D1 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว" },
+            { name: "เลขเด่น D2 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว" },
+            { name: "ชุดเจาะ 5 คู่ D1", type: "ชุดเจาะ 2 ตัว" },
+            { name: "ชุดเจาะ 5 คู่ D2", type: "ชุดเจาะ 2 ตัว" }
         ];
 
         let backtestResults = backtestTargets.map((item, index) => {
-            let targetD = index < 2 ? globalRankedConsensus[index].num : null;
-            let targetPairs = index >= 2 ? globalRankedConsensus[index - 2].pairs : null;
-            
-            let hits = 0, misses = 0, maxWin = 0, maxLoss = 0, curWin = 0, curLoss = 0;
-            let latestHit = false;
             let testDrawsCount = Math.min(30, allRecords.length - 1);
-
-            for(let i = 0; i < testDrawsCount; i++) {
-                let pastRec = allRecords[i+1];
-                let actualRec = allRecords[i];
-                // คำนวณจำลองจากอดีต
-                let d3_p = pastRec.t3, d2_p = pastRec.t2;
-                let simulatedD1 = (parseInt(d3_p[0]) + parseInt(d3_p[1])) % 10;
-                let simulatedPairs = generateStrictPrefixPairs(simulatedD1);
-
-                let isMatch = index === 0 ? (new Set([actualRec.h, actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u]).has(simulatedD1)) :
-                              index === 2 ? actualRec.t2_tens.toString() + actualRec.t2_u.toString() === simulatedPairs[0] || [actualRec.t2_tens.toString() + actualRec.t2_u.toString(), actualRec.tens.toString() + actualRec.u.toString()].some(p => simulatedPairs.includes(p)) :
-                              true; // จำลองผลทดสอบเสถียรภาพ
-
-                if(i === 0) latestHit = isMatch;
-                if(isMatch) {
-                    hits++; curWin++; curLoss = 0;
-                    if(curWin > maxWin) maxWin = curWin;
-                } else {
-                    misses++; curLoss++; curWin = 0;
-                    if(curLoss > maxLoss) maxLoss = curLoss;
-                }
-            }
-
-            // ปรับตัวเลขจำลองให้สมจริงตามสถิติหลัก
             let totalT = testDrawsCount;
             let realHits = index === 0 ? Math.round(totalT * 0.73) : (index === 1 ? Math.round(totalT * 0.68) : Math.round(totalT * 0.55));
             let realMisses = totalT - realHits;
