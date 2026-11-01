@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V12 (Top-3 Formula Consensus Fixed)</title>
+    <title>VIP Master Intelligence Analytics - V13 (Historical Ledger Edition)</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -62,7 +62,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดสแกนสูตร Top-3 ครบทุกกรอบเวลา (Version V12)</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดตารางบันทึกประวัติการเลือกเลขย้อนหลังทุกงวด (Version V13)</p>
     </header>
 
     <div class="card">
@@ -72,7 +72,7 @@
         </div>
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
         <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (วิเคราะห์ตาราง D1 & D2)</button>
+            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (วิเคราะห์ตารางทั้งหมด)</button>
             <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
         </div>
     </div>
@@ -101,6 +101,35 @@
             </div>
             <div style="font-size: 0.6rem; color: #a5b4fc; margin-top: 6px; text-align: center; font-weight: 500;">
                 * สแกนวิเคราะห์เฉพาะตัวเลขที่ติด 3 อันดับแรกของตาราง 13 สูตรคำนวณ ครบทุกกรอบเวลา (3, 5, 10, 15, 20, 25, 30 งวด)
+            </div>
+        </div>
+
+        <!-- 0.1 HISTORICAL SELECTION LEDGER TABLE (ตารางประวัติการเลือกเลขย้อนหลังทุกงวด แบบเต็มไม่มีการย่อ) -->
+        <div class="card" style="border: 2px solid #10b981; background: linear-gradient(145deg, #064e3b 0%, #0f172a 100%);">
+            <div class="section-title" style="color: #34d399; font-size: 0.85rem; text-align: center; margin-bottom: 8px;">
+                📊 ตารางบันทึกประวัติการเลือกเลขของระบบย้อนหลังทุกงวด (Historical Selection Ledger - Full Record) 📊
+            </div>
+            <div class="table-responsive">
+                <table id="tableHistoryLedger">
+                    <thead>
+                        <tr>
+                            <th class="text-left">งวดวันที่ / งวดสถิติ</th>
+                            <th>ผลออกจริง (3 ตัว / 2 ตัว)</th>
+                            <th>เลขเด่นที่ระบบเลือก (D1 / D2)</th>
+                            <th>ชุดเจาะ 5 คู่เพียวๆ ที่ระบบเลือก</th>
+                            <th>อัตราเข้า (%)</th>
+                            <th>เข้า (งวด)</th>
+                            <th>หลุด (งวด)</th>
+                            <th>เข้าติดต่อสูงสุด (連勝)</th>
+                            <th>หลุดติดต่อสูงสุด (連敗)</th>
+                            <th>สถานะงวดนั้นๆ</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div style="font-size: 0.6rem; color: #a5b4fc; margin-top: 6px; text-align: center; font-weight: 500;">
+                * บันทึกผลการเลือกสถิติย้อนหลังทุกงวดแบบมั่นคง (Deterministic Ledger) แสดงผลเต็มแถว เลื่อนขวาดูข้อมูลครบถ้วนโดยไม่มีการตัดทอน
             </div>
         </div>
 
@@ -432,7 +461,6 @@
         return records;
     }
 
-    // ฟังก์ชันสร้างเลขเจาะ 5 คู่ ล็อกเลขเด่นอยู่หลักสิบ (ด้านหน้า) เสมอ และเรียงจากน้อยไปหามาก ไร้เลขเบิ้ล
     function generateStrictPrefixPairs(baseDigit) {
         let pool = [(baseDigit + 1) % 10, (baseDigit + 3) % 10, (baseDigit + 5) % 10, (baseDigit + 7) % 10, (baseDigit + 8) % 10, (baseDigit + 2) % 10, (baseDigit + 4) % 10, (baseDigit + 6) % 10];
         let suffixes = [];
@@ -445,7 +473,6 @@
         return suffixes.map(s => `${baseDigit}${s}`);
     }
 
-    // นิยาม 13 สูตรคำนวณหลัก
     const formulaDefs = [
         { name: 'สูตรชน: ร้อยบน + สิบบน', calc: r => (r.h + r.tens) % 10 },
         { name: 'สูตรชน: ร้อยบน + หน่วยบน', calc: r => (r.h + r.u) % 10 },
@@ -472,9 +499,6 @@
 
         document.getElementById('resultsArea').style.display = 'block';
 
-        // ---------------------------------------------------------------------
-        // อัลกอริทึม V12: สแกนเฉพาะ Top 3 ของตาราง 13 สูตร ย้อนหลังครบทุกกรอบเวลา
-        // ---------------------------------------------------------------------
         let periodsToScan = [3, 5, 10, 15, 20, 25, 30];
         let top3Scores = Array(10).fill(0);
 
@@ -500,10 +524,8 @@
                 return { liveD1, liveD2, pct };
             });
 
-            // จัดอันดับสูตร 13 สูตรในกรอบเวลานี้
             fStats.sort((a,b) => b.pct - a.pct);
 
-            // ดึงเฉพาะ Top 3
             let top3 = fStats.slice(0, 3);
             top3.forEach((tf, idx) => {
                 let w = idx === 0 ? 3 : (idx === 1 ? 2 : 1);
@@ -512,7 +534,6 @@
             });
         });
 
-        // จัดอันดับเลขเด่นตามคะแนน Top-3 Consensus
         let rankedTop3 = Array.from({length:10}, (_,i) => ({ num: i, score: top3Scores[i] }))
                               .sort((a,b) => b.score - a.score);
 
@@ -537,7 +558,6 @@
             }
         ];
 
-        // แสดงผลตาราง VIP FOCUS TABLE (V12)
         let htmlVipFocus = '';
         globalRankedConsensus.forEach((v, idx) => {
             let rankClass = idx === 0 ? 'rank-1' : 'rank-2';
@@ -554,10 +574,69 @@
         });
         document.querySelector('#tableVipFocus tbody').innerHTML = htmlVipFocus;
 
+        // ---------------------------------------------------------------------
+        // สร้างตารางประวัติการเลือกเลขย้อนหลังทุกงวด (Historical Selection Ledger Engine)
+        // ---------------------------------------------------------------------
+        let htmlHistoryLedger = '';
+        let totalHRecords = allRecords.length;
+
+        for(let idx = 0; idx < totalHRecords - 1; idx++) {
+            let curRec = allRecords[idx]; // ผลออกจริงงวดนั้น
+            let prevRec = allRecords[idx + 1]; // ข้อมูลอ้างอิงย้อนหลังเพื่อจำลองการเลือกของระบบในงวดนั้น
+
+            // จำลองการคำนวณ Top-3 Consensus ย้อนหลังของงวดนั้นแบบนิ่งคงที่ (Deterministic)
+            let pastScores = Array(10).fill(0);
+            periodsToScan.forEach(p => {
+                let subRecs = allRecords.slice(idx + 1, Math.min(idx + 1 + p, allRecords.length));
+                if(subRecs.length < 2) return;
+                let subFStats = formulaDefs.map(f => {
+                    let sHits = 0;
+                    for(let k = 0; k < subRecs.length - 1; k++) {
+                        let d1 = f.calc(subRecs[k+1]);
+                        let d2 = (d1 + 1) % 10;
+                        let act = subRecs[k];
+                        if([act.tens, act.u, act.t2_tens, act.t2_u].includes(d1) || [act.tens, act.u, act.t2_tens, act.t2_u].includes(d2)) sHits++;
+                    }
+                    let liveD1 = f.calc(subRecs[0]);
+                    let liveD2 = (liveD1 + 1) % 10;
+                    return { liveD1, liveD2, hits: sHits };
+                });
+                subFStats.sort((a,b) => b.hits - a.hits);
+                subFStats.slice(0, 3).forEach((tf, sIdx) => {
+                    let w = sIdx === 0 ? 3 : (sIdx === 1 ? 2 : 1);
+                    pastScores[tf.liveD1] += w;
+                    pastScores[tf.liveD2] += w * 0.8;
+                });
+            });
+
+            let pastRanked = Array.from({length:10}, (_,i) => ({ num: i, score: pastScores[i] })).sort((a,b) => b.score - a.score);
+            let selD1 = pastRanked[0].num;
+            let selD2 = pastRanked[1].num;
+            let selPairs = generateStrictPrefixPairs(selD1);
+
+            let targetDigits = [curRec.tens, curRec.u, curRec.t2_tens, curRec.t2_u];
+            let isHit = targetDigits.includes(selD1) || targetDigits.includes(selD2);
+            let statusBadge = isHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
+            let hitPct = isHit ? "100%" : "0%";
+
+            htmlHistoryLedger += `<tr>
+                <td class="text-left"><b>${curRec.dateStr}</b></td>
+                <td><b style="color:var(--gold-primary);">${curRec.t3} / ${curRec.t2}</b></td>
+                <td><span class="digit-pill pill-hot">D1: ${selD1}</span> <span class="digit-pill" style="background:#1e293b; color:#e2e8f0; border:1px solid #94a3b8;">D2: ${selD2}</span></td>
+                <td style="font-size:0.7rem;">${selPairs.map(p => `<b>${p}</b>`).join(' - ')}</td>
+                <td><b>${hitPct}</b></td>
+                <td><b style="color:var(--accent-green);">${isHit ? 1 : 0}</b></td>
+                <td><b style="color:var(--accent-red);">${!isHit ? 1 : 0}</b></td>
+                <td>1 งวด</td>
+                <td>1 งวด</td>
+                <td>${statusBadge}</td>
+            </tr>`;
+        }
+        document.querySelector('#tableHistoryLedger tbody').innerHTML = htmlHistoryLedger;
+
         let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
         let totalDraws = records.length;
 
-        // 1. BACKTEST PERFORMANCE TABLE
         let backtestTargets = [
             { name: "เลขเด่น D1 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว" },
             { name: "เลขเด่น D2 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว" },
@@ -603,7 +682,7 @@
         document.querySelector('#tableBacktest tbody').innerHTML = htmlBacktest;
 
         document.getElementById('titleOverview').innerText = `3. ตารางความถี่ภาพรวม 0-9 (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titlePosition').innerText = `4. ตารางความถี่แยกรายหลัก (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
+        document.getElementById('titlePosition').innerText = `4. ตารางความถี่แยกรายหลัก (ร้อย/สิบ/หน่วย) (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleEvenOdd').innerText = `5. ตารางเลขคู่ / เลขคี่ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleHighLow').innerText = `6. ตารางเลขสูง / ต่ำ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleSynergy3D').innerText = `7. ตารางเลขชุดชดเชย 3 ตัว (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
@@ -611,7 +690,6 @@
         document.getElementById('titleWin6D').innerText = `9. ตารางชุดวิน 6 ตัวที่ดีที่สุด 5 ชุด (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
         document.getElementById('titleFormulas').innerText = `10. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
 
-        // 2. MASTER TABLE
         let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
         let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
         let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
@@ -652,7 +730,6 @@
         });
         document.querySelector('#tableMaster tbody').innerHTML = htmlMaster;
 
-        // 3. OVERVIEW TABLE
         let stats09 = Array.from({length:10}, (_,i)=>({num:i, freq:0, history:[]}));
         records.forEach(r => {
             let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
@@ -681,7 +758,6 @@
         });
         document.querySelector('#tableOverview tbody').innerHTML = htmlOverview;
 
-        // 4. POSITIONS TABLE
         let pos = Array.from({length:10}, (_,i)=>({num:i, h:0, tens:0, u:0, total:0}));
         records.forEach(r => {
             pos[r.h].h++; pos[r.tens].tens++; pos[r.u].u++;
@@ -694,7 +770,6 @@
         });
         document.querySelector('#tablePosition tbody').innerHTML = htmlPos;
 
-        // 5. EVEN / ODD TABLE
         let totalNumbers = totalDraws * 4;
         let evenCount = 0, lowCount = 0;
         records.forEach(r => {
@@ -723,7 +798,6 @@
                 <td>#${!isEvenWin ? 1 : 2}</td>
             </tr>`;
 
-        // 6. HIGH / LOW TABLE
         let isLowWin = lowCount >= highCount;
         document.querySelector('#tableHighLow tbody').innerHTML = `
             <tr>
@@ -741,7 +815,6 @@
                 <td>#${!isLowWin ? 1 : 2}</td>
             </tr>`;
 
-        // 7. 3D SYNERGY TABLE
         const syn3D = [
             { name: "VIP 3D Alpha", set: [0, 6, 8] },
             { name: "VIP 3D Beta", set: [1, 6, 8] },
@@ -758,7 +831,6 @@
         });
         document.querySelector('#tableSynergy3D tbody').innerHTML = htmlSynergy3D;
 
-        // 8. 2D SYNERGY TABLE
         const syn2D = [
             { name: "VIP 2D Duo Alpha", set: [0, 6] },
             { name: "VIP 2D Duo Beta", set: [1, 8] },
@@ -775,7 +847,6 @@
         });
         document.querySelector('#tableSynergy2D tbody').innerHTML = htmlSynergy2D;
 
-        // 9. WIN 6-DIGITS TABLE
         const win6DDefs = [
             { name: "ชุดวินพลังรวม 3 ตัวบน 6 ตัว (Gamma-Sum3D)", gen: r => { let d = (r.h + r.tens + r.u) % 10; return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10].sort((a,b)=>a-b); } },
             { name: "ชุดวินชนหลักร้อย+หน่วย 6 ตัว (Delta-Cross)", gen: r => { let d = (r.h + r.u) % 10; return [d, (d+2)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
@@ -831,7 +902,6 @@
         });
         document.querySelector('#tableWin6D tbody').innerHTML = htmlWin6D;
 
-        // 10. ADVANCED FORMULAS TABLE
         let formulaResults = formulaDefs.map(f => {
             let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
             let latestStatusHit = false;
