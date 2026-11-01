@@ -1,502 +1,72 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์ 100 หวยพร้อมกัน (Full Wide Master Engine v12.3)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #f1f5f9; color: #334155; font-size: 11px; }
-        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .spinner { animation: spin 1s linear infinite; }
-    </style>
-</head>
-<body class="p-3">
+import random
 
-    <div class="max-w-[100rem] mx-auto space-y-3">
-        
-        <!-- Header -->
-        <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <div>
-                <h1 class="text-base font-bold text-slate-800">ระบบวิเคราะห์ 100 หวยพร้อมกัน (Full Wide Master Engine v12.3)</h1>
-                <p class="text-[10px] text-slate-500">แสดงตารางประวัติครบ 30 งวดแบบเต็มจอ ไม่ต้องเลื่อนกล่องเล็ก • สบายตา ไม่อึดอัด</p>
-            </div>
-            <div id="timestampBadge" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 font-mono">
-                พร้อมรับข้อมูล 100 ประเภท
-            </div>
-        </div>
+class StaticFormulaEngine:
+    def __init__(self):
+        self.formulas = []
+        # สร้างคลังสูตรคงที่ตายตัว 100 สูตร (ห้ามปรับแต่งหรือเปลี่ยนโครงสร้างระหว่างรัน)
+        for i in range(1, 101):
+            p1 = random.choice(['H', 'T', 'U', 't', 'u'])
+            p2 = random.choice(['H', 'T', 'U', 't', 'u'])
+            m = random.randint(1, 5)
+            self.formulas.append({
+                'id': f'Static-F{i}',
+                'name': f'สูตรล็อกคงที่ #{i} ({m}x{p1} + {p2})',
+                'calc': lambda r, p1=p1, p2=p2, m=m: (m * r.get(p1, 0) + r.get(p2, 0))
+            })
 
-        <!-- Section 1: Input Area -->
-        <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200 space-y-2">
-            <div class="flex justify-between items-center">
-                <label class="font-semibold text-slate-700 flex items-center gap-1 text-[11px]">
-                    <span>📥 วางข้อมูลสถิติหลายหวยพร้อมกัน (เว้น 1 บรรทัดระหว่างหวย)</span>
-                    <span class="text-[9px] font-normal text-slate-400">(อ่านครบ 30 งวดล่าสุดเต็มๆ)</span>
-                </label>
-                <button onclick="loadMultiSampleData()" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium">
-                    + โหลดตัวอย่างหลายหวย
-                </button>
-            </div>
-            <textarea id="rawInput" rows="6" placeholder="ชื่อหวย 1 | วันที่&#10;3 ตัวบน&#10;2 ตัวล่าง&#10;&#10;ชื่อหวย 2 | วันที่&#10;3 ตัวบน&#10;2 ตัวล่าง..." class="w-full p-2.5 rounded border border-slate-300 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-[10.5px] leading-relaxed custom-scrollbar whitespace-nowrap"></textarea>
+    def backtest(self, records):
+        results = []
+        for f in self.formulas:
+            hits = 0
+            total = len(records) - 1
+            if total <= 0:
+                continue
             
-            <div class="flex gap-2">
-                <button id="processBtn" onclick="processGlobalEngine()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded shadow-sm transition duration-150 flex items-center justify-center gap-1 text-[11px]">
-                    <svg id="btnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    <span id="btnText">ประมวลผลทุกหวยพร้อมกัน (Full Wide Analysis)</span>
-                </button>
-                <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2 px-3 rounded border border-rose-200 transition duration-150 text-[11px]">
-                    ล้างข้อมูล
-                </button>
-            </div>
-        </div>
-
-        <!-- Section 2: Global Consolidated Analytics & Risk Dashboard -->
-        <div id="globalAnalyticsSection" class="hidden space-y-3">
-            <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200 space-y-2">
-                <h2 class="font-bold text-slate-800 text-[11px]">🌐 สถิติภาพรวมความแม่นยำรวมทุกประเภทหวย (Global Consolidated Stats)</h2>
-                <div id="globalStatsCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
-            </div>
-
-            <!-- Risk Management Alert Box -->
-            <div id="riskAlertContainer" class="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1">
-                <h2 class="font-bold text-amber-800 text-[11px] flex items-center gap-1">
-                    <span>⚠️ ระบบแจ้งเตือนความเสี่ยง (Risk Management Radar)</span>
-                </h2>
-                <div id="riskAlertList" class="space-y-0.5 text-[10.5px] text-amber-900 font-mono"></div>
-            </div>
-
-            <!-- Section 3: Full 30-Round Master History Tables (No scroll box, fully expanded) -->
-            <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200 space-y-3">
-                <h2 class="font-bold text-slate-800 text-[11px]">📜 ตารางประวัติผลงานย้อนหลังครบ 30 งวด (แสดงแบบเต็มตา ไม่บีบ ไม่ซ่อนกล่อง)</h2>
-                <div id="fullHistoryContainers" class="space-y-6"></div>
-            </div>
-
-            <!-- Section 4: Detailed Output Message Generator per Lottery -->
-            <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200 space-y-2">
-                <h2 class="font-bold text-slate-800 text-[11px]">📋 ข้อความผลลัพธ์พร้อมก๊อปปี้ (แยกรายหวย)</h2>
-                <div id="lotteryResultCards" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-        const FLAGS = { 'ลาว': '🇱🇦', 'จีน': '🇨🇳', 'ไทย': '🇹🇭', 'เวียดนาม': '🇻🇳', 'ฮานอย': '🇻🇳', 'ดาวโจนส์': '🇺🇸', 'นิเคอิ': '🇯🇵', 'ฮั่งเส็ง': '🇭🇰', 'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷' };
-
-        function getFlag(name) { for (let key in FLAGS) { if (name.includes(key)) return FLAGS[key]; } return '🌐'; }
-        function parseThaiDate(dateStr) {
-            try {
-                const parts = dateStr.trim().split(/\s+/);
-                const day = parseInt(parts[0]);
-                const monthIdx = THAI_MONTHS.indexOf(parts[1]);
-                let year = parseInt(parts[2]);
-                if (year < 100) year += 2500;
-                return new Date(year - 543, monthIdx, day);
-            } catch (e) { return new Date(); }
-        }
-        function formatThaiDate(date) {
-            return `${date.getDate()} ${THAI_MONTHS[date.getMonth()]} ${(date.getFullYear() + 543) % 100}`;
-        }
-        function addDays(date, days) { const r = new Date(date); r.setDate(r.getDate() + days); return r; }
-
-        function parseMultiDatasets(text) {
-            const rawBlocks = text.trim().split(/\n\s*\n+/);
-            const datasets = [];
-
-            rawBlocks.forEach(block => {
-                const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                if (lines.length < 3) return;
-
-                let name = "", latestDateStr = "";
-                const records = [];
-                let i = 0;
-                while (i < lines.length) {
-                    if (lines[i].includes('|')) {
-                        const headerParts = lines[i].split('|');
-                        name = headerParts[0].trim();
-                        if (!latestDateStr) latestDateStr = headerParts[1].trim();
-                        
-                        const dateStr = headerParts[1].trim();
-                        const topStr = lines[i+1] ? lines[i+1].trim() : "";
-                        const botStr = lines[i+2] ? lines[i+2].trim() : "";
-
-                        if (topStr && botStr) {
-                            if (!topStr.includes('งด') && !botStr.includes('งด') && /^\d{3}$/.test(topStr) && /^\d{2}$/.test(botStr)) {
-                                records.push({
-                                    dateStr,
-                                    H: parseInt(topStr[0]), T: parseInt(topStr[1]), U: parseInt(topStr[2]),
-                                    t: parseInt(botStr[0]), u: parseInt(botStr[1]),
-                                    topRaw: topStr, botRaw: botStr
-                                });
-                            }
-                            i += 3; continue;
-                        }
-                    }
-                    i++;
-                }
-                if (records.length > 0) {
-                    const sortedRecords = records.reverse();
-                    const limitedRecords = sortedRecords.slice(-30);
-                    datasets.push({ name, latestDateStr, records: limitedRecords });
-                }
-            });
-            return datasets;
-        }
-
-        function generate10kFormulas() {
-            const formulas = [];
-            const positions = [
-                { name: 'H', fn: r => r.H },
-                { name: 'T', fn: r => r.T },
-                { name: 'U', fn: r => r.U },
-                { name: 't', fn: r => r.t },
-                { name: 'u', fn: r => r.u }
-            ];
-
-            let id = 1;
-            for (let i = 0; i < positions.length; i++) {
-                for (let j = 0; j < positions.length; j++) {
-                    for (let k = 0; k < positions.length; k++) {
-                        const p1 = positions[i], p2 = positions[j], p3 = positions[k];
-                        formulas.push({
-                            id: `F-${id++}`,
-                            name: `สูตรผสม (${p1.name} + ${p2.name} + ${p3.name})`,
-                            calc: r => (p1.fn(r) + p2.fn(r) + p3.fn(r))
-                        });
-                    }
-                }
-            }
-
-            for (let m = 1; m <= 9; m++) {
-                for (let i = 0; i < positions.length; i++) {
-                    for (let j = 0; j < positions.length; j++) {
-                        const p1 = positions[i], p2 = positions[j];
-                        formulas.push({
-                            id: `F-${id++}`,
-                            name: `สูตรคูณคงที่ (${m}×${p1.name} + ${p2.name})`,
-                            calc: r => (m * p1.fn(r) + p2.fn(r))
-                        });
-                        if (formulas.length >= 10000) break;
-                    }
-                    if (formulas.length >= 10000) break;
-                }
-                if (formulas.length >= 10000) break;
-            }
-
-            while (formulas.length < 10000) {
-                const idx = formulas.length + 1;
-                const pA = positions[idx % 5], pB = positions[(idx * 3) % 5];
-                formulas.push({
-                    id: `F-${idx}`,
-                    name: `สูตรกระจาย #${idx} (${pA.name} + ${pB.name} + ${idx % 7})`,
-                    calc: r => (pA.fn(r) + pB.fn(r) + (idx % 7))
-                });
-            }
-
-            return formulas.slice(0, 10000);
-        }
-
-        async function processGlobalEngine() {
-            const inputVal = document.getElementById('rawInput').value;
-            if (!inputVal.trim()) { alert('กรุณากรอกข้อมูลสถิติหวย'); return; }
+            # ทำการ Backtest ย้อนหลังงวดต่อวด (ไม่มีการมองเห็นอนาคต)
+            for i in range(total):
+                prev_r = records[i]
+                next_r = records[i+1]
+                
+                try:
+                    val = f['calc'](prev_r)
+                except:
+                    val = 0
+                
+                d1 = val % 10
+                d2 = (d1 + 1) % 10
+                
+                # ตรวจสอบว่าเลขเด่น d1 หรือ d2 ออกในหลักสิบ/หน่วยของงวดถัดไปหรือไม่
+                valid_digits = [next_r['T'], next_r['U'], next_r['t'], next_r['u']]
+                if d1 in valid_digits or d2 in valid_digits:
+                    hits += 1
             
-            const datasets = parseMultiDatasets(inputVal);
-            if (datasets.length === 0) { alert('รูปแบบข้อมูลไม่ถูกต้อง'); return; }
-
-            const btn = document.getElementById('processBtn');
-            const btnText = document.getElementById('btnText');
-            const btnIcon = document.getElementById('btnIcon');
+            win_rate = (hits / total) * 100 if total > 0 else 0
+            results.append({
+                'formula': f['name'],
+                'hits': hits,
+                'total': total,
+                'win_rate': win_rate
+            })
             
-            btn.disabled = true;
-            btnText.innerText = `กำลังประมวลผล ${datasets.length} หวยพร้อมกัน...`;
-            btnIcon.className = 'w-3.5 h-3.5 spinner';
+        # จัดอันดับสูตรจากความแม่นยำสูงสูด และดึงมาเฉพาะ Top 3
+        results.sort(key=lambda x: x['win_rate'], reverse=True)
+        return results[:3]
 
-            await new Promise(resolve => setTimeout(resolve, 50));
+if __name__ == "__main__":
+    # จำลองข้อมูลสถิติย้อนหลัง (ตัวอย่าง 30 งวด)
+    sample_records = []
+    for i in range(30):
+        sample_records.append({
+            'H': random.randint(0, 9),
+            'T': random.randint(0, 9),
+            'U': random.randint(0, 9),
+            't': random.randint(0, 9),
+            'u': random.randint(0, 9)
+        })
 
-            try {
-                const allFormulas = generate10kFormulas();
-                const globalResults = [];
-                let totalGlobalRounds = 0;
-                let totalGlobalHits = 0;
-                let totalGlobalPairHits = 0;
-
-                datasets.forEach(dataset => {
-                    const records = dataset.records;
-                    if (records.length < 5) return;
-
-                    let bestFormula = null;
-                    let bestScore = -1;
-
-                    for (let f of allFormulas) {
-                        let hits = 0, maxHit = 0, currentHit = 0, maxMiss = 0, currentMiss = 0;
-                        
-                        for (let i = 0; i < records.length - 1; i++) {
-                            const sum = f.calc(records[i]);
-                            const d1 = sum % 10, d2 = (d1 + 1) % 10;
-                            
-                            const nextRec = records[i+1];
-                            const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
-                            const isHit = validDigits.includes(d1) || validDigits.includes(d2);
-
-                            if (isHit) {
-                                hits++; currentHit++;
-                                if (currentHit > maxHit) maxHit = currentHit;
-                                currentMiss = 0;
-                            } else {
-                                currentMiss++;
-                                if (currentMiss > maxMiss) maxMiss = currentMiss;
-                                currentHit = 0;
-                            }
-                        }
-
-                        const winRate = (hits / (records.length - 1)) * 100;
-                        const score = winRate + (maxHit * 2) - (maxMiss * 1.5);
-
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestFormula = f;
-                        }
-                    }
-
-                    const freq2D = Array(10).fill(0).map((_, i) => ({ digit: i, T: 0, U: 0, t: 0, u: 0 }));
-                    records.forEach(r => {
-                        freq2D[r.T].T++; freq2D[r.U].U++; freq2D[r.t].t++; freq2D[r.u].u++;
-                    });
-                    const sortedFreq2D = [...freq2D].sort((a, b) => (b.T + b.U + b.t + b.u) - (a.T + a.U + a.t + a.u));
-                    const topFreqDigits = sortedFreq2D.map(item => item.digit);
-
-                    const historyLog = [];
-                    let hits = 0, pairHitsWhenMainHit = 0, currentHit = 0, currentMiss = 0;
-                    let lastStatus = "";
-
-                    const getHist10Pairs = (targetD1, targetD2) => {
-                        const get5 = (tD, oD) => {
-                            const p = [];
-                            for (let fD of topFreqDigits) {
-                                if (fD !== tD && fD !== oD && fD !== (tD * 11) % 10) {
-                                    p.push(String(tD * 10 + fD).padStart(2, '0'));
-                                    if (p.length === 5) break;
-                                }
-                            }
-                            return p;
-                        };
-                        return [...get5(targetD1, targetD2), ...get5(targetD2, targetD1)];
-                    };
-
-                    for (let i = 0; i < records.length - 1; i++) {
-                        const prevRec = records[i];
-                        const nextRec = records[i+1];
-
-                        const sum = bestFormula.calc(prevRec);
-                        const d1 = sum % 10, d2 = (d1 + 1) % 10;
-                        const predictedStr = `${d1} — ${d2}`;
-
-                        const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
-                        const isMainHit = validDigits.includes(d1) || validDigits.includes(d2);
-
-                        const hist10Pairs = getHist10Pairs(d1, d2);
-                        const actualTop2D = nextRec.topRaw.slice(1);
-                        const actualBot2D = nextRec.botRaw;
-                        const actualTopRev = actualTop2D.split('').reverse().join('');
-                        const actualBotRev = actualBot2D.split('').reverse().join('');
-
-                        const isPairHit = hist10Pairs.includes(actualTop2D) || hist10Pairs.includes(actualTopRev) ||
-                                          hist10Pairs.includes(actualBot2D) || hist10Pairs.includes(actualBotRev);
-
-                        if (isMainHit) {
-                            hits++; currentHit++; currentMiss = 0; lastStatus = "เข้า";
-                            if (isPairHit) pairHitsWhenMainHit++;
-                        } else {
-                            currentMiss++; currentHit = 0; lastStatus = "หลุด";
-                        }
-
-                        historyLog.push({
-                            round: i + 1,
-                            dateStr: nextRec.dateStr,
-                            topRaw: nextRec.topRaw,
-                            botRaw: nextRec.botRaw,
-                            predicted: predictedStr,
-                            isMainHit,
-                            isPairHit,
-                            status: lastStatus
-                        });
-                    }
-
-                    const totalRounds = records.length - 1;
-                    totalGlobalRounds += totalRounds;
-                    totalGlobalHits += hits;
-                    totalGlobalPairHits += pairHitsWhenMainHit;
-
-                    const winRate = (hits / totalRounds) * 100;
-                    const pairWinRate = hits > 0 ? (pairHitsWhenMainHit / hits) * 100 : 0;
-                    const currentStreakState = `${lastStatus === 'เข้า' ? 'เข้า' : 'หลุด'} ${lastStatus === 'เข้า' ? currentHit : currentMiss} รอบ`;
-
-                    let riskLevel = "ปกติ";
-                    let riskColor = "text-emerald-700";
-                    if (lastStatus === 'หลุด' && currentMiss >= 2) {
-                        riskLevel = `⚠️ ขาลงระวัง (หลุด ${currentMiss} รอบ)`;
-                        riskColor = "text-rose-600 font-bold";
-                    }
-
-                    const lastSum = bestFormula.calc(records[records.length - 1]);
-                    const nextD1 = lastSum % 10, nextD2 = (lastSum + 1) % 10;
-                    const all10Pairs = getHist10Pairs(nextD1, nextD2);
-
-                    const lastDate = parseThaiDate(dataset.latestDateStr);
-                    const nextDateStr = formatThaiDate(addDays(lastDate, 1));
-
-                    globalResults.push({
-                        name: dataset.name,
-                        flag: getFlag(dataset.name),
-                        dateStr: nextDateStr,
-                        bestFormula,
-                        predicted: [nextD1, nextD2],
-                        all10Pairs,
-                        stats: {
-                            totalRounds,
-                            hits,
-                            winRate,
-                            pairWinRate,
-                            currentStreakState,
-                            riskLevel,
-                            riskColor
-                        },
-                        historyLog: historyLog.reverse()
-                    });
-                });
-
-                renderGlobalDashboard(globalResults, totalGlobalRounds, totalGlobalHits, totalGlobalPairHits);
-                document.getElementById('globalAnalyticsSection').classList.remove('hidden');
-                document.getElementById('timestampBadge').innerText = `ประมวลผลสำเร็จ ${globalResults.length} หวย`;
-
-            } catch (err) {
-                console.error(err);
-                alert('เกิดข้อผิดพลาดในการประมวลผล');
-            } finally {
-                btn.disabled = false;
-                btnText.innerText = 'ประมวลผลทุกหวยพร้อมกัน (Full Wide Analysis)';
-                btnIcon.className = 'w-3.5 h-3.5';
-            }
-        }
-
-        function renderGlobalDashboard(results, totalRounds, totalHits, totalPairHits) {
-            const globalWinRate = totalRounds > 0 ? (totalHits / totalRounds) * 100 : 0;
-            const globalPairRate = totalHits > 0 ? (totalPairHits / totalHits) * 100 : 0;
-
-            document.getElementById('globalStatsCards').innerHTML = `
-                <div class="bg-indigo-50 border border-indigo-200 p-2.5 rounded text-center"><div class="text-[10px] text-indigo-500 font-medium">หวยที่ประมวลผล</div><div class="text-xs font-bold text-indigo-700">${results.length} ประเภท</div></div>
-                <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded text-center"><div class="text-[10px] text-emerald-600 font-medium">ความแม่นยำรวมเลขเด่น (Win Rate)</div><div class="text-xs font-bold text-emerald-700">${globalWinRate.toFixed(1)}%</div></div>
-                <div class="bg-blue-50 border border-blue-200 p-2.5 rounded text-center"><div class="text-[10px] text-blue-600 font-medium">ความแม่นยำรวมชุดเจาะ</div><div class="text-xs font-bold text-blue-700">${globalPairRate.toFixed(1)}%</div></div>
-                <div class="bg-slate-50 border border-slate-200 p-2.5 rounded text-center"><div class="text-[10px] text-slate-500 font-medium">งวดวิเคราะห์รวม</div><div class="text-xs font-bold text-slate-700">${totalRounds} งวด</div></div>
-            `;
-
-            const riskItems = results.filter(r => r.stats.currentStreakState.includes('หลุด') && parseInt(r.stats.currentStreakState.split(' ')[1]) >= 2);
-            const riskListEl = document.getElementById('riskAlertList');
-            if (riskItems.length > 0) {
-                riskListEl.innerHTML = riskItems.map(r => `<div>🚨 ${r.flag} ${r.name}: กำลังอยู่ในภาวะขาลง (${r.stats.currentStreakState}) ควรเพิ่มความระมัดระวัง</div>`).join('');
-                document.getElementById('riskAlertContainer').classList.remove('hidden');
-            } else {
-                riskListEl.innerHTML = `<div>✅ สถานะปกติ: ยังไม่มีหวยประเภทใดหลุดติดต่อกันเกินกำหนดในงวดปัจจุบัน</div>`;
-            }
-
-            // Full Expanded 30-Round Tables (No scroll box, fully visible)
-            const container = document.getElementById('fullHistoryContainers');
-            container.innerHTML = results.map(res => {
-                const historyRows = res.historyLog.map(row => {
-                    const mainBadge = row.isMainHit ? `<span class="bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[10px]">เข้า</span>` : `<span class="bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded text-[10px]">หลุด</span>`;
-                    const pairBadge = row.isPairHit ? `<span class="bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded text-[10px]">เข้า</span>` : `<span class="bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded text-[10px]">หลุด</span>`;
-                    const statusBadge = row.isMainHit ? `<span class="bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded text-[10px]">เข้า</span>` : `<span class="bg-rose-600 text-white font-bold px-1.5 py-0.5 rounded text-[10px]">หลุด</span>`;
-                    return `
-                        <tr class="hover:bg-slate-50">
-                            <td class="p-2 text-center text-slate-400">#${row.round}</td>
-                            <td class="p-2 font-medium text-slate-700">${row.dateStr}</td>
-                            <td class="p-2 text-center font-mono font-bold text-slate-800">${row.topRaw} / ${row.botRaw}</td>
-                            <td class="p-2 text-center font-bold text-indigo-600 font-mono">${row.predicted}</td>
-                            <td class="p-2 text-center">${mainBadge}</td>
-                            <td class="p-2 text-center">${pairBadge}</td>
-                            <td class="p-2 text-center">${statusBadge}</td>
-                        </tr>
-                    `;
-                }).join('');
-
-                return `
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2.5">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 border-b border-slate-200 pb-2">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-xs">${res.flag} ${res.name}</h3>
-                                <p class="text-[10px] text-slate-500">สูตร: <span class="font-semibold text-indigo-600">${res.bestFormula.name}</span> | Win Rate เด่น: <span class="text-emerald-600 font-bold">${res.stats.winRate.toFixed(1)}%</span> | Win Rate เจาะ: <span class="text-blue-600 font-bold">${res.stats.pairWinRate.toFixed(1)}%</span></p>
-                            </div>
-                            <div class="text-[11px] ${res.stats.riskColor}">สถานะ: ${res.stats.currentStreakState}</div>
-                        </div>
-
-                        <!-- Fully Expanded Table (No max-height, shows all rounds completely) -->
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left whitespace-nowrap text-[10.5px]">
-                                <thead class="bg-slate-200 text-slate-700 font-semibold">
-                                    <tr>
-                                        <th class="p-2 text-center">งวดที่</th>
-                                        <th class="p-2">วันที่</th>
-                                        <th class="p-2 text-center">ผลออก (บน / ล่าง)</th>
-                                        <th class="p-2 text-center">เลขเด่นระบบ</th>
-                                        <th class="p-2 text-center">ผลเด่น</th>
-                                        <th class="p-2 text-center">ผลเจาะ</th>
-                                        <th class="p-2 text-center">สถานะ</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 bg-white">
-                                    ${historyRows}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Individual Copy Cards
-            const cardContainer = document.getElementById('lotteryResultCards');
-            cardContainer.innerHTML = results.map((res, index) => {
-                const pairsStr = res.all10Pairs.map(p => String(p).padStart(2, '0'));
-                const row1 = pairsStr.slice(0, 3).join(' — ');
-                const row2 = pairsStr.slice(3, 6).join(' — ');
-                const row3 = pairsStr.slice(6, 9).join(' — ');
-                const row4 = pairsStr.slice(9, 10).join(' — ');
-                const tStr = "721 — 704 — 768";
-
-                const outputText = `📅 ${res.dateStr}\n\n${res.flag} ${res.name}\n\n✨ ${res.predicted[0]} — ${res.predicted[1]}\n───────\n${row1}\n${row2}\n${row3}\n${row4}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
-
-                return `
-                    <div class="bg-slate-50 border border-slate-200 rounded p-2.5 space-y-2">
-                        <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                            <h3 class="font-bold text-slate-800 text-[11px]">${res.flag} ${res.name}</h3>
-                            <button onclick="copyTextToClipboard('out-${index}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-medium py-1 px-2.5 rounded transition">ก๊อปปี้ข้อความ</button>
-                        </div>
-                        <div id="out-${index}" class="bg-white p-2.5 rounded border border-slate-200 font-mono text-[10.5px] text-slate-800 whitespace-pre leading-relaxed select-all">${outputText}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function copyTextToClipboard(elementId) {
-            const el = document.getElementById(elementId);
-            if (el && el.innerText) {
-                navigator.clipboard.writeText(el.innerText).then(() => alert('คัดลอกข้อความสำเร็จ!'));
-            }
-        }
-
-        function clearAll() {
-            document.getElementById('rawInput').value = '';
-            document.getElementById('globalAnalyticsSection').classList.add('hidden');
-            document.getElementById('timestampBadge').innerText = 'พร้อมรับข้อมูล 100 ประเภท';
-        }
-
-        function loadMultiSampleData() {
-            document.getElementById('rawInput').value = `ลาวประตูชัย | 31 ต.ค. 69\n686\n91\nลาวประตูชัย | 30 ต.ค. 69\n315\n07\nลาวประตูชัย | 29 ต.ค. 69\n727\n20\nลาวประตูชัย | 28 ต.ค. 69\n376\n85\nลาวประตูชัย | 27 ต.ค. 69\n121\n78\n\nฮานอยพิเศษ | 31 ต.ค. 69\n412\n54\nฮานอยพิเศษ | 30 ต.ค. 69\n890\n12\nฮานอยพิเศษ | 29 ต.ค. 69\n334\n99\nฮานอยพิเศษ | 28 ต.ค. 69\n716\n45\nฮานอยพิเศษ | 27 ต.ค. 69\n822\n31`;
-        }
-    </script>
-</body>
-</html>
+    engine = StaticFormulaEngine()
+    top3 = engine.backtest(sample_records)
+    
+    print("=== ผลการจัดอันดับ Top 3 สูตรเลขเด่นที่ดีที่สุด (ล็อกสูตรตายตัว) ===")
+    for rank, res in enumerate(top3, 1):
+        print(f"อันดับ {rank}: {res['formula']} | แม่นยำ: {res['win_rate']:.1f}% ({res['hits']}/{res['total']} งวด)")
