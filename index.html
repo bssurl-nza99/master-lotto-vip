@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Clean History Engine v11.4)</title>
+    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Strict 10 Pairs Engine v11.5)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -23,8 +23,8 @@
         <!-- Header -->
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Clean History Engine v11.4)</h1>
-                <p class="text-[11px] text-slate-500">ตารางประวัติอ่านง่าย ชัดเจน • ชุดเจาะ 5 คู่ถ้วน (ไม่วินกันเอง) • ตรงฉิน 100%</p>
+                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Strict 10 Pairs v11.5)</h1>
+                <p class="text-[11px] text-slate-500">ชุดเจาะ 10 คู่ถ้วน (เด่นตัวละ 5 คู่) • ตารางประวัติอ่านง่าย • ตรงฉิน 100%</p>
             </div>
             <div id="timestampBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล 10,000 สูตร
@@ -59,7 +59,7 @@
         <div id="outputSection" class="hidden bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-3">
             <div class="flex justify-between items-center pb-2 border-b border-slate-100">
                 <h2 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                    <span>📋 รูปแบบข้อความผลลัพธ์ (ชุดเจาะ 5 คู่ถ้วน + ชุด 3 ตัว)</span>
+                    <span>📋 รูปแบบข้อความผลลัพธ์ (ชุดเจาะ 10 คู่ถ้วน + ชุด 3 ตัว)</span>
                 </h2>
                 <button onclick="copyOutputText()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg transition duration-150 flex items-center gap-1">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
@@ -330,7 +330,7 @@
                     freq2D[r.u].u++; freq2D[r.u].total++;
                 });
                 const sortedFreq2D = [...freq2D].sort((a, b) => (b.T + b.U + b.t + b.u) - (a.T + a.U + a.t + a.u));
-                const top3FreqDigits = sortedFreq2D.slice(0, 3).map(item => item.digit);
+                const topFreqDigits = sortedFreq2D.map(item => item.digit);
 
                 // Build history log & evaluate pairs
                 const historyLog = [];
@@ -344,11 +344,9 @@
                     const sum = bestFormula.calc(prevRec);
                     const d1 = sum % 10, d2 = (d1 + 1) % 10;
 
-                    // Main hit condition (Tens & Units only)
                     const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
                     const isMainHit = validDigits.includes(d1) || validDigits.includes(d2);
 
-                    // Pair hit condition (Human logic: includes reversed digits of best formula or matched pairs)
                     const actualTop2D = nextRec.topRaw.slice(1);
                     const actualBot2D = nextRec.botRaw;
                     const pairRev1 = `${d2}${d1}`;
@@ -389,16 +387,24 @@
                 const lastSum = bestFormula.calc(records[records.length - 1]);
                 const nextD1 = lastSum % 10, nextD2 = (nextD1 + 1) % 10;
 
-                // Generate exactly 5 pairs (No self pairing, no doubles)
-                const pairSet = new Set();
-                [nextD1, nextD2].forEach(base => {
-                    top3FreqDigits.forEach(fDigit => {
-                        if (base !== fDigit) {
-                            pairSet.add(base * 10 + fDigit);
+                // 🌟 STRICT 10 PAIRS LOGIC: Exactly 5 pairs for D1, and exactly 5 pairs for D2 (Total 10 pairs)
+                // Rules: No self pairing (no d1-d1, d2-d2), no doubles, no D1-D2 cross pairing (no d1-d2 or d2-d1)
+                const get5PairsForDigit = (targetDigit, otherDigit) => {
+                    const pairs = [];
+                    for (let fDigit of topFreqDigits) {
+                        if (fDigit !== targetDigit && fDigit !== otherDigit && fDigit !== (targetDigit * 11) % 10) {
+                            // Format pair (ensure sorted or standard two digit representation)
+                            const pVal = targetDigit * 10 + fDigit;
+                            pairs.push(pVal);
+                            if (pairs.length === 5) break;
                         }
-                    });
-                });
-                const uniquePairs = Array.from(pairSet).slice(0, 5); // Exactly 5 pairs
+                    }
+                    return pairs;
+                };
+
+                const pairsD1 = get5PairsForDigit(nextD1, nextD2);
+                const pairsD2 = get5PairsForDigit(nextD2, nextD1);
+                const all10Pairs = [...pairsD1, ...pairsD2];
 
                 // Frequency for 3D (H, T, U)
                 const freqH = Array(10).fill(0).map((_, i) => ({ digit: i, H: 0, T: 0, U: 0 }));
@@ -430,7 +436,7 @@
                     dateStr: nextDateStr,
                     bestFormula,
                     predicted: [nextD1, nextD2],
-                    uniquePairs,
+                    all10Pairs,
                     triplets,
                     stats: {
                         totalRounds,
@@ -464,13 +470,15 @@
         }
 
         function renderOutputMessage(res) {
-            const pairs = res.uniquePairs.map(p => String(p).padStart(2, '0'));
-            // 🌟 FIXED: Exactly 5 pairs arranged into 3 pairs on the first line and 2 pairs on the second line
-            const p1 = pairs.slice(0, 3).join(' — ');
-            const p2 = pairs.slice(3, 5).join(' — ');
+            const pairsStr = res.all10Pairs.map(p => String(p).padStart(2, '0'));
+            // Format 10 pairs into rows of 3-4 pairs for clean reading
+            const row1 = pairsStr.slice(0, 3).join(' — ');
+            const row2 = pairsStr.slice(3, 6).join(' — ');
+            const row3 = pairsStr.slice(6, 9).join(' — ');
+            const row4 = pairsStr.slice(9, 10).join(' — ');
             const tStr = res.triplets.join(' — ');
 
-            const text = `📅 ${res.dateStr}\n\n${res.flag} ${res.name}\n\n✨ ${res.predicted[0]} — ${res.predicted[1]}\n───────\n${p1}\n${p2}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
+            const text = `📅 ${res.dateStr}\n\n${res.flag} ${res.name}\n\n✨ ${res.predicted[0]} — ${res.predicted[1]}\n───────\n${row1}\n${row2}\n${row3}\n${row4}\n────────\n${tStr}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
             document.getElementById('outputContainer').innerText = text;
         }
 
