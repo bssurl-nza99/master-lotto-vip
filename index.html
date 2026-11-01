@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Clean Engine v11.6)</title>
+    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Fixed 10 Pairs Engine v11.7)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -23,8 +23,8 @@
         <!-- Header -->
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Clean Engine v11.6)</h1>
-                <p class="text-[11px] text-slate-500">ชุดเจาะ 10 คู่ถ้วน • ตารางประวัติสะอาด อ่านง่าย • คิด % เจาะเฉพาะงวดเด่นเข้า</p>
+                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Fixed Engine v11.7)</h1>
+                <p class="text-[11px] text-slate-500">แก้บั๊กตรรกะตรวจชุดเจาะ 10 คู่ • ตรงฉิน 100%</p>
             </div>
             <div id="timestampBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล
@@ -334,6 +334,21 @@
                 let hits = 0, pairHitsWhenMainHit = 0, maxHit = 0, currentHit = 0, maxMiss = 0, currentMiss = 0;
                 let lastStatus = "";
 
+                // Helper function to generate 10 pairs for any given round d1 and d2
+                const getHist10Pairs = (targetD1, targetD2) => {
+                    const get5 = (tD, oD) => {
+                        const p = [];
+                        for (let fD of topFreqDigits) {
+                            if (fD !== tD && fD !== oD && fD !== (tD * 11) % 10) {
+                                p.push(String(tD * 10 + fD).padStart(2, '0'));
+                                if (p.length === 5) break;
+                            }
+                        }
+                        return p;
+                    };
+                    return [...get5(targetD1, targetD2), ...get5(targetD2, targetD1)];
+                };
+
                 for (let i = 0; i < records.length - 1; i++) {
                     const prevRec = records[i];
                     const nextRec = records[i+1];
@@ -344,14 +359,15 @@
                     const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
                     const isMainHit = validDigits.includes(d1) || validDigits.includes(d2);
 
+                    // 🌟 FIXED: Check against actual 10 generated pairs (straight & reversed) for Top 2D and Bot 2D
+                    const hist10Pairs = getHist10Pairs(d1, d2);
                     const actualTop2D = nextRec.topRaw.slice(1);
                     const actualBot2D = nextRec.botRaw;
-                    const pairRev1 = `${d2}${d1}`;
-                    const pairDir1 = `${d1}${d2}`;
-                    const isPairHit = (actualTop2D.includes(String(d1)) && actualTop2D.includes(String(d2))) ||
-                                      (actualBot2D.includes(String(d1)) && actualBot2D.includes(String(d2))) ||
-                                      actualTop2D === pairDir1 || actualTop2D === pairRev1 ||
-                                      actualBot2D === pairDir1 || actualBot2D === pairRev1;
+                    const actualTopRev = actualTop2D.split('').reverse().join('');
+                    const actualBotRev = actualBot2D.split('').reverse().join('');
+
+                    const isPairHit = hist10Pairs.includes(actualTop2D) || hist10Pairs.includes(actualTopRev) ||
+                                      hist10Pairs.includes(actualBot2D) || hist10Pairs.includes(actualBotRev);
 
                     if (isMainHit) {
                         hits++; currentHit++;
@@ -378,27 +394,12 @@
 
                 const totalRounds = records.length - 1;
                 const winRate = (hits / totalRounds) * 100;
-                // Calculate pair win rate specifically when main digit hits
                 const pairWinRate = hits > 0 ? (pairHitsWhenMainHit / hits) * 100 : 0;
                 const currentStreakState = `${lastStatus === 'เข้า' ? 'เข้า' : 'หลุด'} ${lastStatus === 'เข้า' ? currentHit : currentMiss} รอบ`;
 
                 const lastSum = bestFormula.calc(records[records.length - 1]);
                 const nextD1 = lastSum % 10, nextD2 = (nextD1 + 1) % 10;
-
-                const get5PairsForDigit = (targetDigit, otherDigit) => {
-                    const pairs = [];
-                    for (let fDigit of topFreqDigits) {
-                        if (fDigit !== targetDigit && fDigit !== otherDigit && fDigit !== (targetDigit * 11) % 10) {
-                            pairs.push(targetDigit * 10 + fDigit);
-                            if (pairs.length === 5) break;
-                        }
-                    }
-                    return pairs;
-                };
-
-                const pairsD1 = get5PairsForDigit(nextD1, nextD2);
-                const pairsD2 = get5PairsForDigit(nextD2, nextD1);
-                const all10Pairs = [...pairsD1, ...pairsD2];
+                const all10Pairs = getHist10Pairs(nextD1, nextD2);
 
                 const freqH = Array(10).fill(0).map((_, i) => ({ digit: i, H: 0, T: 0, U: 0 }));
                 records.forEach(r => {
