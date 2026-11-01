@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Multi-Period Analytics Suite</title>
+    <title>VIP Master Intelligence Analytics - V1</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -55,9 +55,10 @@
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
 
-        .consensus-box { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); border: 1px solid #6366f1; border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: center; }
-        .consensus-title { font-size: 0.75rem; color: #a5b4fc; font-weight: 700; margin-bottom: 4px; }
-        .consensus-digits { font-size: 1.1rem; color: #fbbf24; font-weight: 800; letter-spacing: 2px; }
+        /* เด่นพิเศษแบบฟันธงเด็ดขาด */
+        .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 14px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
+        .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .consensus-digits { font-size: 1.4rem; color: #ffffff; font-weight: 900; letter-spacing: 4px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b; display: inline-block; min-width: 180px; }
 
         #resultsArea { display: none; }
     </style>
@@ -67,7 +68,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • อัปเกรดระบบกล่องสรุปจุดร่วมและพยากรณ์ล่วงหน้า</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงเด็ดขาด (Version V1)</p>
     </header>
 
     <div class="card">
@@ -77,21 +78,21 @@
         </div>
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
         <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล</button>
+            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (ฟันธง)</button>
             <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
         </div>
     </div>
 
     <div id="resultsArea">
-        <!-- กล่องสรุปจุดร่วมอัจฉริยะ (Consensus Panel) -->
+        <!-- กล่องฟันธงเด็ดขาด (Single Source of Truth) -->
         <div class="consensus-box">
-            <div class="consensus-title">🌟 กล่องสรุปจุดร่วม VIP (Top Consensus Recommendation)</div>
-            <div class="consensus-digits" id="consensusOutput">กำลังประเมิน...</div>
-            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 3px;">คัดกรองจากจุดตัดของตาราง Master, ชุดวิน และสูตรคำนวณ</div>
+            <div class="consensus-title">⚡ บทสรุปฟันธงเด็ดขาดรอบนี้ (VIP Actionable Focus) ⚡</div>
+            <div class="consensus-digits" id="consensusOutput">-</div>
+            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 6px; font-weight: 600;" id="consensusSubtext">ยึดผลลัพธ์นี้เป็นไม้บรรทัดหลักในการตัดสินใจโดยไม่ต้องดูตารางอื่น</div>
         </div>
 
         <div class="card" style="padding: 6px 8px;">
-            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางทั่วไป:</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางสนับสนุนเบื้องหลัง:</div>
             <div class="period-bar" id="periodSelector">
                 <button class="period-btn" onclick="setPeriod(3)">3 รอบ</button>
                 <button class="period-btn" onclick="setPeriod(5)">5 รอบ</button>
@@ -711,7 +712,7 @@
         });
         document.querySelector('#tableFormulas tbody').innerHTML = htmlFormulas;
 
-        // อัปเดตกล่องสรุปจุดร่วม (Consensus Filtering Bar) ให้ทำงานและแสดงผลทันทีอย่างไร้รอยต่อ
+        // อัปเดตกล่องฟันธงเด็ดขาด (Single Source of Truth)
         let topMasterNum = masterStats[0].num;
         let topFormulaNums = formulaResults[0].liveText.split(' - ').map(Number);
         let topWinSet = win6DResults[0].setArr;
@@ -719,8 +720,9 @@
         let consensusSet = topWinSet.filter(n => topFormulaNums.includes(n) || n === topMasterNum);
         if(consensusSet.length === 0) consensusSet = [topMasterNum, ...topFormulaNums].slice(0, 3);
 
-        document.getElementById('consensusOutput').innerHTML = 
-            `เลขเด่นพิกัดพิเศษ: [ ${consensusSet.join(' , ')} ] <span style="font-size:0.7rem; color:#34d399;">(ความเห็นพ้องสูงสุดจากทุกระบบ)</span>`;
+        document.getElementById('consensusOutput').innerText = `[ ${consensusSet.join(' , ')} ]`;
+        document.getElementById('consensusSubtext').innerHTML = 
+            `ฟันธงจากจุดตัด: เด่นสุดขีดงวดนี้คือเลข <b style="color:#fbbf24;">${consensusSet.join(', ')}</b> (อิงจากสูตรอันดับ 1 และตาราง Master)`;
     }
 </script>
 
