@@ -36,7 +36,7 @@
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข</h1>
-                <p class="text-xs text-slate-500">Strict Confluence & Top Formula Engine (เน้น 13 สูตรหลักแม่นยำสูง + เลข 2 ตัว)</p>
+                <p class="text-xs text-slate-500">Strict Confluence Engine (รองรับตารางพันธมิตร 2 ตัว & 3 ตัว + เลข 2 ตัวเน้นๆ)</p>
             </div>
             <div id="timestampBadge" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล
@@ -98,21 +98,43 @@
                 <div id="topRankings" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
             </div>
 
-            <!-- Table 1: CSE Top 5 (Support Only) -->
+            <!-- Table 1.1: CSE 2-Digit Top 5 (Added New!) -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                 <div class="mb-3">
-                    <h2 class="font-semibold text-slate-700">⚡ สูตรพันธมิตรชดเชย (CSE Top 5 - ตัวซัพพอร์ตเสริม)</h2>
-                    <p class="text-xs text-slate-400">กลุ่มเลข 3 ตัวช่วยตรวจสอบแนวทางเสริมเบื้องหลัง</p>
+                    <h2 class="font-semibold text-slate-700">⚡ สูตรพันธมิตรชดเชย 2 ตัว (CSE 2-Digit Top 5 - ใหม่!)</h2>
+                    <p class="text-xs text-slate-400">กลุ่มคู่เลข 2 ตัวที่ช่วยตรวจสอบแนวทางชดเชยกันเบื้องหลัง</p>
                 </div>
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap text-xs">
                         <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                             <tr>
                                 <th class="p-2.5">อันดับ</th>
-                                <th class="p-2.5">ชุดพันธมิตร 3 ตัว</th>
+                                <th class="p-2.5">คู่พันธมิตร 2 ตัว</th>
                                 <th class="p-2.5 text-center">อัตราเข้า (Win Rate)</th>
                                 <th class="p-2.5 text-center">เข้า / งวดทั้งหมด</th>
                                 <th class="p-2.5">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cse2TableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 1.2: CSE 3-Digit Top 5 (Support Only) -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <div class="mb-3">
+                    <h2 class="font-semibold text-slate-700">⚡ สูตรพันธมิตรชดเชย 3 ตัว (CSE 3-Digit Top 5 - ตัวซัพพอร์ตเสริม)</h2>[span_1](start_span)[span_1](end_span)
+                    <p class="text-xs text-slate-400">กลุ่มเลข 3 ตัวช่วยตรวจสอบแนวทางเสริมเบื้องหลัง</p>[span_2](start_span)[span_2](end_span)
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5">อันดับ</th>
+                                <th class="p-2.5">ชุดพันธมิตร 3 ตัว</th>[span_3](start_span)[span_3](end_span)
+                                <th class="p-2.5 text-center">อัตราเข้า (Win Rate)</th>[span_4](start_span)[span_4](end_span)
+                                <th class="p-2.5 text-center">เข้า / งวดทั้งหมด</th>[span_5](start_span)[span_5](end_span)
+                                <th class="p-2.5">สถานะ</th>[span_6](start_span)[span_6](end_span)
                             </tr>
                         </thead>
                         <tbody id="cseTableBody" class="divide-y divide-slate-100"></tbody>
@@ -317,12 +339,13 @@
                 if (validRecords.length < 5) return;
 
                 // 1. Analyze Analytics Engines
+                const cse2Results = analyzeCSE2(validRecords);
                 const cseResults = analyzeCSE(validRecords);
                 const formulaResults = analyzeFormulas(validRecords);
                 const freqResults = analyzeFrequency(validRecords);
                 const trendResults = analyzeTrends(validRecords);
 
-                // 2. Strict Confluence Engine (กรองสูตร Top Formula + เช็กการชนซ้ำ Confluence)
+                // 2. Strict Confluence Engine
                 const scores = calculateStrictConfluenceScores(formulaResults, trendResults, cseResults);
 
                 // 3. Select 2 Prominent Digits & 6 Pairs (เฉพาะเลข 2 ตัวเน้นๆ)
@@ -332,7 +355,7 @@
                 // Save for detailed view
                 globalParsedResults.push({
                     name: activeDataset.name,
-                    scores, cseResults, formulaResults, freqResults, trendResults
+                    scores, cse2Results, cseResults, formulaResults, freqResults, trendResults
                 });
 
                 // Option for select dropdown
@@ -361,7 +384,6 @@
             const p1 = pairs.pairsD1.map(p => String(p).padStart(2, '0')).join(' — ');
             const p2 = pairs.pairsD2.map(p => String(p).padStart(2, '0')).join(' — ');
 
-            // รูปแบบข้อความแสดงเฉพาะเลข 2 ตัว ตามรีเควสท์
             const text = `📅 ${dateStr}\n\n${flag} ${name}\n\n✨ ${top2[0]} — ${top2[1]}\n───────\n${p1}\n${p2}\n\n📮 ID : cpu80\n\n🪷   บ้าน ทรัพย์นำโชค   🪷`;
 
             const container = document.getElementById('outputContainer');
@@ -389,24 +411,22 @@
             if (!data) return;
 
             renderRankings(data.scores);
+            renderCSE2Table(data.cse2Results);
             renderCSETable(data.cseResults);
             renderFormulaTable(data.formulaResults);
             renderFreqTable(data.freqResults);
             renderTrendTable(data.trendResults);
         }
 
-        // 🌟 STRICT CONFLUENCE & TOP FORMULA ENGINE (คัดเฉพาะสูตรแม่นยำสูงและคิดคะแนนจากการชนซ้ำ Confluence)
         function calculateStrictConfluenceScores(formulaResults, trendResults, cseResults) {
             const digitScores = Array(10).fill(0).map((_, i) => ({ digit: i, score: 0 }));
-            const confluenceCount = Array(10).fill(0); // นับว่าเลขตัวนี้ถูกชี้เป้าจากกี่สูตร
+            const confluenceCount = Array(10).fill(0);
 
-            // สร้าง Trend Map 5 งวดล่าสุด
             const trendMap = {};
             trendResults.forEach(t => {
                 trendMap[t.digit] = t.counts[5] || 0;
             });
 
-            // สร้าง CSE Support Map จากชุด 3 ตัวอันดับแรก
             const cseSupportDigits = new Set();
             if (cseResults.length > 0) {
                 cseResults.slice(0, 3).forEach(c => {
@@ -415,7 +435,6 @@
             }
 
             formulaResults.forEach(f => {
-                // กรองเฉพาะสูตรเกรด A: ต้องมีความแม่นยำ >= 55% และงวดล่าสุดสถานะต้อง "เข้า" เท่านั้น
                 const accuracy = parseFloat(f.accuracy);
                 if (accuracy >= 55.0 && f.currentStreakState.includes('เข้า')) {
                     confluenceCount[f.d1]++;
@@ -429,24 +448,20 @@
                 }
             });
 
-            // ให้โบนัสพิเศษตามจำนวนสูตรที่ชนซ้ำ (Confluence Multiplier) และกระแส 5 งวด
             digitScores.forEach(ds => {
                 const conf = confluenceCount[ds.digit];
                 if (conf > 1) {
-                    ds.score *= (1.0 + (conf * 0.25)); // ยิ่งหลายสูตรทายตรงกัน คะแนนยิ่งพุ่งทวีคูณ
+                    ds.score *= (1.0 + (conf * 0.25));
                 }
 
-                // เสริมกระแส Hot 5 งวด
                 const hotCount = trendMap[ds.digit] || 0;
                 ds.score += (hotCount * 4.0);
 
-                // หากอยู่ในกลุ่มซัพพอร์ต CSE เสริมเบา ๆ
                 if (cseSupportDigits.has(ds.digit)) {
                     ds.score += 15.0;
                 }
             });
 
-            // จัดเรียงคะแนนจากมากไปน้อย
             digitScores.sort((a, b) => b.score - a.score);
             return digitScores;
         }
@@ -463,8 +478,8 @@
                 const pairs = [];
                 for (let u of unitCandidates) {
                     const unit = u.digit;
-                    if (unit === tensDigit) continue; // ห้ามเบิ้ล
-                    if (unit === (tensDigit === d1 ? d2 : d1)) continue; // ห้ามเอาเด่นชนกัน
+                    if (unit === tensDigit) continue;
+                    if (unit === (tensDigit === d1 ? d2 : d1)) continue;
 
                     pairs.push(tensDigit * 10 + unit);
                     if (pairs.length === 3) break;
@@ -476,6 +491,45 @@
             const pairsD2 = getPairsForDigit(d2);
 
             return { pairsD1, pairsD2 };
+        }
+
+        // ฟังก์ชันคำนวณคู่พันธมิตร 2 ตัว (CSE 2-Digit)
+        function analyzeCSE2(records) {
+            const pairs = [];
+            for (let i = 0; i <= 8; i++) {
+                for (let j = i + 1; j <= 9; j++) {
+                    pairs.push([i, j]);
+                }
+            }
+
+            const results = [];
+            pairs.forEach(pair => {
+                let hits = 0;
+                let currentHitStreak = 0;
+
+                records.forEach(r => {
+                    const digits = [r.T, r.U, r.t, r.u];
+                    const isHit = pair.some(d => digits.includes(d));
+                    if (isHit) {
+                        hits++;
+                        currentHitStreak++;
+                    } else {
+                        currentHitStreak = 0;
+                    }
+                });
+
+                const winRate = (hits / records.length) * 100;
+                results.push({
+                    pair: pair,
+                    pairStr: pair.join(' - '),
+                    hits,
+                    total: records.length,
+                    winRate,
+                    status: currentHitStreak > 0 ? 'เข้าดีต่อเนื่อง' : 'หลุดงวดล่าสุด'
+                });
+            });
+
+            return results.sort((a, b) => b.winRate - a.winRate).slice(0, 5);
         }
 
         function analyzeCSE(records) {
@@ -632,7 +686,6 @@
             return trendData;
         }
 
-        // Render Functions
         function renderRankings(scores) {
             const container = document.getElementById('topRankings');
             container.innerHTML = scores.slice(0, 5).map((s, idx) => `
@@ -641,6 +694,19 @@
                     <div class="text-lg font-bold">${s.digit}</div>
                     <div class="text-[10px] opacity-75">${s.score.toFixed(1)} คะแนน</div>
                 </div>
+            `).join('');
+        }
+
+        function renderCSE2Table(results) {
+            const tbody = document.getElementById('cse2TableBody');
+            tbody.innerHTML = results.map((r, i) => `
+                <tr class="${i === 0 ? 'bg-emerald-50/60 font-medium' : ''}">
+                    <td class="p-2.5"><span class="px-2 py-0.5 rounded ${i === 0 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}">#${i + 1}</span></td>
+                    <td class="p-2.5 font-bold text-slate-800">${r.pairStr}</td>
+                    <td class="p-2.5 text-center font-semibold text-emerald-600">${r.winRate.toFixed(1)}%</td>
+                    <td class="p-2.5 text-center">${r.hits}/${r.total}</td>
+                    <td class="p-2.5"><span class="text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full text-[10px]">${r.status}</span></td>
+                </tr>
             `).join('');
         }
 
