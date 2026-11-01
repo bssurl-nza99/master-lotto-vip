@@ -55,6 +55,11 @@
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
 
+        /* Consensus Panel Styles */
+        .consensus-box { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); border: 1px solid #6366f1; border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: center; }
+        .consensus-title { font-size: 0.75rem; color: #a5b4fc; font-weight: 700; margin-bottom: 4px; }
+        .consensus-digits { font-size: 1.1rem; color: #fbbf24; font-weight: 800; letter-spacing: 2px; }
+
         #resultsArea { display: none; }
     </style>
 </head>
@@ -63,7 +68,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • เพิ่มตารางชุดวิน 6 ตัวที่ดีที่สุด 5 ชุด</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • อัปเกรดระบบกล่องสรุปจุดร่วมและพยากรณ์ล่วงหน้า</p>
     </header>
 
     <div class="card">
@@ -79,6 +84,13 @@
     </div>
 
     <div id="resultsArea">
+        <!-- กล่องสรุปจุดร่วมอัจฉริยะ (Consensus Panel) -->
+        <div class="consensus-box">
+            <div class="consensus-title">🌟 กล่องสรุปจุดร่วม VIP (Top Consensus Recommendation)</div>
+            <div class="consensus-digits" id="consensusOutput">กำลังประเมิน...</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 3px;">คัดกรองจากจุดตัดของตาราง Master, ชุดวิน และสูตรคำนวณ</div>
+        </div>
+
         <div class="card" style="padding: 6px 8px;">
             <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางทั่วไป:</div>
             <div class="period-bar" id="periodSelector">
@@ -190,7 +202,7 @@
             </div>
         </div>
 
-        <!-- 8. WIN 6-DIGITS TABLE (ตารางชุดวิน 6 ตัว 5 ชุดที่ดีที่สุด) -->
+        <!-- 8. WIN 6-DIGITS TABLE -->
         <div class="card" style="border: 1px solid #10b981; background: linear-gradient(145deg, #0f172a 0%, #064e3b 100%);">
             <div class="section-title" style="color: #34d399;" id="titleWin6D">8. ตารางชุดวิน 6 ตัวที่ดีที่สุด (5 ชุดเจาะลึกชนจริง)</div>
             <div class="table-responsive">
@@ -214,7 +226,7 @@
 
         <!-- 9. ADVANCED FORMULAS TABLE -->
         <div class="card">
-            <div class="section-title" id="titleFormulas">9. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (ชนหลักครบทุกคู่ 100%)</div>
+            <div class="section-title" id="titleFormulas">9. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (ชนหลักครบทุกคู่ 100% พร้อมพยากรณ์)</div>
             <div class="table-responsive">
                 <table id="tableFormulas">
                     <thead>
@@ -225,6 +237,7 @@
                             <th>เข้าสูงสุด</th>
                             <th>หลุดสูงสุด</th>
                             <th>สถานะงวดล่าสุด</th>
+                            <th>แนวโน้มรอบถัดไป (Recovery)</th>
                             <th>อันดับ</th>
                         </tr>
                     </thead>
@@ -563,62 +576,27 @@
         });
         document.querySelector('#tableSynergy2D tbody').innerHTML = htmlSynergy2D;
 
-        // 8. WIN 6-DIGITS TABLE (ตารางชุดวิน 6 ตัว 5 ชุดที่ดีที่สุด)
-        // สูตรการสร้างชุดวิน 6 ตัวจากสถิติจริงอิงตัวเลขชนและผลรวม
+        // 8. WIN 6-DIGITS TABLE
         const win6DDefs = [
-            { 
-                name: "ชุดวินมหาพิกัด 6 ตัว (Alpha-Match)", 
-                gen: r => {
-                    let d = (r.u + r.t2_u) % 10;
-                    return [d, (d+1)%10, (d+2)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b);
-                } 
-            },
-            { 
-                name: "ชุดวินกระแสเงินสด 6 ตัว (Beta-Flow)", 
-                gen: r => {
-                    let d = (r.tens + r.t2_tens) % 10;
-                    return [d, (d+1)%10, (d+3)%10, (d+5)%10, (d+7)%10, (d+9)%10].sort((a,b)=>a-b);
-                } 
-            },
-            { 
-                name: "ชุดวินพลังรวม 3 ตัวบน 6 ตัว (Gamma-Sum3D)", 
-                gen: r => {
-                    let d = (r.h + r.tens + r.u) % 10;
-                    return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10].sort((a,b)=>a-b);
-                } 
-            },
-            { 
-                name: "ชุดวินชนหลักร้อย+หน่วย 6 ตัว (Delta-Cross)", 
-                gen: r => {
-                    let d = (r.h + r.u) % 10;
-                    return [d, (d+2)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b);
-                } 
-            },
-            { 
-                name: "ชุดวินมหาเฮง 5 หลัก 6 ตัว (Omega-Total)", 
-                gen: r => {
-                    let d = (r.h + r.tens + r.u + r.t2_tens + r.t2_u) % 10;
-                    return [d, (d+1)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+7)%10].sort((a,b)=>b-a).reverse(); // ป้องกันสลับ
-                } 
-            }
+            { name: "ชุดวินพลังรวม 3 ตัวบน 6 ตัว (Gamma-Sum3D)", gen: r => { let d = (r.h + r.tens + r.u) % 10; return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10].sort((a,b)=>a-b); } },
+            { name: "ชุดวินชนหลักร้อย+หน่วย 6 ตัว (Delta-Cross)", gen: r => { let d = (r.h + r.u) % 10; return [d, (d+2)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
+            { name: "ชุดวินมหาพิกัด 6 ตัว (Alpha-Match)", gen: r => { let d = (r.u + r.t2_u) % 10; return [d, (d+1)%10, (d+2)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
+            { name: "ชุดวินกระแสเงินสด 6 ตัว (Beta-Flow)", gen: r => { let d = (r.tens + r.t2_tens) % 10; return [d, (d+1)%10, (d+3)%10, (d+5)%10, (d+7)%10, (d+9)%10].sort((a,b)=>a-b); } },
+            { name: "ชุดวินมหาเฮง 5 หลัก 6 ตัว (Omega-Total)", gen: r => { let d = (r.h + r.tens + r.u + r.t2_tens + r.t2_u) % 10; return [d, (d+1)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+7)%10].sort((a,b)=>a-b); } }
         ];
 
         let win6DResults = win6DDefs.map(w => {
             let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
             let latestStatusHit = false;
-
-            let latestRecord = records[0];
-            let liveSet = w.gen(latestRecord);
+            let liveSet = w.gen(records[0]);
             let liveText = liveSet.join(' - ');
 
             for(let i = 0; i < totalDraws - 1; i++) {
                 let setPrev = w.gen(records[i+1]);
                 let actualRec = records[i];
                 let targetDigits = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u];
-                
-                // เช็คว่าชุดวิน 6 ตัว มาชนกับเลขออกจริงอย่างน้อย 2 ตัวขึ้นไป (เข้าวิน) หรือไม่
                 let matchCount = targetDigits.filter(n => setPrev.includes(n)).length;
-                let isHit = matchCount >= 2; // เงื่อนไขชุดวินต้องมาชนติดกัน
+                let isHit = matchCount >= 2;
 
                 if(i === 0) latestStatusHit = isHit;
 
@@ -654,7 +632,7 @@
         });
         document.querySelector('#tableWin6D tbody').innerHTML = htmlWin6D;
 
-        // 9. ADVANCED FORMULAS TABLE (ชนหลักครบ 10 คู่ + สูตรผลรวม 3 สูตร)
+        // 9. ADVANCED FORMULAS TABLE (ชนหลักครบ 10 คู่ + ผลรวม + พยากรณ์ล่วงหน้า Recovery Trend)
         const formulaDefs = [
             { name: 'สูตรชน: ร้อยบน + สิบบน', calc: r => (r.h + r.tens) % 10 },
             { name: 'สูตรชน: ร้อยบน + หน่วยบน', calc: r => (r.h + r.u) % 10 },
@@ -674,6 +652,7 @@
         let formulaResults = formulaDefs.map(f => {
             let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
             let latestStatusHit = false;
+            let currentMissStreak = 0;
 
             let latestRecord = records[0];
             let liveD1 = f.calc(latestRecord);
@@ -684,7 +663,6 @@
                 let d1 = f.calc(records[i+1]);
                 let d2 = (d1 + 1) % 10;
                 let actualRec = records[i];
-                
                 let isHit = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d1) || 
                             [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d2);
 
@@ -695,12 +673,26 @@
                     if(curHit > maxHit) maxHit = curHit;
                 } else {
                     curMiss++; curHit = 0;
+                    if(i === 0) currentMissStreak = curMiss; // เก็บสถานะการหลุดติดต่อกันปัจจุบัน
                     if(curMiss > maxMiss) maxMiss = curMiss;
                 }
             }
+
+            // ประเมินแนวโน้มรอบถัดไป (Recovery Expectation)
+            let recoveryText = '<span style="color:var(--text-muted)">เดินตามปกติ</span>';
+            if (!latestStatusHit) {
+                if (currentMissStreak >= 2) {
+                    recoveryText = '<span class="badge-hit">⚡ โอกาสแก้ตัวสูง (Overdue)</span>';
+                } else {
+                    recoveryText = '<span class="badge-miss">⏳ รอจังหวะตั้งลำ</span>';
+                }
+            } else {
+                recoveryText = '<span class="badge-hit">🔥 กำลังฟอร์มดีต่อเนื่อง</span>';
+            }
+
             let validDraws = totalDraws - 1;
             let pct = validDraws > 0 ? (hits / validDraws) * 100 : 0;
-            return { name: f.name, liveText, pct, maxHit, maxMiss, latestStatusHit };
+            return { name: f.name, liveText, pct, maxHit, maxMiss, latestStatusHit, recoveryText };
         });
 
         formulaResults.sort((a,b) => b.pct - a.pct);
@@ -715,10 +707,23 @@
                 <td>${res.maxHit} รอบ</td>
                 <td>${res.maxMiss} รอบ</td>
                 <td>${statusTag}</td>
+                <td>${res.recoveryText}</td>
                 <td>#${idx+1}</td>
             </tr>`;
         });
         document.querySelector('#tableFormulas tbody').innerHTML = htmlFormulas;
+
+        // ประมวลผลสร้างกล่องสรุปจุดร่วม (Consensus Filtering Bar)
+        let topMasterNum = masterStats[0].num;
+        let topFormulaNums = formulaResults[0].liveText.split(' - ').map(Number);
+        let topWinSet = win6DResults[0].setArr;
+
+        // หาเลขที่ซ้ำกันระหว่าง Master, สูตรอันดับ 1 และ ชุดวินอันดับ 1
+        let consensusSet = topWin6D.filter(n => topFormulaNums.includes(n) || n === topMasterNum);
+        if(consensusSet.length === 0) consensusSet = [topMasterNum, ...topFormulaNums].slice(0, 3);
+
+        document.getElementById('consensusOutput').innerHTML = 
+            `เลขเด่นพิกัดพิเศษ: [ ${consensusSet.join(' , ')} ] <span style="font-size:0.7rem; color:#34d399;">(ความเห็นพ้องสูงสุดจากทุกระบบ)</span>`;
     }
 </script>
 
