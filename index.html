@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (Fixed 10 Pairs Engine v11.7)</title>
+    <title>ระบบวิเคราะห์สถิติ 10,000 สูตร (True Transparent Engine v11.8)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -23,8 +23,8 @@
         <!-- Header -->
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (Fixed Engine v11.7)</h1>
-                <p class="text-[11px] text-slate-500">แก้บั๊กตรรกะตรวจชุดเจาะ 10 คู่ • ตรงฉิน 100%</p>
+                <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ 10,000 สูตร (True Transparent v11.8)</h1>
+                <p class="text-[11px] text-slate-500">แสดงเลขเด่นย้อนหลังทุกงวด • ตรวจสอบได้จริง 100% • ไม่มีหมกเม็ด</p>
             </div>
             <div id="timestampBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล
@@ -76,11 +76,11 @@
                 <div id="statsSummaryCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3"></div>
             </div>
 
-            <!-- TABLE: Clean Backtest History Table -->
+            <!-- TABLE: Transparent History Table -->
             <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
                 <div class="mb-2.5">
-                    <h2 class="font-bold text-slate-800 text-xs">📜 ตารางตรวจสอบประวัติย้อนหลัง (อ่านง่าย ชัดเจน)</h2>
-                    <p class="text-[10px] text-slate-400">เงื่อนไข: เลขเด่นต้องเข้าสิบ/หน่วยเท่านั้น (ถ้าออกหลักร้อยถือว่าหลุด)</p>
+                    <h2 class="font-bold text-slate-800 text-xs">📜 ตารางตรวจสอบประวัติย้อนหลัง (โปร่งใส ตรวจสอบได้จริง)</h2>
+                    <p class="text-[10px] text-slate-400">แสดงเลขเด่นที่ระบบคำนวณได้ในแต่ละงวด เพื่อให้คุณเทียบผลจริงได้ทันที</p>
                 </div>
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap text-[11px]">
@@ -89,7 +89,7 @@
                                 <th class="p-2 text-center">งวดที่</th>
                                 <th class="p-2">วันที่</th>
                                 <th class="p-2 text-center">ผลออก (บน / ล่าง)</th>
-                                <th class="p-2 text-center">เลขเด่นระบบ</th>
+                                <th class="p-2 text-center">เลขเด่นที่ระบบให้</th>
                                 <th class="p-2 text-center">ผลเลขเด่น</th>
                                 <th class="p-2 text-center">ผลชุดเจาะ</th>
                                 <th class="p-2 text-center">สถานะ</th>
@@ -334,7 +334,6 @@
                 let hits = 0, pairHitsWhenMainHit = 0, maxHit = 0, currentHit = 0, maxMiss = 0, currentMiss = 0;
                 let lastStatus = "";
 
-                // Helper function to generate 10 pairs for any given round d1 and d2
                 const getHist10Pairs = (targetD1, targetD2) => {
                     const get5 = (tD, oD) => {
                         const p = [];
@@ -355,11 +354,11 @@
 
                     const sum = bestFormula.calc(prevRec);
                     const d1 = sum % 10, d2 = (d1 + 1) % 10;
+                    const predictedStr = `${d1} — ${d2}`;
 
                     const validDigits = [nextRec.T, nextRec.U, nextRec.t, nextRec.u];
                     const isMainHit = validDigits.includes(d1) || validDigits.includes(d2);
 
-                    // 🌟 FIXED: Check against actual 10 generated pairs (straight & reversed) for Top 2D and Bot 2D
                     const hist10Pairs = getHist10Pairs(d1, d2);
                     const actualTop2D = nextRec.topRaw.slice(1);
                     const actualBot2D = nextRec.botRaw;
@@ -385,7 +384,7 @@
                         dateStr: nextRec.dateStr,
                         topRaw: nextRec.topRaw,
                         botRaw: nextRec.botRaw,
-                        predicted: `${d1} — ${d2}`,
+                        predicted: predictedStr,
                         isMainHit,
                         isPairHit,
                         status: lastStatus
@@ -495,7 +494,7 @@
                         <td class="p-2 text-center text-slate-400">#${row.round}</td>
                         <td class="p-2 font-medium text-slate-700">${row.dateStr}</td>
                         <td class="p-2 text-center font-mono font-bold text-slate-800">${row.topRaw} / ${row.botRaw}</td>
-                        <td class="p-2 text-center font-bold text-indigo-600">${row.predicted}</td>
+                        <td class="p-2 text-center font-bold text-indigo-600 font-mono">${row.predicted}</td>
                         <td class="p-2 text-center">${mainBadge}</td>
                         <td class="p-2 text-center">${pairBadge}</td>
                         <td class="p-2 text-center">${statusBadge}</td>
