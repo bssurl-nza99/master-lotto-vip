@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข (Strict Confluence Engine v6.0 - 2-Way Matching)</title>
+    <title>ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข (Strict Confluence Engine v7.0 - Conditional Fair Rate)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -36,7 +36,7 @@
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
                 <h1 class="text-lg font-bold text-slate-800">ระบบวิเคราะห์สถิติ & คำนวณเชิงตัวเลข</h1>
-                <p class="text-[11px] text-slate-500">Strict Confluence Engine v6.0 • Micro Rebound & 2-Way Pair Matching (ตรง-กลับ)</p>
+                <p class="text-[11px] text-slate-500">Strict Confluence Engine v7.0 • Micro Rebound & Conditional Fair Pair Rate (คิดเจาะเฉพาะงวดเด่นเข้า)</p>
             </div>
             <div id="timestampBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
                 พร้อมประมวลผล
@@ -58,8 +58,8 @@
             
             <div class="flex gap-2">
                 <button onclick="processData()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-1.5 text-xs">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    ประมวลผลทั้งหมด ( Rebound + เลขเจาะกลับได้ )
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    ประมวลผลทั้งหมด ( Rebound + เลขเจาะคิดเฉพาะงวดเด่นเข้า )
                 </button>
                 <button onclick="clearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium py-2 px-3 rounded-lg border border-rose-200 transition duration-150 text-xs">
                     ล้างสถิติ
@@ -95,9 +95,9 @@
                 <div class="mb-2.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                     <div>
                         <h2 class="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-1.5">
-                            <span>🎯 ตารางตรวจสอบประวัติผลงาน (เลขเด่น & เลขเจาะ ย้อนหลังตั้งแต่อดีต-ปัจจุบัน • ตรวจแบบกลับตัว 2-Way)</span>
+                            <span>🎯 ตารางตรวจสอบประวัติผลงาน (เลขเด่น & เลขเจาะ ย้อนหลัง • คิดเปอร์เซ็นต์เจาะเฉพาะงวดเด่นมา)</span>
                         </h2>
-                        <p class="text-[10px] text-slate-400">จำลองการประมวลผลย้อนหลังรายงวด ตรวจจับเลขเจาะทั้งตรงและกลับแม่นยำ 100%</p>
+                        <p class="text-[10px] text-slate-400">คำนวณ Win Rate เลขเจาะอย่างยุติธรรม โดยคิดจากฐานงวดที่เลขเด่นเข้าเท่านั้น</p>
                     </div>
                 </div>
 
@@ -376,21 +376,17 @@
                 const validRecords = activeDataset.records.filter(r => !r.isCancelled);
                 if (validRecords.length < 5) return;
 
-                // 1. Analyze Analytics Engines
                 const cse2Results = analyzeCSE2(validRecords);
                 const cseResults = analyzeCSE(validRecords);
                 const formulaResults = analyzeFormulas(validRecords);
                 const freqResults = analyzeFrequency(validRecords);
                 const trendResults = analyzeTrends(validRecords);
 
-                // 2. Micro Rebound Scoring Engine
                 const scores = calculateMicroReboundScores(formulaResults, trendResults, cse2Results, cseResults);
-
-                // 3. Select 2 Prominent Digits & 6 Pairs
                 const top2 = scores.slice(0, 2).map(s => s.digit);
                 const pairResult = generate6Pairs(top2, freqResults);
 
-                // 4. Backtest Engine (พร้อม 2-Way Matching กลับตัวเลขเจาะ)
+                // Backtest Engine ที่คำนวณ Win Rate เลขเจาะอย่างยุติธรรม (เฉพาะงวดเด่นมา)
                 const backtestData = runBacktestEngine(validRecords);
 
                 globalParsedResults.push({
@@ -457,7 +453,6 @@
             renderTrendTable(data.trendResults);
         }
 
-        // 🌟 MICRO-LEVEL REBOUND SCORING ENGINE
         function calculateMicroReboundScores(formulaResults, trendResults, cse2Results, cseResults) {
             const digitScores = Array(10).fill(0).map((_, i) => ({ digit: i, score: 0 }));
             const confluenceCount = Array(10).fill(0);
@@ -474,7 +469,7 @@
                     }
                 } else if (f.lastStatus === "หลุด") {
                     if (f.currStreakCount >= f.maxMiss - 1) {
-                        momentumWeight = 18.0; // โบนัสจังหวะ Rebound ดีดกลับ!
+                        momentumWeight = 18.0;
                     } else {
                         momentumWeight = -5.0;
                     }
@@ -518,11 +513,12 @@
             return digitScores;
         }
 
-        // 🌟 BACKTEST PERFORMANCE ENGINE (2-Way Matching: ตรวจจับเลขเจาะทั้งตรงและกลับ)
+        // 🌟 BACKTEST ENGINE (คำนวณ Win Rate เลขเจาะเฉพาะงวดเด่นมา - Conditional Fair Rate)
         function runBacktestEngine(records) {
             const history = [];
             let mainHitCount = 0, mainMissCount = 0;
-            let pairHitCount = 0, pairMissCount = 0;
+            let pairHitWhenMainHit = 0; // เลขเจาะเข้าเฉพาะงวดที่เด่นเข้า
+            let pairMissWhenMainHit = 0; // เลขเจาะหลุดในงวดที่เด่นเข้า
             let maxHitStreak = 0, currentHitStreak = 0;
             let maxMissStreak = 0, currentMissStreak = 0;
 
@@ -542,20 +538,27 @@
                 const all6Pairs = [...pairsObj.pairsD1, ...pairsObj.pairsD2].map(p => String(p).padStart(2, '0'));
 
                 const actualDigits = [actualRec.T, actualRec.U, actualRec.t, actualRec.u];
-                const actualTop2D = actualRec.topRaw.slice(1); // 2 ตัวบน
-                const actualBot2D = actualRec.botRaw;         // 2 ตัวล่าง
+                const actualTop2D = actualRec.topRaw.slice(1);
+                const actualBot2D = actualRec.botRaw;
 
-                // ตรวจผลเลขเด่น
                 const mainHit = top2.some(d => actualDigits.includes(d));
 
-                // 🔄 ตรรกะใหม่ 2-Way Matching: ตรวจผลเลขเจาะทั้งแบบตรงและแบบกลับ
                 const pairHit = all6Pairs.some(p => {
                     const pRev = p.split('').reverse().join('');
                     return p === actualTop2D || pRev === actualTop2D || p === actualBot2D || pRev === actualBot2D;
                 });
 
-                if (mainHit) mainHitCount++; else mainMissCount++;
-                if (pairHit) pairHitCount++; else pairMissCount++;
+                if (mainHit) {
+                    mainHitCount++;
+                    // ⚖️ คิดผลเลขเจาะเฉพาะเมื่อ "เลขเด่นเข้า" เท่านั้น
+                    if (pairHit) {
+                        pairHitWhenMainHit++;
+                    } else {
+                        pairMissWhenMainHit++;
+                    }
+                } else {
+                    mainMissCount++;
+                }
 
                 if (mainHit || pairHit) {
                     currentHitStreak++;
@@ -582,9 +585,12 @@
             return {
                 history: history.reverse(),
                 totalRounds: history.length,
-                mainHitCount, mainMissCount,
-                pairHitCount, pairMissCount,
-                maxHitStreak, maxMissStreak
+                mainHitCount,
+                mainMissCount,
+                pairHitWhenMainHit,
+                pairMissWhenMainHit,
+                maxHitStreak,
+                maxMissStreak
             };
         }
 
@@ -806,7 +812,11 @@
             const tbody = document.getElementById('backtestTableBody');
 
             const mainHitPct = ((backtestData.mainHitCount / backtestData.totalRounds) * 100).toFixed(1);
-            const pairHitPct = ((backtestData.pairHitCount / backtestData.totalRounds) * 100).toFixed(1);
+            
+            // ⚖️ คำนวณเปอร์เซ็นต์เจาะแบบยุติธรรม (คิดเฉพาะงวดที่เด่นเข้า)
+            const conditionalPairPct = backtestData.mainHitCount > 0 
+                ? ((backtestData.pairHitWhenMainHit / backtestData.mainHitCount) * 100).toFixed(1) 
+                : "0.0";
 
             containerSummary.innerHTML = `
                 <div class="bg-indigo-50 border border-indigo-200 p-2 rounded-lg text-center">
@@ -818,12 +828,12 @@
                     <div class="text-sm font-bold text-slate-600">${backtestData.mainMissCount} งวด</div>
                 </div>
                 <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-lg text-center">
-                    <div class="text-[10px] text-emerald-600 font-medium">เจาะ 2 ตัวเข้า (ตรง/กลับ)</div>
-                    <div class="text-sm font-bold text-emerald-700">${backtestData.pairHitCount}/${backtestData.totalRounds} (${pairHitPct}%)</div>
+                    <div class="text-[10px] text-emerald-600 font-medium">เจาะเข้า (เฉพาะงวดเด่นมา)</div>
+                    <div class="text-sm font-bold text-emerald-700">${backtestData.pairHitWhenMainHit}/${backtestData.mainHitCount} (${conditionalPairPct}%)</div>
                 </div>
                 <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-lg text-center">
-                    <div class="text-[10px] text-emerald-600 font-medium">เจาะ 2 ตัวหลุด</div>
-                    <div class="text-sm font-bold text-slate-600">${backtestData.pairMissCount} งวด</div>
+                    <div class="text-[10px] text-emerald-600 font-medium">เจาะหลุด (เมื่อเด่นมา)</div>
+                    <div class="text-sm font-bold text-slate-600">${backtestData.pairMissWhenMainHit} งวด</div>
                 </div>
                 <div class="bg-amber-50 border border-amber-200 p-2 rounded-lg text-center">
                     <div class="text-[10px] text-amber-600 font-medium">เข้าติดกันสูงสุด</div>
@@ -850,7 +860,7 @@
                 } else if (row.mainHit) {
                     overallStatus = `<span class="bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full text-[10px]">เข้าเด่น</span>`;
                 } else if (row.pairHit) {
-                    overallStatus = `<span class="bg-indigo-100 text-indigo-800 font-medium px-2 py-0.5 rounded-full text-[10px]">เข้าเจาะ</span>`;
+                    overallStatus = `<span class="bg-indigo-100 text-indigo-800 font-medium px-2 py-0.5 rounded-full text-[10px]">เข้าเจาะ (เด่นหลุด)</span>`;
                 } else {
                     overallStatus = `<span class="bg-rose-100 text-rose-700 font-medium px-2 py-0.5 rounded-full text-[10px]">หลุดงวดนี้</span>`;
                 }
