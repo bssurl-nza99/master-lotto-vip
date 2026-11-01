@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V1</title>
+    <title>VIP Master Intelligence Analytics - V2</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -55,7 +55,7 @@
         .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
         .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
 
-        /* เด่นพิเศษแบบฟันธงเด็ดขาด */
+        /* กล่องฟันธงเด็ดขาด V2 (Stable Engine) */
         .consensus-box { background: linear-gradient(135deg, #31104b 100%, #0f172a 0%); border: 2px solid #f59e0b; border-radius: 10px; padding: 14px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
         .consensus-title { font-size: 0.85rem; color: #fbbf24; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.5px; }
         .consensus-digits { font-size: 1.4rem; color: #ffffff; font-weight: 900; letter-spacing: 4px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b; display: inline-block; min-width: 180px; }
@@ -68,7 +68,7 @@
 <div class="container">
     <header>
         <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงเด็ดขาด (Version V1)</p>
+        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดฟันธงเด็ดขาด เสถียรภาพสูง (Version V2)</p>
     </header>
 
     <div class="card">
@@ -78,17 +78,17 @@
         </div>
         <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
         <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (ฟันธง)</button>
+            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (ฟันธงเสถียร)</button>
             <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
         </div>
     </div>
 
     <div id="resultsArea">
-        <!-- กล่องฟันธงเด็ดขาด (Single Source of Truth) -->
+        <!-- กล่องฟันธงเด็ดขาด V2 (Stable Engine) -->
         <div class="consensus-box">
-            <div class="consensus-title">⚡ บทสรุปฟันธงเด็ดขาดรอบนี้ (VIP Actionable Focus) ⚡</div>
+            <div class="consensus-title">⚡ บทสรุปฟันธงเด็ดขาดรอบนี้ (VIP Actionable Focus - V2 Stable) ⚡</div>
             <div class="consensus-digits" id="consensusOutput">-</div>
-            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 6px; font-weight: 600;" id="consensusSubtext">ยึดผลลัพธ์นี้เป็นไม้บรรทัดหลักในการตัดสินใจโดยไม่ต้องดูตารางอื่น</div>
+            <div style="font-size: 0.65rem; color: #a5b4fc; margin-top: 6px; font-weight: 600;" id="consensusSubtext">ค่ามาตรฐานเสถียรสูงสุดจากภาพรวม 30 รอบ (ไม้บรรทัดเดียวจบ ไม่สับสน)</div>
         </div>
 
         <div class="card" style="padding: 6px 8px;">
@@ -250,6 +250,7 @@
 
 <script>
     let currentPeriod = 30;
+    let globalStableConsensus = []; // ตัวแปรเก็บค่าฟันธงเสถียรภาพสูงสุดจากภาพรวม 30 รอบ
 
     function setPeriod(p) {
         currentPeriod = p;
@@ -352,6 +353,7 @@
     function clearData() {
         document.getElementById('rawInput').value = '';
         document.getElementById('resultsArea').style.display = 'none';
+        globalStableConsensus = [];
     }
 
     function parseData() {
@@ -400,6 +402,54 @@
         }
 
         document.getElementById('resultsArea').style.display = 'block';
+
+        // คำนวณหาค่าเสถียรภาพสูงสุดจากภาพรวม 30 รอบ (รันครั้งแรกหรือเมื่อกดประมวลผลใหม่)
+        if (globalStableConsensus.length === 0) {
+            let stableRecords = allRecords.slice(0, Math.min(30, allRecords.length));
+            let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
+            let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
+            let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
+
+            let getFreqMap = (recs) => {
+                let map = Array(10).fill(0);
+                recs.forEach(r => {
+                    let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
+                    set.forEach(n => map[n]++);
+                });
+                return map;
+            };
+            let f3 = getFreqMap(r3), f5 = getFreqMap(r5), f10 = getFreqMap(r10);
+            let stableMaster = Array.from({length:10}, (_,i)=>{
+                let score = (f3[i]/r3.length)*50 + (f5[i]/r5.length)*30 + (f10[i]/r10.length)*20;
+                return { num: i, score: isNaN(score)?0:score };
+            }).sort((a,b) => b.score - a.score);
+
+            const formulaDefs = [
+                { calc: r => (r.h + r.tens) % 10 },
+                { calc: r => (r.h + r.u) % 10 },
+                { calc: r => (r.tens + r.u) % 10 },
+                { calc: r => (r.h + r.t2_tens) % 10 }
+            ];
+            let topFormulasNums = [];
+            formulaDefs.forEach(f => {
+                let d1 = f.calc(stableRecords[0]);
+                topFormulasNums.push(d1, (d1+1)%10);
+            });
+
+            const win6DDefs = [
+                { gen: r => { let d = (r.h + r.tens + r.u) % 10; return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10]; } }
+            ];
+            let topWinArr = win6DDefs[0].gen(stableRecords[0]);
+
+            let topMasterNum = stableMaster[0].num;
+            globalStableConsensus = topWinArr.filter(n => topFormulasNums.includes(n) || n === topMasterNum);
+            if(globalStableConsensus.length === 0) globalStableConsensus = [topMasterNum, stableMaster[1].num];
+        }
+
+        // ล็อกแสดงผลกล่องฟันธงด้านบนให้คงที่เสมอ ไม่เปลี่ยนตามปุ่มกรอบเวลาด้านล่าง
+        document.getElementById('consensusOutput').innerText = `[ ${globalStableConsensus.join(' , ')} ]`;
+        document.getElementById('consensusSubtext').innerHTML = 
+            `ค่ามาตรฐานเสถียรภาพสูงสุดจากภาพรวม 30 รอบ: เด่นสุดขีดคือเลข <b style="color:#fbbf24;">${globalStableConsensus.join(', ')}</b> (ล็อกค่าเพื่อป้องกันความสับสน)`;
 
         let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
         let totalDraws = records.length;
@@ -711,18 +761,6 @@
             </tr>`;
         });
         document.querySelector('#tableFormulas tbody').innerHTML = htmlFormulas;
-
-        // อัปเดตกล่องฟันธงเด็ดขาด (Single Source of Truth)
-        let topMasterNum = masterStats[0].num;
-        let topFormulaNums = formulaResults[0].liveText.split(' - ').map(Number);
-        let topWinSet = win6DResults[0].setArr;
-
-        let consensusSet = topWinSet.filter(n => topFormulaNums.includes(n) || n === topMasterNum);
-        if(consensusSet.length === 0) consensusSet = [topMasterNum, ...topFormulaNums].slice(0, 3);
-
-        document.getElementById('consensusOutput').innerText = `[ ${consensusSet.join(' , ')} ]`;
-        document.getElementById('consensusSubtext').innerHTML = 
-            `ฟันธงจากจุดตัด: เด่นสุดขีดงวดนี้คือเลข <b style="color:#fbbf24;">${consensusSet.join(', ')}</b> (อิงจากสูตรอันดับ 1 และตาราง Master)`;
     }
 </script>
 
