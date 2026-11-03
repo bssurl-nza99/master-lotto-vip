@@ -1,1037 +1,957 @@
+```html
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Master Intelligence Analytics - V17 (Ultimate Matrix Core)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #080c14;
-            --card-bg: #0f172a;
-            --card-border: #1e293b;
-            --gold-primary: #f59e0b;
-            --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-            --text-main: #f8fafc;
-            --text-muted: #64748b;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --table-header-bg: #1e293b;
-            --table-row-hover: #162032;
+    <title>ระบบคำนวณหวยพม่า 2D (สูตรเลขชดเชย & สถิติ)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        },
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        bordercolor: '#334155'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif'],
+                    }
+                }
+            }
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 8px; min-height: 100vh; font-size: 0.72rem; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); }
-        h1 { font-size: 1.05rem; background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
-        p.subtitle { font-size: 0.65rem; color: var(--text-muted); }
-        .card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px; margin-bottom: 10px; }
-        .card-title { font-size: 0.75rem; font-weight: 600; color: var(--gold-primary); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        textarea { width: 100%; height: 80px; background-color: #030712; border: 1px solid var(--card-border); border-radius: 5px; color: var(--text-main); padding: 6px; font-size: 0.65rem; resize: vertical; outline: none; }
-        textarea:focus { border-color: var(--gold-primary); }
-        .btn-group { display: flex; gap: 6px; margin-top: 6px; }
-        button { flex: 1; padding: 6px 10px; border: none; border-radius: 5px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
-        .btn-primary { background: var(--gold-gradient); color: #000; }
-        .btn-secondary { background-color: #1e293b; color: var(--text-muted); border: 1px solid var(--card-border); }
-        
-        .period-bar { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
-        .period-btn { background: #1e293b; color: var(--text-muted); border: 1px solid var(--card-border); padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; white-space: nowrap; cursor: pointer; }
-        .period-btn.active { background: var(--gold-gradient); color: #000; font-weight: 700; border-color: transparent; }
-
-        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; border: 1px solid var(--card-border); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.65rem; text-align: center; white-space: nowrap; }
-        th, td { padding: 5px 6px; border-bottom: 1px solid var(--card-border); }
-        th { background-color: var(--table-header-bg); color: var(--gold-primary); font-weight: 600; }
-        tr:hover td { background-color: var(--table-row-hover); }
-        .text-left { text-align: left; }
-        .badge-hit { color: var(--accent-green); font-weight: 600; }
-        .badge-miss { color: var(--accent-red); font-weight: 600; }
-        .rank-1 { color: #fbbf24; font-weight: 700; }
-        .rank-2 { color: #e2e8f0; font-weight: 700; }
-        .section-title { font-size: 0.8rem; color: var(--gold-primary); margin-bottom: 6px; font-weight: 700; }
-        .digit-pill { display: inline-block; padding: 2px 6px; margin: 1px; border-radius: 4px; font-weight: 700; }
-        .pill-hot { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
-        .pill-cold { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
-
-        #resultsArea { display: none; }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f8fafc;
+        }
+        .glow-gold {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col justify-between custom-scrollbar pb-10">
 
-<div class="container">
-    <header>
-        <h1>VIP MASTER INTELLIGENCE ANALYTICS</h1>
-        <p class="subtitle">ระบบวิเคราะห์สถิติอัจฉริยะ • โหมดประวัติย้อนหลัง 30 งวดสมบูรณ์แบบ (Version V17 Ultimate)</p>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl border border-emerald-400/30">
+        <i class="fa-solid fa-circle-check text-xl"></i>
+        <span id="toast-message" class="font-medium text-sm">คัดลอกข้อมูลสำเร็จ!</span>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-bordercolor bg-cardbg/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg glow-gold">
+                    2D
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500">
+                        Myanmar 2D Analytics
+                    </h1>
+                    <p class="text-xs text-slate-400">ระบบวิเคราะห์สูตรเลขชดเชย & สถิติความถี่แม่นยำสูง</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                    วิเคราะห์ย้อนหลัง 15 วัน
+                </span>
+            </div>
+        </div>
     </header>
 
-    <div class="card">
-        <div class="card-title">
-            <span>ป้อนข้อมูลสถิติ</span>
-            <button class="btn-secondary" style="padding: 2px 5px; font-size:0.6rem;" onclick="loadSampleData()">โหลดตัวอย่าง</button>
-        </div>
-        <textarea id="rawInput" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
-        <div class="btn-group">
-            <button class="btn-primary" onclick="runAnalysis()">ประมวลผล (วิเคราะห์ตารางทั้งหมด)</button>
-            <button class="btn-secondary" onclick="clearData()">ล้างข้อมูล</button>
-        </div>
-    </div>
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full space-y-6 flex-grow">
 
-    <div id="resultsArea">
-        <!-- 0. VIP FOCUS TABLE -->
-        <div class="card" style="border: 1px solid var(--gold-primary);">
-            <div class="section-title" style="color: #fbbf24; font-size: 0.85rem; text-align: center; margin-bottom: 8px;">
-                ⚡ ตารางบทสรุปเลขเด่น D1 & D2 (คัดจาก Top 3 สูตรคำนวณ สแกนย้อนหลัง 3-30 งวด) ⚡
+        <!-- Banner Info Audit Rules -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 rounded-2xl p-4 shadow-xl">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 mt-1 md:mt-0">
+                        <i class="fa-solid fa-shield-halved text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm text-slate-200">กฎและเงื่อนไขคำนวณ (Audited Core Rules)</h2>
+                        <ul class="text-xs text-slate-400 space-y-1 mt-1 list-disc list-inside">
+                            <li><span class="text-slate-300 font-medium">เลขเด่น 3 อันดับ / เลขเจาะ 15 คู่</span> (แบ่งกลุ่มละ 5 คู่ ไม่เบิ้ล 100% ไม่จับกันเอง)</li>
+                            <li><span class="text-slate-300 font-medium">การเข้าผล:</span> เลขเด่น/เลขเจาะ อยู่หลักใดก็ได้ สลับหลักนับว่าเข้า 100%</li>
+                            <li><span class="text-slate-300 font-medium">ชุดรวมทั้งวัน:</span> ครอบคลุมทั้งรอบเที่ยงและรอบเย็น เข้าเพียง 1 รอบถือว่าผ่านทันที</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 self-end md:self-center">
+                    <button onclick="loadSampleData()" class="text-xs font-semibold px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-400 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-import"></i> วางสถิติตัวอย่าง (30 วัน)
+                    </button>
+                    <button onclick="clearInput()" class="text-xs font-semibold px-3 py-2 rounded-lg bg-slate-800 hover:bg-red-500/20 border border-slate-600 text-red-400 hover:border-red-500/40 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash-can"></i> ล้างข้อมูล
+                    </button>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table id="tableVipFocus">
+        </div>
+
+        <!-- Section 1: Input & Parser -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left: Textarea Input -->
+            <div class="lg:col-span-5 bg-cardbg border border-bordercolor rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label for="raw-input" class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-amber-400"></i> กรอก/วางข้อมูลสถิติ
+                        </label>
+                        <span id="data-count-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-300">
+                            0 รายการ
+                        </span>
+                    </div>
+                    <textarea id="raw-input" rows="11" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500/80 transition-all resize-none custom-scrollbar" placeholder="วางรูปแบบสถิติตัวอย่าง เช่น:
+🗓 17 ก.ย 69 : 04 -- 41
+🗓 18 ก.ย 69 : 98 -- 57
+🗓 21 ก.ย 69 : 01 -- 34"></textarea>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-between gap-3">
+                    <div class="text-xs text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i>
+                        <span>ใช้น้ำหนัก:</span>
+                        <select id="lookback-window" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded px-1.5 py-1 focus:outline-none focus:border-amber-500">
+                            <option value="10">10 วันล่าสุด</option>
+                            <option value="15" selected>15 วันล่าสุด (แนะนำ)</option>
+                            <option value="20">20 วันล่าสุด</option>
+                            <option value="30">30 วันทั้งหมด</option>
+                        </select>
+                    </div>
+                    <button onclick="processAnalytics()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-bold text-sm shadow-lg glow-gold transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calculator"></i> ประมวลผลคำนวณ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Parsed Preview List -->
+            <div class="lg:col-span-7 bg-cardbg border border-bordercolor rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-table-cells text-cyan-400"></i> ตรวจสอบข้อมูลสถิติที่ระบบแยกแยะได้
+                        </h3>
+                        <span class="text-xs text-slate-400">ซ้าย: เที่ยง | ขวา: เย็น</span>
+                    </div>
+                    
+                    <div id="parsed-list-container" class="h-60 overflow-y-auto custom-scrollbar border border-slate-800 rounded-xl bg-slate-950/50 p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        <div class="col-span-full h-full flex flex-col items-center justify-center text-slate-500 py-10">
+                            <i class="fa-solid fa-inbox text-3xl mb-2 opacity-50"></i>
+                            <p class="text-xs">ยังไม่มีข้อมูลสถิติ คลิก "วางสถิติตัวอย่าง" หรือกรอกข้อมูล</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-400">
+                    <span id="window-status-text">พร้อมประมวลผลข้อมูล...</span>
+                    <span class="text-amber-400/80 font-medium">*ระบบกรอกและตรวจเช็ก Regex อัตโนมัติ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Frequency Matrix Table -->
+        <div class="bg-cardbg border border-bordercolor rounded-2xl p-5 shadow-xl overflow-hidden">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-amber-400"></i> ตารางวิเคราะห์ความถี่ตัวเลข (0-9)
+                    </h3>
+                    <p class="text-xs text-slate-400">แจกแจงแยกหลักสิบ หลักหน่วย และแบบรวม ตามช่วงเวลาที่เลือก</p>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500/20 border border-amber-500"></span> เด่นสุดรอบ</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-cyan-500/20 border border-cyan-500"></span> เด่นสุดรวมทั้งวัน</span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-center border-collapse text-xs">
                     <thead>
-                        <tr>
-                            <th class="text-left">ลำดับเด่น</th>
-                            <th>เลขเด่นหลัก</th>
-                            <th>% ความน่าจะเป็น</th>
-                            <th>คะแนนดัชนี Top-3</th>
-                            <th>ชุดเจาะคัดพิเศษ (รวมวินไขว้ D1-D2 & กลับเลข)</th>
-                            <th>เสถียรภาพสถิติ</th>
-                            <th>คำแนะนำการใช้งาน</th>
+                        <tr class="bg-slate-900 text-slate-300 border-b border-slate-700">
+                            <th class="py-2.5 px-3 font-bold border-r border-slate-800">ตัวเลข</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800 bg-slate-900/80">เที่ยง: หลักสิบ</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800 bg-slate-900/80">เที่ยง: หลักหน่วย</th>
+                            <th class="py-2.5 px-3 border-r border-slate-700 font-bold text-amber-400 bg-amber-950/20">รวมรอบเที่ยง</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800 bg-slate-900/80">เย็น: หลักสิบ</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800 bg-slate-900/80">เย็น: หลักหน่วย</th>
+                            <th class="py-2.5 px-3 border-r border-slate-700 font-bold text-amber-400 bg-amber-950/20">รวมรอบเย็น</th>
+                            <th class="py-2.5 px-3 font-extrabold text-cyan-400 bg-cyan-950/30">ชุดรวมทั้งวัน (เที่ยง+เย็น)</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; text-align: center; font-weight: 500;">
-                * สแกนวิเคราะห์เฉพาะตัวเลขที่ติด 3 อันดับแรกของตาราง 13 สูตรคำนวณ ครบทุกกรอบเวลา (3, 5, 10, 15, 20, 25, 30 งวด)
-            </div>
-        </div>
-
-        <!-- 0.1 HISTORICAL SELECTION LEDGER TABLE (V17 OPTIMIZED) -->
-        <div class="card" style="border: 1px solid var(--accent-green);">
-            <div class="section-title" style="color: #34d399; font-size: 0.85rem; text-align: center; margin-bottom: 8px;">
-                📊 ตารางบันทึกประวัติการเลือกเลขย้อนหลัง 30 งวดจริง (Full Unabridged Historical Ledger V17) 📊
-            </div>
-            <div class="table-responsive">
-                <table id="tableHistoryLedger">
-                    <thead>
+                    <tbody id="freq-table-body" class="divide-y divide-slate-800/60 font-mono">
                         <tr>
-                            <th class="text-left">งวดวันที่ / งวดสถิติ</th>
-                            <th>ผลออกจริง (3 ตัว / 2 ตัว)</th>
-                            <th>เลขเด่นระบบเลือก (D1 / D2)</th>
-                            <th>ชุดเจาะคัดพิเศษ (รวมวิน D1-D2)</th>
-                            <th>ผลเด่น (วิ่ง/รูด)</th>
-                            <th>ผลชุดเจาะ (กลับเลข/จับคู่ D1-D2)</th>
-                            <th>อัตราเข้า 30 งวด (%)</th>
-                            <th>เข้าทั้งหมด (งวด)</th>
-                            <th>หลุดทั้งหมด (งวด)</th>
-                            <th>เข้าติดต่อสูงสุด</th>
-                            <th>หลุดติดต่อสูงสุด</th>
-                            <th>สถานะงวดนั้นๆ</th>
+                            <td colspan="8" class="py-6 text-slate-500 text-center font-sans">กรุณากด "ประมวลผลคำนวณ" เพื่อแสดงตารางสถิติความถี่</td>
                         </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; text-align: center; font-weight: 500;">
-                * ตารางประวัติบันทึกการเลือกเลขย้อนหลัง 30 งวดจริง ตรวจสอบตรรกะวินคู่เด่น D1-D2 และกลับเลขสมบูรณ์แบบ 100%
-            </div>
-        </div>
-
-        <div class="card" style="padding: 6px 8px;">
-            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">เลือกกรอบเวลากรองสถิติสำหรับตารางสนับสนุนเบื้องหลัง:</div>
-            <div class="period-bar" id="periodSelector">
-                <button class="period-btn" onclick="setPeriod(3)">3 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(5)">5 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(10)">10 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(15)">15 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(20)">20 รอบ</button>
-                <button class="period-btn" onclick="setPeriod(25)">25 รอบ</button>
-                <button class="period-btn active" onclick="setPeriod(30)">30 รอบ</button>
-            </div>
-        </div>
-
-        <!-- 1. BACKTEST PERFORMANCE TABLE -->
-        <div class="card" style="border: 1px solid #4338ca;">
-            <div class="section-title" style="color: #a5b4fc;" id="titleBacktest">1. ตารางทดสอบประสิทธิภาพย้อนหลัง 30 งวด (Backtest Performance)</div>
-            <div class="table-responsive">
-                <table id="tableBacktest">
-                    <thead>
-                        <tr>
-                            <th class="text-left">รายการ / สูตรเด่น</th>
-                            <th>ประเภท</th>
-                            <th>งวดที่ทดสอบ</th>
-                            <th>เข้า (งวด)</th>
-                            <th>หลุด (งวด)</th>
-                            <th>% ความแม่นยำ</th>
-                            <th>เข้าสูงสุด (連勝)</th>
-                            <th>หลุดสูงสุด (連敗)</th>
-                            <th>สถานะงวดล่าสุด</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 2. MASTER TABLE -->
-        <div class="card">
-            <div class="section-title" style="color: var(--gold-primary);">2. ตาราง MASTER สรุปเลขติดเด่น - ติดดับ (ประเมินสถิติ 3-5-10 รอบ)</div>
-            <div class="table-responsive">
-                <table id="tableMaster">
-                    <thead>
-                        <tr>
-                            <th class="text-left">เลข (0-9)</th>
-                            <th>ดัชนีความเด่นรวม</th>
-                            <th>สถานะระยะสั้น (3-5 รอบ)</th>
-                            <th>สถานะระยะยาว (10 รอบ)</th>
-                            <th>การประเมินผล VIP</th>
-                            <th>อันดับความเด่น</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 3. OVERVIEW TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleOverview">3. ตารางความถี่ภาพรวม 0-9</div>
-            <div class="table-responsive">
-                <table id="tableOverview">
-                    <thead>
-                        <tr><th class="text-left">เลข</th><th>ความถี่รวม</th><th>% ความแม่นยำ</th><th>เข้าต่อเนื่อง</th><th>หลุดต่อเนื่อง</th><th>สถานะปัจจุบัน</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 4. POSITIONS TABLE -->
-        <div class="card">
-            <div class="section-title" id="titlePosition">4. ตารางความถี่แยกรายหลัก (ร้อย/สิบ/หน่วย)</div>
-            <div class="table-responsive">
-                <table id="tablePosition">
-                    <thead>
-                        <tr><th class="text-left">เลข</th><th>หลักร้อย</th><th>หลักสิบ</th><th>หลักหน่วย</th><th>รวมออกทุกหลัก</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 5. EVEN/ODD TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleEvenOdd">5. ตารางเลขคู่ / เลขคี่ (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableEvenOdd">
-                    <thead>
-                        <tr><th class="text-left">ประเภท</th><th>ความถี่ออก</th><th>% ความแม่นยำ</th><th>แนวโน้มสถิติ</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 6. HIGH/LOW TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleHighLow">6. ตารางเลขสูง / ต่ำ (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableHighLow">
-                    <thead>
-                        <tr><th class="text-left">ประเภท</th><th>ความถี่ออก</th><th>% ความแม่นยำ</th><th>แนวโน้มสถิติ</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 7. 3D SYNERGY TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleSynergy3D">7. ตารางเลขชุดชดเชย 3 ตัว (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableSynergy3D">
-                    <thead>
-                        <tr><th class="text-left">สูตรชุดชดเชย 3 ตัว</th><th>ชุดเลข</th><th>% ความแม่นยำรวม</th><th>สถานะการทำงาน</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 8. 2D SYNERGY TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleSynergy2D">8. ตารางเลขชุดชดเชย 2 ตัว (แยกอิสระ)</div>
-            <div class="table-responsive">
-                <table id="tableSynergy2D">
-                    <thead>
-                        <tr><th class="text-left">สูตรชุดชดเชย 2 ตัว</th><th>ชุดเลข</th><th>% ความแม่นยำรวม</th><th>สถานะการทำงาน</th><th>อันดับ</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 9. WIN 6-DIGITS TABLE -->
-        <div class="card" style="border: 1px solid #10b981;">
-            <div class="section-title" style="color: #34d399;" id="titleWin6D">9. ตารางชุดวิน 6 ตัวที่ดีที่สุด (5 ชุดเจาะลึกชนจริง)</div>
-            <div class="table-responsive">
-                <table id="tableWin6D">
-                    <thead>
-                        <tr>
-                            <th class="text-left">ชื่อชุดวิน 6 ตัว</th>
-                            <th>ชุดตัวเลขเด่น (6 ตัว)</th>
-                            <th>เลขวินคำนวณสด (งวดถัดไป)</th>
-                            <th>% ความแม่นยำ</th>
-                            <th>เข้าสูงสุด</th>
-                            <th>หลุดสูงสุด</th>
-                            <th>สถานะงวดล่าสุด</th>
-                            <th>อันดับ</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 10. ADVANCED FORMULAS TABLE -->
-        <div class="card">
-            <div class="section-title" id="titleFormulas">10. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (ชนหลักครบทุกคู่ 100% พร้อมพยากรณ์)</div>
-            <div class="table-responsive">
-                <table id="tableFormulas">
-                    <thead>
-                        <tr>
-                            <th class="text-left">ชื่อสูตร / วิธีคำนวณ</th>
-                            <th>เลขคำนวณสด (งวดถัดไป)</th>
-                            <th>% แม่นยำ</th>
-                            <th>เข้าสูงสุด</th>
-                            <th>หลุดสูงสุด</th>
-                            <th>สถานะงวดล่าสุด</th>
-                            <th>แนวโน้มรอบถัดไป (Recovery)</th>
-                            <th>อันดับ</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    let currentPeriod = 30;
-    let globalRankedConsensus = [];
-
-    function setPeriod(p) {
-        currentPeriod = p;
-        document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-        if(event && event.target) event.target.classList.add('active');
-        runAnalysis();
-    }
-
-    function loadSampleData() {
-        document.getElementById('rawInput').value = `รัฐบาลไทย | 16 ต.ค. 69
-781
-48
-รัฐบาลไทย | 1 ต.ค. 69
-701
-70
-รัฐบาลไทย | 16 ก.ย. 69
-640
-64
-รัฐบาลไทย | 1 ก.ย. 69
-212
-04
-รัฐบาลไทย | 16 ส.ค. 69
-615
-53
-รัฐบาลไทย | 1 ส.ค. 69
-479
-69
-รัฐบาลไทย | 16 ก.ค. 69
-214
-71
-รัฐบาลไทย | 1 ก.ค. 69
-495
-62
-รัฐบาลไทย | 16 มิ.ย. 69
-184
-48
-รัฐบาลไทย | 1 มิ.ย. 69
-770
-95
-รัฐบาลไทย | 16 พ.ค. 69
-387
-08
-รัฐบาลไทย | 2 พ.ค. 69
-077
-43
-รัฐบาลไทย | 16 เม.ย. 69
-612
-77
-รัฐบาลไทย | 1 เม.ย. 69
-514
-47
-รัฐบาลไทย | 16 มี.ค. 69
-009
-64
-รัฐบาลไทย | 1 มี.ค. 69
-866
-06
-รัฐบาลไทย | 16 ก.พ. 69
-563
-07
-รัฐบาลไทย | 1 ก.พ. 69
-629
-48
-รัฐบาลไทย | 17 ม.ค. 69
-972
-02
-รัฐบาลไทย | 2 ม.ค. 69
-706
-16
-รัฐบาลไทย | 16 ธ.ค. 68
-895
-52
-รัฐบาลไทย | 1 ธ.ค. 68
-252
-22
-รัฐบาลไทย | 16 พ.ย. 68
-145
-37
-รัฐบาลไทย | 1 พ.ย. 68
-898
-87
-รัฐบาลไทย | 16 ต.ค. 68
-696
-61
-รัฐบาลไทย | 1 ต.ค. 68
-978
-77
-รัฐบาลไทย | 16 ก.ย. 68
-646
-58
-รัฐบาลไทย | 1 ก.ย. 68
-356
-31
-รัฐบาลไทย | 16 ส.ค. 68
-865
-63
-รัฐบาลไทย | 1 ส.ค. 68
-852
-50`;
-        runAnalysis();
-    }
-
-    function clearData() {
-        document.getElementById('rawInput').value = '';
-        document.getElementById('resultsArea').style.display = 'none';
-        globalRankedConsensus = [];
-    }
-
-    function parseData() {
-        const text = document.getElementById('rawInput').value.trim();
-        if (!text) return [];
-        let records = [];
-        let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        
-        let i = 0;
-        while (i < lines.length) {
-            if (lines[i].includes('|')) {
-                let dateStr = lines[i];
-                let d3 = "", d2 = "";
-                if (i + 1 < lines.length && /^\d{3}$/.test(lines[i+1])) { d3 = lines[i+1]; i++; }
-                if (i + 1 < lines.length && /^\d{2}$/.test(lines[i+1])) { d2 = lines[i+1]; i++; }
-                if (d3 && d2) {
-                    records.push({
-                        dateStr: dateStr, t3: d3, t2: d2,
-                        h: parseInt(d3[0]), tens: parseInt(d3[1]), u: parseInt(d3[2]),
-                        t2_tens: parseInt(d2[0]), t2_u: parseInt(d2[1])
-                    });
-                }
-            } else {
-                let parts = lines[i].split('|').map(p => p.trim());
-                if (parts.length >= 4) {
-                    let d3 = parts[parts.length - 2].padStart(3, '0');
-                    let d2 = parts[parts.length - 1].padStart(2, '0');
-                    records.push({
-                        dateStr: parts[1], t3: d3, t2: d2,
-                        h: parseInt(d3[0]), tens: parseInt(d3[1]), u: parseInt(d3[2]),
-                        t2_tens: parseInt(d2[0]), t2_u: parseInt(d2[1])
-                    });
-                }
-            }
-            i++;
-        }
-        return records;
-    }
-
-    // ฟังก์ชันสร้างชุดเจาะ 5 คู่ + วินไขว้ D1-D2 อัตโนมัติ (ไม่เอาเลขเบิ้ล)
-    function generateSmartPairs(baseDigit, companionDigit = null) {
-        let pool = [(baseDigit + 1) % 10, (baseDigit + 3) % 10, (baseDigit + 5) % 10, (baseDigit + 7) % 10, (baseDigit + 8) % 10, (baseDigit + 2) % 10, (baseDigit + 4) % 10, (baseDigit + 6) % 10];
-        let suffixes = [];
-        
-        // นำเลขเด่นอันดับ 2 (D2) มาเป็นคู่เจาะอันดับแรกเพื่อดักคู่ D1-D2 ตามตรรกะมนุษย์
-        if (companionDigit !== null && companionDigit !== baseDigit) {
-            suffixes.push(companionDigit);
-        }
-
-        for(let p of pool) {
-            if(suffixes.length >= 5) break;
-            if(p === baseDigit) continue;
-            if(!suffixes.includes(p)) suffixes.push(p);
-        }
-        suffixes.sort((a, b) => a - b);
-        return suffixes.map(s => `${baseDigit}${s}`);
-    }
-
-    const formulaDefs = [
-        { name: 'สูตรชน: ร้อยบน + สิบบน', calc: r => (r.h + r.tens) % 10 },
-        { name: 'สูตรชน: ร้อยบน + หน่วยบน', calc: r => (r.h + r.u) % 10 },
-        { name: 'สูตรชน: ร้อยบน + สิบล่าง', calc: r => (r.h + r.t2_tens) % 10 },
-        { name: 'สูตรชน: ร้อยบน + หน่วยล่าง', calc: r => (r.h + r.t2_u) % 10 },
-        { name: 'สูตรชน: สิบบน + หน่วยบน', calc: r => (r.tens + r.u) % 10 },
-        { name: 'สูตรชน: สิบบน + สิบล่าง', calc: r => (r.tens + r.t2_tens) % 10 },
-        { name: 'สูตรชน: สิบบน + หน่วยล่าง', calc: r => (r.tens + r.t2_u) % 10 },
-        { name: 'สูตรชน: หน่วยบน + สิบล่าง', calc: r => (r.u + r.t2_tens) % 10 },
-        { name: 'สูตรชน: หน่วยบน + หน่วยล่าง', calc: r => (r.u + r.t2_u) % 10 },
-        { name: 'สูตรชน: สิบล่าง + หน่วยล่าง', calc: r => (r.t2_tens + r.t2_u) % 10 },
-        { name: 'สูตรผลรวม: 3 ตัวบน (ร้อย+สิบ+หน่วย)', calc: r => (r.h + r.tens + r.u) % 10 },
-        { name: 'สูตรผลรวม: 2 ตัวล่าง (สิบ+หน่วย)', calc: r => (r.t2_tens + r.t2_u) % 10 },
-        { name: 'สูตรผลรวม: รวม 5 หลัก (บน+ล่าง)', calc: r => (r.h + r.tens + r.u + r.t2_tens + r.t2_u) % 10 }
-    ];
-
-    function runAnalysis() {
-        let allRecords = parseData();
-        if (allRecords.length === 0) {
-            alert("ไม่พบรูปแบบข้อมูลที่ถูกต้อง กรุณาตรวจสอบการวางข้อมูลสถิติ");
-            document.getElementById('resultsArea').style.display = 'none';
-            return;
-        }
-
-        document.getElementById('resultsArea').style.display = 'block';
-
-        let periodsToScan = [3, 5, 10, 15, 20, 25, 30];
-        let top3Scores = Array(10).fill(0);
-
-        periodsToScan.forEach(p => {
-            let recs = allRecords.slice(0, Math.min(p, allRecords.length));
-            let totalD = recs.length;
-            if(totalD < 2) return;
-
-            let fStats = formulaDefs.map(f => {
-                let hits = 0;
-                for(let i = 0; i < totalD - 1; i++) {
-                    let d1 = f.calc(recs[i+1]);
-                    let d2 = (d1 + 1) % 10;
-                    let actualRec = recs[i];
-                    let isHit = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d1) || 
-                                [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d2);
-                    if(isHit) hits++;
-                }
-                let validDraws = totalD - 1;
-                let pct = validDraws > 0 ? (hits / validDraws) * 100 : 0;
-                let liveD1 = f.calc(recs[0]);
-                let liveD2 = (liveD1 + 1) % 10;
-                return { liveD1, liveD2, pct };
-            });
-
-            fStats.sort((a,b) => b.pct - a.pct);
-
-            let top3 = fStats.slice(0, 3);
-            top3.forEach((tf, idx) => {
-                let w = idx === 0 ? 3 : (idx === 1 ? 2 : 1);
-                top3Scores[tf.liveD1] += w;
-                top3Scores[tf.liveD2] += w * 0.8;
-            });
-        });
-
-        let rankedTop3 = Array.from({length:10}, (_,i) => ({ num: i, score: top3Scores[i] }))
-                              .sort((a,b) => b.score - a.score);
-
-        globalRankedConsensus = [
-            { 
-                rankName: "🥇 เลขเด่น D1 (อันดับ 1 ชน Top-3 ทุกรอบ)", 
-                num: rankedTop3[0].num, 
-                score: rankedTop3[0].score, 
-                prob: 96, 
-                pairs: generateSmartPairs(rankedTop3[0].num, rankedTop3[1].num), 
-                grade: "🔥 เด่นสูงสุด (Top-3 Matrix)", 
-                action: "เน้น วิ่ง/รูด / เน้นชุดเจาะ 5 คู่" 
-            },
-            { 
-                rankName: "🥈 เลขเด่น D2 (อันดับ 2 ชน Top-3 ทุกรอบ)", 
-                num: rankedTop3[1].num, 
-                score: rankedTop3[1].score, 
-                prob: 89, 
-                pairs: generateSmartPairs(rankedTop3[1].num, rankedTop3[0].num), 
-                grade: "🛡️ เด่นรองเสถียร (Top-3 Matrix)", 
-                action: "รอง วิ่ง/รูด / เน้นชุดเจาะ 5 คู่" 
-            }
-        ];
-
-        let htmlVipFocus = '';
-        globalRankedConsensus.forEach((v, idx) => {
-            let rankClass = idx === 0 ? 'rank-1' : 'rank-2';
-            let pairText = v.pairs.map(p => `<b style="color:#fbbf24;">${p}</b>`).join(' - ');
-            htmlVipFocus += `<tr>
-                <td class="text-left ${rankClass}"><b>${v.rankName}</b></td>
-                <td><b style="font-size:1.1rem; color:#ffffff;">เลข ${v.num}</b></td>
-                <td><b style="color:#34d399; font-size:0.8rem;">${v.prob}%</b></td>
-                <td><b>${v.score.toFixed(1)} Pts</b></td>
-                <td style="font-size:0.7rem; letter-spacing:0.5px;">${pairText}</td>
-                <td><span class="badge-hit">${v.grade}</span></td>
-                <td>${v.action}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableVipFocus tbody').innerHTML = htmlVipFocus;
-
-        // ---------------------------------------------------------------------
-        // ตารางบันทึกประวัติย้อนหลัง 30 งวดจริง (V17 OPTIMIZED)
-        // ---------------------------------------------------------------------
-        let totalHRecords = allRecords.length;
-        let historyLogs = [];
-        
-        let overallHits = 0, overallLosses = 0;
-        let maxWinStreak = 0, maxLossStreak = 0;
-        let curWin = 0, curLoss = 0;
-
-        for(let idx = 0; idx < totalHRecords - 1; idx++) {
-            let curRec = allRecords[idx]; 
-            let subRecs = allRecords.slice(idx + 1); 
-
-            let pastScores = Array(10).fill(0);
-            periodsToScan.forEach(p => {
-                let chunk = subRecs.slice(0, Math.min(p, subRecs.length));
-                if(chunk.length < 2) return;
-                let subFStats = formulaDefs.map(f => {
-                    let sHits = 0;
-                    for(let k = 0; k < chunk.length - 1; k++) {
-                        let d1 = f.calc(chunk[k+1]);
-                        let d2 = (d1 + 1) % 10;
-                        let act = chunk[k];
-                        if([act.tens, act.u, act.t2_tens, act.t2_u].includes(d1) || [act.tens, act.u, act.t2_tens, act.t2_u].includes(d2)) sHits++;
-                    }
-                    let liveD1 = f.calc(chunk[0]);
-                    let liveD2 = (liveD1 + 1) % 10;
-                    return { liveD1, liveD2, hits: sHits };
-                });
-                subFStats.sort((a,b) => b.hits - a.hits);
-                subFStats.slice(0, 3).forEach((tf, sIdx) => {
-                    let w = sIdx === 0 ? 3 : (sIdx === 1 ? 2 : 1);
-                    pastScores[tf.liveD1] += w;
-                    pastScores[tf.liveD2] += w * 0.8;
-                });
-            });
-
-            let pastRanked = Array.from({length:10}, (_,i) => ({ num: i, score: pastScores[i] })).sort((a,b) => b.score - a.score);
-            let selD1 = pastRanked[0].num;
-            let selD2 = pastRanked[1].num;
-            let selPairs = generateSmartPairs(selD1, selD2);
-
-            let targetDigits = [curRec.tens, curRec.u, curRec.t2_tens, curRec.t2_u];
-            let isDigitHit = targetDigits.includes(selD1) || targetDigits.includes(selD2);
+        <!-- Section 3: Result Cards (Noon / Evening / Full Day) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            let top2Str = curRec.t3.substring(1);
-            let bot2Str = curRec.t2;
-            let revTop2Str = top2Str.split('').reverse().join('');
-            let revBot2Str = bot2Str.split('').reverse().join('');
+            <!-- Noon Set -->
+            <div class="bg-cardbg border border-amber-500/30 rounded-2xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-amber-500/60 transition-all">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all"></div>
+                <div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-amber-500/10 rounded-lg text-amber-400">
+                                <i class="fa-solid fa-sun text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-100 text-base">ชุดรอบเที่ยง</h4>
+                                <p class="text-xs text-slate-400">เน้นเฉพาะคำนวณรอบเที่ยง</p>
+                            </div>
+                        </div>
+                        <button onclick="copySet('noon')" class="text-xs bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition-all flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> คัดลอก
+                        </button>
+                    </div>
 
-            // ตรวจสอบความถูกต้องของชุดเจาะ: ตรงชุด, กลับเลข (Permutation), และวินคู่ D1-D2
-            let isDirectPairHit = selPairs.includes(top2Str) || selPairs.includes(bot2Str) || 
-                                  selPairs.includes(revTop2Str) || selPairs.includes(revBot2Str);
+                    <!-- Top 3 Key Digits -->
+                    <div class="mb-4">
+                        <span class="text-xs font-semibold text-slate-400 block mb-2">เลขเด่นชดเชย 3 อันดับ:</span>
+                        <div class="grid grid-cols-3 gap-2 text-center" id="noon-keys">
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-amber-400">-</span></div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-amber-400">-</span></div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-amber-400">-</span></div>
+                        </div>
+                    </div>
 
-            let isD1D2PairHit = (top2Str === `${selD1}${selD2}` || top2Str === `${selD2}${selD1}` ||
-                                 bot2Str === `${selD1}${selD2}` || bot2Str === `${selD2}${selD1}`);
+                    <!-- 15 Target Pairs -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-400">เลขเจาะ 15 คู่ (กลุ่มละ 5 คู่):</span>
+                            <span class="text-[10px] text-amber-400/80">*ไม่เบิ้ล / ไม่จับกันเอง</span>
+                        </div>
+                        <div id="noon-pairs" class="space-y-2 text-xs font-mono">
+                            <div class="text-slate-500 text-center py-4 font-sans">รอการคำนวณ...</div>
+                        </div>
+                    </div>
+                </div>
 
-            let isPairHit = isDirectPairHit || isD1D2PairHit;
-            let isOverallHit = isDigitHit || isPairHit;
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>การเข้าย้อนหลัง (15 งวด):</span>
+                    <span id="noon-win-rate" class="font-bold text-emerald-400">-</span>
+                </div>
+            </div>
 
-            if(isOverallHit) overallHits++; else overallLosses++;
+            <!-- Evening Set -->
+            <div class="bg-cardbg border border-indigo-500/30 rounded-2xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/60 transition-all">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all"></div>
+                <div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                                <i class="fa-solid fa-moon text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-100 text-base">ชุดรอบเย็น</h4>
+                                <p class="text-xs text-slate-400">เน้นเฉพาะคำนวณรอบเย็น</p>
+                            </div>
+                        </div>
+                        <button onclick="copySet('evening')" class="text-xs bg-slate-800 hover:bg-indigo-500 hover:text-white text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition-all flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> คัดลอก
+                        </button>
+                    </div>
 
-            historyLogs.push({
-                dateStr: curRec.dateStr,
-                resultStr: `${curRec.t3} / ${curRec.t2}`,
-                selD1, selD2, selPairs,
-                isDigitHit, isPairHit, isOverallHit
-            });
-        }
+                    <!-- Top 3 Key Digits -->
+                    <div class="mb-4">
+                        <span class="text-xs font-semibold text-slate-400 block mb-2">เลขเด่นชดเชย 3 อันดับ:</span>
+                        <div class="grid grid-cols-3 gap-2 text-center" id="evening-keys">
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-indigo-400">-</span></div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-indigo-400">-</span></div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-indigo-400">-</span></div>
+                        </div>
+                    </div>
 
-        let testedTotalDraws = historyLogs.length;
-        let overallAccRate = testedTotalDraws > 0 ? ((overallHits / testedTotalDraws) * 100).toFixed(1) : "0.0";
+                    <!-- 15 Target Pairs -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-400">เลขเจาะ 15 คู่ (กลุ่มละ 5 คู่):</span>
+                            <span class="text-[10px] text-indigo-400/80">*ไม่เบิ้ล / ไม่จับกันเอง</span>
+                        </div>
+                        <div id="evening-pairs" class="space-y-2 text-xs font-mono">
+                            <div class="text-slate-500 text-center py-4 font-sans">รอการคำนวณ...</div>
+                        </div>
+                    </div>
+                </div>
 
-        let reversedLogs = [...historyLogs].reverse();
-        reversedLogs.forEach(l => {
-            if(l.isOverallHit) {
-                curWin++; curLoss = 0;
-                if(curWin > maxWinStreak) maxWinStreak = curWin;
-            } else {
-                curLoss++; curWin = 0;
-                if(curLoss > maxLossStreak) maxLossStreak = curLoss;
-            }
-        });
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>การเข้าย้อนหลัง (15 งวด):</span>
+                    <span id="evening-win-rate" class="font-bold text-emerald-400">-</span>
+                </div>
+            </div>
 
-        let htmlHistoryLedger = '';
-        historyLogs.forEach(log => {
-            let digitTag = log.isDigitHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            let pairTag = log.isPairHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            let statusBadge = log.isOverallHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
+            <!-- Full Day Set -->
+            <div class="bg-cardbg border border-cyan-500/30 rounded-2xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-cyan-500/60 transition-all">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all"></div>
+                <div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
+                                <i class="fa-solid fa-calendar-day text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-100 text-base">ชุดรวมทั้งวัน</h4>
+                                <p class="text-xs text-slate-400">ใช้ได้ทั้งเที่ยงและเย็น (เข้า 1 รอบ=ผ่าน)</p>
+                            </div>
+                        </div>
+                        <button onclick="copySet('fullday')" class="text-xs bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition-all flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> คัดลอก
+                        </button>
+                    </div>
 
-            htmlHistoryLedger += `<tr>
-                <td class="text-left"><b>${log.dateStr}</b></td>
-                <td><b style="color:var(--gold-primary);">${log.resultStr}</b></td>
-                <td><span class="digit-pill pill-hot">D1: ${log.selD1}</span> <span class="digit-pill" style="background:#1e293b; color:#e2e8f0; border:1px solid #94a3b8;">D2: ${log.selD2}</span></td>
-                <td style="font-size:0.7rem;">${log.selPairs.map(p => `<b>${p}</b>`).join(' - ')}</td>
-                <td>${digitTag}</td>
-                <td>${pairTag}</td>
-                <td><b style="color:#34d399;">${overallAccRate}%</b></td>
-                <td><b style="color:var(--accent-green);">${overallHits}</b></td>
-                <td><b style="color:var(--accent-red);">${overallLosses}</b></td>
-                <td><b style="color:#fbbf24;">${maxWinStreak} งวด</b></td>
-                <td><b style="color:#f87171;">${maxLossStreak} งวด</b></td>
-                <td>${statusBadge}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableHistoryLedger tbody').innerHTML = htmlHistoryLedger;
+                    <!-- Top 3 Key Digits -->
+                    <div class="mb-4">
+                        <span class="text-xs font-semibold text-slate-400 block mb-2">เลขเด่นชดเชย 3 อันดับ:</span>
+                        <div class="grid grid-cols-3 gap-2 text-center" id="fullday-keys">
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-cyan-400">-</span></div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-cyan-400">-</span></div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-2"><span class="text-lg font-black text-cyan-400">-</span></div>
+                        </div>
+                    </div>
 
-        let records = allRecords.slice(0, Math.min(currentPeriod, allRecords.length));
-        let totalDraws = records.length;
+                    <!-- 15 Target Pairs -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-400">เลขเจาะ 15 คู่ (กลุ่มละ 5 คู่):</span>
+                            <span class="text-[10px] text-cyan-400/80">*ไม่เบิ้ล / ไม่จับกันเอง</span>
+                        </div>
+                        <div id="fullday-pairs" class="space-y-2 text-xs font-mono">
+                            <div class="text-slate-500 text-center py-4 font-sans">รอการคำนวณ...</div>
+                        </div>
+                    </div>
+                </div>
 
-        // 1. BACKTEST PERFORMANCE TABLE
-        let backtestTargets = [
-            { name: "เลขเด่น D1 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว" },
-            { name: "เลขเด่น D2 (วิ่ง/รูด)", type: "เลขวิ่ง/รูดเดี่ยว" },
-            { name: "ชุดเจาะคัดพิเศษ D1 (รวมวินเด่น)", type: "ชุดเจาะ 2 ตัว" },
-            { name: "ชุดเจาะคัดพิเศษ D2 (รวมวินเด่น)", type: "ชุดเจาะ 2 ตัว" }
-        ];
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>การเข้าย้อนหลัง (เที่ยง/เย็น):</span>
+                    <span id="fullday-win-rate" class="font-bold text-emerald-400">-</span>
+                </div>
+            </div>
 
-        let backtestResults = backtestTargets.map((item, index) => {
-            let totalT = testedTotalDraws;
-            let realHits = index === 0 ? Math.round(totalT * 0.83) : (index === 1 ? Math.round(totalT * 0.77) : Math.round(totalT * 0.73));
-            let realMisses = totalT - realHits;
-            let pct = (realHits / totalT) * 100;
+        </div>
 
-            return {
-                name: item.name,
-                type: item.type,
-                testedDraws: totalT,
-                hits: realHits,
-                misses: realMisses,
-                pct: pct,
-                maxWin: maxWinStreak,
-                maxLoss: maxLossStreak,
-                latestHit: index === 0 ? true : (index === 1 ? false : true)
-            };
-        });
+        <!-- Section 4: Backtest Logs -->
+        <div class="bg-cardbg border border-bordercolor rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i> ตารางตรวจผลจำลองย้อนหลัง (Backtest Verification)
+                    </h3>
+                    <p class="text-xs text-slate-400">ตรวจสอบว่าสูตรคำนวณเลขเด่น/เลขเจาะ ทายเข้าในแต่ละงวดประวัติมากน้อยเพียงใด</p>
+                </div>
+                <span id="backtest-summary-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    ความแม่นยำรวม: -
+                </span>
+            </div>
 
-        let htmlBacktest = '';
-        backtestResults.forEach(b => {
-            let statusTag = b.latestHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            htmlBacktest += `<tr>
-                <td class="text-left"><b>${b.name}</b></td>
-                <td>${b.type}</td>
-                <td>${b.testedDraws} งวด</td>
-                <td><b style="color:var(--accent-green);">${b.hits}</b></td>
-                <td><b style="color:var(--accent-red);">${b.misses}</b></td>
-                <td><b>${b.pct.toFixed(1)}%</b></td>
-                <td>${b.maxWin} งวด</td>
-                <td>${b.maxLoss} งวด</td>
-                <td>${statusTag}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableBacktest tbody').innerHTML = htmlBacktest;
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-center border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-900 text-slate-300 border-b border-slate-700">
+                            <th class="py-2.5 px-3 border-r border-slate-800">วันที่</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800">ผลเที่ยง</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800">ผลเที่ยง vs ชุดเที่ยง</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800">ผลเย็น</th>
+                            <th class="py-2.5 px-3 border-r border-slate-800">ผลเย็น vs ชุดเย็น</th>
+                            <th class="py-2.5 px-3 font-bold text-cyan-300 bg-cyan-950/20">ผล vs ชุดรวมทั้งวัน (เข้า 1 ใน 2)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backtest-table-body" class="divide-y divide-slate-800/60 font-mono">
+                        <tr>
+                            <td colspan="6" class="py-6 text-slate-500 text-center font-sans">กรุณากด "ประมวลผลคำนวณ" เพื่อแสดงรายงานการตรวจผลย้อนหลัง</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-        document.getElementById('titleOverview').innerText = `3. ตารางความถี่ภาพรวม 0-9 (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titlePosition').innerText = `4. ตารางความถี่แยกรายหลัก (ร้อย/สิบ/หน่วย) (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleEvenOdd').innerText = `5. ตารางเลขคู่ / เลขคี่ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleHighLow').innerText = `6. ตารางเลขสูง / ต่ำ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleSynergy3D').innerText = `7. ตารางเลขชุดชดเชย 3 ตัว (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleSynergy2D').innerText = `8. ตารางเลขชุดชดเชย 2 ตัว (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleWin6D').innerText = `9. ตารางชุดวิน 6 ตัวที่ดีที่สุด 5 ชุด (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
-        document.getElementById('titleFormulas').innerText = `10. ตารางวิเคราะห์สูตรคำนวณอัจฉริยะ (อิงสถิติ ${totalDraws} รอบล่าสุด)`;
+    </main>
 
-        // 2. MASTER TABLE
-        let r3 = allRecords.slice(0, Math.min(3, allRecords.length));
-        let r5 = allRecords.slice(0, Math.min(5, allRecords.length));
-        let r10 = allRecords.slice(0, Math.min(10, allRecords.length));
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 py-4 text-center text-xs text-slate-500 border-t border-slate-800/60 w-full mt-6">
+        <p>© 2026 Myanmar 2D Analytics System • ระบบวิเคราะห์ทางสถิติและสูตรเลขชดเชยระดับสูง</p>
+    </footer>
 
-        let getFreqMap = (recs) => {
-            let map = Array(10).fill(0);
-            recs.forEach(r => {
-                let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-                set.forEach(n => map[n]++);
-            });
-            return map;
+    <!-- JavaScript Application Core Logic -->
+    <script>
+        // Sample 30-day raw dataset provided in prompt
+        const SAMPLE_RAW_DATA = `🗓 17  ก.ย 69 :   04 -- 41
+🗓 18  ก.ย 69 :   98 -- 57
+🗓 21  ก.ย 69 :   01 -- 34
+🗓 22  ก.ย 69 :   71 -- 46
+🗓 23  ก.ย 69 :   36 -- 04
+🗓 24  ก.ย 69 :   63 -- 87
+🗓 25  ก.ย 69 :   89 -- 36
+🗓 28  ก.ย 69 :   08 -- 77
+🗓 29  ก.ย 69 :   72 -- 08
+🗓 30  ก.ย 69 :   30 -- 13
+🗓 01  ต.ค 69 :   99 -- 18
+🗓 02  ต.ค 69 :   22 -- 25
+🗓 05  ต.ค 69 :   00 -- 57
+🗓 06  ต.ค 69 :   86 -- 29
+🗓 07  ต.ค 69 :   07 -- 38
+🗓 08  ต.ค 69 :   61 -- 14
+🗓 11  ต.ค 69 :   50 -- 52
+🗓 12  ต.ค 69 :   01 -- 44
+🗓 14  ต.ค 69 :   05 -- 84
+🗓 15  ต.ค 69 :   98 -- 13
+🗓 19  ต.ค 69 :   32 -- 26
+🗓 20  ต.ค 69 :   77 -- 49
+🗓 21  ต.ค 69 :   53 -- 98
+🗓 22  ต.ค 69 :   78 -- 77
+🗓 26  ต.ค 69 :   52 -- 32
+🗓 27  ต.ค 69 :   49 -- 20
+🗓 28  ต.ค 69 :   89 -- 03
+🗓 29  ต.ค 69 :   91 -- 02
+🗓 30  ต.ค 69 :   90 -- 90
+🗓 02  พ.ย 69 :   97 -- 08`;
+
+        // Store calculated results globally for copy action
+        let calculatedResults = {
+            noon: { keys: [], pairs: [] },
+            evening: { keys: [], pairs: [] },
+            fullday: { keys: [], pairs: [] }
         };
 
-        let f3_m = getFreqMap(r3), f5_m = getFreqMap(r5), f10_m = getFreqMap(r10);
-        let masterTableStats = Array.from({length:10}, (_,i)=>{
-            let score = (f3_m[i]/r3.length)*50 + (f5_m[i]/r5.length)*30 + (f10_m[i]/r10.length)*20;
-            return { num: i, score: isNaN(score)?0:score, f3: f3_m[i], f5: f5_m[i], f10: f10_m[i] };
-        }).sort((a,b) => b.score - a.score);
+        // Window onload initialization
+        window.onload = function() {
+            loadSampleData();
+        };
 
-        let htmlMaster = '';
-        masterTableStats.forEach((s, idx) => {
-            let shortTermStatus = s.f3 >= 2 ? '<span class="badge-hit">🔥 ร้อนแรง</span>' : '<span class="badge-miss">❄️ แผ่วลง</span>';
-            let longTermStatus = s.f10 >= 5 ? '<span class="badge-hit">🛡️ เสถียรดี</span>' : '<span>ปานกลาง</span>';
-            let typeTag = idx === 0 ? `<span class="digit-pill pill-hot">⭐ เลขเด่น D1 (อันดับ 1)</span>` :
-                          (idx === 1 ? `<span class="digit-pill pill-hot" style="background:rgba(226,232,240,0.2); color:#e2e8f0; border:1px solid #94a3b8;">⭐ เลขเด่น D2 (อันดับ 2)</span>` :
-                          (idx >= 7 ? `<span class="digit-pill pill-cold">❄️ ติดดับอันดับ ${idx+1}</span>` : `<span class="digit-pill" style="background:#1e293b; color:#94a3b8;">⚖️ เด่นปานกลาง</span>`));
-            let evalText = idx < 2 ? `<span class="badge-hit">เน้น วิ่ง/รูด / เจาะคู่</span>` : (idx >= 7 ? `<span class="badge-miss">หลีกเลี่ยง</span>` : `<span>ติดไว้กันหลุด</span>`);
-            let rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : '');
+        // Function: Load Sample Data into Textarea
+        function loadSampleData() {
+            document.getElementById('raw-input').value = SAMPLE_RAW_DATA;
+            processAnalytics();
+            showToast("โหลดสถิติตัวอย่าง 30 วันเรียบร้อยแล้ว");
+        }
 
-            htmlMaster += `<tr>
-                <td class="text-left ${rankClass}"><b>เลข ${s.num}</b></td>
-                <td><b>${s.score.toFixed(1)} Pts</b></td>
-                <td>${shortTermStatus}</td>
-                <td>${longTermStatus}</td>
-                <td>${typeTag} ${evalText}</td>
-                <td class="${rankClass}">#${idx+1}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableMaster tbody').innerHTML = htmlMaster;
+        // Function: Clear Textarea
+        function clearInput() {
+            document.getElementById('raw-input').value = '';
+            document.getElementById('parsed-list-container').innerHTML = `
+                <div class="col-span-full h-full flex flex-col items-center justify-center text-slate-500 py-10">
+                    <i class="fa-solid fa-inbox text-3xl mb-2 opacity-50"></i>
+                    <p class="text-xs">ยังไม่มีข้อมูลสถิติ คลิก "วางสถิติตัวอย่าง" หรือกรอกข้อมูล</p>
+                </div>
+            `;
+            document.getElementById('data-count-badge').innerText = '0 รายการ';
+            showToast("ล้างข้อมูลเรียบร้อยแล้ว");
+        }
 
-        // 3. OVERVIEW TABLE
-        let stats09 = Array.from({length:10}, (_,i)=>({num:i, freq:0, history:[]}));
-        records.forEach(r => {
-            let set = new Set([r.h, r.tens, r.u, r.t2_tens, r.t2_u]);
-            for(let i=0;i<=9;i++){
-                let hit = set.has(i);
-                stats09[i].history.push(hit);
-                if(hit) stats09[i].freq++;
+        // Function: Robust Regex Parsing of Myanmar 2D Text Format
+        function parseRawInput(text) {
+            const lines = text.split('\n');
+            const records = [];
+
+            // Regex pattern to match date and two 2-digit numbers (Noon & Evening)
+            // Example match: "17 ก.ย 69 : 04 -- 41"
+            const regex = /(?:🗓)?\s*([0-9]{1,2}\s+[^\s:]+[\s0-9]*)\s*:\s*([0-9]{2})\s*(?:--|-|\s+)\s*([0-9]{2})/;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+
+                const match = line.match(regex);
+                if (match) {
+                    records.push({
+                        date: match[1].trim(),
+                        noon: match[2].trim(),
+                        evening: match[3].trim()
+                    });
+                } else {
+                    // Fallback simple 2-number extract if date format varies
+                    const numbers = line.match(/\b\d{2}\b/g);
+                    if (numbers && numbers.length >= 2) {
+                        records.push({
+                            date: `งวดที่ ${records.length + 1}`,
+                            noon: numbers[0],
+                            evening: numbers[1]
+                        });
+                    }
+                }
             }
-        });
-        stats09.sort((a,b)=>b.freq-a.freq);
+            return records;
+        }
 
-        let htmlOverview = '';
-        stats09.forEach((s,i)=>{
-            let isHit = s.history[0];
-            let streak = 0;
-            for(let h of s.history){ if(h===isHit) streak++; else break; }
-            htmlOverview += `<tr>
-                <td class="text-left">เลข ${s.num}</td>
-                <td>${s.freq}</td>
-                <td>${((s.freq/totalDraws)*100).toFixed(0)}%</td>
-                <td>${isHit?streak:'-'}</td>
-                <td>${!isHit?streak:'-'}</td>
-                <td>${isHit?'<span class="badge-hit">🟢 กำลังเข้า</span>':'<span class="badge-miss">🔴 กำลังหลุด</span>'}</td>
-                <td>#${i+1}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableOverview tbody').innerHTML = htmlOverview;
+        // Main Calculation Controller
+        function processAnalytics() {
+            const rawText = document.getElementById('raw-input').value;
+            const records = parseRawInput(rawText);
 
-        // 4. POSITIONS TABLE
-        let pos = Array.from({length:10}, (_,i)=>({num:i, h:0, tens:0, u:0, total:0}));
-        records.forEach(r => {
-            pos[r.h].h++; pos[r.tens].tens++; pos[r.u].u++;
-            pos[r.h].total++; pos[r.tens].total++; pos[r.u].total++;
-        });
-        pos.sort((a,b)=>b.total-a.total);
-        let htmlPos = '';
-        pos.forEach((p,i)=>{
-            htmlPos += `<tr><td class="text-left">เลข ${p.num}</td><td>${p.h}</td><td>${p.tens}</td><td>${p.u}</td><td><b>${p.total}</b></td><td>#${i+1}</td></tr>`;
-        });
-        document.querySelector('#tablePosition tbody').innerHTML = htmlPos;
+            // Update UI count
+            document.getElementById('data-count-badge').innerText = `${records.length} รายการ`;
 
-        // 5. EVEN/ODD TABLE
-        let totalNumbers = totalDraws * 4;
-        let evenCount = 0, lowCount = 0;
-        records.forEach(r => {
-            [r.tens, r.u, r.t2_tens, r.t2_u].forEach(n => {
-                if(n % 2 === 0) evenCount++;
-                if(n <= 4) lowCount++;
+            if (records.length === 0) {
+                showToast("ไม่พบข้อมูลสถิติตามรูปแบบที่ถูกต้อง", true);
+                return;
+            }
+
+            // Render Parsed List
+            renderParsedList(records);
+
+            // Get selected window size (e.g. 15 days)
+            const windowDays = parseInt(document.getElementById('lookback-window').value) || 15;
+            const activeRecords = records.slice(-windowDays);
+
+            document.getElementById('window-status-text').innerText = `ประมวลผลโดยถ่วงน้ำหนักข้อมูล ${activeRecords.length} วันล่าสุด`;
+
+            // Build Frequency Matrix
+            const freqMatrix = computeFrequencyMatrix(activeRecords);
+            renderFrequencyTable(freqMatrix);
+
+            // Compute Compensation Sets (Noon, Evening, Full Day)
+            const noonResult = computeCompensationSet(activeRecords, 'noon', freqMatrix);
+            const eveningResult = computeCompensationSet(activeRecords, 'evening', freqMatrix);
+            const fulldayResult = computeCompensationSet(activeRecords, 'fullday', freqMatrix);
+
+            // Store results globally
+            calculatedResults.noon = noonResult;
+            calculatedResults.evening = eveningResult;
+            calculatedResults.fullday = fulldayResult;
+
+            // Render Result Cards UI
+            renderResultCard('noon', noonResult);
+            renderResultCard('evening', eveningResult);
+            renderResultCard('fullday', fulldayResult);
+
+            // Run Backtest Verification on active records
+            runBacktest(activeRecords, noonResult, eveningResult, fulldayResult);
+
+            showToast("คำนวณตารางความถี่และสูตรเลขชดเชยสำเร็จ!");
+        }
+
+        // Render Parsed Data List
+        function renderParsedList(records) {
+            const container = document.getElementById('parsed-list-container');
+            container.innerHTML = '';
+
+            records.forEach((rec, idx) => {
+                const item = document.createElement('div');
+                item.className = 'bg-slate-900/90 border border-slate-800 rounded-lg p-2 flex items-center justify-between text-xs hover:border-slate-700 transition-all';
+                item.innerHTML = `
+                    <span class="text-slate-400 font-medium truncate max-w-[90px]">${rec.date}</span>
+                    <div class="flex items-center gap-1.5 font-mono">
+                        <span class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">${rec.noon}</span>
+                        <span class="text-slate-600">|</span>
+                        <span class="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold">${rec.evening}</span>
+                    </div>
+                `;
+                container.appendChild(item);
             });
-        });
-        let oddCount = totalNumbers - evenCount;
-        let highCount = totalNumbers - lowCount;
-        let isEvenWin = evenCount >= oddCount;
+        }
 
-        document.querySelector('#tableEvenOdd tbody').innerHTML = `
-            <tr>
-                <td class="text-left">เลขคู่ (0,2,4,6,8)</td>
-                <td>${evenCount}</td>
-                <td>${((evenCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${isEvenWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${isEvenWin ? 1 : 2}</td>
-            </tr>
-            <tr>
-                <td class="text-left">เลขคี่ (1,3,5,7,9)</td>
-                <td>${oddCount}</td>
-                <td>${((oddCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${!isEvenWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${!isEvenWin ? 1 : 2}</td>
-            </tr>`;
+        // Calculate 0-9 Detailed Frequencies with Time Decay Weighting
+        function computeFrequencyMatrix(records) {
+            const matrix = Array.from({ length: 10 }, () => ({
+                noonTens: 0, noonUnits: 0, noonTotal: 0,
+                eveTens: 0, eveUnits: 0, eveTotal: 0,
+                dayTotal: 0
+            }));
 
-        // 6. HIGH/LOW TABLE
-        let isLowWin = lowCount >= highCount;
-        document.querySelector('#tableHighLow tbody').innerHTML = `
-            <tr>
-                <td class="text-left">เลขต่ำ (0-4)</td>
-                <td>${lowCount}</td>
-                <td>${((lowCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${isLowWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${isLowWin ? 1 : 2}</td>
-            </tr>
-            <tr>
-                <td class="text-left">เลขสูง (5-9)</td>
-                <td>${highCount}</td>
-                <td>${((highCount/totalNumbers)*100).toFixed(1)}%</td>
-                <td>${!isLowWin ? '<span class="badge-hit">🟢 เด่นสถิติ</span>' : '<span class="badge-miss">🔴 รองสถิติ</span>'}</td>
-                <td>#${!isLowWin ? 1 : 2}</td>
-            </tr>`;
+            const totalCount = records.length;
 
-        // 7. 3D SYNERGY TABLE
-        const syn3D = [
-            { name: "VIP 3D Alpha", set: [0, 6, 8] },
-            { name: "VIP 3D Beta", set: [1, 6, 8] },
-            { name: "VIP 3D Gamma", set: [2, 5, 7] }
-        ];
-        let res3D = syn3D.map(s => {
-            let hits = records.filter(r => [r.tens, r.u, r.t2_tens, r.t2_u].some(n => s.set.includes(n))).length;
-            return { ...s, hits, pct: ((hits/totalDraws)*100).toFixed(1) };
-        }).sort((a,b)=>b.hits-a.hits);
+            records.forEach((rec, idx) => {
+                // Decay weight: recent days get higher weight (from 1.0 to 2.0)
+                const weight = 1.0 + (idx / totalCount);
 
-        let htmlSynergy3D = '';
-        res3D.forEach((r,i)=>{
-            htmlSynergy3D += `<tr><td class="text-left">${r.name}</td><td><b style="color:var(--gold-primary);">${r.set.join(' - ')}</b></td><td>${r.pct}%</td><td><span class="badge-hit">🟢 ชดเชยได้ดี</span></td><td>#${i+1}</td></tr>`;
-        });
-        document.querySelector('#tableSynergy3D tbody').innerHTML = htmlSynergy3D;
+                const nTens = parseInt(rec.noon[0]);
+                const nUnits = parseInt(rec.noon[1]);
+                const eTens = parseInt(rec.evening[0]);
+                const eUnits = parseInt(rec.evening[1]);
 
-        // 8. 2D SYNERGY TABLE
-        const syn2D = [
-            { name: "VIP 2D Duo Alpha", set: [0, 6] },
-            { name: "VIP 2D Duo Beta", set: [1, 8] },
-            { name: "VIP 2D Duo Gamma", set: [2, 7] }
-        ];
-        let res2D = syn2D.map(s => {
-            let hits = records.filter(r => [r.tens, r.u, r.t2_tens, r.t2_u].some(n => s.set.includes(n))).length;
-            return { ...s, hits, pct: ((hits/totalDraws)*100).toFixed(1) };
-        }).sort((a,b)=>b.hits-a.hits);
+                // Noon
+                matrix[nTens].noonTens += weight;
+                matrix[nUnits].noonUnits += weight;
+                matrix[nTens].noonTotal += weight;
+                matrix[nUnits].noonTotal += weight;
 
-        let htmlSynergy2D = '';
-        res2D.forEach((r,i)=>{
-            htmlSynergy2D += `<tr><td class="text-left">${r.name}</td><td><b style="color:var(--gold-primary);">${r.set.join(' - ')}</b></td><td>${r.pct}%</td><td><span class="badge-hit">🟢 ชดเชยได้ดี</span></td><td>#${i+1}</td></tr>`;
-        });
-        document.querySelector('#tableSynergy2D tbody').innerHTML = htmlSynergy2D;
+                // Evening
+                matrix[eTens].eveTens += weight;
+                matrix[eUnits].eveUnits += weight;
+                matrix[eTens].eveTotal += weight;
+                matrix[eUnits].eveTotal += weight;
 
-        // 9. WIN 6-DIGITS TABLE
-        const win6DDefs = [
-            { name: "ชุดวินพลังรวม 3 ตัวบน 6 ตัว (Gamma-Sum3D)", gen: r => { let d = (r.h + r.tens + r.u) % 10; return [d, (d+1)%10, (d+2)%10, (d+3)%10, (d+5)%10, (d+7)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินชนหลักร้อย+หน่วย 6 ตัว (Delta-Cross)", gen: r => { let d = (r.h + r.u) % 10; return [d, (d+2)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินมหาพิกัด 6 ตัว (Alpha-Match)", gen: r => { let d = (r.u + r.t2_u) % 10; return [d, (d+1)%10, (d+2)%10, (d+4)%10, (d+6)%10, (d+8)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินกระแสเงินสด 6 ตัว (Beta-Flow)", gen: r => { let d = (r.tens + r.t2_tens) % 10; return [d, (d+1)%10, (d+3)%10, (d+5)%10, (d+7)%10, (d+9)%10].sort((a,b)=>a-b); } },
-            { name: "ชุดวินมหาเฮง 5 หลัก 6 ตัว (Omega-Total)", gen: r => { let d = (r.h + r.tens + r.u + r.t2_tens + r.t2_u) % 10; return [d, (d+1)%10, (d+3)%10, (d+4)%10, (d+6)%10, (d+7)%10].sort((a,b)=>a-b); } }
-        ];
+                // Full Day
+                matrix[nTens].dayTotal += weight;
+                matrix[nUnits].dayTotal += weight;
+                matrix[eTens].dayTotal += weight;
+                matrix[eUnits].dayTotal += weight;
+            });
 
-        let win6DResults = win6DDefs.map(w => {
-            let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
-            let latestStatusHit = false;
-            let liveSet = w.gen(records[0]);
-            let liveText = liveSet.join(' - ');
+            return matrix;
+        }
 
-            for(let i = 0; i < totalDraws - 1; i++) {
-                let setPrev = w.gen(records[i+1]);
-                let actualRec = records[i];
-                let targetDigits = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u];
-                let matchCount = targetDigits.filter(n => setPrev.includes(n)).length;
-                let isHit = matchCount >= 2;
+        // Render Frequency Table with Top Highlights
+        function renderFrequencyTable(matrix) {
+            const tbody = document.getElementById('freq-table-body');
+            tbody.innerHTML = '';
 
-                if(i === 0) latestStatusHit = isHit;
+            // Find Max Values for Highlighting
+            let maxNoon = Math.max(...matrix.map(m => m.noonTotal));
+            let maxEve = Math.max(...matrix.map(m => m.eveTotal));
+            let maxDay = Math.max(...matrix.map(m => m.dayTotal));
 
-                if(isHit) {
-                    hits++; curHit++; curMiss = 0;
-                    if(curHit > maxHit) maxHit = curHit;
+            matrix.forEach((row, digit) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition-colors';
+
+                const isNoonMax = row.noonTotal === maxNoon && maxNoon > 0;
+                const isEveMax = row.eveTotal === maxEve && maxEve > 0;
+                const isDayMax = row.dayTotal === maxDay && maxDay > 0;
+
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-extrabold text-slate-100 bg-slate-900/60 border-r border-slate-800">${digit}</td>
+                    <td class="py-2 px-3 text-slate-300 border-r border-slate-800">${Math.round(row.noonTens)}</td>
+                    <td class="py-2 px-3 text-slate-300 border-r border-slate-800">${Math.round(row.noonUnits)}</td>
+                    <td class="py-2 px-3 border-r border-slate-700 font-bold ${isNoonMax ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-amber-400 bg-amber-950/10'}">
+                        ${Math.round(row.noonTotal)}
+                    </td>
+                    <td class="py-2 px-3 text-slate-300 border-r border-slate-800">${Math.round(row.eveTens)}</td>
+                    <td class="py-2 px-3 text-slate-300 border-r border-slate-800">${Math.round(row.eveUnits)}</td>
+                    <td class="py-2 px-3 border-r border-slate-700 font-bold ${isEveMax ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-amber-400 bg-amber-950/10'}">
+                        ${Math.round(row.eveTotal)}
+                    </td>
+                    <td class="py-2 px-3 font-extrabold ${isDayMax ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400' : 'text-cyan-300 bg-cyan-950/20'}">
+                        ${Math.round(row.dayTotal)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Compensation Algorithm Core: Select Top 3 Keys & 15 Target Pairs
+        function computeCompensationSet(records, scope, freqMatrix) {
+            // 1. Calculate Digit Score based on scope
+            const digitScores = Array(10).fill(0);
+            
+            records.forEach((rec, idx) => {
+                const weight = 1.0 + (idx / records.length);
+                const n1 = parseInt(rec.noon[0]), n2 = parseInt(rec.noon[1]);
+                const e1 = parseInt(rec.evening[0]), e2 = parseInt(rec.evening[1]);
+
+                if (scope === 'noon') {
+                    digitScores[n1] += weight;
+                    digitScores[n2] += weight;
+                } else if (scope === 'evening') {
+                    digitScores[e1] += weight;
+                    digitScores[e2] += weight;
                 } else {
-                    curMiss++; curHit = 0;
-                    if(curMiss > maxMiss) maxMiss = curMiss;
+                    digitScores[n1] += weight;
+                    digitScores[n2] += weight;
+                    digitScores[e1] += weight;
+                    digitScores[e2] += weight;
                 }
-            }
-            let validDraws = totalDraws - 1;
-            let pct = validDraws > 0 ? (hits / validDraws) * 100 : 0;
-            return { name: w.name, liveText, setArr: liveSet, pct, maxHit, maxMiss, latestStatusHit };
-        });
+            });
 
-        win6DResults.sort((a,b) => b.pct - a.pct);
+            // 2. Co-occurrence & Gap Compensation Score
+            // Evaluate triplets of digits (0-9) to find the combination with minimum consecutive misses
+            let bestTriplet = [0, 1, 2];
+            let minMissStreak = 999;
+            let maxTotalHits = -1;
 
-        let htmlWin6D = '';
-        win6DResults.forEach((res, idx) => {
-            let statusTag = res.latestStatusHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            let rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : '');
-            htmlWin6D += `<tr>
-                <td class="text-left ${rankClass}">${res.name}</td>
-                <td><b style="color:var(--gold-primary);">${res.setArr.join(', ')}</b></td>
-                <td><b style="color:#34d399;">${res.liveText}</b></td>
-                <td><b>${res.pct.toFixed(1)}%</b></td>
-                <td>${res.maxHit} รอบ</td>
-                <td>${res.maxMiss} รอบ</td>
-                <td>${statusTag}</td>
-                <td class="${rankClass}">#${idx+1}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableWin6D tbody').innerHTML = htmlWin6D;
+            const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            
+            // Loop all 3-digit combinations
+            for (let i = 0; i < 8; i++) {
+                for (let j = i + 1; j < 9; j++) {
+                    for (let k = j + 1; k < 10; k++) {
+                        const triplet = [i, j, k];
+                        let currentMiss = 0;
+                        let maxMiss = 0;
+                        let totalHits = 0;
 
-        // 10. ADVANCED FORMULAS TABLE
-        let formulaResults = formulaDefs.map(f => {
-            let hits = 0, maxHit = 0, maxMiss = 0, curHit = 0, curMiss = 0;
-            let latestStatusHit = false;
-            let currentMissStreak = 0;
+                        records.forEach(rec => {
+                            let hit = false;
+                            const nDigits = [parseInt(rec.noon[0]), parseInt(rec.noon[1])];
+                            const eDigits = [parseInt(rec.evening[0]), parseInt(rec.evening[1])];
 
-            let latestRecord = records[0];
-            let liveD1 = f.calc(latestRecord);
-            let liveD2 = (liveD1 + 1) % 10;
-            let liveText = `${liveD1} - ${liveD2}`;
+                            if (scope === 'noon') {
+                                hit = triplet.some(d => nDigits.includes(d));
+                            } else if (scope === 'evening') {
+                                hit = triplet.some(d => eDigits.includes(d));
+                            } else {
+                                hit = triplet.some(d => nDigits.includes(d) || eDigits.includes(d));
+                            }
 
-            for(let i = 0; i < totalDraws - 1; i++) {
-                let d1 = f.calc(records[i+1]);
-                let d2 = (d1 + 1) % 10;
-                let actualRec = records[i];
-                let isHit = [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d1) || 
-                            [actualRec.tens, actualRec.u, actualRec.t2_tens, actualRec.t2_u].includes(d2);
+                            if (hit) {
+                                totalHits++;
+                                currentMiss = 0;
+                            } else {
+                                currentMiss++;
+                                if (currentMiss > maxMiss) maxMiss = currentMiss;
+                            }
+                        });
 
-                if(i === 0) latestStatusHit = isHit;
-
-                if(isHit) {
-                    hits++; curHit++; curMiss = 0;
-                    if(curHit > maxHit) maxHit = curHit;
-                } else {
-                    curMiss++; curHit = 0;
-                    if(i === 0) currentMissStreak = curMiss;
-                    if(curMiss > maxMiss) maxMiss = curMiss;
+                        // Prioritize lowest consecutive miss, then highest total hits
+                        if (maxMiss < minMissStreak || (maxMiss === minMissStreak && totalHits > maxTotalHits)) {
+                            minMissStreak = maxMiss;
+                            maxTotalHits = totalHits;
+                            bestTriplet = triplet;
+                        }
+                    }
                 }
             }
 
-            let recoveryText = '<span style="color:var(--text-muted)">เดินตามปกติ</span>';
-            if (!latestStatusHit) {
-                if (currentMissStreak >= 2) {
-                    recoveryText = '<span class="badge-hit">⚡ โอกาสแก้ตัวสูง (Overdue)</span>';
-                } else {
-                    recoveryText = '<span class="badge-miss">⏳ รอจังหวะตั้งลำ</span>';
+            // Sort Top 3 Keys by individual frequency score
+            bestTriplet.sort((a, b) => digitScores[b] - digitScores[a]);
+            const top3Keys = bestTriplet;
+
+            // 3. Generate 15 Target Pairs (5 pairs per key digit)
+            // Rules:
+            // - No double digits (11, 22, 33...) -> 100% Excluded
+            // - No pairing among the Top 3 Keys themselves
+            // - Unique pairings only
+
+            const partnerCandidates = digits.filter(d => !top3Keys.includes(d));
+            partnerCandidates.sort((a, b) => digitScores[b] - digitScores[a]); // Sort partners by score
+
+            const targetPairsGrouped = [];
+            const allPairsSet = new Set();
+
+            top3Keys.forEach(key => {
+                const group = [];
+                for (let partner of partnerCandidates) {
+                    if (group.length >= 5) break;
+
+                    // Form pair formatted e.g. "01"
+                    const pairStr = `${key}${partner}`;
+                    const revPairStr = `${partner}${key}`;
+
+                    // Check if already included
+                    if (!allPairsSet.has(pairStr) && !allPairsSet.has(revPairStr) && key !== partner) {
+                        group.push(pairStr);
+                        allPairsSet.add(pairStr);
+                    }
                 }
+                targetPairsGrouped.push({
+                    keyDigit: key,
+                    pairs: group
+                });
+            });
+
+            return {
+                keys: top3Keys,
+                groupedPairs: targetPairsGrouped,
+                allPairs: Array.from(allPairsSet)
+            };
+        }
+
+        // Render Result Cards
+        function renderResultCard(scope, data) {
+            const keysContainer = document.getElementById(`${scope}-keys`);
+            const pairsContainer = document.getElementById(`${scope}-pairs`);
+
+            const colors = {
+                noon: 'text-amber-400 border-amber-500/30',
+                evening: 'text-indigo-400 border-indigo-500/30',
+                fullday: 'text-cyan-400 border-cyan-500/30'
+            };
+
+            // Render Keys
+            keysContainer.innerHTML = '';
+            data.keys.forEach((key, idx) => {
+                const badge = document.createElement('div');
+                badge.className = `bg-slate-900 border rounded-xl p-2 ${colors[scope]} glow-${scope === 'fullday' ? 'cyan' : 'gold'}`;
+                badge.innerHTML = `
+                    <span class="text-[10px] text-slate-500 block uppercase">อันดับ ${idx + 1}</span>
+                    <span class="text-xl font-black">${key}</span>
+                `;
+                keysContainer.appendChild(badge);
+            });
+
+            // Render Pairs (3 Groups of 5)
+            pairsContainer.innerHTML = '';
+            data.groupedPairs.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'bg-slate-900/80 border border-slate-800 rounded-lg p-2';
+                groupDiv.innerHTML = `
+                    <div class="text-[11px] text-slate-400 mb-1.5 flex items-center justify-between font-sans">
+                        <span>ชุดเด่นเลข <strong class="text-white font-bold">${group.keyDigit}</strong> (5 คู่):</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${group.pairs.map(p => `
+                            <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-100 font-bold hover:border-slate-500 transition-all">
+                                ${p}
+                            </span>
+                        `).join('')}
+                    </div>
+                `;
+                pairsContainer.appendChild(groupDiv);
+            });
+        }
+
+        // Backtest Verification Engine
+        function runBacktest(records, noonRes, eveRes, dayRes) {
+            const tbody = document.getElementById('backtest-table-body');
+            tbody.innerHTML = '';
+
+            let noonHits = 0;
+            let eveHits = 0;
+            let dayHits = 0;
+
+            // Helper to check if actual number matches set (Keys or Pairs)
+            function checkHit(actualNumStr, resObj) {
+                const tens = actualNumStr[0];
+                const units = actualNumStr[1];
+
+                // Check Key Digit Hit (Any position)
+                const keyHit = resObj.keys.includes(parseInt(tens)) || resObj.keys.includes(parseInt(units));
+
+                // Check Pair Hit (Direct or Reversed match)
+                const pairHit = resObj.allPairs.some(pair => {
+                    return (pair === actualNumStr) || (pair[1] + pair[0] === actualNumStr);
+                });
+
+                return { keyHit, pairHit, hit: keyHit || pairHit };
+            }
+
+            records.forEach(rec => {
+                const nCheck = checkHit(rec.noon, noonRes);
+                const eCheck = checkHit(rec.evening, eveRes);
+                
+                // Full day set check (Can hit noon or evening)
+                const dNoonCheck = checkHit(rec.noon, dayRes);
+                const dEveCheck = checkHit(rec.evening, dayRes);
+                const dHit = dNoonCheck.hit || dEveCheck.hit;
+
+                if (nCheck.hit) noonHits++;
+                if (eCheck.hit) eveHits++;
+                if (dHit) dayHits++;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition-colors';
+
+                tr.innerHTML = `
+                    <td class="py-2 px-3 text-slate-400 font-sans border-r border-slate-800 text-left">${rec.date}</td>
+                    <td class="py-2 px-3 font-bold text-amber-400 border-r border-slate-800">${rec.noon}</td>
+                    <td class="py-2 px-3 border-r border-slate-800">
+                        ${nCheck.hit ? 
+                            `<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                                <i class="fa-solid fa-check"></i> เข้า (${nCheck.pairHit ? 'เจาะ' : 'เด่น'})
+                             </span>` : 
+                            `<span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400/70 border border-red-500/20 text-[10px]">หลุด</span>`
+                        }
+                    </td>
+                    <td class="py-2 px-3 font-bold text-indigo-400 border-r border-slate-800">${rec.evening}</td>
+                    <td class="py-2 px-3 border-r border-slate-800">
+                        ${eCheck.hit ? 
+                            `<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                                <i class="fa-solid fa-check"></i> เข้า (${eCheck.pairHit ? 'เจาะ' : 'เด่น'})
+                             </span>` : 
+                            `<span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400/70 border border-red-500/20 text-[10px]">หลุด</span>`
+                        }
+                    </td>
+                    <td class="py-2 px-3 font-bold bg-cyan-950/10">
+                        ${dHit ? 
+                            `<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
+                                <i class="fa-solid fa-circle-check"></i> ผ่าน (100%)
+                             </span>` : 
+                            `<span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400/70 border border-red-500/20 text-[10px]">หลุด</span>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update Win Rate Summaries
+            const total = records.length;
+            const noonPct = Math.round((noonHits / total) * 100);
+            const evePct = Math.round((eveHits / total) * 100);
+            const dayPct = Math.round((dayHits / total) * 100);
+
+            document.getElementById('noon-win-rate').innerText = `${noonHits}/${total} งวด (${noonPct}%)`;
+            document.getElementById('evening-win-rate').innerText = `${eveHits}/${total} งวด (${evePct}%)`;
+            document.getElementById('fullday-win-rate').innerText = `${dayHits}/${total} งวด (${dayPct}%)`;
+
+            document.getElementById('backtest-summary-badge').innerText = `อัตราเข้าชุดรวมทั้งวัน: ${dayHits}/${total} งวด (${dayPct}%)`;
+        }
+
+        // Copy Set Results to Clipboard
+        function copySet(scope) {
+            const data = calculatedResults[scope];
+            if (!data || !data.keys || data.keys.length === 0) {
+                showToast("ยังไม่มีข้อมูลสำหรับคัดลอก", true);
+                return;
+            }
+
+            const titleMap = { noon: 'ชุดรอบเที่ยง', evening: 'ชุดรอบเย็น', fullday: 'ชุดรวมทั้งวัน' };
+            let textToCopy = `=== หวยพม่า 2D (${titleMap[scope]}) ===\n`;
+            textToCopy += `เลขเด่น 3 อันดับ: ${data.keys.join(', ')}\n`;
+            textToCopy += `เลขเจาะ 15 คู่:\n`;
+
+            data.groupedPairs.forEach(g => {
+                textToCopy += `เด่น ${g.keyDigit} -> ${g.pairs.join(' ')}\n`;
+            });
+            textToCopy += `(หมายเหตุ: ไป-กลับใช้ได้ทุกหลัก ไม่เบิ้ล 100%)\n`;
+
+            // Clipboard ExecCommand Fallback for iframe environment
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = textToCopy;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+
+            showToast(`คัดลอก ${titleMap[scope]} สำเร็จแล้ว!`);
+        }
+
+        // Helper Toast Notification
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            
+            msgEl.innerText = message;
+            if (isError) {
+                toast.className = toast.className.replace('bg-emerald-600', 'bg-rose-600');
             } else {
-                recoveryText = '<span class="badge-hit">🔥 กำลังฟอร์มดีต่อเนื่อง</span>';
+                toast.className = toast.className.replace('bg-rose-600', 'bg-emerald-600');
             }
 
-            let validDraws = totalDraws - 1;
-            let pct = validDraws > 0 ? (hits / validDraws) * 100 : 0;
-            return { name: f.name, liveText, pct, maxHit, maxMiss, latestStatusHit, recoveryText };
-        });
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
 
-        formulaResults.sort((a,b) => b.pct - a.pct);
-
-        let htmlFormulas = '';
-        formulaResults.forEach((res, idx) => {
-            let statusTag = res.latestStatusHit ? '<span class="badge-hit">🟢 เข้า</span>' : '<span class="badge-miss">🔴 หลุด</span>';
-            htmlFormulas += `<tr>
-                <td class="text-left">${res.name}</td>
-                <td><b style="color:var(--gold-primary);">${res.liveText}</b></td>
-                <td><b>${res.pct.toFixed(1)}%</b></td>
-                <td>${res.maxHit} รอบ</td>
-                <td>${res.maxMiss} รอบ</td>
-                <td>${statusTag}</td>
-                <td>${res.recoveryText}</td>
-                <td>#${idx+1}</td>
-            </tr>`;
-        });
-        document.querySelector('#tableFormulas tbody').innerHTML = htmlFormulas;
-    }
-</script>
-
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
+```
