@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2D Analytics Engine - ระบบวิเคราะห์เลขหลุดสะสม ⭐ (Cross-Day Edition)</title>
+  <title>2D Analytics Engine - ระบบวิเคราะห์เลขหลุดสะสม ⭐ (Ultimate Multi-Formula)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
@@ -19,12 +19,12 @@
       <div>
         <h1 class="text-xl font-bold text-amber-400 flex items-center gap-2">
           <span>📊 2D Analytics Engine</span>
-          <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">v4.0 Cross-Day Logic</span>
+          <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">v5.0 Atomic Core</span>
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">ระบบวิเคราะห์สูตรหลุดสะสม ⭐ (รองรับสูตรข้ามวันหลักหน่วยตามสั่ง)</p>
+        <p class="text-xs text-slate-400 mt-0.5">ระบบวิเคราะห์สูตรหลุดสะสม ⭐ & ชดเชยพหุมิติ (Atomic Reset 100%)</p>
       </div>
       <div class="flex gap-2">
-        <button onclick="loadSampleData()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 transition-colors">โหลดตัวอย่างสถิติ</button>
+        <button onclick="loadSampleData()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 transition-colors">โหลดสถิติตัวอย่าง</button>
         <button onclick="clearData()" class="text-xs bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 px-3 py-1.5 rounded-lg border border-rose-700/50 transition-colors">ล้างข้อมูล</button>
       </div>
     </header>
@@ -48,7 +48,7 @@
           </select>
         </div>
         <button onclick="processData()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-5 py-2 rounded-lg shadow-md transition-all flex items-center gap-1">
-          <span>🚀 พร้อมประมวลผลสูตรข้ามวัน</span>
+          <span>🚀 ประมวลผลสูตรพหุมิติ</span>
         </button>
       </div>
     </section>
@@ -62,7 +62,7 @@
         <!-- Rank 1 -->
         <div class="bg-gradient-to-br from-amber-950/40 to-slate-800 border border-amber-500/50 rounded-xl p-3 relative overflow-hidden shadow-lg">
           <div class="absolute top-0 right-0 bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-bl">🥇 เด่นหลักเต็ง 1</div>
-          <div class="text-xs text-amber-400 font-semibold mb-1">แรงดีดกลับสูงสุด (รวมสูตรข้ามวันหลักหน่วย)</div>
+          <div class="text-xs text-amber-400 font-semibold mb-1">แรงดีดกลับสูงสุด (ค้างจ่ายสะสมดาวสูงสุด)</div>
           <div class="flex items-baseline gap-3 my-1">
             <span class="text-3xl font-black text-amber-400 font-mono tracking-wider" id="r1Pair">--</span>
             <span class="text-sm text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20" id="r1Stars">0 ⭐</span>
@@ -198,7 +198,8 @@
             noon: noon,
             eve: eve,
             digits: [noon[0], noon[1], eve[0], eve[1]].map(Number),
-            noonEvUnit: [parseInt(noon[1]), parseInt(eve[1])] // [หน่วยเที่ยง, หน่วยเย็น]
+            noonEvUnit: [parseInt(noon[1]), parseInt(eve[1])],
+            noonEvTens: [parseInt(noon[0]), parseInt(eve[0])]
           });
         }
       }
@@ -209,42 +210,55 @@
       return digits.includes(pair[0]) || digits.includes(pair[1]);
     }
 
-    function processData() {
-      const raw = document.getElementById('rawInput').value;
-      const history = parseData(raw);
-      document.getElementById('historyCountText').innerText = `พบ ${history.length} งวด`;
-      if (history.length < 4) {
-        alert('กรุณากรอกข้อมูลสถิติอย่างน้อย 4 งวดขึ้นไปเพื่อให้ระบบคำนวณสูตรข้ามวันได้แม่นยำ');
-        return;
-      }
-
-      document.getElementById('resultsContainer').classList.remove('hidden');
-      const depth = parseInt(document.getElementById('depthSelect').value);
-      const activeHistory = history.slice(-depth);
-
-      // Formulas Generation (รวมสูตรข้ามวันหลักหน่วยตามสั่ง)
+    function generateMultiFormulas() {
       let formulas = [];
-      
-      // สูตรข้ามวันหลักหน่วย (เช่น D-2 หาทาย D) ตามที่คุณสอน: (หน่วยเที่ยง + หน่วยเย็น) ลดแต้ม
-      formulas.push({
-        name: 'CrossDay_UnitSum_Minus1',
-        calc: (historyArr, currentIndex) => {
-          if (currentIndex < 2) return [0, 1];
-          let prevDay = historyArr[currentIndex - 2]; // ข้ามวัน
-          let sumUnit = (prevDay.noonEvUnit[0] + prevDay.noonEvUnit[1]) % 10;
-          let minus1 = (sumUnit + 9) % 10;
-          let pair = [sumUnit, minus1];
-          pair.sort((a,b) => a-b);
-          return pair;
-        }
+
+      // 1. ตระกูลสูตรข้ามวันหลักหน่วย (Cross-Day Units): D-2, D-3, D-4
+      [2, 3, 4].forEach(offset => {
+        // (หน่วยเที่ยง + หน่วยเย็น) ลด 1 แต้ม
+        formulas.push({
+          id: `CrossUnit_Minus1_Off${offset}`,
+          calc: (hist, idx) => {
+            if (idx < offset) return [0, 1];
+            let targetDay = hist[idx - offset];
+            let sumUnit = (targetDay.noonEvUnit[0] + targetDay.noonEvUnit[1]) % 10;
+            let m1 = (sumUnit + 9) % 10;
+            let pair = [sumUnit, m1]; pair.sort((a,b) => a-b);
+            return pair;
+          }
+        });
+        // (หน่วยเที่ยง + หน่วยเย็น) เพิ่ม 1 แต้ม
+        formulas.push({
+          id: `CrossUnit_Plus1_Off${offset}`,
+          calc: (hist, idx) => {
+            if (idx < offset) return [0, 1];
+            let targetDay = hist[idx - offset];
+            let sumUnit = (targetDay.noonEvUnit[0] + targetDay.noonEvUnit[1]) % 10;
+            let p1 = (sumUnit + 1) % 10;
+            let pair = [sumUnit, p1]; pair.sort((a,b) => a-b);
+            return pair;
+          }
+        });
+        // (สิบเที่ยง + หน่วยเย็น) ลด 1 แต้ม
+        formulas.push({
+          id: `CrossTensUnit_Minus1_Off${offset}`,
+          calc: (hist, idx) => {
+            if (idx < offset) return [0, 1];
+            let targetDay = hist[idx - offset];
+            let sum = (targetDay.noonEvTens[0] + targetDay.noonEvUnit[1]) % 10;
+            let m1 = (sum + 9) % 10;
+            let pair = [sum, m1]; pair.sort((a,b) => a-b);
+            return pair;
+          }
+        });
       });
 
-      // สูตรมาตรฐานอื่นๆ
+      // 2. ตระกูลสูตรเดินหน้า (+1, +2) & ถอยหลัง (-1) วันติดวัน D-1
       for (let d = 0; d <= 9; d++) {
-        formulas.push({ 
-          name: `Standard_+1_+2(${d})`, 
-          calcForDay: (hList, idx) => {
-            let digits = hList[idx - 1].digits;
+        formulas.push({
+          id: `Std_Forward_+1_+2_${d}`,
+          calc: (hist, idx) => {
+            let digits = hist[idx - 1].digits;
             let base = digits.includes(d) ? d : digits[0];
             let n1 = (base + 1) % 10;
             let n2 = (base + 2) % 10;
@@ -252,13 +266,55 @@
             return p;
           }
         });
+        formulas.push({
+          id: `Std_Backward_-1_${d}`,
+          calc: (hist, idx) => {
+            let digits = hist[idx - 1].digits;
+            let base = digits[3];
+            let n1 = base;
+            let n2 = (base + 9) % 10;
+            let p = [n1, n2]; p.sort((a,b) => a-b);
+            return p;
+          }
+        });
       }
+
+      // 3. ตระกูลสูตรผลต่าง & คู่เงาข้ามมิติ (+5 Modulo)
+      formulas.push({
+        id: `Mirror_Shift_+5`,
+        calc: (hist, idx) => {
+          let lastDigits = hist[idx - 1].digits;
+          let base = (lastDigits[0] + lastDigits[3]) % 10;
+          let mirror = (base + 5) % 10;
+          let p = [base, mirror]; p.sort((a,b) => a-b);
+          return p;
+        }
+      });
+
+      return formulas;
+    }
+
+    function processData() {
+      const raw = document.getElementById('rawInput').value;
+      const history = parseData(raw);
+      document.getElementById('historyCountText').innerText = `พบ ${history.length} งวด`;
+      if (history.length < 5) {
+        alert('กรุณากรอกข้อมูลสถิติอย่างน้อย 5 งวดขึ้นไปเพื่อให้ระบบคำนวณสูตรพหุมิติได้สมบูรณ์');
+        return;
+      }
+
+      document.getElementById('resultsContainer').classList.remove('hidden');
+      const depth = parseInt(document.getElementById('depthSelect').value);
+      const activeHistory = history.slice(-depth);
+
+      const formulas = generateMultiFormulas();
 
       let digitStats = {};
       for (let d = 0; d <= 9; d++) {
         digitStats[d] = { stars: 0, collisions: 0, freq: 0 };
       }
 
+      // Frequency Count
       activeHistory.forEach(h => {
         h.digits.forEach(dig => {
           if(digitStats[dig]) digitStats[dig].freq++;
@@ -267,16 +323,16 @@
 
       let pairMissMap = {};
 
-      // Evaluation Loop with Atomic Reset
+      // Universal Atomic Evaluation Engine
       for (let fIdx = 0; fIdx < formulas.length; fIdx++) {
         let form = formulas[fIdx];
         let targetIdx = activeHistory.length - 1;
-        if (targetIdx < 3) continue;
+        if (targetIdx < 4) continue;
 
         let lastDayDigits = activeHistory[targetIdx].digits;
         
         // Predict for latest day
-        let predicted = form.calc ? form.calc(activeHistory, targetIdx) : form.calcForDay(activeHistory, targetIdx);
+        let predicted = form.calc(activeHistory, targetIdx);
         let pairKey = `${predicted[0]} - ${predicted[1]}`;
 
         let hitLatest = checkHit(lastDayDigits, predicted);
@@ -284,18 +340,18 @@
 
         if (!hitLatest) {
           stars = 1;
-          for (let dayBack = targetIdx - 1; dayBack >= 2; dayBack--) {
+          for (let dayBack = targetIdx - 1; dayBack >= 4; dayBack--) {
             let evalDigits = activeHistory[dayBack].digits;
-            let pred = form.calc ? form.calc(activeHistory, dayBack) : form.calcForDay(activeHistory, dayBack);
+            let pred = form.calc(activeHistory, dayBack);
             
             if (checkHit(evalDigits, pred)) {
-              break; // Hit found, stop counting stars
+              break; // Hit found -> STOP counting stars!
             } else {
               stars++;
             }
           }
         } else {
-          stars = 0; // Atomic Reset if hit in latest day!
+          stars = 0; // ATOMIC RESET -> Hit in latest day reset stars to 0!
         }
 
         if (!pairMissMap[pairKey] || stars > pairMissMap[pairKey]) {
@@ -310,29 +366,32 @@
         });
       }
 
+      // Sort Pairs
       let sortedPairs = Object.keys(pairMissMap).map(pair => ({
         pair: pair,
         stars: pairMissMap[pair]
       })).sort((a,b) => b.stars - a.stars);
 
+      // Render Top Recommendations Cards
       if (sortedPairs.length > 0) {
         document.getElementById('r1Pair').innerText = sortedPairs[0].pair;
         document.getElementById('r1Stars').innerText = `${sortedPairs[0].stars} ⭐`;
-        document.getElementById('r1Desc').innerText = `พลังหลุดสะสมย้อนหลังสูงที่สุด ${sortedPairs[0].stars} ดาว (ผสานสูตรข้ามวันหลักหน่วย) แรงดีดกลับสูงสุด`;
+        document.getElementById('r1Desc').innerText = `พลังหลุดสะสมย้อนหลังสูงที่สุด ${sortedPairs[0].stars} ดาว ค้างจ่ายต่อเนื่อง (ประมวลผลสูตรพหุมิติ) มีแรงดีดกลับสูงสุด`;
 
         if (sortedPairs.length > 1) {
           document.getElementById('r2Pair').innerText = sortedPairs[1].pair;
           document.getElementById('r2Stars').innerText = `${sortedPairs[1].stars} ⭐`;
-          document.getElementById('r2Desc').innerText = `คู่เลขเด่นรองสะสม ${sortedPairs[1].stars} ดาว ชนสูตรแน่นหนา`;
+          document.getElementById('r2Desc').innerText = `คู่เลขเด่นรองสะสม ${sortedPairs[1].stars} ดาว ชนสูตรคำนวณหนาแน่น`;
         }
       }
 
+      // Render Matrix Table
       let matrixHtml = '';
       for (let d = 0; d <= 9; d++) {
         let stat = digitStats[d];
         let compGroup = COMP_GROUPS.find(g => g.includes(d)) || [];
         let compStr = compGroup.filter(x => x !== d).join(' ');
-        let statusText = stat.stars >= 4 ? '<span class="text-amber-400 font-bold">🔥 แรงดีดกลับสูง (สูตรข้ามวันสะสมดาว)</span>' : '<span class="text-slate-400">ปกติ</span>';
+        let statusText = stat.stars >= 4 ? '<span class="text-amber-400 font-bold">🔥 แรงดีดกลับสูง (ดาวสะสมสูง)</span>' : '<span class="text-slate-400">ปกติ</span>';
 
         matrixHtml += `
           <tr class="hover:bg-slate-700/30">
@@ -347,6 +406,7 @@
       }
       document.getElementById('matrixTableBody').innerHTML = matrixHtml;
 
+      // Render History Table
       let historyHtml = '';
       activeHistory.forEach((h, idx) => {
         historyHtml += `
