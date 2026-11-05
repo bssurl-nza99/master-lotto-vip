@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2D Analytics Engine - ระบบวิเคราะห์เลขหลุดสะสม ⭐</title>
+  <title>2D Analytics Engine - ระบบวิเคราะห์เลขหลุดสะสม ⭐ (Cross-Day Edition)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
@@ -19,35 +19,36 @@
       <div>
         <h1 class="text-xl font-bold text-amber-400 flex items-center gap-2">
           <span>📊 2D Analytics Engine</span>
-          <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">v3.0 Atomic Reset</span>
+          <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">v4.0 Cross-Day Logic</span>
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">วิเคราะห์สูตรหลุดสะสมย้อนหลัง ⭐ | รีเซ็ตดาวทันทีเมื่อสูตรเข้าล่าสุด</p>
+        <p class="text-xs text-slate-400 mt-0.5">ระบบวิเคราะห์สูตรหลุดสะสม ⭐ (รองรับสูตรข้ามวันหลักหน่วยตามสั่ง)</p>
       </div>
       <div class="flex gap-2">
-        <button onclick="loadSampleData()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600">โหลดสถิติตัวอย่าง</button>
-        <button onclick="clearData()" class="text-xs bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 px-3 py-1.5 rounded-lg border border-rose-700/50">ล้างข้อมูล</button>
+        <button onclick="loadSampleData()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 transition-colors">โหลดตัวอย่างสถิติ</button>
+        <button onclick="clearData()" class="text-xs bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 px-3 py-1.5 rounded-lg border border-rose-700/50 transition-colors">ล้างข้อมูล</button>
       </div>
     </header>
 
     <!-- Input Section -->
     <section class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 shadow-md space-y-2">
       <div class="flex justify-between items-center">
-        <label class="text-sm font-semibold text-slate-200">ป้อนข้อมูลสถิติ (รูปแบบ: วันที่ : เที่ยง -- เย็น)</label>
+        <label class="text-sm font-semibold text-slate-200">ป้อนข้อมูลสถิติ (Raw Data Input)</label>
         <span class="text-xs text-slate-400" id="historyCountText">พบ 0 งวด</span>
       </div>
-      <textarea id="rawInput" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-emerald-400 focus:outline-none focus:border-amber-500 transition-colors" placeholder="วางสถิติที่นี่..."></textarea>
+      <textarea id="rawInput" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-emerald-400 focus:outline-none focus:border-amber-500 transition-colors" placeholder="วางสถิติรูปแบบ 'วันที่ : เที่ยง -- เย็น' ที่นี่..."></textarea>
+      
       <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
         <div class="flex items-center gap-1.5 text-xs text-slate-300">
-          <span>ความลึกสถิตินับดาว:</span>
+          <span>ย้อนหลังนับดาว:</span>
           <select id="depthSelect" class="bg-slate-900 border border-slate-700 text-amber-400 rounded px-2 py-1 focus:outline-none">
             <option value="5">5 วันล่าสุด</option>
             <option value="10">10 วันล่าสุด</option>
             <option value="15" selected>15 วันล่าสุด (แนะนำ)</option>
-            <option value="999">ทั้งหมด</option>
+            <option value="999">ทั้งหมดในชุดข้อมูล</option>
           </select>
         </div>
         <button onclick="processData()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-5 py-2 rounded-lg shadow-md transition-all flex items-center gap-1">
-          <span>🚀 ประมวลผลสูตรย้อนหลัง</span>
+          <span>🚀 พร้อมประมวลผลสูตรข้ามวัน</span>
         </button>
       </div>
     </section>
@@ -56,11 +57,12 @@
     <div id="resultsContainer" class="hidden space-y-4">
       
       <!-- Top Recommendations Cards -->
+      <div class="text-sm font-bold text-amber-400">สรุปตัวเลขเด่นจัดอันดับ (Top Recommendations)</div>
       <section class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <!-- Rank 1 -->
         <div class="bg-gradient-to-br from-amber-950/40 to-slate-800 border border-amber-500/50 rounded-xl p-3 relative overflow-hidden shadow-lg">
-          <div class="absolute top-0 right-0 bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-bl">🥇 เด่นหลัก (ดีดกลับสูงสุด)</div>
-          <div class="text-xs text-amber-400 font-semibold mb-1">เลขเด่น 2 ตัวค้างจ่ายสะสมดาวสูงสุด</div>
+          <div class="absolute top-0 right-0 bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-bl">🥇 เด่นหลักเต็ง 1</div>
+          <div class="text-xs text-amber-400 font-semibold mb-1">แรงดีดกลับสูงสุด (รวมสูตรข้ามวันหลักหน่วย)</div>
           <div class="flex items-baseline gap-3 my-1">
             <span class="text-3xl font-black text-amber-400 font-mono tracking-wider" id="r1Pair">--</span>
             <span class="text-sm text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20" id="r1Stars">0 ⭐</span>
@@ -70,8 +72,8 @@
 
         <!-- Rank 2 -->
         <div class="bg-gradient-to-br from-slate-800 to-slate-850 border border-slate-600 rounded-xl p-3 relative overflow-hidden shadow-md">
-          <div class="absolute top-0 right-0 bg-slate-600 text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded-bl">🥈 เด่นรอง (ดาวสูง + ชนแน่น)</div>
-          <div class="text-xs text-slate-300 font-semibold mb-1">เลขเด่นรองแรงดีดกลับสูง</div>
+          <div class="absolute top-0 right-0 bg-slate-600 text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded-bl">🥈 เด่นรอง</div>
+          <div class="text-xs text-slate-300 font-semibold mb-1">ดาวสูง + ชนสูตรหนาแน่น</div>
           <div class="flex items-baseline gap-3 my-1">
             <span class="text-3xl font-black text-slate-200 font-mono tracking-wider" id="r2Pair">--</span>
             <span class="text-sm text-slate-300 font-bold bg-slate-700/40 px-2 py-0.5 rounded border border-slate-600" id="r2Stars">0 ⭐</span>
@@ -83,8 +85,8 @@
       <!-- Matrix Table -->
       <section class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-md space-y-2">
         <h2 class="text-sm font-bold text-amber-400 flex items-center justify-between">
-          <span>ตารางสรุปมิติตัวเลข 0 - 9 (Atomic Formula Matrix)</span>
-          <span class="text-[11px] font-normal text-slate-400">เรียงตามดาวสะสมจริง 0-9</span>
+          <span>ตารางวิเคราะห์มิติตัวเลข 0 - 9 (Digit Breakdown Matrix)</span>
+          <span class="text-[11px] font-normal text-slate-400">ดาวสะสม ⭐ | สูตรชน | ความถี่ | คู่ชดเชย</span>
         </h2>
         
         <div class="overflow-x-auto">
@@ -92,11 +94,11 @@
             <thead class="bg-slate-900 text-slate-300 border-b border-slate-700">
               <tr>
                 <th class="p-2 text-center">ตัวเลข</th>
-                <th class="p-2 text-center">ดาวสูงสุด (⭐)</th>
+                <th class="p-2 text-center">ดาวหลุดสูงสุด (⭐)</th>
                 <th class="p-2 text-center">จำนวนสูตรชน</th>
                 <th class="p-2 text-center">ความถี่</th>
                 <th class="p-2 text-center">คู่หูชดเชย</th>
-                <th class="p-2">ประเมินสถานะปัจจุบัน</th>
+                <th class="p-2">ประเมินศักยภาพ & สถานะ</th>
               </tr>
             </thead>
             <tbody id="matrixTableBody" class="divide-y divide-slate-700/50 text-slate-200">
@@ -108,15 +110,15 @@
 
       <!-- Parsed Data Section -->
       <section class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-md space-y-2">
-        <h2 class="text-sm font-bold text-slate-300">สถิติที่ใช้คำนวณจริง (Parsed History Data)</h2>
+        <h2 class="text-sm font-bold text-slate-300">ประวัติสถิติย้อนหลังที่ใช้วิเคราะห์ (Parsed History)</h2>
         <div class="overflow-x-auto max-h-48 overflow-y-auto">
           <table class="w-full text-xs text-left no-wrap-table">
             <thead class="bg-slate-900 text-slate-400 sticky top-0">
               <tr>
                 <th class="p-1.5">งวดที่</th>
                 <th class="p-1.5">วันที่</th>
-                <th class="p-1.5 text-center">เที่ยง</th>
-                <th class="p-1.5 text-center">เย็น</th>
+                <th class="p-1.5 text-center">รอบเที่ยง</th>
+                <th class="p-1.5 text-center">รอบเย็น</th>
                 <th class="p-1.5 text-center">ครบ 4 หลัก</th>
               </tr>
             </thead>
@@ -195,7 +197,8 @@
             date: dateStr,
             noon: noon,
             eve: eve,
-            digits: [noon[0], noon[1], eve[0], eve[1]].map(Number)
+            digits: [noon[0], noon[1], eve[0], eve[1]].map(Number),
+            noonEvUnit: [parseInt(noon[1]), parseInt(eve[1])] // [หน่วยเที่ยง, หน่วยเย็น]
           });
         }
       }
@@ -210,8 +213,8 @@
       const raw = document.getElementById('rawInput').value;
       const history = parseData(raw);
       document.getElementById('historyCountText').innerText = `พบ ${history.length} งวด`;
-      if (history.length < 3) {
-        alert('กรุณากรอกข้อมูลสถิติอย่างน้อย 3 งวดขึ้นไป');
+      if (history.length < 4) {
+        alert('กรุณากรอกข้อมูลสถิติอย่างน้อย 4 งวดขึ้นไปเพื่อให้ระบบคำนวณสูตรข้ามวันได้แม่นยำ');
         return;
       }
 
@@ -219,84 +222,71 @@
       const depth = parseInt(document.getElementById('depthSelect').value);
       const activeHistory = history.slice(-depth);
 
-      // Generate Formulas (Non-redundant)
+      // Formulas Generation (รวมสูตรข้ามวันหลักหน่วยตามสั่ง)
       let formulas = [];
-      // Formula 1: +1, +2 from each digit
-      for (let d = 0; d <= 9; d++) {
-        formulas.push({ name: `F1_+1_+2(${d})`, calc: (digits) => {
-          let base = digits.includes(d) ? d : digits[0];
-          let n1 = (base + 1) % 10;
-          let n2 = (base + 2) % 10;
-          return [n1, n2];
-        }});
-      }
-      // Formula 2: backward -1
-      for (let d = 0; d <= 9; d++) {
-        formulas.push({ name: `F2_Back(${d})`, calc: (digits) => {
-          let base = digits[3];
-          let n1 = base;
-          let n2 = (base + 9) % 10;
-          return [n1, n2];
-        }});
-      }
-      // Formula 3: Cross 2 days sum
-      for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) {
-          formulas.push({ name: `F3_Cross(${i},${j})`, calc: (d1, d2) => {
-            let sum = (d1[i] + d2[j]) % 10;
-            let n2 = (sum + 1) % 10;
-            return [sum, n2];
-          }});
+      
+      // สูตรข้ามวันหลักหน่วย (เช่น D-2 หาทาย D) ตามที่คุณสอน: (หน่วยเที่ยง + หน่วยเย็น) ลดแต้ม
+      formulas.push({
+        name: 'CrossDay_UnitSum_Minus1',
+        calc: (historyArr, currentIndex) => {
+          if (currentIndex < 2) return [0, 1];
+          let prevDay = historyArr[currentIndex - 2]; // ข้ามวัน
+          let sumUnit = (prevDay.noonEvUnit[0] + prevDay.noonEvUnit[1]) % 10;
+          let minus1 = (sumUnit + 9) % 10;
+          let pair = [sumUnit, minus1];
+          pair.sort((a,b) => a-b);
+          return pair;
         }
+      });
+
+      // สูตรมาตรฐานอื่นๆ
+      for (let d = 0; d <= 9; d++) {
+        formulas.push({ 
+          name: `Standard_+1_+2(${d})`, 
+          calcForDay: (hList, idx) => {
+            let digits = hList[idx - 1].digits;
+            let base = digits.includes(d) ? d : digits[0];
+            let n1 = (base + 1) % 10;
+            let n2 = (base + 2) % 10;
+            let p = [n1, n2]; p.sort((a,b) => a-b);
+            return p;
+          }
+        });
       }
 
-      // Track stars & hits for 0-9 digits
       let digitStats = {};
       for (let d = 0; d <= 9; d++) {
         digitStats[d] = { stars: 0, collisions: 0, freq: 0 };
       }
 
-      // Frequency calculation
       activeHistory.forEach(h => {
         h.digits.forEach(dig => {
           if(digitStats[dig]) digitStats[dig].freq++;
         });
       });
 
-      // Atomic Backwards Miss Evaluation
-      // For each formula, test backwards from latest day
-      let pairMissMap = {}; // pairStr -> maxStars
+      let pairMissMap = {};
 
-      // Test formulas on activeHistory
+      // Evaluation Loop with Atomic Reset
       for (let fIdx = 0; fIdx < formulas.length; fIdx++) {
         let form = formulas[fIdx];
-        
-        // Evaluate on the very last day (Target current day)
-        // If last day hit -> 0 stars. If missed -> count backwards.
         let targetIdx = activeHistory.length - 1;
-        if (targetIdx < 2) continue;
+        if (targetIdx < 3) continue;
 
         let lastDayDigits = activeHistory[targetIdx].digits;
-        let prevDigits1 = activeHistory[targetIdx - 1].digits;
-        let prevDigits2 = activeHistory[targetIdx - 2].digits;
-
-        let predicted = form.calc.length === 2 ? form.calc(prevDigits2, prevDigits1) : form.calc(prevDigits1);
-        predicted.sort((a,b) => a-b);
+        
+        // Predict for latest day
+        let predicted = form.calc ? form.calc(activeHistory, targetIdx) : form.calcForDay(activeHistory, targetIdx);
         let pairKey = `${predicted[0]} - ${predicted[1]}`;
 
-        // Check latest day hit
         let hitLatest = checkHit(lastDayDigits, predicted);
         let stars = 0;
 
         if (!hitLatest) {
-          // Count backwards miss
           stars = 1;
-          for (let dayBack = targetIdx - 1; dayBack >= 1; dayBack--) {
+          for (let dayBack = targetIdx - 1; dayBack >= 2; dayBack--) {
             let evalDigits = activeHistory[dayBack].digits;
-            let p1 = activeHistory[dayBack - 1].digits;
-            let p2 = activeHistory[dayBack - 2] ? activeHistory[dayBack - 2].digits : p1;
-            let pred = form.calc.length === 2 ? form.calc(p2, p1) : form.calc(p1);
-            pred.sort((a,b) => a-b);
+            let pred = form.calc ? form.calc(activeHistory, dayBack) : form.calcForDay(activeHistory, dayBack);
             
             if (checkHit(evalDigits, pred)) {
               break; // Hit found, stop counting stars
@@ -305,14 +295,13 @@
             }
           }
         } else {
-          stars = 0; // Reset to 0 if hit in current latest day!
+          stars = 0; // Atomic Reset if hit in latest day!
         }
 
         if (!pairMissMap[pairKey] || stars > pairMissMap[pairKey]) {
           pairMissMap[pairKey] = stars;
         }
 
-        // Add collisions to individual digits
         predicted.forEach(d => {
           if (digitStats[d]) {
             digitStats[d].collisions++;
@@ -321,32 +310,29 @@
         });
       }
 
-      // Sort pairs by stars
       let sortedPairs = Object.keys(pairMissMap).map(pair => ({
         pair: pair,
         stars: pairMissMap[pair]
       })).sort((a,b) => b.stars - a.stars);
 
-      // Render Top Cards
       if (sortedPairs.length > 0) {
         document.getElementById('r1Pair').innerText = sortedPairs[0].pair;
         document.getElementById('r1Stars').innerText = `${sortedPairs[0].stars} ⭐`;
-        document.getElementById('r1Desc', `มีพลังหลุดสะสมย้อนหลังสูงที่สุด ${sortedPairs[0].stars} ดาว ค้างจ่ายต่อเนื่องถึงงวดปัจจุบัน มีแรงดีดกลับสูงมาก`);
+        document.getElementById('r1Desc').innerText = `พลังหลุดสะสมย้อนหลังสูงที่สุด ${sortedPairs[0].stars} ดาว (ผสานสูตรข้ามวันหลักหน่วย) แรงดีดกลับสูงสุด`;
 
         if (sortedPairs.length > 1) {
           document.getElementById('r2Pair').innerText = sortedPairs[1].pair;
           document.getElementById('r2Stars').innerText = `${sortedPairs[1].stars} ⭐`;
-          document.getElementById('r2Desc').innerText = `คู่เลขเด่นรองแรงดีดกลับสะสม ${sortedPairs[1].stars} ดาว ชนสูตรหนาแน่น`;
+          document.getElementById('r2Desc').innerText = `คู่เลขเด่นรองสะสม ${sortedPairs[1].stars} ดาว ชนสูตรแน่นหนา`;
         }
       }
 
-      // Render Matrix Table 0-9
       let matrixHtml = '';
       for (let d = 0; d <= 9; d++) {
         let stat = digitStats[d];
         let compGroup = COMP_GROUPS.find(g => g.includes(d)) || [];
         let compStr = compGroup.filter(x => x !== d).join(' ');
-        let statusText = stat.stars >= 4 ? '<span class="text-amber-400 font-bold">🔥 แรงดีดกลับสูง (ค้างจ่ายนาน)</span>' : '<span class="text-slate-400">ปกติ</span>';
+        let statusText = stat.stars >= 4 ? '<span class="text-amber-400 font-bold">🔥 แรงดีดกลับสูง (สูตรข้ามวันสะสมดาว)</span>' : '<span class="text-slate-400">ปกติ</span>';
 
         matrixHtml += `
           <tr class="hover:bg-slate-700/30">
@@ -361,7 +347,6 @@
       }
       document.getElementById('matrixTableBody').innerHTML = matrixHtml;
 
-      // Render History Table
       let historyHtml = '';
       activeHistory.forEach((h, idx) => {
         historyHtml += `
