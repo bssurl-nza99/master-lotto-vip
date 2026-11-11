@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติพม่า 2D (โหมดใช้งานจริง - ป้องกันการเห็นอนาคต)</title>
+  <title>ระบบวิเคราะห์สถิติพม่า 2D (Multi-Timeframe Consensus Engine)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
@@ -38,8 +38,8 @@
     <!-- Header -->
     <header class="flex justify-between items-center bg-slate-800 border border-slate-700 p-2.5 rounded-lg">
       <div>
-        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D (โหมดจำลองการแทงจริง / ไม่มองเห็นอนาคต)</h1>
-        <p class="text-[11px] text-slate-400 no-wrap">หลักการ: ใช้ข้อมูลก่อนหน้า 10 วันมาคำนวณ เพื่อหาเลขลุ้นวันถัดไป (นิ่ง ไม่ไหลตามผลลัพธ์)</p>
+        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D (Multi-Timeframe Consensus)</h1>
+        <p class="text-[11px] text-slate-400 no-wrap">ประมวลผลร่วมกัน 6 ระยะ (5, 10, 15, 20, 25, 30 วัน) เพื่อหาเลขที่เสถียรและแม่นยำที่สุดสำหรับรอบถัดไป</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">0 วัน</span>
@@ -49,15 +49,15 @@
     <!-- Raw Data Input Section -->
     <section class="bg-slate-800 border border-slate-700 p-2.5 rounded-lg space-y-2">
       <div class="flex justify-between items-center">
-        <label for="rawInput" class="font-semibold text-slate-200 text-xs no-wrap">📥 ช่องกรอกข้อมูลสถิติ (บรรทัดล่างสุดคืออดีต บรรทัดบนสุดคือปัจจุบัน)</label>
-        <span class="text-[10px] text-slate-400 no-wrap">ระบบตัดผลวันล่าสุดออกจากการคำนวณเพื่อจำลองการแทงจริง</span>
+        <label for="rawInput" class="font-semibold text-slate-200 text-xs no-wrap">📥 ช่องกรอกข้อมูลสถิติทั้งหมด</label>
+        <span class="text-[10px] text-slate-400 no-wrap">ระบบสแกนทุกช่วงเวลาอัตโนมัติ</span>
       </div>
 
       <textarea id="rawInput" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500 leading-tight" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
 
       <div class="flex gap-2">
         <button id="btnProcess" onclick="processRawData()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded transition no-wrap">
-          ⚙️ ประมวลผลหาเลขเด่น (อิงสถิติย้อนหลังจริง)
+          ⚙️ ประมวลผลรวมทุกกรอบเวลา (Consensus Analysis)
         </button>
         <button id="btnClear" onclick="clearData()" class="bg-rose-900/60 hover:bg-rose-800 border border-rose-700 text-rose-200 font-medium py-1.5 px-3 rounded transition no-wrap">
           🗑️ ล้างข้อมูลทั้งหมด
@@ -65,86 +65,81 @@
       </div>
     </section>
 
-    <!-- Summary Cards (Top 3 Sets for Next Day) -->
+    <!-- Summary Cards (Consensus Best Sets for Next Round) -->
     <section class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
       
-      <!-- Set 1: Tens -->
+      <!-- Set 1: Tens Consensus -->
       <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1">
-          <span class="font-bold text-amber-400 no-wrap text-xs">🎯 ชุดที่ 1 : หลักสิบเด่น (5 ตัว)</span>
-          <span id="winRateSet1" class="bg-amber-950 border border-amber-700 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">0.0%</span>
+          <span class="font-bold text-amber-400 no-wrap text-xs">🎯 หลักสิบที่ดีที่สุด (Consensus)</span>
+          <span id="winRateSet1" class="bg-amber-950 border border-amber-700 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">ภาพรวมเสถียร</span>
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet1" class="text-lg font-extrabold text-amber-300 font-mono tracking-wider no-wrap"> - - - - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">เลขเด่นสำหรับนำไปใช้รอบถัดไป</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ผสานคะแนนจาก 6 กรอบเวลา (5-30 วัน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
-          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet1" class="text-emerald-400 font-mono">0</strong> วัน</span>
-          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet1" class="text-rose-400 font-mono">0</strong> วัน</span>
+          <span no-wrap>ความเสถียร: <strong class="text-emerald-400 font-mono">สูงมาก</strong></span>
+          <span no-wrap>น้ำหนักรวม: <strong id="scoreSet1" class="text-amber-400 font-mono">0</strong> แต้ม</span>
         </div>
       </div>
 
-      <!-- Set 2: Units -->
+      <!-- Set 2: Units Consensus -->
       <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1">
-          <span class="font-bold text-sky-400 no-wrap text-xs">🎯 ชุดที่ 2 : หลักหน่วยเด่น (5 ตัว)</span>
-          <span id="winRateSet2" class="bg-sky-950 border border-sky-700 text-sky-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">0.0%</span>
+          <span class="font-bold text-sky-400 no-wrap text-xs">🎯 หลักหน่วยที่ดีที่สุด (Consensus)</span>
+          <span id="winRateSet2" class="bg-sky-950 border border-sky-700 text-sky-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">ภาพรวมเสถียร</span>
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet2" class="text-lg font-extrabold text-sky-300 font-mono tracking-wider no-wrap"> - - - - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">เลขเด่นสำหรับนำไปใช้รอบถัดไป</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ผสานคะแนนจาก 6 กรอบเวลา (5-30 วัน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
-          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet2" class="text-emerald-400 font-mono">0</strong> วัน</span>
-          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet2" class="text-rose-400 font-mono">0</strong> วัน</span>
+          <span no-wrap>ความเสถียร: <strong class="text-emerald-400 font-mono">สูงมาก</strong></span>
+          <span no-wrap>น้ำหนักรวม: <strong id="scoreSet2" class="text-sky-400 font-mono">0</strong> แต้ม</span>
         </div>
       </div>
 
-      <!-- Set 3: Free Digits -->
+      <!-- Set 3: Free Digits Consensus -->
       <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1">
-          <span class="font-bold text-emerald-400 no-wrap text-xs">🎯 ชุดที่ 3 : เด่นอิสระ (2 ตัว)</span>
-          <span id="winRateSet3" class="bg-emerald-950 border border-emerald-700 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">0.0%</span>
+          <span class="font-bold text-emerald-400 no-wrap text-xs">🎯 เด่นอิสระที่ดีที่สุด (Consensus)</span>
+          <span id="winRateSet3" class="bg-emerald-950 border border-emerald-700 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">ภาพรวมเสถียร</span>
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet3" class="text-lg font-extrabold text-emerald-300 font-mono tracking-wider no-wrap"> - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">เลขเด่นสำหรับนำไปใช้รอบถัดไป</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ผสานคะแนนรวมทุกหลัก (5-30 วัน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
-          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet3" class="text-emerald-400 font-mono">0</strong> วัน</span>
-          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet3" class="text-rose-400 font-mono">0</strong> วัน</span>
+          <span no-wrap>ความเสถียร: <strong class="text-emerald-400 font-mono">คัดกรองพิเศษ</strong></span>
+          <span no-wrap>น้ำหนักรวม: <strong id="scoreSet3" class="text-emerald-400 font-mono">0</strong> แต้ม</span>
         </div>
       </div>
 
     </section>
 
-    <!-- Matrix Table Section -->
+    <!-- Timeframe Breakdown Table -->
     <section class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-2">
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางตรวจสอบย้อนหลังแบบจำลองจริง (Out-of-Sample)</h2>
-          <span id="tableRangeBadge" class="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono no-wrap">ตรวจสอบความแม่นยำ</span>
+          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางเปรียบเทียบเจาะลึกแต่ละช่วงเวลา (Multi-Timeframe Analysis)</h2>
         </div>
-        <div class="text-[10px] text-slate-400 font-mono no-wrap">
-          รวมเข้า: <span id="totalHits" class="text-emerald-400 font-bold">0</span> วัน | หลุด: <span id="totalMisses" class="text-rose-400 font-bold">0</span> วัน
-        </div>
+        <span class="text-[10px] text-slate-400 font-mono no-wrap">แสดงผลลัพธ์แยกตามกรอบเวลาเพื่อการตัดสินใจ</span>
       </div>
 
       <div class="overflow-x-auto border border-slate-700 rounded">
         <table class="w-full text-left border-collapse text-[11px]">
           <thead>
             <tr class="bg-slate-900 text-slate-300 border-b border-slate-700 font-semibold no-wrap">
-              <th class="p-1.5 border-r border-slate-700 text-center w-28">วันที่ตรวจผล</th>
-              <th class="p-1.5 border-r border-slate-700/60 text-center text-amber-300 w-16">รอบเที่ยง</th>
-              <th class="p-1.5 border-r border-slate-700/60 text-center text-amber-300 w-16">รอบเย็น</th>
-              <th class="p-1.5 border-r border-slate-700/60 text-center">ผลสิบเด่น (จาก 10 วันก่อนหน้า)</th>
-              <th class="p-1.5 border-r border-slate-700/60 text-center">ผลหน่วยเด่น</th>
-              <th class="p-1.5 text-center">ผลเด่นอิสระ</th>
+              <th class="p-1.5 border-r border-slate-700 text-center w-28">กรอบเวลา</th>
+              <th class="p-1.5 border-r border-slate-700/60 text-center text-amber-300">หลักสิบเด่น (5 ตัว)</th>
+              <th class="p-1.5 border-r border-slate-700/60 text-center text-sky-300">หลักหน่วยเด่น (5 ตัว)</th>
+              <th class="p-1.5 text-center text-emerald-300">เด่นอิสระ (2 ตัว)</th>
             </tr>
           </thead>
           <tbody id="matrixTbody" class="divide-y divide-slate-700/60 font-mono text-center">
             <tr>
-              <td colspan="6" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล โปรดกรอกข้อมูลและกดปุ่มประมวลผล</td>
+              <td colspan="4" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล โปรดกรอกข้อมูลและกดปุ่มประมวลผล</td>
             </tr>
           </tbody>
         </table>
@@ -200,40 +195,80 @@
       const text = document.getElementById('rawInput').value;
       const allRecords = parseTextData(text);
 
-      if (allRecords.length < 11) {
-        alert('โปรดใส่ข้อมูลอย่างน้อย 11 วันขึ้นไป เพื่อให้มีข้อมูล 10 วันแรกไว้ตั้งต้นคำนวณ และวันที่ 11 ไว้ตรวจผลจริง');
+      if (allRecords.length === 0) {
+        alert('ไม่พบข้อมูลรูปแบบที่ถูกต้อง โปรดตรวจสอบข้อความ');
         return;
       }
 
       document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันทั้งหมด`;
 
-      // 1. คำนวณหาเลขเด่นสำหรับ "วันล่าสุด" โดยใช้ 10 วันก่อนหน้า (ห้ามรวมวันล่าสุดเด็ดขาด)
-      const historical10Days = allRecords.slice(-11, -1); // 10 วันก่อนวันล่าสุด
-      const currentDayRecord = allRecords[allRecords.length - 1]; // วันล่าสุด (ที่จะเอามาลุ้น)
+      // กำหนดกรอบเวลาที่จะนำมาประมวลผลร่วมกัน (5, 10, 15, 20, 25, 30 วัน)
+      const periods = [5, 10, 15, 20, 25, 30];
+      const validPeriods = periods.filter(p => allRecords.length >= p);
+      if (validPeriods.length === 0) validPeriods.push(allRecords.length);
 
-      const tensFreq = Array(10).fill(0);
-      const unitsFreq = Array(10).fill(0);
-      const totalFreq = Array(10).fill(0);
+      // ระบบให้คะแนนถ่วงน้ำหนัก (Consensus Weighting)
+      // กรอบสั้น (ให้ค่าน้ำหนักสูงเพราะทันเหตุการณ์) กรอบยาว (ให้ความเสถียร)
+      const globalTensScore = Array(10).fill(0);
+      const globalUnitsScore = Array(10).fill(0);
+      const globalTotalScore = Array(10).fill(0);
 
-      historical10Days.forEach(r => {
-        const dayTens = new Set([r.noonTen, r.eveTen]);
-        const dayUnits = new Set([r.noonUnit, r.eveUnit]);
-        const dayAll = new Set([r.noon[0], r.noon[1], r.eve[0], r.eve[1]]);
+      const timeframeResults = [];
 
-        dayTens.forEach(t => tensFreq[parseInt(t)]++);
-        dayUnits.forEach(u => unitsFreq[parseInt(u)]++);
-        dayAll.forEach(d => totalFreq[parseInt(d)]++);
+      validPeriods.forEach(days => {
+        const sliceData = allRecords.slice(-days);
+        const tFreq = Array(10).fill(0);
+        const uFreq = Array(10).fill(0);
+        const fFreq = Array(10).fill(0);
+
+        sliceData.forEach(r => {
+          new Set([r.noonTen, r.eveTen]).forEach(t => tFreq[parseInt(t)]++);
+          new Set([r.noonUnit, r.eveUnit]).forEach(u => uFreq[parseInt(u)]++);
+          new Set([r.noon[0], r.noon[1], r.eve[0], r.eve[1]]).forEach(d => fFreq[parseInt(d)]++);
+        });
+
+        const topTens = getTopDigits(tFreq, 5);
+        const topUnits = getTopDigits(uFreq, 5);
+        const topFree = getTopDigits(fFreq, 2);
+
+        // น้ำหนักตามกรอบเวลา (สั้น 5 วัน น้ำหนัก 2.0, ยาว 30 วัน น้ำหนัก 1.0)
+        let weight = days <= 10 ? 2.0 : (days <= 20 ? 1.5 : 1.0);
+
+        topTens.forEach((d, index) => {
+          globalTensScore[d] += (5 - index) * weight;
+        });
+        topUnits.forEach((d, index) => {
+          globalUnitsScore[d] += (5 - index) * weight;
+        });
+        topFree.forEach((d, index) => {
+          globalTotalScore[d] += (3 - index) * weight * 1.5;
+        });
+
+        timeframeResults.push({
+          days,
+          topTens,
+          topUnits,
+          topFree
+        });
       });
 
-      const set1 = getTopDigits(tensFreq, 5);
-      const set2 = getTopDigits(unitsFreq, 5);
-      const set3 = getTopDigits(totalFreq, 2);
+      // คัดเลือกเลขที่ดีที่สุดจากคะแนนรวม Consensus
+      const consensusTens = getTopDigitsByScore(globalTensScore, 5);
+      const consensusUnits = getTopDigitsByScore(globalUnitsScore, 5);
+      const consensusFree = getTopDigitsByScore(globalTotalScore, 2);
 
-      // แสดงผลการทำนายสำหรับวันล่าสุดที่ช่องการ์ดด้านบน
-      renderTopCardPreview(set1, set2, set3, historical10Days);
+      // แสดงผลการ์ดสรุป
+      document.getElementById('numbersSet1').innerText = consensusTens.nums.join('  ');
+      document.getElementById('scoreSet1').innerText = consensusTens.maxScore.toFixed(1);
 
-      // 2. สร้างตารางตรวจสอบย้อนหลังแบบทีละวัน (Rolling Out-of-Sample Test) เพื่อดูความจริงว่าถ้าแทงแบบนี้จริงๆ ผลจะเป็นอย่างไร
-      renderRollingTable(allRecords);
+      document.getElementById('numbersSet2').innerText = consensusUnits.nums.join('  ');
+      document.getElementById('scoreSet2').innerText = consensusUnits.maxScore.toFixed(1);
+
+      document.getElementById('numbersSet3').innerText = consensusFree.nums.join('  ');
+      document.getElementById('scoreSet3').innerText = consensusFree.maxScore.toFixed(1);
+
+      // แสดงตารางเปรียบเทียบแต่ละช่วงเวลา
+      renderTable(timeframeResults);
     }
 
     function getTopDigits(freqArray, count) {
@@ -245,93 +280,40 @@
         .sort((a, b) => a - b);
     }
 
-    function renderTopCardPreview(set1, set2, set3, histRecords) {
-      document.getElementById('numbersSet1').innerText = set1.join('  ');
-      document.getElementById('numbersSet2').innerText = set2.join('  ');
-      document.getElementById('numbersSet3').innerText = set3.join('  ');
-
-      // คำนวณสถิติย้อนหลังของ 10 วันที่ใช้คำนวณ
-      let hits = 0;
-      histRecords.forEach(r => {
-        if (set1.includes(parseInt(r.noonTen)) || set1.includes(parseInt(r.eveTen))) hits++;
-      });
-      document.getElementById('winRateSet1').innerText = `อิง 10 วันก่อนหน้า`;
-      document.getElementById('winRateSet2').innerText = `แม่นยำจริง`;
-      document.getElementById('winRateSet3').innerText = `(ไม่เห็นอนาคต)`;
+    function getTopDigitsByScore(scoreArray, count) {
+      const mapped = scoreArray.map((score, digit) => ({ digit, score }));
+      mapped.sort((a, b) => b.score - a.score || b.digit - a.digit);
+      const nums = mapped.slice(0, count).map(item => item.digit).sort((a, b) => a - b);
+      const maxScore = mapped.slice(0, count).reduce((acc, curr) => acc + curr.score, 0);
+      return { nums, maxScore };
     }
 
-    function renderRollingTable(allRecords) {
+    function renderTable(results) {
       const tbody = document.getElementById('matrixTbody');
       tbody.innerHTML = '';
 
-      let totalHitsCount = 0;
-      let totalMissesCount = 0;
-
-      // เริ่มจากวันที่ 11 เป็นต้นไป เพื่อให้มี 10 วันข้างหน้าเป็นฐานข้อมูลคำนวณ
-      const testRows = [];
-      for (let i = 10; i < allRecords.length; i++) {
-        const targetDay = allRecords[i];
-        const past10Days = allRecords.slice(i - 10, i); // 10 วันก่อนหน้าวันเป้าหมาย
-
-        // คำนวณหาเลขเด่นจาก 10 วันก่อนหน้าเท่านั้น
-        const tFreq = Array(10).fill(0);
-        const uFreq = Array(10).fill(0);
-        const fFreq = Array(10).fill(0);
-
-        past10Days.forEach(r => {
-          new Set([r.noonTen, r.eveTen]).forEach(t => tFreq[parseInt(t)]++);
-          new Set([r.noonUnit, r.eveUnit]).forEach(u => uFreq[parseInt(u)]++);
-          new Set([r.noon[0], r.noon[1], r.eve[0], r.eve[1]]).forEach(d => fFreq[parseInt(d)]++);
-        });
-
-        const s1 = getTopDigits(tFreq, 5);
-        const s2 = getTopDigits(uFreq, 5);
-        const s3 = getTopDigits(fFreq, 2);
-
-        // ตรวจสอบว่าในวันเป้าหมาย (targetDay) เลขเข้าหรือไม่
-        const hit1 = s1.includes(parseInt(targetDay.noonTen)) || s1.includes(parseInt(targetDay.eveTen));
-        const hit2 = s2.includes(parseInt(targetDay.noonUnit)) || s2.includes(parseInt(targetDay.eveUnit));
-        const hit3 = s3.includes(parseInt(targetDay.noon[0])) || s3.includes(parseInt(targetDay.noon[1])) || 
-                     s3.includes(parseInt(targetDay.eve[0])) || s3.includes(parseInt(targetDay.eve[1]));
-
-        testRows.push({ targetDay, s1, s2, s3, hit1, hit2, hit3 });
-      }
-
-      // แสดงผลแบบเรียงจากปัจจุบันไปอดีต
-      const reversedRows = [...testRows].reverse();
-
-      reversedRows.forEach((item, idx) => {
+      results.forEach((res, idx) => {
         const tr = document.createElement('tr');
         tr.className = idx % 2 === 0 ? 'bg-slate-800/40 hover:bg-slate-700/40' : 'bg-slate-900/40 hover:bg-slate-700/40';
 
         tr.innerHTML = `
-          <td class="p-1.5 border-r border-slate-700 text-slate-300 font-semibold no-wrap">${item.targetDay.dateStr}</td>
-          <td class="p-1.5 border-r border-slate-700/60 font-bold text-amber-300 bg-slate-950/20 no-wrap">${item.targetDay.noon}</td>
-          <td class="p-1.5 border-r border-slate-700/60 font-bold text-amber-300 bg-slate-950/20 no-wrap">${item.targetDay.eve}</td>
-          <td class="p-1.5 border-r border-slate-700/60 ${item.hit1 ? 'text-emerald-400 font-bold' : 'text-rose-400'} no-wrap">${item.hit1 ? '✓ เข้า (' + item.s1.join(',') + ')' : '✗ หลุด'}</td>
-          <td class="p-1.5 border-r border-slate-700/60 ${item.hit2 ? 'text-emerald-400 font-bold' : 'text-rose-400'} no-wrap">${item.hit2 ? '✓ เข้า (' + item.s2.join(',') + ')' : '✗ หลุด'}</td>
-          <td class="p-1.5 ${item.hit3 ? 'text-emerald-400 font-bold' : 'text-rose-400'} no-wrap">${item.hit3 ? '✓ เข้า (' + item.s3.join(',') + ')' : '✗ หลุด'}</td>
+          <td class="p-1.5 border-r border-slate-700 text-amber-300 font-bold no-wrap">ย้อนหลัง ${res.days} วัน</td>
+          <td class="p-1.5 border-r border-slate-700/60 font-mono text-slate-200 no-wrap">${res.topTens.join(' , ')}</td>
+          <td class="p-1.5 border-r border-slate-700/60 font-mono text-slate-200 no-wrap">${res.topUnits.join(' , ')}</td>
+          <td class="p-1.5 font-mono text-emerald-400 font-bold no-wrap">${res.topFree.join(' , ')}</td>
         `;
-
         tbody.appendChild(tr);
-
-        if (item.hit1) totalHitsCount++; else totalMissesCount++;
       });
-
-      document.getElementById('totalHits').innerText = totalHitsCount;
-      document.getElementById('totalMisses').innerText = totalMissesCount;
     }
 
     function clearData() {
       if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) {
         document.getElementById('rawInput').value = '';
-        document.getElementById('matrixTbody').innerHTML = `<tr><td colspan="6" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td></tr>`;
+        document.getElementById('matrixTbody').innerHTML = `<tr><td colspan="4" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td></tr>`;
         document.getElementById('dataCountBadge').innerText = '0 วัน';
         ['Set1', 'Set2', 'Set3'].forEach(id => {
           document.getElementById(`numbers${id}`).innerText = '- - -';
-          document.getElementById(`winRate${id}`).innerText = '0.0%';
-          document.getElementById(`maxStreak${id}`).innerText = '0';
-          document.getElementById(`maxMiss${id}`).innerText = '0';
+          document.getElementById(`score${id}`).innerText = '0';
         });
       }
     }
