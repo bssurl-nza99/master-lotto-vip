@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติพม่า 2D</title>
+  <title>ระบบวิเคราะห์สถิติพม่า 2D (รายวัน 15 วัน)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
@@ -15,7 +15,6 @@
     .no-wrap {
       white-space: nowrap;
     }
-    /* Custom Scrollbar for Dense Tables */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -39,11 +38,11 @@
     <!-- Header -->
     <header class="flex justify-between items-center bg-slate-800 border border-slate-700 p-2.5 rounded-lg">
       <div>
-        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D (Dynamic Engine)</h1>
-        <p class="text-[11px] text-slate-400 no-wrap">ประมวลผลความถี่แท้จริงจากฐานข้อมูลย้อนหลัง คัดกรอง 15 วันล่าสุด (30 รอบ)</p>
+        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D (ล็อกสถิติ 15 วัน / นับผลรายวัน)</h1>
+        <p class="text-[11px] text-slate-400 no-wrap">เงื่อนไข: 1 วัน = 1 หน่วย (ขอแค่มาอย่างน้อย 1 ครั้งในเที่ยงหรือเย็นถือว่าเข้า)</p>
       </div>
       <div class="flex items-center gap-2">
-        <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">0 วัน (0 รอบ)</span>
+        <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">0 วัน</span>
       </div>
     </header>
 
@@ -51,14 +50,14 @@
     <section class="bg-slate-800 border border-slate-700 p-2.5 rounded-lg space-y-2">
       <div class="flex justify-between items-center">
         <label for="rawInput" class="font-semibold text-slate-200 text-xs no-wrap">📥 ช่องกรอกข้อมูลสถิติตัวอย่าง (รองรับรูปแบบ 🗓 DD ม.ค. YY : 00 -- 00)</label>
-        <span class="text-[10px] text-slate-400 no-wrap">ระบบถอดรหัส วัน/เดือน/ปี และรอบเที่ยง-เย็น อัตโนมัติ</span>
+        <span class="text-[10px] text-slate-400 no-wrap">ระบบถอดรหัสและคัดกรอง 15 วันล่าสุดอัตโนมัติ</span>
       </div>
 
       <textarea id="rawInput" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500 leading-tight" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
 
       <div class="flex gap-2">
         <button id="btnProcess" onclick="processRawData()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded transition no-wrap">
-          ⚙️ ประมวลผลและคำนวณสถิติ
+          ⚙️ ประมวลผลและคำนวณสถิติ (15 วันล่าสุด)
         </button>
         <button id="btnClear" onclick="clearData()" class="bg-rose-900/60 hover:bg-rose-800 border border-rose-700 text-rose-200 font-medium py-1.5 px-3 rounded transition no-wrap">
           🗑️ ล้างข้อมูลทั้งหมด
@@ -77,11 +76,11 @@
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet1" class="text-lg font-extrabold text-amber-300 font-mono tracking-wider no-wrap"> - - - - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 5 ความถี่สูงสุดฝั่งหลักสิบ</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 5 ความถี่สูงสุดฝั่งหลักสิบ (รายวัน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
-          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet1" class="text-emerald-400 font-mono">0</strong> รอบ</span>
-          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet1" class="text-rose-400 font-mono">0</strong> รอบ</span>
+          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet1" class="text-emerald-400 font-mono">0</strong> วัน</span>
+          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet1" class="text-rose-400 font-mono">0</strong> วัน</span>
         </div>
       </div>
 
@@ -93,11 +92,11 @@
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet2" class="text-lg font-extrabold text-sky-300 font-mono tracking-wider no-wrap"> - - - - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 5 ความถี่สูงสุดฝั่งหลักหน่วย</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 5 ความถี่สูงสุดฝั่งหลักหน่วย (รายวัน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
-          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet2" class="text-emerald-400 font-mono">0</strong> รอบ</span>
-          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet2" class="text-rose-400 font-mono">0</strong> รอบ</span>
+          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet2" class="text-emerald-400 font-mono">0</strong> วัน</span>
+          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet2" class="text-rose-400 font-mono">0</strong> วัน</span>
         </div>
       </div>
 
@@ -109,11 +108,11 @@
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet3" class="text-lg font-extrabold text-emerald-300 font-mono tracking-wider no-wrap"> - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 2 ความถี่สูงสุดรวมทุกหลัก</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 2 ความถี่สูงสุดรวมทุกหลัก (รายวัน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
-          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet3" class="text-emerald-400 font-mono">0</strong> รอบ</span>
-          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet3" class="text-rose-400 font-mono">0</strong> รอบ</span>
+          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet3" class="text-emerald-400 font-mono">0</strong> วัน</span>
+          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet3" class="text-rose-400 font-mono">0</strong> วัน</span>
         </div>
       </div>
 
@@ -123,11 +122,11 @@
     <section class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-2">
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางตรวจสอบผล เข้า-หลุด รายรอบ</h2>
-          <span id="tableRangeBadge" class="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono no-wrap">แสดง 15 วันล่าสุด (30 รอบ)</span>
+          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางตรวจสอบผล เข้า-หลุด รายวัน (ล็อก 15 วันล่าสุด)</h2>
+          <span id="tableRangeBadge" class="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono no-wrap">แสดง 15 วัน</span>
         </div>
         <div class="text-[10px] text-slate-400 font-mono no-wrap">
-          รวมเข้า: <span id="totalHits" class="text-emerald-400 font-bold">0</span> | หลุด: <span id="totalMisses" class="text-rose-400 font-bold">0</span>
+          รวมเข้า: <span id="totalHits" class="text-emerald-400 font-bold">0</span> วัน | หลุด: <span id="totalMisses" class="text-rose-400 font-bold">0</span> วัน
         </div>
       </div>
 
@@ -136,24 +135,16 @@
           <thead>
             <tr class="bg-slate-900 text-slate-300 border-b border-slate-700 font-semibold no-wrap">
               <th class="p-1.5 border-r border-slate-700 text-center w-28">วันที่</th>
-              <th class="p-1.5 border-r border-slate-700 text-center bg-slate-950/40" colspan="4">รอบเที่ยง</th>
-              <th class="p-1.5 text-center bg-slate-900/60" colspan="4">รอบเย็น</th>
-            </tr>
-            <tr class="bg-slate-800/90 text-slate-400 border-b border-slate-700 text-[10px] text-center font-mono no-wrap">
-              <th class="p-1 border-r border-slate-700">DD/MM/YY</th>
-              <th class="p-1 border-r border-slate-700/60 text-amber-300 w-12">ผลเที่ยง</th>
-              <th class="p-1 border-r border-slate-700/60">หลักสิบ (5)</th>
-              <th class="p-1 border-r border-slate-700/60">หลักหน่วย (5)</th>
-              <th class="p-1 border-r border-slate-700 font-semibold">อิสระ (2)</th>
-              <th class="p-1 border-r border-slate-700/60 text-amber-300 w-12">ผลเย็น</th>
-              <th class="p-1 border-r border-slate-700/60">หลักสิบ (5)</th>
-              <th class="p-1 border-r border-slate-700/60">หลักหน่วย (5)</th>
-              <th class="p-1">อิสระ (2)</th>
+              <th class="p-1.5 border-r border-slate-700/60 text-center text-amber-300 w-16">รอบเที่ยง</th>
+              <th class="p-1.5 border-r border-slate-700/60 text-center text-amber-300 w-16">รอบเย็น</th>
+              <th class="p-1.5 border-r border-slate-700/60 text-center">หลักสิบเด่น (5 ตัว)</th>
+              <th class="p-1.5 border-r border-slate-700/60 text-center">หลักหน่วยเด่น (5 ตัว)</th>
+              <th class="p-1.5 text-center">เด่นอิสระ (2 ตัว)</th>
             </tr>
           </thead>
           <tbody id="matrixTbody" class="divide-y divide-slate-700/60 font-mono text-center">
             <tr>
-              <td colspan="9" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล โปรดกรอกข้อมูลและกดปุ่มประมวลผล</td>
+              <td colspan="6" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล โปรดกรอกข้อมูลและกดปุ่มประมวลผล</td>
             </tr>
           </tbody>
         </table>
@@ -163,7 +154,6 @@
   </div>
 
   <script>
-    // Sample Raw Data
     const defaultRawData = `🗓 01  ต.ค 69 :   99 -- 18
 🗓 02  ต.ค 69 :   22 -- 25
 🗓 05  ต.ค 69 :   00 -- 57
@@ -226,56 +216,50 @@
 
     function processRawData() {
       const text = document.getElementById('rawInput').value;
-      parsedRecords = parseTextData(text);
+      const allRecords = parseTextData(text);
 
-      if (parsedRecords.length === 0) {
+      if (allRecords.length === 0) {
         alert('ไม่พบข้อมูลรูปแบบที่ถูกต้อง โปรดตรวจสอบข้อความ');
         return;
       }
 
-      document.getElementById('dataCountBadge').innerText = `${parsedRecords.length} วัน (${parsedRecords.length * 2} รอบ)`;
+      // ล็อกกรอบสถิติไว้ที่ 15 วันล่าสุดเป๊ะๆ
+      const window15Days = allRecords.slice(-15);
+
+      document.getElementById('dataCountBadge').innerText = `${window15Days.length} วัน (ล็อก 15 วัน)`;
       
-      // Calculate 15-day window (30 rounds)
-      const window15Days = parsedRecords.slice(-15);
-      
-      // Count Frequencies
+      // นับความถี่แบบรายวัน (1 วัน นับ 1 แต้มต่อเมื่อเลขโผล่ในวันนั้น ไม่ว่าจะเที่ยงหรือเย็น)
       const tensFreq = Array(10).fill(0);
       const unitsFreq = Array(10).fill(0);
       const totalFreq = Array(10).fill(0);
 
       window15Days.forEach(r => {
-        const tN = parseInt(r.noonTen), uN = parseInt(r.noonUnit);
-        const tE = parseInt(r.eveTen), uE = parseInt(r.eveUnit);
+        // เช็คตัวเลขที่ปรากฏในวันนั้น (ทั้งเที่ยงและเย็น รวมกันไม่ซ้ำตัวเลขต่อวันสำหรับการนับความถี่รายวัน)
+        const dayTens = new Set([r.noonTen, r.eveTen]);
+        const dayUnits = new Set([r.noonUnit, r.eveUnit]);
+        const dayAll = new Set([r.noon[0], r.noon[1], r.eve[0], r.eve[1]]);
 
-        tensFreq[tN]++;
-        tensFreq[tE]++;
-
-        unitsFreq[uN]++;
-        unitsFreq[uE]++;
-
-        totalFreq[tN]++; totalFreq[uN]++;
-        totalFreq[tE]++; totalFreq[uE]++;
+        dayTens.forEach(t => tensFreq[parseInt(t)]++);
+        dayUnits.forEach(u => unitsFreq[parseInt(u)]++);
+        dayAll.forEach(d => totalFreq[parseInt(d)]++);
       });
 
-      // Derive Best Sets (Top 5 Tens, Top 5 Units, Top 2 Free)
       const set1 = getTopDigits(tensFreq, 5);
       const set2 = getTopDigits(unitsFreq, 5);
       const set3 = getTopDigits(totalFreq, 2);
 
-      // Render Cards
-      renderCard('Set1', set1, window15Days, (r, round) => {
-        const ten = round === 'noon' ? r.noonTen : r.eveTen;
-        return set1.includes(parseInt(ten));
+      // Render Cards (คิดผลลัพธ์แบบรายวัน)
+      renderCard('Set1', set1, window15Days, (r) => {
+        return set1.includes(parseInt(r.noonTen)) || set1.includes(parseInt(r.eveTen));
       });
 
-      renderCard('Set2', set2, window15Days, (r, round) => {
-        const unit = round === 'noon' ? r.noonUnit : r.eveUnit;
-        return set2.includes(parseInt(unit));
+      renderCard('Set2', set2, window15Days, (r) => {
+        return set2.includes(parseInt(r.noonUnit)) || set2.includes(parseInt(r.eveUnit));
       });
 
-      renderCard('Set3', set3, window15Days, (r, round) => {
-        const val = round === 'noon' ? r.noon : r.eve;
-        return set3.includes(parseInt(val[0])) || set3.includes(parseInt(val[1]));
+      renderCard('Set3', set3, window15Days, (r) => {
+        return set3.includes(parseInt(r.noon[0])) || set3.includes(parseInt(r.noon[1])) || 
+               set3.includes(parseInt(r.eve[0])) || set3.includes(parseInt(r.eve[1]));
       });
 
       // Render Matrix Table
@@ -295,28 +279,26 @@
       document.getElementById(`numbers${cardId}`).innerText = numbers.join('  ');
 
       let hits = 0;
-      let totalRounds = windowRecords.length * 2;
+      let totalDays = windowRecords.length;
       let currentStreak = 0, maxStreak = 0;
       let currentMiss = 0, maxMiss = 0;
 
       windowRecords.forEach(r => {
-        ['noon', 'eve'].forEach(round => {
-          const isHit = checkHitFn(r, round);
-          if (isHit) {
-            hits++;
-            currentStreak++;
-            maxStreak = Math.max(maxStreak, currentStreak);
-            currentMiss = 0;
-          } else {
-            currentMiss++;
-            maxMiss = Math.max(maxMiss, currentMiss);
-            currentStreak = 0;
-          }
-        });
+        const isHit = checkHitFn(r);
+        if (isHit) {
+          hits++;
+          currentStreak++;
+          maxStreak = Math.max(maxStreak, currentStreak);
+          currentMiss = 0;
+        } else {
+          currentMiss++;
+          maxMiss = Math.max(maxMiss, currentMiss);
+          currentStreak = 0;
+        }
       });
 
-      const winRate = ((hits / totalRounds) * 100).toFixed(1);
-      document.getElementById(`winRate${cardId}`).innerText = `${winRate}% (${hits}/${totalRounds})`;
+      const winRate = totalDays > 0 ? ((hits / totalDays) * 100).toFixed(1) : '0.0';
+      document.getElementById(`winRate${cardId}`).innerText = `${winRate}% (${hits}/${totalDays})`;
       document.getElementById(`maxStreak${cardId}`).innerText = maxStreak;
       document.getElementById(`maxMiss${cardId}`).innerText = maxMiss;
     }
@@ -329,54 +311,42 @@
       const reversedRecords = [...records].reverse();
 
       reversedRecords.forEach((r, idx) => {
-        const nTenHit = set1.includes(parseInt(r.noonTen));
-        const nUnitHit = set2.includes(parseInt(r.noonUnit));
-        const nFreeHit = set3.includes(parseInt(r.noonTen)) || set3.includes(parseInt(r.noonUnit));
-
-        const eTenHit = set1.includes(parseInt(r.eveTen));
-        const eUnitHit = set2.includes(parseInt(r.eveUnit));
-        const eFreeHit = set3.includes(parseInt(r.eveTen)) || set3.includes(parseInt(r.eveUnit));
+        const nHit1 = set1.includes(parseInt(r.noonTen)) || set1.includes(parseInt(r.eveTen));
+        const nHit2 = set2.includes(parseInt(r.noonUnit)) || set2.includes(parseInt(r.eveUnit));
+        const nHit3 = set3.includes(parseInt(r.noon[0])) || set3.includes(parseInt(r.noon[1])) || 
+                      set3.includes(parseInt(r.eve[0])) || set3.includes(parseInt(r.eveUnit)); // Fix check
 
         const tr = document.createElement('tr');
         tr.className = idx % 2 === 0 ? 'bg-slate-800/40 hover:bg-slate-700/40' : 'bg-slate-900/40 hover:bg-slate-700/40';
 
+        const hit1 = set1.includes(parseInt(r.noonTen)) || set1.includes(parseInt(r.eveTen));
+        const hit2 = set2.includes(parseInt(r.noonUnit)) || set2.includes(parseInt(r.eveUnit));
+        const hit3 = (set3.includes(parseInt(r.noon[0])) || set3.includes(parseInt(r.noon[1])) || 
+                      set3.includes(parseInt(r.eve[0])) || set3.includes(parseInt(r.eve[1])));
+
         tr.innerHTML = `
           <td class="p-1.5 border-r border-slate-700 text-slate-300 font-semibold no-wrap">${r.dateStr}</td>
           <td class="p-1.5 border-r border-slate-700/60 font-bold text-amber-300 bg-slate-950/20 no-wrap">${r.noon}</td>
-          <td class="p-1.5 border-r border-slate-700/60 ${nTenHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${nTenHit ? '✓ เข้า (' + r.noonTen + ')' : '✗ หลุด'}</td>
-          <td class="p-1.5 border-r border-slate-700/60 ${nUnitHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${nUnitHit ? '✓ เข้า (' + r.noonUnit + ')' : '✗ หลุด'}</td>
-          <td class="p-1.5 border-r border-slate-700 ${nFreeHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${nFreeHit ? '✓ เข้า' : '✗ หลุด'}</td>
-          
           <td class="p-1.5 border-r border-slate-700/60 font-bold text-amber-300 bg-slate-950/20 no-wrap">${r.eve}</td>
-          <td class="p-1.5 border-r border-slate-700/60 ${eTenHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${eTenHit ? '✓ เข้า (' + eTenTen(r) + ')' : '✗ หลุด'}</td>
-          <td class="p-1.5 border-r border-slate-700/60 ${eUnitHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${eUnitHit ? '✓ เข้า (' + r.eveUnit + ')' : '✗ หลุด'}</td>
-          <td class="p-1.5 ${eFreeHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${eFreeHit ? '✓ เข้า' : '✗ หลุด'}</td>
+          <td class="p-1.5 border-r border-slate-700/60 ${hit1 ? 'text-emerald-400 font-bold' : 'text-rose-400'} no-wrap">${hit1 ? '✓ เข้า' : '✗ หลุด'}</td>
+          <td class="p-1.5 border-r border-slate-700/60 ${hit2 ? 'text-emerald-400 font-bold' : 'text-rose-400'} no-wrap">${hit2 ? '✓ เข้า' : '✗ หลุด'}</td>
+          <td class="p-1.5 ${hit3 ? 'text-emerald-400 font-bold' : 'text-rose-400'} no-wrap">${hit3 ? '✓ เข้า' : '✗ หลุด'}</td>
         `;
 
         tbody.appendChild(tr);
 
-        if (nTenHit) totalHitsCount++; else totalMissesCount++;
-        if (nUnitHit) totalHitsCount++; else totalMissesCount++;
-        if (nFreeHit) totalHitsCount++; else totalMissesCount++;
-        if (eTenHit) totalHitsCount++; else totalMissesCount++;
-        if (eUnitHit) totalHitsCount++; else totalMissesCount++;
-        if (eFreeHit) totalHitsCount++; else totalMissesCount++;
+        if (hit1) totalHitsCount++; else totalMissesCount++;
       });
 
-      document.getElementById('totalHits').innerText = totalHitsCount;
-      document.getElementById('totalMisses').innerText = totalMissesCount;
-    }
-
-    function eTenTen(r) {
-      return r.eveTen;
+      document.getElementById('totalHits').innerText = records.filter(r => set1.includes(parseInt(r.noonTen)) || set1.includes(parseInt(r.eveTen))).length;
+      document.getElementById('totalMisses').innerText = records.length - document.getElementById('totalHits').innerText;
     }
 
     function clearData() {
       if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) {
         document.getElementById('rawInput').value = '';
-        parsedRecords = [];
-        document.getElementById('matrixTbody').innerHTML = `<tr><td colspan="9" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td></tr>`;
-        document.getElementById('dataCountBadge').innerText = '0 วัน (0 รอบ)';
+        document.getElementById('matrixTbody').innerHTML = `<tr><td colspan="6" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td></tr>`;
+        document.getElementById('dataCountBadge').innerText = '0 วัน';
         ['Set1', 'Set2', 'Set3'].forEach(id => {
           document.getElementById(`numbers${id}`).innerText = '- - -';
           document.getElementById(`winRate${id}`).innerText = '0.0%';
