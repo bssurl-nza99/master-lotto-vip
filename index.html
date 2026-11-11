@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติพม่า 2D (v2.7 - Smart Backend)</title>
+  <title>ระบบวิเคราะห์สถิติพม่า 2D (v2.9 - Interactive & Ultra-Granular)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
@@ -38,13 +38,32 @@
     <!-- Header with Version -->
     <header class="flex justify-between items-center bg-slate-800 border border-slate-700 p-2.5 rounded-lg">
       <div>
-        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D <span class="bg-amber-950 border border-amber-600 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono ml-2">v2.7 (Smart Backend)</span></h1>
-        <p class="text-[11px] text-slate-400 no-wrap">ประมวลผลอัตโนมัติ 10 ระดับ | เด่นอิสระ 2 ตัวเน้นๆ (Smart Intersection)</p>
+        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D <span class="bg-amber-950 border border-amber-600 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono ml-2">v2.9 (Interactive)</span></h1>
+        <p class="text-[11px] text-slate-400 no-wrap">ซอยความถี่รายวัน (1-30 วัน) | เด่นอิสระ 2 ตัวเน้นๆ | ช่องกรอกข้อมูลกลับมาใช้งานตามปกติ</p>
       </div>
       <div class="flex items-center gap-2">
-        <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">โหลดหลังบ้านแล้ว</span>
+        <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">0 วัน</span>
       </div>
     </header>
+
+    <!-- Raw Data Input Section (Bring back input box) -->
+    <section class="bg-slate-800 border border-slate-700 p-2.5 rounded-lg space-y-2">
+      <div class="flex justify-between items-center">
+        <label for="rawInput" class="font-semibold text-slate-200 text-xs no-wrap">📥 ช่องกรอกข้อมูลสถิติ (วางข้อมูลของคุณที่นี่)</label>
+        <span class="text-[10px] text-slate-400 no-wrap">รองรับรูปแบบ 🗓 DD ม.ค. YY : 00 -- 00 หรือรูปแบบทั่วไป</span>
+      </div>
+
+      <textarea id="rawInput" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500 leading-tight" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
+
+      <div class="flex gap-2">
+        <button id="btnProcess" onclick="processRawData()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded transition no-wrap">
+          ⚙️ ประมวลผลและคำนวณสถิติ (Ultra-Granular Consensus)
+        </button>
+        <button id="btnClear" onclick="clearData()" class="bg-rose-900/60 hover:bg-rose-800 border border-rose-700 text-rose-200 font-medium py-1.5 px-3 rounded transition no-wrap">
+          🗑️ ล้างข้อมูลทั้งหมด
+        </button>
+      </div>
+    </section>
 
     <!-- Summary Cards -->
     <section class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
@@ -53,11 +72,11 @@
       <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1">
           <span class="font-bold text-amber-400 no-wrap text-xs">🎯 หลักสิบที่ดีที่สุด (5 ตัว)</span>
-          <span class="bg-amber-950 border border-amber-700 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">ความเสถียรสูง</span>
+          <span class="bg-amber-950 border border-amber-700 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">Ultra-Granular</span>
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet1" class="text-lg font-extrabold text-amber-300 font-mono tracking-wider no-wrap"> - - - - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">ผสานคะแนนจาก 10 กรอบเวลาหลังบ้าน</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ค่าที่ดีที่สุดสำหรับรอบถัดไป</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
           <span no-wrap>ความเสถียร: <strong class="text-emerald-400 font-mono">สูงสุด</strong></span>
@@ -69,11 +88,11 @@
       <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1">
           <span class="font-bold text-sky-400 no-wrap text-xs">🎯 หลักหน่วยที่ดีที่สุด (5 ตัว)</span>
-          <span class="bg-sky-950 border border-sky-700 text-sky-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">ความเสถียรสูง</span>
+          <span class="bg-sky-950 border border-sky-700 text-sky-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">Ultra-Granular</span>
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet2" class="text-lg font-extrabold text-sky-300 font-mono tracking-wider no-wrap"> - - - - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">ผสานคะแนนจาก 10 กรอบเวลาหลังบ้าน</div>
+          <div class="text-[10px] text-slate-400 no-wrap">ค่าที่ดีที่สุดสำหรับรอบถัดไป</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
           <span no-wrap>ความเสถียร: <strong class="text-emerald-400 font-mono">สูงสุด</strong></span>
@@ -103,9 +122,9 @@
     <section class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-2">
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางเปรียบเทียบเจาะลึก 10 ระดับ (3 ถึง 30 วันจากระบบหลังบ้าน)</h2>
+          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางเปรียบเทียบเจาะลึกความถี่รายวัน (1 ถึง 30 วัน)</h2>
         </div>
-        <span class="text-[10px] text-slate-400 font-mono no-wrap">อัปเดตข้อมูลอัตโนมัติ</span>
+        <span class="text-[10px] text-slate-400 font-mono no-wrap">แสดงผลตามข้อมูลปัจจุบัน</span>
       </div>
 
       <div class="overflow-x-auto border border-slate-700 rounded">
@@ -120,7 +139,7 @@
           </thead>
           <tbody id="matrixTbody" class="divide-y divide-slate-700/60 font-mono text-center">
             <tr>
-              <td colspan="4" class="p-4 text-slate-500 no-wrap">กำลังประมวลผลข้อมูลจากหลังบ้าน...</td>
+              <td colspan="4" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล โปรดใส่ข้อมูลและกดปุ่มประมวลผล</td>
             </tr>
           </tbody>
         </table>
@@ -130,50 +149,50 @@
   </div>
 
   <script>
-    const backendDataset = [
-      "24 ก.ย 69 : 63 -- 87",
-      "25 ก.ย 69 : 89 -- 36",
-      "28 ก.ย 69 : 08 -- 77",
-      "29 ก.ย 69 : 72 -- 08",
-      "30 ก.ย 69 : 30 -- 13",
-      "01 ต.ค 69 : 99 -- 18",
-      "02 ต.ค 69 : 22 -- 25",
-      "05 ต.ค 69 : 00 -- 57",
-      "06 ต.ค 69 : 86 -- 29",
-      "07 ต.ค 69 : 07 -- 38",
-      "08 ต.ค 69 : 61 -- 14",
-      "11 ต.ค 69 : 50 -- 52",
-      "12 ต.ค 69 : 01 -- 44",
-      "14 ต.ค 69 : 05 -- 84",
-      "15 ต.ค 69 : 98 -- 13",
-      "19 ต.ค 69 : 32 -- 26",
-      "20 ต.ค 69 : 77 -- 49",
-      "21 ต.ค 69 : 53 -- 98",
-      "22 ต.ค 69 : 78 -- 77",
-      "26 ต.ค 69 : 52 -- 32",
-      "27 ต.ค 69 : 49 -- 20",
-      "28 ต.ค 69 : 89 -- 03",
-      "29 ต.ค 69 : 91 -- 02",
-      "30 ต.ค 69 : 90 -- 90",
-      "02 พ.ย 69 : 97 -- 08",
-      "03 พ.ย 69 : 64 -- 14",
-      "04 พ.ย 69 : 66 -- 91",
-      "05 พ.ย 69 : 65 -- 90",
-      "06 พ.ย 69 : 51 -- 05",
-      "09 พ.ย 69 : 67 -- 74",
-      "10 พ.ย 69 : 17 -- 17",
-      "11 พ.ย 69 : 24 -- 13"
-    ];
+    const defaultRawData = `24 ก.ย 69 : 63 -- 87
+25 ก.ย 69 : 89 -- 36
+28 ก.ย 69 : 08 -- 77
+29 ก.ย 69 : 72 -- 08
+30 ก.ย 69 : 30 -- 13
+01 ต.ค 69 : 99 -- 18
+02 ต.ค 69 : 22 -- 25
+05 ต.ค 69 : 00 -- 57
+06 ต.ค 69 : 86 -- 29
+07 ต.ค 69 : 07 -- 38
+08 ต.ค 69 : 61 -- 14
+11 ต.ค 69 : 50 -- 52
+12 ต.ค 69 : 01 -- 44
+14 ต.ค 69 : 05 -- 84
+15 ต.ค 69 : 98 -- 13
+19 ต.ค 69 : 32 -- 26
+20 ต.ค 69 : 77 -- 49
+21 ต.ค 69 : 53 -- 98
+22 ต.ค 69 : 78 -- 77
+26 ต.ค 69 : 52 -- 32
+27 ต.ค 69 : 49 -- 20
+28 ต.ค 69 : 89 -- 03
+29 ต.ค 69 : 91 -- 02
+30 ต.ค 69 : 90 -- 90
+02 พ.ย 69 : 97 -- 08
+03 พ.ย 69 : 64 -- 14
+04 พ.ย 69 : 66 -- 91
+05 พ.ย 69 : 65 -- 90
+06 พ.ย 69 : 51 -- 05
+09 พ.ย 69 : 67 -- 74
+10 พ.ย 69 : 17 -- 17
+11 พ.ย 69 : 24 -- 13`;
 
     window.onload = function() {
-      processBackendData();
+      document.getElementById('rawInput').value = defaultRawData;
+      processRawData();
     };
 
-    function parseTextData(textArray) {
+    function parseTextData(text) {
+      const lines = text.split('\n');
       const records = [];
       const regex = /(\d{1,2})\s+([^\d\s]+)\.?\s+(\d{2})\s*:\s*(\d{2})\s*-+\s*(\d{2})/;
 
-      textArray.forEach(line => {
+      lines.forEach(line => {
         const match = line.match(regex);
         if (match) {
           records.push({
@@ -193,17 +212,18 @@
       return records;
     }
 
-    function processBackendData() {
-      const allRecords = parseTextData(backendDataset);
+    function processRawData() {
+      const text = document.getElementById('rawInput').value;
+      const allRecords = parseTextData(text);
 
       if (allRecords.length === 0) {
-        alert('ไม่พบข้อมูลในระบบหลังบ้าน');
+        alert('ไม่พบข้อมูลรูปแบบที่ถูกต้อง โปรดตรวจสอบข้อความ');
         return;
       }
 
-      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันในระบบหลังบ้าน`;
+      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันทั้งหมด`;
 
-      const periods = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+      const periods = [1, 2, 3, 5, 7, 10, 14, 20, 25, 30];
       const validPeriods = periods.filter(p => allRecords.length >= p);
       if (validPeriods.length === 0) validPeriods.push(allRecords.length);
 
@@ -229,7 +249,7 @@
         const topUnits = getTopDigits(uFreq, 5);
         const smartFree = calculateSmartFreeDigits(tFreq, uFreq, fFreq, days);
 
-        let weight = days <= 9 ? 2.2 : (days <= 18 ? 1.5 : 1.0);
+        let weight = days <= 3 ? 3.0 : (days <= 7 ? 2.2 : (days <= 14 ? 1.5 : 1.0));
 
         topTens.forEach((d, index) => {
           globalTensScore[d] += (5 - index) * weight;
@@ -238,7 +258,7 @@
           globalUnitsScore[d] += (5 - index) * weight;
         });
         smartFree.forEach((d, index) => {
-          globalFreeScore[d] += (2 - index) * weight * 2.0;
+          globalFreeScore[d] += (2 - index) * weight * 2.5;
         });
 
         timeframeResults.push({
@@ -251,7 +271,7 @@
 
       const consensusTens = getTopDigitsByScore(globalTensScore, 5);
       const consensusUnits = getTopDigitsByScore(globalUnitsScore, 5);
-      const consensusFree = getTopDigitsByScore(globalFreeScore, 2); // ล็อกไว้ที่ 2 ตัวเป๊ะๆ
+      const consensusFree = getTopDigitsByScore(globalFreeScore, 2);
 
       document.getElementById('numbersSet1').innerText = consensusTens.nums.join('  ');
       document.getElementById('scoreSet1').innerText = consensusTens.maxScore.toFixed(1);
@@ -272,9 +292,9 @@
         const isTopTen = getTopDigits(tFreq, 4).includes(i);
         const isTopUnit = getTopDigits(uFreq, 4).includes(i);
         if (isTopTen && isTopUnit) {
-          score += 5.0;
+          score += 6.0;
         } else if (isTopTen || isTopUnit) {
-          score += 2.0;
+          score += 2.5;
         }
         combinedScores[i] = score;
       }
@@ -319,6 +339,18 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function clearData() {
+      if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) {
+        document.getElementById('rawInput').value = '';
+        document.getElementById('matrixTbody').innerHTML = `<tr><td colspan="4" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td></tr>`;
+        document.getElementById('dataCountBadge').innerText = '0 วัน';
+        ['Set1', 'Set2', 'Set3'].forEach(id => {
+          document.getElementById(`numbers${id}`).innerText = '- - -';
+          document.getElementById(`score${id}`).innerText = '0';
+        });
+      }
     }
   </script>
 </body>
