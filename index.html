@@ -1,831 +1,390 @@
 <!DOCTYPE html>
-<html lang="th" class="dark h-full">
+<html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Trader Pro - Mr. Nattapong Kamsamang</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        tradeUp: '#0ecb81',
-                        tradeDown: '#f6465d',
-                        darkBg: '#0b0e11',
-                        cardBg: '#181a20',
-                        panelBg: '#1e2329',
-                        borderCol: '#2b313a'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'Prompt', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        body {
-            font-family: 'Inter', 'Prompt', sans-serif;
-            background-color: #0b0e11;
-            color: #eaecef;
-            user-select: none;
-            -webkit-user-select: none;
-            overflow-x: hidden;
-        }
-
-        /* Smooth Glow transitions for live ticks */
-        .tick-up {
-            animation: glowGreen 0.6s ease-out;
-        }
-        .tick-down {
-            animation: glowRed 0.6s ease-out;
-        }
-
-        @keyframes glowGreen {
-            0% { background-color: rgba(14, 203, 129, 0.35); color: #0ecb81; }
-            100% { background-color: transparent; }
-        }
-
-        @keyframes glowRed {
-            0% { background-color: rgba(246, 70, 93, 0.35); color: #f6465d; }
-            100% { background-color: transparent; }
-        }
-
-        /* Hide Scrollbar for clean UI */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .pulse-dot {
-            box-shadow: 0 0 0 0 rgba(14, 203, 129, 0.7);
-            animation: pulse 1.6s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 203, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(14, 203, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 203, 129, 0); }
-        }
-
-        /* Canvas Chart container styling */
-        #chartCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบวิเคราะห์สถิติพม่า 2D</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .no-wrap {
+      white-space: nowrap;
+    }
+    /* Custom Scrollbar for Dense Tables */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
 </head>
-<body class="h-full flex flex-col justify-between max-w-md mx-auto bg-darkBg border-x border-borderCol/40 shadow-2xl relative pb-16">
+<body class="p-2 sm:p-4 text-xs">
 
-    <!-- TOP HEADER -->
-    <header class="bg-cardBg px-4 py-3 border-b border-borderCol flex items-center justify-between sticky top-0 z-30">
-        <div class="flex items-center gap-3">
-            <div class="relative">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-500 to-amber-300 p-0.5 shadow-md">
-                    <div class="w-full h-full bg-darkBg rounded-full flex items-center justify-center font-bold text-yellow-500 text-sm">
-                        NK
-                    </div>
-                </div>
-                <span class="absolute bottom-0 right-0 w-3 h-3 bg-tradeUp border-2 border-cardBg rounded-full pulse-dot"></span>
-            </div>
-            <div>
-                <div class="flex items-center gap-1.5">
-                    <h1 class="text-xs font-semibold tracking-wide text-white">Mr. Nattapong Kamsamang</h1>
-                    <span class="bg-yellow-500/20 text-yellow-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-yellow-500/30">VIP 5</span>
-                </div>
-                <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
-                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> บัญชีจริง (Pro Live)
-                    </span>
-                    <span class="text-[9px] text-gray-500">• ID: 88492019</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <button class="relative p-1.5 text-gray-400 hover:text-white transition">
-                <i class="fa-regular fa-bell text-lg"></i>
-                <span class="absolute top-1 right-1 w-2 h-2 bg-tradeDown rounded-full"></span>
-            </button>
-            <button class="p-1.5 text-gray-400 hover:text-white transition">
-                <i class="fa-solid fa-gear text-lg"></i>
-            </button>
-        </div>
+  <div class="max-w-6xl mx-auto space-y-3">
+    
+    <!-- Header -->
+    <header class="flex justify-between items-center bg-slate-800 border border-slate-700 p-2.5 rounded-lg">
+      <div>
+        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D (Dynamic Engine)</h1>
+        <p class="text-[11px] text-slate-400 no-wrap">ประมวลผลความถี่แท้จริงจากฐานข้อมูลย้อนหลัง คัดกรอง 15 วันล่าสุด (30 รอบ)</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">0 วัน (0 รอบ)</span>
+      </div>
     </header>
 
-    <!-- MAIN SCROLLABLE CONTENT -->
-    <main class="flex-1 overflow-y-auto no-scrollbar">
+    <!-- Raw Data Input Section -->
+    <section class="bg-slate-800 border border-slate-700 p-2.5 rounded-lg space-y-2">
+      <div class="flex justify-between items-center">
+        <label for="rawInput" class="font-semibold text-slate-200 text-xs no-wrap">📥 ช่องกรอกข้อมูลสถิติตัวอย่าง (รองรับรูปแบบ 🗓 DD ม.ค. YY : 00 -- 00)</label>
+        <span class="text-[10px] text-slate-400 no-wrap">ระบบถอดรหัส วัน/เดือน/ปี และรอบเที่ยง-เย็น อัตโนมัติ</span>
+      </div>
 
-        <!-- BALANCE CARD SECTION -->
-        <section class="p-4 bg-gradient-to-b from-cardBg to-darkBg">
-            <div class="flex justify-between items-start mb-1">
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs text-gray-400 font-medium">มูลค่าพอร์ตสินทรัพย์รวม</span>
-                    <i class="fa-regular fa-eye text-xs text-gray-500 cursor-pointer" id="toggleBalanceBtn"></i>
-                </div>
-                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                    <i class="fa-solid fa-wifi text-[8px]"></i> สัญญาณปกติ
-                </span>
-            </div>
+      <textarea id="rawInput" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500 leading-tight" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
 
-            <!-- Dynamic Balance -->
-            <div class="flex items-baseline gap-2 mb-2">
-                <span class="text-2xl font-extrabold tracking-tight text-white transition-all duration-300" id="mainBalance">
-                    ฿3,482,910.50
-                </span>
-                <span class="text-xs text-gray-400 font-semibold">THB</span>
-            </div>
+      <div class="flex gap-2">
+        <button id="btnProcess" onclick="processRawData()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded transition no-wrap">
+          ⚙️ ประมวลผลและคำนวณสถิติ
+        </button>
+        <button id="btnClear" onclick="clearData()" class="bg-rose-900/60 hover:bg-rose-800 border border-rose-700 text-rose-200 font-medium py-1.5 px-3 rounded transition no-wrap">
+          🗑️ ล้างข้อมูลทั้งหมด
+        </button>
+      </div>
+    </section>
 
-            <!-- 24h P&L Indicator -->
-            <div class="flex items-center gap-3 text-xs mb-4">
-                <div class="flex items-center gap-1 font-semibold text-tradeUp bg-tradeUp/10 px-2 py-0.5 rounded" id="pnlPercentBadge">
-                    <i class="fa-solid fa-caret-up text-xs" id="pnlIcon"></i>
-                    <span id="pnlAmount">+฿124,500.00 (+3.65%)</span>
-                </div>
-                <span class="text-gray-500 text-[11px]">กำไร/ขาดทุนวันนี้</span>
-            </div>
+    <!-- Summary Cards (Top 3 Sets) -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+      
+      <!-- Set 1: Tens -->
+      <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+          <span class="font-bold text-amber-400 no-wrap text-xs">🎯 ชุดที่ 1 : หลักสิบเด่น (5 ตัว)</span>
+          <span id="winRateSet1" class="bg-amber-950 border border-amber-700 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">0.0%</span>
+        </div>
+        <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
+          <div id="numbersSet1" class="text-lg font-extrabold text-amber-300 font-mono tracking-wider no-wrap"> - - - - - </div>
+          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 5 ความถี่สูงสุดฝั่งหลักสิบ</div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
+          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet1" class="text-emerald-400 font-mono">0</strong> รอบ</span>
+          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet1" class="text-rose-400 font-mono">0</strong> รอบ</span>
+        </div>
+      </div>
 
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-4 gap-2 pt-1">
-                <button class="flex flex-col items-center justify-center py-2.5 bg-yellow-500 text-black font-semibold text-xs rounded-xl shadow-lg shadow-yellow-500/10 active:scale-95 transition">
-                    <i class="fa-solid fa-wallet mb-1 text-sm"></i>
-                    ฝากเงิน
-                </button>
-                <button class="flex flex-col items-center justify-center py-2.5 bg-panelBg hover:bg-borderCol text-gray-200 font-medium text-xs rounded-xl border border-borderCol/60 active:scale-95 transition">
-                    <i class="fa-solid fa-arrow-up-from-bracket mb-1 text-sm text-gray-300"></i>
-                    ถอนเงิน
-                </button>
-                <button class="flex flex-col items-center justify-center py-2.5 bg-panelBg hover:bg-borderCol text-gray-200 font-medium text-xs rounded-xl border border-borderCol/60 active:scale-95 transition">
-                    <i class="fa-solid fa-arrow-right-arrow-left mb-1 text-sm text-gray-300"></i>
-                    โอนย้าย
-                </button>
-                <button class="flex flex-col items-center justify-center py-2.5 bg-panelBg hover:bg-borderCol text-gray-200 font-medium text-xs rounded-xl border border-borderCol/60 active:scale-95 transition">
-                    <i class="fa-solid fa-clock-rotate-left mb-1 text-sm text-gray-300"></i>
-                    ประวัติ
-                </button>
-            </div>
-        </section>
+      <!-- Set 2: Units -->
+      <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+          <span class="font-bold text-sky-400 no-wrap text-xs">🎯 ชุดที่ 2 : หลักหน่วยเด่น (5 ตัว)</span>
+          <span id="winRateSet2" class="bg-sky-950 border border-sky-700 text-sky-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">0.0%</span>
+        </div>
+        <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
+          <div id="numbersSet2" class="text-lg font-extrabold text-sky-300 font-mono tracking-wider no-wrap"> - - - - - </div>
+          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 5 ความถี่สูงสุดฝั่งหลักหน่วย</div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
+          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet2" class="text-emerald-400 font-mono">0</strong> รอบ</span>
+          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet2" class="text-rose-400 font-mono">0</strong> รอบ</span>
+        </div>
+      </div>
 
-        <!-- MARKET SELECTOR STRIP -->
-        <section class="border-y border-borderCol bg-cardBg/60 px-3 py-2 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-            <div class="flex items-center gap-2">
-                <!-- Asset Dropdown Selector -->
-                <div class="relative inline-block text-left">
-                    <select id="assetSelect" class="bg-panelBg text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-borderCol appearance-none pr-7 focus:outline-none focus:border-yellow-500">
-                        <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
-                        <option value="ETHUSDT">ETH/USDT (Ethereum)</option>
-                        <option value="XAUUSD" selected>XAU/USD (ทองคำแท่ง)</option>
-                        <option value="EURUSD">EUR/USD (ฟอเร็กซ์)</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down absolute right-2.5 top-2.5 text-[10px] text-gray-400 pointer-events-none"></i>
-                </div>
-            </div>
+      <!-- Set 3: Free Digits -->
+      <div class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-1.5">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+          <span class="font-bold text-emerald-400 no-wrap text-xs">🎯 ชุดที่ 3 : เด่นอิสระ (2 ตัว)</span>
+          <span id="winRateSet3" class="bg-emerald-950 border border-emerald-700 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold no-wrap">0.0%</span>
+        </div>
+        <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
+          <div id="numbersSet3" class="text-lg font-extrabold text-emerald-300 font-mono tracking-wider no-wrap"> - - </div>
+          <div class="text-[10px] text-slate-400 no-wrap">ท็อป 2 ความถี่สูงสุดรวมทุกหลัก</div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
+          <span no-wrap>เข้าติดสูงสุด: <strong id="maxStreakSet3" class="text-emerald-400 font-mono">0</strong> รอบ</span>
+          <span no-wrap>หลุดติดสูงสุด: <strong id="maxMissSet3" class="text-rose-400 font-mono">0</strong> รอบ</span>
+        </div>
+      </div>
 
-            <div class="flex items-center gap-3 text-right">
-                <div>
-                    <div class="text-xs font-extrabold tracking-wide transition-colors duration-200" id="livePrice">
-                        2,741.85
-                    </div>
-                    <div class="text-[10px] font-medium text-tradeUp" id="liveChange">
-                        +18.40 (+0.68%)
-                    </div>
-                </div>
-            </div>
-        </section>
+    </section>
 
-        <!-- CHART CONTROL TOOLBAR -->
-        <section class="px-3 py-2 bg-darkBg flex items-center justify-between border-b border-borderCol/50 text-[11px]">
-            <!-- Timeframe selector -->
-            <div class="flex items-center gap-1">
-                <button class="tf-btn px-2 py-0.5 rounded text-gray-400 hover:text-white" onclick="setTimeframe('1m', this)">1m</button>
-                <button class="tf-btn px-2 py-0.5 rounded bg-panelBg text-yellow-400 font-bold border border-yellow-500/30" onclick="setTimeframe('5m', this)">5m</button>
-                <button class="tf-btn px-2 py-0.5 rounded text-gray-400 hover:text-white" onclick="setTimeframe('15m', this)">15m</button>
-                <button class="tf-btn px-2 py-0.5 rounded text-gray-400 hover:text-white" onclick="setTimeframe('1h', this)">1h</button>
-                <button class="tf-btn px-2 py-0.5 rounded text-gray-400 hover:text-white" onclick="setTimeframe('1D', this)">1D</button>
-            </div>
+    <!-- Matrix Table Section -->
+    <section class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 space-y-2">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <h2 class="font-bold text-slate-200 text-xs no-wrap">📋 ตารางตรวจสอบผล เข้า-หลุด รายรอบ</h2>
+          <span id="tableRangeBadge" class="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono no-wrap">แสดง 15 วันล่าสุด (30 รอบ)</span>
+        </div>
+        <div class="text-[10px] text-slate-400 font-mono no-wrap">
+          รวมเข้า: <span id="totalHits" class="text-emerald-400 font-bold">0</span> | หลุด: <span id="totalMisses" class="text-rose-400 font-bold">0</span>
+        </div>
+      </div>
 
-            <!-- Chart Style Switcher -->
-            <div class="flex items-center bg-panelBg rounded-lg p-0.5 border border-borderCol">
-                <button id="btnCandle" onclick="setChartType('candle')" class="px-2 py-0.5 rounded text-xs font-medium text-yellow-400 bg-cardBg shadow">
-                    <i class="fa-solid fa-chart-column"></i>
-                </button>
-                <button id="btnLine" onclick="setChartType('line')" class="px-2 py-0.5 rounded text-xs font-medium text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-chart-line"></i>
-                </button>
-            </div>
-        </section>
+      <div class="overflow-x-auto border border-slate-700 rounded">
+        <table class="w-full text-left border-collapse text-[11px]">
+          <thead>
+            <tr class="bg-slate-900 text-slate-300 border-b border-slate-700 font-semibold no-wrap">
+              <th class="p-1.5 border-r border-slate-700 text-center w-28">วันที่</th>
+              <th class="p-1.5 border-r border-slate-700 text-center bg-slate-950/40" colspan="4">รอบเที่ยง</th>
+              <th class="p-1.5 text-center bg-slate-900/60" colspan="4">รอบเย็น</th>
+            </tr>
+            <tr class="bg-slate-800/90 text-slate-400 border-b border-slate-700 text-[10px] text-center font-mono no-wrap">
+              <th class="p-1 border-r border-slate-700">DD/MM/YY</th>
+              <th class="p-1 border-r border-slate-700/60 text-amber-300 w-12">ผลเที่ยง</th>
+              <th class="p-1 border-r border-slate-700/60">หลักสิบ (5)</th>
+              <th class="p-1 border-r border-slate-700/60">หลักหน่วย (5)</th>
+              <th class="p-1 border-r border-slate-700 font-semibold">อิสระ (2)</th>
+              <th class="p-1 border-r border-slate-700/60 text-amber-300 w-12">ผลเย็น</th>
+              <th class="p-1 border-r border-slate-700/60">หลักสิบ (5)</th>
+              <th class="p-1 border-r border-slate-700/60">หลักหน่วย (5)</th>
+              <th class="p-1">อิสระ (2)</th>
+            </tr>
+          </thead>
+          <tbody id="matrixTbody" class="divide-y divide-slate-700/60 font-mono text-center">
+            <tr>
+              <td colspan="9" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล โปรดกรอกข้อมูลและกดปุ่มประมวลผล</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-        <!-- CANVAS CHART CONTAINER -->
-        <section class="relative bg-darkBg h-64 w-full border-b border-borderCol overflow-hidden">
-            <!-- Indicator toggles overlay -->
-            <div class="absolute top-2 left-3 z-10 flex gap-2 text-[9px] text-gray-400 font-mono">
-                <span class="text-yellow-400">MA(7): <span id="valMA7">2740.10</span></span>
-                <span class="text-purple-400">MA(25): <span id="valMA25">2736.45</span></span>
-                <span class="text-cyan-400">RSI(14): <span id="valRSI">62.4</span></span>
-            </div>
+  </div>
 
-            <!-- High / Low Floating Stats -->
-            <div class="absolute top-2 right-3 z-10 text-[9px] text-gray-500 text-right font-mono">
-                <div>24h High: <span class="text-gray-300" id="valHigh">2,752.10</span></div>
-                <div>24h Low: <span class="text-gray-300" id="valLow">2,721.00</span></div>
-            </div>
+  <script>
+    // Sample Raw Data
+    const defaultRawData = `🗓 01  ต.ค 69 :   99 -- 18
+🗓 02  ต.ค 69 :   22 -- 25
+🗓 05  ต.ค 69 :   00 -- 57
+🗓 06  ต.ค 69 :   86 -- 29
+🗓 07  ต.ค 69 :   07 -- 38
+🗓 08  ต.ค 69 :   61 -- 14
+🗓 11  ต.ค 69 :   50 -- 52
+🗓 12  ต.ค 69 :   01 -- 44
+🗓 14  ต.ค 69 :   05 -- 84
+🗓 15  ต.ค 69 :   98 -- 13
+🗓 19  ต.ค 69 :   32 -- 26
+🗓 20  ต.ค 69 :   77 -- 49
+🗓 21  ต.ค 69 :   53 -- 98
+🗓 22  ต.ค 69 :   78 -- 77
+🗓 26  ต.ค 69 :   52 -- 32
+🗓 27  ต.ค 69 :   49 -- 20
+🗓 28  ต.ค 69 :   89 -- 03
+🗓 29  ต.ค 69 :   91 -- 02
+🗓 30  ต.ค 69 :   90 -- 90
+🗓 02  พ.ย 69 :   97 -- 08
+🗓 03  พ.ย 69 :   64 -- 14
+🗓 04  พ.ย 69 :   66 -- 91
+🗓 05  พ.ย 69 :   65 -- 90
+🗓 06  พ.ย 69 :   51 -- 05
+🗓 09  พ.ย 69 :   67 -- 74
+🗓 10  พ.ย 69 :   17 -- 17
+🗓 11  พ.ย 69 :   24 -- 13`;
 
-            <canvas id="chartCanvas"></canvas>
-        </section>
+    let parsedRecords = [];
 
-        <!-- ORDER BOOK & TRADING SECTIONS TABS -->
-        <section class="bg-cardBg">
-            <div class="flex border-b border-borderCol text-xs font-medium">
-                <button class="tab-btn flex-1 py-2.5 text-center text-yellow-400 border-b-2 border-yellow-400 font-bold" onclick="switchTab('trading', this)">
-                    การเทรด & คำสั่ง
-                </button>
-                <button class="tab-btn flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200" onclick="switchTab('orderbook', this)">
-                    Order Book (สมุดคำสั่ง)
-                </button>
-                <button class="tab-btn flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200 relative" onclick="switchTab('positions', this)">
-                    สถานะถือครอง
-                    <span class="ml-1 bg-yellow-500 text-black font-extrabold text-[9px] px-1.5 py-0.2 rounded-full" id="posCount">2</span>
-                </button>
-            </div>
+    window.onload = function() {
+      document.getElementById('rawInput').value = defaultRawData;
+      processRawData();
+    };
 
-            <!-- TAB 1: TRADING INPUTS & ACTIONS -->
-            <div id="tab-trading" class="p-3 space-y-3">
-                <!-- Leverage & Order Type -->
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex-1 bg-panelBg rounded-lg px-2.5 py-1.5 border border-borderCol flex justify-between items-center text-xs">
-                        <span class="text-gray-400">ประเภท:</span>
-                        <span class="text-white font-semibold">Market Order</span>
-                    </div>
-                    <div class="flex items-center bg-panelBg rounded-lg p-1 border border-borderCol">
-                        <span class="text-[10px] text-gray-400 px-1 font-medium">เลเวอเรจ:</span>
-                        <button class="lev-btn text-xs font-bold px-2 py-0.5 rounded text-white hover:bg-cardBg" onclick="setLeverage('20x', this)">20x</button>
-                        <button class="lev-btn text-xs font-bold px-2 py-0.5 rounded bg-yellow-500 text-black" onclick="setLeverage('50x', this)">50x</button>
-                        <button class="lev-btn text-xs font-bold px-2 py-0.5 rounded text-white hover:bg-cardBg" onclick="setLeverage('100x', this)">100x</button>
-                    </div>
-                </div>
+    function parseTextData(text) {
+      const lines = text.split('\n');
+      const records = [];
+      const regex = /(\d{1,2})\s+([^\s:]+)\s+(\d{2})\s*:\s*(\d{2})\s*--\s*(\d{2})/;
 
-                <!-- Amount Input -->
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[11px] text-gray-400">
-                        <span>จำนวนเงินลงทุน (THB)</span>
-                        <span>วงเงินว่าง: <span class="text-white font-medium">฿2,150,000.00</span></span>
-                    </div>
-                    <div class="relative flex items-center">
-                        <input type="number" id="tradeAmount" value="50000" class="w-full bg-panelBg border border-borderCol rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-yellow-500 pr-16" placeholder="0.00">
-                        <span class="absolute right-3 text-xs text-gray-400 font-bold">THB</span>
-                    </div>
-                    <!-- Quick Percentage Selectors -->
-                    <div class="grid grid-cols-4 gap-1.5 pt-1">
-                        <button class="py-1 bg-panelBg hover:bg-borderCol text-gray-300 rounded text-[10px] font-semibold border border-borderCol/50" onclick="setAmountPercent(25)">25%</button>
-                        <button class="py-1 bg-panelBg hover:bg-borderCol text-gray-300 rounded text-[10px] font-semibold border border-borderCol/50" onclick="setAmountPercent(50)">50%</button>
-                        <button class="py-1 bg-panelBg hover:bg-borderCol text-gray-300 rounded text-[10px] font-semibold border border-borderCol/50" onclick="setAmountPercent(75)">75%</button>
-                        <button class="py-1 bg-panelBg hover:bg-borderCol text-gray-300 rounded text-[10px] font-semibold border border-borderCol/50" onclick="setAmountPercent(100)">100%</button>
-                    </div>
-                </div>
-
-                <!-- Buy / Sell Action Buttons -->
-                <div class="grid grid-cols-2 gap-3 pt-1">
-                    <button onclick="executeTrade('BUY')" class="bg-tradeUp hover:bg-emerald-600 text-white py-3 px-4 rounded-xl font-bold text-sm flex flex-col items-center justify-center shadow-lg shadow-tradeUp/20 active:scale-95 transition">
-                        <span class="flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-trend-up"></i> ซื้อ / LONG
-                        </span>
-                        <span class="text-[10px] font-normal opacity-90">คาดการณ์ราคาขึ้น</span>
-                    </button>
-                    <button onclick="executeTrade('SELL')" class="bg-tradeDown hover:bg-rose-600 text-white py-3 px-4 rounded-xl font-bold text-sm flex flex-col items-center justify-center shadow-lg shadow-tradeDown/20 active:scale-95 transition">
-                        <span class="flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-trend-down"></i> ขาย / SHORT
-                        </span>
-                        <span class="text-[10px] font-normal opacity-90">คาดการณ์ราคาลง</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- TAB 2: LIVE ORDER BOOK -->
-            <div id="tab-orderbook" class="p-3 hidden text-xs font-mono">
-                <div class="grid grid-cols-2 gap-2 text-[10px] text-gray-500 mb-1 px-1">
-                    <div class="flex justify-between">
-                        <span>เสนอซื้อ (Bid)</span>
-                        <span>จำนวน</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>ราคา</span>
-                        <span>เสนอขาย (Ask)</span>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- Bids (Buy - Green) -->
-                    <div id="bidsList" class="space-y-1">
-                        <!-- Dynamic content generated by JS -->
-                    </div>
-                    <!-- Asks (Sell - Red) -->
-                    <div id="asksList" class="space-y-1">
-                        <!-- Dynamic content generated by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: ACTIVE POSITIONS -->
-            <div id="tab-positions" class="p-3 hidden space-y-2.5">
-                <div id="positionsList">
-                    <!-- Dynamic Positions via JS -->
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- BOTTOM NAVIGATION BAR (Mobile Web App Style) -->
-    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-cardBg border-t border-borderCol px-3 py-1.5 flex justify-around items-center z-40">
-        <a href="#" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-white text-[10px]">
-            <i class="fa-solid fa-chart-pie text-base"></i>
-            <span>ตลาด</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-0.5 text-yellow-400 text-[10px] font-semibold">
-            <i class="fa-solid fa-arrows-up-down-left-right text-base"></i>
-            <span>เทรด</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-white text-[10px]">
-            <div class="relative">
-                <i class="fa-solid fa-bolt text-base"></i>
-                <span class="absolute -top-1 -right-2 bg-red-500 text-[8px] font-bold px-1 rounded-full text-white">HOT</span>
-            </div>
-            <span>ฟิวเจอร์ส</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-white text-[10px]">
-            <i class="fa-solid fa-wallet text-base"></i>
-            <span>สินทรัพย์</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-white text-[10px]">
-            <i class="fa-solid fa-user text-base"></i>
-            <span>บัญชี</span>
-        </a>
-    </nav>
-
-    <!-- TOAST NOTIFICATION BOX -->
-    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 bg-panelBg border border-yellow-500/50 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center gap-2.5 opacity-0 pointer-events-none transition-all duration-300 z-50">
-        <i class="fa-solid fa-circle-check text-emerald-400 text-sm" id="toastIcon"></i>
-        <span id="toastMsg">บันทึกคำสั่งซื้อเรียบร้อยแล้ว</span>
-    </div>
-
-    <!-- JAVASCRIPT LOGIC -->
-    <script>
-        // State variables
-        let rawBalance = 3482910.50; // Starting around 3.48M THB
-        let basePnl = 124500.00;
-        let basePnlPercent = 3.65;
-        let isBalanceVisible = true;
-        let currentChartType = 'candle'; // 'candle' or 'line'
-        let currentSymbol = 'XAUUSD';
-
-        // Symbol base prices
-        const symbolPrices = {
-            'BTCUSDT': { price: 67420.50, step: 12.5, decimals: 2 },
-            'ETHUSDT': { price: 3510.20, step: 1.2, decimals: 2 },
-            'XAUUSD': { price: 2741.85, step: 0.45, decimals: 2 },
-            'EURUSD': { price: 1.0845, step: 0.0003, decimals: 4 }
-        };
-
-        let currentPrice = symbolPrices['XAUUSD'].price;
-
-        // Positions data
-        let positions = [
-            { id: 101, symbol: 'XAU/USD', type: 'LONG', leverage: '50x', amount: 100000, entryPrice: 2732.10, currentPrice: 2741.85, pnl: 17765.20, pnlPct: 17.76 },
-            { id: 102, symbol: 'BTC/USDT', type: 'SHORT', leverage: '20x', amount: 150000, entryPrice: 67890.00, currentPrice: 67420.50, pnl: 10385.00, pnlPct: 6.92 }
-        ];
-
-        // Candles history dataset for Canvas
-        let candleData = [];
-        const maxCandles = 40;
-
-        // Initialize Canvas & Chart Data
-        function initChartData() {
-            let price = currentPrice;
-            candleData = [];
-            let now = Date.now();
-            for (let i = 0; i < maxCandles; i++) {
-                let open = price + (Math.random() - 0.48) * 3;
-                let close = open + (Math.random() - 0.49) * 4;
-                let high = Math.max(open, close) + Math.random() * 2;
-                let low = Math.min(open, close) - Math.random() * 2;
-                candleData.push({ open, high, low, close, time: now - (maxCandles - i) * 60000 });
-                price = close;
-            }
-            currentPrice = candleData[candleData.length - 1].close;
+      lines.forEach(line => {
+        const match = line.match(regex);
+        if (match) {
+          records.push({
+            day: match[1].padStart(2, '0'),
+            month: match[2].trim(),
+            year: match[3],
+            dateStr: `${match[1].padStart(2, '0')} ${match[2].trim()} ${match[3]}`,
+            noon: match[4],
+            noonTen: match[4][0],
+            noonUnit: match[4][1],
+            eve: match[5],
+            eveTen: match[5][0],
+            eveUnit: match[5][1]
+          });
         }
+      });
+      return records;
+    }
 
-        // Render Chart on HTML5 Canvas
-        const canvas = document.getElementById('chartCanvas');
-        const ctx = canvas.getContext('2d');
+    function processRawData() {
+      const text = document.getElementById('rawInput').value;
+      parsedRecords = parseTextData(text);
 
-        function resizeCanvas() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            drawChart();
-        }
+      if (parsedRecords.length === 0) {
+        alert('ไม่พบข้อมูลรูปแบบที่ถูกต้อง โปรดตรวจสอบข้อความ');
+        return;
+      }
 
-        function drawChart() {
-            const width = canvas.width / window.devicePixelRatio;
-            const height = canvas.height / window.devicePixelRatio;
+      document.getElementById('dataCountBadge').innerText = `${parsedRecords.length} วัน (${parsedRecords.length * 2} รอบ)`;
+      
+      // Calculate 15-day window (30 rounds)
+      const window15Days = parsedRecords.slice(-15);
+      
+      // Count Frequencies
+      const tensFreq = Array(10).fill(0);
+      const unitsFreq = Array(10).fill(0);
+      const totalFreq = Array(10).fill(0);
 
-            ctx.clearRect(0, 0, width, height);
+      window15Days.forEach(r => {
+        const tN = parseInt(r.noonTen), uN = parseInt(r.noonUnit);
+        const tE = parseInt(r.eveTen), uE = parseInt(r.eveUnit);
 
-            if (candleData.length === 0) return;
+        tensFreq[tN]++;
+        tensFreq[tE]++;
 
-            // Find min/max price for scaling
-            let minP = Math.min(...candleData.map(c => c.low));
-            let maxP = Math.max(...candleData.map(c => c.high));
-            let padding = (maxP - minP) * 0.1 || 1;
-            minP -= padding;
-            maxP += padding;
+        unitsFreq[uN]++;
+        unitsFreq[uE]++;
 
-            const getY = (val) => height - 25 - ((val - minP) / (maxP - minP)) * (height - 40);
+        totalFreq[tN]++; totalFreq[uN]++;
+        totalFreq[tE]++; totalFreq[uE]++;
+      });
 
-            // Draw Background Grid
-            ctx.strokeStyle = '#1e2329';
-            ctx.lineWidth = 1;
-            for (let i = 1; i <= 4; i++) {
-                let y = (height / 5) * i;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
+      // Derive Best Sets (Top 5 Tens, Top 5 Units, Top 2 Free)
+      const set1 = getTopDigits(tensFreq, 5);
+      const set2 = getTopDigits(unitsFreq, 5);
+      const set3 = getTopDigits(totalFreq, 2);
 
-            const candleWidth = (width - 40) / maxCandles;
+      // Render Cards
+      renderCard('Set1', set1, window15Days, (r, round) => {
+        const ten = round === 'noon' ? r.noonTen : r.eveTen;
+        return set1.includes(parseInt(ten));
+      });
 
-            if (currentChartType === 'candle') {
-                // Render Candlesticks
-                candleData.forEach((c, idx) => {
-                    let x = idx * candleWidth + 10;
-                    let isUp = c.close >= c.open;
-                    let color = isUp ? '#0ecb81' : '#f6465d';
+      renderCard('Set2', set2, window15Days, (r, round) => {
+        const unit = round === 'noon' ? r.noonUnit : r.eveUnit;
+        return set2.includes(parseInt(unit));
+      });
 
-                    // Wick
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 1.2;
-                    ctx.beginPath();
-                    ctx.moveTo(x + candleWidth / 2, getY(c.high));
-                    ctx.lineTo(x + candleWidth / 2, getY(c.low));
-                    ctx.stroke();
+      renderCard('Set3', set3, window15Days, (r, round) => {
+        const val = round === 'noon' ? r.noon : r.eve;
+        return set3.includes(parseInt(val[0])) || set3.includes(parseInt(val[1]));
+      });
 
-                    // Body
-                    ctx.fillStyle = color;
-                    let bodyTop = getY(Math.max(c.open, c.close));
-                    let bodyBottom = getY(Math.min(c.open, c.close));
-                    let bodyHeight = Math.max(2, bodyBottom - bodyTop);
-                    ctx.fillRect(x + 1, bodyTop, candleWidth - 2, bodyHeight);
+      // Render Matrix Table
+      renderTable(window15Days, set1, set2, set3);
+    }
 
-                    // Volume Bar at bottom
-                    let volHeight = (c.high - c.low) * 4;
-                    ctx.fillStyle = isUp ? 'rgba(14,203,129,0.2)' : 'rgba(246,70,93,0.2)';
-                    ctx.fillRect(x + 1, height - volHeight - 5, candleWidth - 2, volHeight);
-                });
-            } else {
-                // Render Line Chart with Glow Effect
-                ctx.strokeStyle = '#0ecb81';
-                ctx.lineWidth = 2.5;
-                ctx.shadowColor = '#0ecb81';
-                ctx.shadowBlur = 8;
-                ctx.beginPath();
+    function getTopDigits(freqArray, count) {
+      return freqArray
+        .map((freq, digit) => ({ digit, freq }))
+        .sort((a, b) => b.freq - a.freq || b.digit - a.digit)
+        .slice(0, count)
+        .map(item => item.digit)
+        .sort((a, b) => a - b);
+    }
 
-                candleData.forEach((c, idx) => {
-                    let x = idx * candleWidth + 10;
-                    let y = getY(c.close);
-                    if (idx === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-                ctx.shadowBlur = 0; // Reset shadow
+    function renderCard(cardId, numbers, windowRecords, checkHitFn) {
+      document.getElementById(`numbers${cardId}`).innerText = numbers.join('  ');
 
-                // Gradient fill under line
-                let grad = ctx.createLinearGradient(0, 0, 0, height);
-                grad.addColorStop(0, 'rgba(14, 203, 129, 0.25)');
-                grad.addColorStop(1, 'rgba(14, 203, 129, 0.0)');
-                ctx.fillStyle = grad;
-                ctx.lineTo((candleData.length - 1) * candleWidth + 10, height);
-                ctx.lineTo(10, height);
-                ctx.closePath();
-                ctx.fill();
-            }
+      let hits = 0;
+      let totalRounds = windowRecords.length * 2;
+      let currentStreak = 0, maxStreak = 0;
+      let currentMiss = 0, maxMiss = 0;
 
-            // Draw Live Price Line Indicator
-            let lastCandle = candleData[candleData.length - 1];
-            let currentY = getY(lastCandle.close);
-
-            ctx.strokeStyle = '#f0b90b';
-            ctx.setLineDash([3, 3]);
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, currentY);
-            ctx.lineTo(width - 50, currentY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Current Price Tag Badge on right axis
-            ctx.fillStyle = '#f0b90b';
-            ctx.fillRect(width - 50, currentY - 9, 50, 18);
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 9px monospace';
-            const decimals = symbolPrices[currentSymbol]?.decimals || 2;
-            ctx.fillText(lastCandle.close.toFixed(decimals), width - 46, currentY + 3);
-        }
-
-        // Real-Time Price Engine Simulation (Runs every 1.5 - 2.5s)
-        function startLivePriceUpdates() {
-            setInterval(() => {
-                let spec = symbolPrices[currentSymbol];
-                let delta = (Math.random() - 0.49) * spec.step;
-                currentPrice = Math.max(0.0001, currentPrice + delta);
-
-                // Update current candle
-                let lastCandle = candleData[candleData.length - 1];
-                lastCandle.close = currentPrice;
-                if (currentPrice > lastCandle.high) lastCandle.high = currentPrice;
-                if (currentPrice < lastCandle.low) lastCandle.low = currentPrice;
-
-                // Push new candle occasionally
-                if (Math.random() > 0.75) {
-                    candleData.shift();
-                    candleData.push({
-                        open: currentPrice,
-                        high: currentPrice,
-                        low: currentPrice,
-                        close: currentPrice,
-                        time: Date.now()
-                    });
-                }
-
-                // Update UI Price Text
-                const priceEl = document.getElementById('livePrice');
-                const prevPrice = parseFloat(priceEl.innerText.replace(/,/g, ''));
-                priceEl.innerText = currentPrice.toLocaleString(undefined, { minimumFractionDigits: spec.decimals, maximumFractionDigits: spec.decimals });
-
-                // Price Tick Flash Effect
-                if (currentPrice >= prevPrice) {
-                    priceEl.className = 'text-xs font-extrabold tracking-wide text-tradeUp tick-up';
-                } else {
-                    priceEl.className = 'text-xs font-extrabold tracking-wide text-tradeDown tick-down';
-                }
-
-                // Fluctuate Main Balance slightly for realistic effect
-                let balChange = (Math.random() - 0.48) * 850;
-                rawBalance += balChange;
-                basePnl += balChange;
-                updateBalanceUI(balChange >= 0);
-
-                // Redraw canvas
-                drawChart();
-
-                // Update Order Book
-                renderOrderBook();
-
-                // Fluctuate Positions P&L
-                updatePositionsLive();
-
-            }, 1800);
-        }
-
-        // Update Balance UI
-        function updateBalanceUI(isUp) {
-            const balEl = document.getElementById('mainBalance');
-            if (isBalanceVisible) {
-                balEl.innerText = '฿' + rawBalance.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            } else {
-                balEl.innerText = '฿ ••••••••';
-            }
-
-            const pnlEl = document.getElementById('pnlAmount');
-            const sign = basePnl >= 0 ? '+' : '';
-            pnlEl.innerText = `${sign}฿${basePnl.toLocaleString('th-TH', { minimumFractionDigits: 2 })} (${sign}${basePnlPercent.toFixed(2)}%)`;
-
-            // Dynamic indicator values
-            document.getElementById('valMA7').innerText = (currentPrice * 0.999).toFixed(2);
-            document.getElementById('valMA25').innerText = (currentPrice * 0.997).toFixed(2);
-            document.getElementById('valRSI').innerText = (55 + Math.random() * 15).toFixed(1);
-        }
-
-        // Render Order Book
-        function renderOrderBook() {
-            const bidsEl = document.getElementById('bidsList');
-            const asksEl = document.getElementById('asksList');
-            if (!bidsEl || !asksEl) return;
-
-            let bidsHTML = '';
-            let asksHTML = '';
-            let spec = symbolPrices[currentSymbol];
-
-            for (let i = 0; i < 5; i++) {
-                let bidP = currentPrice - (i + 1) * (spec.step * 0.5);
-                let askP = currentPrice + (i + 1) * (spec.step * 0.5);
-                let bidVol = (Math.random() * 4 + 0.5).toFixed(2);
-                let askVol = (Math.random() * 4 + 0.5).toFixed(2);
-
-                bidsHTML += `<div class="flex justify-between items-center text-tradeUp text-[10px]">
-                    <span class="font-bold">${bidP.toFixed(spec.decimals)}</span>
-                    <span class="text-gray-400">${bidVol}</span>
-                </div>`;
-
-                asksHTML += `<div class="flex justify-between items-center text-tradeDown text-[10px]">
-                    <span class="font-bold">${askP.toFixed(spec.decimals)}</span>
-                    <span class="text-gray-400">${askVol}</span>
-                </div>`;
-            }
-
-            bidsEl.innerHTML = bidsHTML;
-            asksEl.innerHTML = asksHTML;
-        }
-
-        // Render & Update Positions
-        function updatePositionsLive() {
-            const container = document.getElementById('positionsList');
-            if (!container) return;
-
-            let html = '';
-            positions.forEach(pos => {
-                // simulate PnL change
-                pos.pnl += (Math.random() - 0.47) * 120;
-                let isProfit = pos.pnl >= 0;
-
-                html += `
-                <div class="bg-panelBg rounded-xl p-3 border border-borderCol/70 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-xs text-white">${pos.symbol}</span>
-                            <span class="${pos.type === 'LONG' ? 'bg-tradeUp/20 text-tradeUp' : 'bg-tradeDown/20 text-tradeDown'} text-[9px] font-extrabold px-1.5 py-0.2 rounded">${pos.type}</span>
-                            <span class="bg-borderCol text-gray-300 text-[9px] px-1 rounded">${pos.leverage}</span>
-                        </div>
-                        <button onclick="closePosition(${pos.id})" class="text-[10px] bg-red-500/10 hover:bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 transition">
-                            ปิดออเดอร์
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-borderCol/40">
-                        <div>
-                            <div class="text-[10px] text-gray-400">กำไร/ขาดทุน (THB)</div>
-                            <div class="text-xs font-bold ${isProfit ? 'text-tradeUp' : 'text-tradeDown'}">
-                                ${isProfit ? '+' : ''}฿${pos.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div><span class="text-[10px] text-gray-400">ราคาเปิด: </span><span class="text-xs font-mono text-gray-200">${pos.entryPrice.toFixed(2)}</span></div>
-                            <div><span class="text-[10px] text-gray-400">ราคาปัจจุบัน: </span><span class="text-xs font-mono text-yellow-400">${currentPrice.toFixed(2)}</span></div>
-                        </div>
-                    </div>
-                </div>`;
-            });
-
-            if (positions.length === 0) {
-                html = `<div class="text-center py-6 text-xs text-gray-500">ไม่มีคำสั่งถือครองในขณะนี้</div>`;
-            }
-
-            container.innerHTML = html;
-            document.getElementById('posCount').innerText = positions.length;
-        }
-
-        function closePosition(id) {
-            positions = positions.filter(p => p.id !== id);
-            updatePositionsLive();
-            showToast('ปิดสถานะถือครองสำเร็จ');
-        }
-
-        // Execute New Trade
-        function executeTrade(type) {
-            const amountInput = document.getElementById('tradeAmount');
-            const amt = parseFloat(amountInput.value) || 10000;
-
-            const newPos = {
-                id: Date.now(),
-                symbol: currentSymbol === 'XAUUSD' ? 'XAU/USD' : currentSymbol,
-                type: type === 'BUY' ? 'LONG' : 'SHORT',
-                leverage: '50x',
-                amount: amt,
-                entryPrice: currentPrice,
-                currentPrice: currentPrice,
-                pnl: 0,
-                pnlPct: 0
-            };
-
-            positions.unshift(newPos);
-            switchTab('positions', document.querySelectorAll('.tab-btn')[2]);
-            updatePositionsLive();
-            showToast(`เปิดออเดอร์ ${type} ${amt.toLocaleString()} THB สำเร็จ!`);
-        }
-
-        // Tab Switcher Logic
-        function switchTab(tabName, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('text-yellow-400', 'border-b-2', 'border-yellow-400', 'font-bold');
-                b.classList.add('text-gray-400');
-            });
-
-            btn.classList.remove('text-gray-400');
-            btn.classList.add('text-yellow-400', 'border-b-2', 'border-yellow-400', 'font-bold');
-
-            document.getElementById('tab-trading').classList.add('hidden');
-            document.getElementById('tab-orderbook').classList.add('hidden');
-            document.getElementById('tab-positions').classList.add('hidden');
-
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-        }
-
-        // Chart Style Switcher
-        function setChartType(type) {
-            currentChartType = type;
-            const btnC = document.getElementById('btnCandle');
-            const btnL = document.getElementById('btnLine');
-
-            if (type === 'candle') {
-                btnC.className = 'px-2 py-0.5 rounded text-xs font-medium text-yellow-400 bg-cardBg shadow';
-                btnL.className = 'px-2 py-0.5 rounded text-xs font-medium text-gray-400 hover:text-white';
-            } else {
-                btnL.className = 'px-2 py-0.5 rounded text-xs font-medium text-yellow-400 bg-cardBg shadow';
-                btnC.className = 'px-2 py-0.5 rounded text-xs font-medium text-gray-400 hover:text-white';
-            }
-            drawChart();
-        }
-
-        // Timeframe Selector UI
-        function setTimeframe(tf, btn) {
-            document.querySelectorAll('.tf-btn').forEach(b => {
-                b.className = 'tf-btn px-2 py-0.5 rounded text-gray-400 hover:text-white';
-            });
-            btn.className = 'tf-btn px-2 py-0.5 rounded bg-panelBg text-yellow-400 font-bold border border-yellow-500/30';
-            initChartData();
-            drawChart();
-            showToast(`เปลี่ยนช่วงเวลาเป็น ${tf}`);
-        }
-
-        // Set Leverage
-        function setLeverage(lev, btn) {
-            document.querySelectorAll('.lev-btn').forEach(b => {
-                b.className = 'lev-btn text-xs font-bold px-2 py-0.5 rounded text-white hover:bg-cardBg';
-            });
-            btn.className = 'lev-btn text-xs font-bold px-2 py-0.5 rounded bg-yellow-500 text-black';
-        }
-
-        // Quick Percentage Amount
-        function setAmountPercent(pct) {
-            const avail = 2150000;
-            const amt = (avail * (pct / 100)).toFixed(0);
-            document.getElementById('tradeAmount').value = amt;
-        }
-
-        // Toast Notification System
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            toast.classList.add('opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 2500);
-        }
-
-        // Asset Select Event
-        document.getElementById('assetSelect').addEventListener('change', (e) => {
-            currentSymbol = e.target.value;
-            currentPrice = symbolPrices[currentSymbol].price;
-            initChartData();
-            drawChart();
-            renderOrderBook();
-            showToast(`สลับไปยังคู่เทรด ${currentSymbol}`);
+      windowRecords.forEach(r => {
+        ['noon', 'eve'].forEach(round => {
+          const isHit = checkHitFn(r, round);
+          if (isHit) {
+            hits++;
+            currentStreak++;
+            maxStreak = Math.max(maxStreak, currentStreak);
+            currentMiss = 0;
+          } else {
+            currentMiss++;
+            maxMiss = Math.max(maxMiss, currentMiss);
+            currentStreak = 0;
+          }
         });
+      });
 
-        // Hide/Show Balance Toggle
-        document.getElementById('toggleBalanceBtn').addEventListener('click', () => {
-            isBalanceVisible = !isBalanceVisible;
-            updateBalanceUI(true);
+      const winRate = ((hits / totalRounds) * 100).toFixed(1);
+      document.getElementById(`winRate${cardId}`).innerText = `${winRate}% (${hits}/${totalRounds})`;
+      document.getElementById(`maxStreak${cardId}`).innerText = maxStreak;
+      document.getElementById(`maxMiss${cardId}`).innerText = maxMiss;
+    }
+
+    function renderTable(records, set1, set2, set3) {
+      const tbody = document.getElementById('matrixTbody');
+      tbody.innerHTML = '';
+
+      let totalHitsCount = 0, totalMissesCount = 0;
+      const reversedRecords = [...records].reverse();
+
+      reversedRecords.forEach((r, idx) => {
+        const nTenHit = set1.includes(parseInt(r.noonTen));
+        const nUnitHit = set2.includes(parseInt(r.noonUnit));
+        const nFreeHit = set3.includes(parseInt(r.noonTen)) || set3.includes(parseInt(r.noonUnit));
+
+        const eTenHit = set1.includes(parseInt(r.eveTen));
+        const eUnitHit = set2.includes(parseInt(r.eveUnit));
+        const eFreeHit = set3.includes(parseInt(r.eveTen)) || set3.includes(parseInt(r.eveUnit));
+
+        const tr = document.createElement('tr');
+        tr.className = idx % 2 === 0 ? 'bg-slate-800/40 hover:bg-slate-700/40' : 'bg-slate-900/40 hover:bg-slate-700/40';
+
+        tr.innerHTML = `
+          <td class="p-1.5 border-r border-slate-700 text-slate-300 font-semibold no-wrap">${r.dateStr}</td>
+          <td class="p-1.5 border-r border-slate-700/60 font-bold text-amber-300 bg-slate-950/20 no-wrap">${r.noon}</td>
+          <td class="p-1.5 border-r border-slate-700/60 ${nTenHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${nTenHit ? '✓ เข้า (' + r.noonTen + ')' : '✗ หลุด'}</td>
+          <td class="p-1.5 border-r border-slate-700/60 ${nUnitHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${nUnitHit ? '✓ เข้า (' + r.noonUnit + ')' : '✗ หลุด'}</td>
+          <td class="p-1.5 border-r border-slate-700 ${nFreeHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${nFreeHit ? '✓ เข้า' : '✗ หลุด'}</td>
+          
+          <td class="p-1.5 border-r border-slate-700/60 font-bold text-amber-300 bg-slate-950/20 no-wrap">${r.eve}</td>
+          <td class="p-1.5 border-r border-slate-700/60 ${eTenHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${eTenHit ? '✓ เข้า (' + eTenTen(r) + ')' : '✗ หลุด'}</td>
+          <td class="p-1.5 border-r border-slate-700/60 ${eUnitHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${eUnitHit ? '✓ เข้า (' + r.eveUnit + ')' : '✗ หลุด'}</td>
+          <td class="p-1.5 ${eFreeHit ? 'text-emerald-400 font-bold' : 'text-slate-500'} no-wrap">${eFreeHit ? '✓ เข้า' : '✗ หลุด'}</td>
+        `;
+
+        tbody.appendChild(tr);
+
+        if (nTenHit) totalHitsCount++; else totalMissesCount++;
+        if (nUnitHit) totalHitsCount++; else totalMissesCount++;
+        if (nFreeHit) totalHitsCount++; else totalMissesCount++;
+        if (eTenHit) totalHitsCount++; else totalMissesCount++;
+        if (eUnitHit) totalHitsCount++; else totalMissesCount++;
+        if (eFreeHit) totalHitsCount++; else totalMissesCount++;
+      });
+
+      document.getElementById('totalHits').innerText = totalHitsCount;
+      document.getElementById('totalMisses').innerText = totalMissesCount;
+    }
+
+    function eTenTen(r) {
+      return r.eveTen;
+    }
+
+    function clearData() {
+      if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) {
+        document.getElementById('rawInput').value = '';
+        parsedRecords = [];
+        document.getElementById('matrixTbody').innerHTML = `<tr><td colspan="9" class="p-4 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td></tr>`;
+        document.getElementById('dataCountBadge').innerText = '0 วัน (0 รอบ)';
+        ['Set1', 'Set2', 'Set3'].forEach(id => {
+          document.getElementById(`numbers${id}`).innerText = '- - -';
+          document.getElementById(`winRate${id}`).innerText = '0.0%';
+          document.getElementById(`maxStreak${id}`).innerText = '0';
+          document.getElementById(`maxMiss${id}`).innerText = '0';
         });
-
-        // Initialize App on Window Load
-        window.onload = function () {
-            initChartData();
-            resizeCanvas();
-            renderOrderBook();
-            updatePositionsLive();
-            startLivePriceUpdates();
-
-            window.addEventListener('resize', resizeCanvas);
-        };
-    </script>
+      }
+    }
+  </script>
 </body>
 </html>
-```
