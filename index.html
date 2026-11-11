@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สถิติพม่า 2D (v2.6 - Smart Consensus Engine)</title>
+  <title>ระบบวิเคราะห์สถิติพม่า 2D (v2.7 - Smart Backend)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
@@ -38,15 +38,15 @@
     <!-- Header with Version -->
     <header class="flex justify-between items-center bg-slate-800 border border-slate-700 p-2.5 rounded-lg">
       <div>
-        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D <span class="bg-amber-950 border border-amber-600 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono ml-2">v2.6 (Smart Free Digits)</span></h1>
-        <p class="text-[11px] text-slate-400 no-wrap">อัปเกรดอัลกอริทึมเด่นอิสระ 2 ตัวด้วยระบบ Intersection & Momentum คัดกรองจากหลังบ้าน 10 ระดับ</p>
+        <h1 class="text-sm font-bold text-amber-400 no-wrap">📊 ระบบวิเคราะห์สถิติพม่า 2D <span class="bg-amber-950 border border-amber-600 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono ml-2">v2.7 (Smart Backend)</span></h1>
+        <p class="text-[11px] text-slate-400 no-wrap">ประมวลผลอัตโนมัติ 10 ระดับ | เด่นอิสระ 2 ตัวเน้นๆ (Smart Intersection)</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="dataCountBadge" class="bg-indigo-950 border border-indigo-700 text-indigo-300 text-[10px] px-2 py-0.5 rounded no-wrap font-mono">โหลดหลังบ้านแล้ว</span>
       </div>
     </header>
 
-    <!-- Summary Cards (Consensus Best Sets for Next Round) -->
+    <!-- Summary Cards -->
     <section class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
       
       <!-- Set 1: Tens Consensus -->
@@ -89,7 +89,7 @@
         </div>
         <div class="text-center py-1 bg-slate-900/70 border border-slate-700/60 rounded">
           <div id="numbersSet3" class="text-lg font-extrabold text-emerald-300 font-mono tracking-wider no-wrap"> - - </div>
-          <div class="text-[10px] text-slate-400 no-wrap">คัดกรองจากจุดร่วมสิบ-หน่วย & โมเมนตัม</div>
+          <div class="text-[10px] text-slate-400 no-wrap">คัดกรองจากจุดร่วมสิบ-หน่วย (2 ตัวถ้วน)</div>
         </div>
         <div class="flex justify-between text-[10px] text-slate-300 pt-0.5">
           <span no-wrap>ความแม่นยำ: <strong class="text-emerald-400 font-mono">วิจัยเชิงลึก</strong></span>
@@ -227,10 +227,6 @@
 
         const topTens = getTopDigits(tFreq, 5);
         const topUnits = getTopDigits(uFreq, 5);
-
-        // Smart Free Digits Algorithm (Strictly 2 digits):
-        // หาตัวเลขที่ทรงพลังที่สุดโดยดูจากความถี่ร่วม (Intersection) ระหว่างฝั่งสิบและหน่วย
-        // และให้น้ำหนักพิเศษกับเลขที่ติดทั้ง Top Tens และ Top Units พร้อมโมเมนตัมระยะสั้น
         const smartFree = calculateSmartFreeDigits(tFreq, uFreq, fFreq, days);
 
         let weight = days <= 9 ? 2.2 : (days <= 18 ? 1.5 : 1.0);
@@ -255,7 +251,7 @@
 
       const consensusTens = getTopDigitsByScore(globalTensScore, 5);
       const consensusUnits = getTopDigitsByScore(globalUnitsScore, 5);
-      const consensusFree = getTopDigitsByScore(globalFreeScore, 2); // ล็อกไว้ที่ 2 ตัวเป๊ะๆ ตามความต้องการ
+      const consensusFree = getTopDigitsByScore(globalFreeScore, 2); // ล็อกไว้ที่ 2 ตัวเป๊ะๆ
 
       document.getElementById('numbersSet1').innerText = consensusTens.nums.join('  ');
       document.getElementById('scoreSet1').innerText = consensusTens.maxScore.toFixed(1);
@@ -270,16 +266,13 @@
     }
 
     function calculateSmartFreeDigits(tFreq, uFreq, fFreq, days) {
-      // ให้คะแนนผสมผสานระหว่าง ความถี่รวม + พลังการเป็นตัวร่วม (Intersection Score)
       const combinedScores = Array(10).fill(0);
       for (let i = 0; i < 10; i++) {
-        // คะแนนความถี่อิสระ
         let score = fFreq[i] * 1.0;
-        // โบนัสถ้าติดท็อปฝั่งสิบหรือหน่วยด้วย
         const isTopTen = getTopDigits(tFreq, 4).includes(i);
         const isTopUnit = getTopDigits(uFreq, 4).includes(i);
         if (isTopTen && isTopUnit) {
-          score += 5.0; // เป็นตัวเชื่อมที่แข็งแกร่งมากทั้งสิบและหน่วย
+          score += 5.0;
         } else if (isTopTen || isTopUnit) {
           score += 2.0;
         }
