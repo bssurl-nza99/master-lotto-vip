@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Myanmar 2D VIP Analytics | v6.0 Deep Percentage Analytics</title>
+  <title>Myanmar 2D VIP Analytics | v7.0 Walk-Forward Backtest & Smart Cap</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -12,9 +12,7 @@
       background-color: #07090e;
       color: #f1f5f9;
     }
-    .no-wrap {
-      white-space: nowrap;
-    }
+    .no-wrap { white-space: nowrap; }
     .vip-card {
       background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.92) 100%);
       backdrop-filter: blur(12px);
@@ -41,20 +39,10 @@
       background: rgba(15, 23, 42, 0.95);
       border-bottom: 1px solid rgba(212, 175, 55, 0.3);
     }
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #07090e;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #ca8a04;
-    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #07090e; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ca8a04; }
   </style>
 </head>
 <body class="p-3 sm:p-6 text-xs">
@@ -67,28 +55,32 @@
         <div class="flex items-center gap-2">
           <span class="text-amber-400 text-sm">❖</span>
           <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase no-wrap">Myanmar 2D VIP Analytics</h1>
-          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v6.0 Deep Percentage</span>
+          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v7.0 Smart Cap & Backtest KPI</span>
         </div>
-        <p class="text-[11px] text-slate-400 mt-1 no-wrap">Interactive Hybrid Analytics + รายละเอียดเชิงลึกและเปอร์เซ็นต์รายตัว</p>
+        <p class="text-[11px] text-slate-400 mt-1 no-wrap">Pure Math Bell-Curve Cap + ระบบทดสอบความแม่นยำย้อนหลังจริง (Walk-Forward KPI)</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="formulaCountBadge" class="bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[10px] px-2.5 py-1 rounded-md font-mono hidden">0 สูตรบริสุทธิ์</span>
-        <span id="dataCountBadge" class="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] px-3 py-1 rounded-md font-mono tracking-wide">รอข้อมูลสถิติ</span>
+        <span id="dataCountBadge" class="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] px-3 py-1 rounded-md font-mono tracking-wide">พร้อมรับข้อมูล</span>
       </div>
     </header>
 
-    <!-- Raw Data Input Section (Always clean and ready) -->
+    <!-- Input Section -->
     <section class="vip-card p-4 rounded-xl space-y-3">
-      <div class="flex justify-between items-center">
-        <label for="rawInput" class="font-semibold text-slate-200 text-xs tracking-wide no-wrap">📥 ช่องกรอกข้อมูลสถิติรายวัน (Input Dataset)</label>
-        <span class="text-[10px] text-slate-400 no-wrap">รูปแบบ: 🗓 DD ม.ค. YY : 00 -- 00</span>
+      <div class="flex flex-wrap justify-between items-center gap-2">
+        <label for="rawInput" class="font-semibold text-slate-200 text-xs tracking-wide no-wrap">📥 ฐานข้อมูลสถิติ (รองรับ 00-00, 00--00, 0000 และก๊อปปี้จาก PDF/ตาราง)</label>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="loadFullArchive()" class="text-[10px] bg-slate-800 hover:bg-slate-700 border border-amber-500/30 text-amber-300 px-2.5 py-1 rounded transition-colors no-wrap">
+            โหลดสถิติ 344 วัน (มิ.ย. 68 - พ.ย. 69)
+          </button>
+        </div>
       </div>
 
-      <textarea id="rawInput" rows="5" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-3 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500/60 leading-relaxed transition-all shadow-inner" placeholder="วางข้อมูลสถิติที่นี่ (เช่น 11 พ.ย 69 : 24 -- 13)..."></textarea>
+      <textarea id="rawInput" rows="4" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-3 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500/60 leading-relaxed transition-all shadow-inner" placeholder="วางข้อมูลสถิติที่นี่ หรือกดปุ่มโหลดสถิติ 344 วันด้านบน..."></textarea>
 
-      <div class="flex gap-3 pt-1">
-        <button id="btnProcess" onclick="processAllSystems()" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg shadow-amber-900/20 no-wrap tracking-wide text-sm">
-          ✦ ประมวลผลและแสดงผลวิเคราะห์ทั้งหมดทีเดียว
+      <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+        <button id="btnProcess" onclick="processAllSystems()" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg shadow-amber-900/20 no-wrap tracking-wide text-xs sm:text-sm">
+          ✦ ประมวลผลและคำนวณสถิติเข้า-หลุดย้อนหลังทั้งหมด
         </button>
         <button id="btnClear" onclick="clearData()" class="bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-medium py-2.5 px-4 rounded-lg transition-all no-wrap">
           ล้างข้อมูล
@@ -96,36 +88,99 @@
       </div>
     </section>
 
-    <!-- RESULTS CONTAINER (Hidden initially, appears all at once after processing) -->
+    <!-- RESULTS CONTAINER -->
     <div id="resultsContainer" class="space-y-4 hidden">
 
-      <!-- Pure Math Contrarian Engine (Hero Highlight) -->
+      <!-- 1. Walk-Forward Backtest KPI Scorecard (Clean & Structured) -->
+      <section class="vip-card p-4 rounded-xl space-y-3">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-2 gap-1">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400 text-sm">📊</span>
+            <h2 class="font-bold text-slate-100 text-xs tracking-wider uppercase no-wrap">ดัชนีวัดผลความแม่นยำย้อนหลังจริง (Walk-Forward Backtest KPI)</h2>
+          </div>
+          <span id="backtestRangeLabel" class="text-[10px] text-slate-400 font-mono no-wrap">ทดสอบย้อนหลัง - รอบ</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono">
+          <!-- KPI Card: Tens -->
+          <div class="bg-[#0b0f19]/90 border border-amber-500/25 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
+              <span class="text-amber-400 font-bold text-[11px]">ชุดหลักสิบ (5 ตัว)</span>
+              <span id="kpiTensRate" class="text-sm font-extrabold text-amber-300">0.0%</span>
+            </div>
+            <div class="grid grid-cols-2 gap-y-1 text-[10px] text-slate-400">
+              <span>เข้า / หลุด:</span>
+              <span id="kpiTensHitMiss" class="text-right text-slate-200 font-semibold">0 / 0 รอบ</span>
+              <span>เข้าติดสูงสุด:</span>
+              <span id="kpiTensMaxWin" class="text-right text-emerald-400 font-semibold">0 วันติด</span>
+              <span>หลุดติดสูงสุด:</span>
+              <span id="kpiTensMaxLoss" class="text-right text-rose-400 font-semibold">0 วันติด</span>
+              <span>สถานะล่าสุด:</span>
+              <span id="kpiTensCurrent" class="text-right font-bold">-</span>
+            </div>
+          </div>
+
+          <!-- KPI Card: Units -->
+          <div class="bg-[#0b0f19]/90 border border-sky-500/25 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
+              <span class="text-sky-400 font-bold text-[11px]">ชุดหลักหน่วย (5 ตัว)</span>
+              <span id="kpiUnitsRate" class="text-sm font-extrabold text-sky-300">0.0%</span>
+            </div>
+            <div class="grid grid-cols-2 gap-y-1 text-[10px] text-slate-400">
+              <span>เข้า / หลุด:</span>
+              <span id="kpiUnitsHitMiss" class="text-right text-slate-200 font-semibold">0 / 0 รอบ</span>
+              <span>เข้าติดสูงสุด:</span>
+              <span id="kpiUnitsMaxWin" class="text-right text-emerald-400 font-semibold">0 วันติด</span>
+              <span>หลุดติดสูงสุด:</span>
+              <span id="kpiUnitsMaxLoss" class="text-right text-rose-400 font-semibold">0 วันติด</span>
+              <span>สถานะล่าสุด:</span>
+              <span id="kpiUnitsCurrent" class="text-right font-bold">-</span>
+            </div>
+          </div>
+
+          <!-- KPI Card: Free 2 Digits -->
+          <div class="bg-[#0b0f19]/90 border border-emerald-500/35 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
+              <span class="text-emerald-400 font-bold text-[11px]">ชุดเด่นอิสระ (2 ตัว)</span>
+              <span id="kpiFreeRate" class="text-sm font-extrabold text-emerald-300">0.0%</span>
+            </div>
+            <div class="grid grid-cols-2 gap-y-1 text-[10px] text-slate-400">
+              <span>เข้า / หลุด:</span>
+              <span id="kpiFreeHitMiss" class="text-right text-slate-200 font-semibold">0 / 0 รอบ</span>
+              <span>เข้าติดสูงสุด:</span>
+              <span id="kpiFreeMaxWin" class="text-right text-emerald-400 font-semibold">0 วันติด</span>
+              <span>หลุดติดสูงสุด:</span>
+              <span id="kpiFreeMaxLoss" class="text-right text-rose-400 font-semibold">0 วันติด</span>
+              <span>สถานะล่าสุด:</span>
+              <span id="kpiFreeCurrent" class="text-right font-bold">-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Pure Math Contrarian Engine (Hero Highlight) -->
       <section class="vip-card-emerald p-4 rounded-xl space-y-3 relative overflow-hidden">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-emerald-800/40 pb-2 gap-2">
           <div class="flex items-center gap-2">
             <span class="text-emerald-400 text-sm">∑</span>
-            <h2 class="font-bold text-emerald-300 text-xs tracking-wider uppercase no-wrap">Pure Math Contrarian Engine (เด่น 2 ตัวสายแรงดีดกลับ)</h2>
+            <h2 class="font-bold text-emerald-300 text-xs tracking-wider uppercase no-wrap">Pure Math Contrarian Engine (เด่น 2 ตัวรอบถัดไป)</h2>
           </div>
-          <span class="text-[10px] text-emerald-300/80 font-mono no-wrap">นับหลุดต่อเนื่องจากล่าสุดย้อนอดีต + แรงหนุนการชนซ้ำ</span>
+          <span class="text-[10px] text-emerald-300/80 font-mono no-wrap">Bell-Curve Rebound Cap (พีคช่วงหลุด 3-6 วัน) + Dual-Confirmation</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-          <!-- Top 2 Contrarian Digits -->
           <div class="bg-[#0b0f19]/90 border border-emerald-500/30 rounded-xl p-3 text-center">
-            <div class="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">เลขเด่น 2 ตัว (แรงดีดกลับสูงสุดรอบถัดไป)</div>
+            <div class="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">เลขเด่น 2 ตัว (คัดกรองความคมสูงสุด)</div>
             <div id="pureMathTop2" class="text-3xl font-extrabold vip-emerald-text font-mono tracking-widest py-1.5 no-wrap">-   -</div>
-            <div id="pureMathSubInfo" class="text-[10px] text-slate-400 font-mono no-wrap">รอการประมวลผล...</div>
+            <div id="pureMathSubInfo" class="text-[10px] text-slate-400 font-mono no-wrap">-</div>
           </div>
 
-          <!-- Score Breakdown & Top Contenders -->
           <div class="md:col-span-2 bg-[#0b0f19]/70 border border-slate-800 rounded-xl p-3 space-y-2">
             <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800 pb-1">
-              <span>การจัดอันดับพลังดีดกลับ 0 - 9 พร้อมเปอร์เซ็นต์รายตัว</span>
-              <span class="font-mono text-emerald-400">สูตรหลุดยาว + หลุดเศษชนซ้ำ</span>
+              <span>การจัดอันดับพลังดีดกลับ 0 - 9 (น้ำหนักสุทธิรายตัว %)</span>
+              <span class="font-mono text-emerald-400">ตัดสัญญาณหลุดแช่เกิน 7 วัน</span>
             </div>
-            <div id="digitRankingBars" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 pt-1 text-center font-mono">
-              <!-- Injected by JS -->
-            </div>
+            <div id="digitRankingBars" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 pt-1 text-center font-mono"></div>
           </div>
         </div>
 
@@ -134,83 +189,77 @@
           <table class="w-full text-left border-collapse text-[11px]">
             <thead>
               <tr class="bg-[#0b0f19] text-emerald-300/90 border-b border-emerald-900/50 font-semibold no-wrap">
-                <th class="p-2 border-r border-slate-800 text-center w-16">อันดับ</th>
+                <th class="p-2 border-r border-slate-800 text-center w-14">อันดับ</th>
                 <th class="p-2 border-r border-slate-800">ตรรกะคณิตศาสตร์บริสุทธิ์ (Pure Math Formula)</th>
-                <th class="p-2 border-r border-slate-800 text-center w-28">ประเภท</th>
-                <th class="p-2 border-r border-slate-800 text-center w-28">หลุดติดล่าสุด</th>
+                <th class="p-2 border-r border-slate-800 text-center w-24">ประเภท</th>
+                <th class="p-2 border-r border-slate-800 text-center w-28">สถานะหลุดล่าสุด</th>
                 <th class="p-2 text-center w-28 text-amber-300">เลขเด่นรอบถัดไป</th>
               </tr>
             </thead>
-            <tbody id="contrarianTbody" class="divide-y divide-slate-800/60 font-mono">
-              <tr>
-                <td colspan="5" class="p-4 text-center text-slate-500 no-wrap">ยังไม่มีข้อมูล</td>
-              </tr>
-            </tbody>
+            <tbody id="contrarianTbody" class="divide-y divide-slate-800/60 font-mono"></tbody>
           </table>
         </div>
       </section>
 
-      <!-- Summary Cards VIP (Hybrid Engine System with Deep Percentage Breakdown) -->
+      <!-- 3. Summary Cards VIP (Next Round Prediction) -->
       <section class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        
-        <!-- Set 1: Tens Hybrid -->
+        <!-- Set 1: Tens -->
         <div class="vip-card p-4 rounded-xl space-y-2 relative overflow-hidden">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2">
             <span class="font-bold text-amber-400 text-xs tracking-wide no-wrap">หลักสิบเด่น (5 ตัว Hybrid)</span>
-            <span class="bg-amber-500/10 text-amber-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold no-wrap border border-amber-500/20">Hybrid Math</span>
+            <span class="bg-amber-500/10 text-amber-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold no-wrap border border-amber-500/20">Next Round</span>
           </div>
-          <div class="text-center py-2 bg-[#0b0f19]/80 border border-slate-800/80 rounded-lg">
+          <div class="text-center py-2 bg-[#0b0f19]/80 border border-slate-800/80 rounded-lg px-2">
             <div id="numbersSet1" class="text-xl font-bold vip-gold-text font-mono tracking-widest no-wrap"> - - - - - </div>
-            <div id="detailsSet1" class="text-[10px] text-amber-300/90 mt-1 font-mono no-wrap">Top 1-5 พร้อมเปอร์เซ็นต์รายตัว</div>
+            <div id="detailsSet1" class="text-[10px] text-amber-300/90 mt-1.5 font-mono leading-relaxed">-</div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-400 pt-1 font-mono">
-            <span no-wrap>ระดับความเชื่อมั่น: <strong class="text-amber-400">VIP High</strong></span>
-            <span no-wrap>คะแนนรวม: <strong id="scoreSet1" class="text-slate-200">0</strong></span>
+            <span>สัดส่วนชุด: <strong id="shareSet1" class="text-amber-400">0%</strong></span>
+            <span>คะแนนรวม: <strong id="scoreSet1" class="text-slate-200">0</strong></span>
           </div>
         </div>
 
-        <!-- Set 2: Units Hybrid -->
+        <!-- Set 2: Units -->
         <div class="vip-card p-4 rounded-xl space-y-2 relative overflow-hidden">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2">
             <span class="font-bold text-sky-400 text-xs tracking-wide no-wrap">หลักหน่วยเด่น (5 ตัว Hybrid)</span>
-            <span class="bg-sky-500/10 text-sky-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold no-wrap border border-sky-500/20">Hybrid Math</span>
+            <span class="bg-sky-500/10 text-sky-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold no-wrap border border-sky-500/20">Next Round</span>
           </div>
-          <div class="text-center py-2 bg-[#0b0f19]/80 border border-slate-800/80 rounded-lg">
+          <div class="text-center py-2 bg-[#0b0f19]/80 border border-slate-800/80 rounded-lg px-2">
             <div id="numbersSet2" class="text-xl font-bold text-sky-300 font-mono tracking-widest no-wrap"> - - - - - </div>
-            <div id="detailsSet2" class="text-[10px] text-sky-300/90 mt-1 font-mono no-wrap">Top 1-5 พร้อมเปอร์เซ็นต์รายตัว</div>
+            <div id="detailsSet2" class="text-[10px] text-sky-300/90 mt-1.5 font-mono leading-relaxed">-</div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-400 pt-1 font-mono">
-            <span no-wrap>ระดับความเชื่อมั่น: <strong class="text-sky-400">VIP High</strong></span>
-            <span no-wrap>คะแนนรวม: <strong id="scoreSet2" class="text-slate-200">0</strong></span>
+            <span>สัดส่วนชุด: <strong id="shareSet2" class="text-sky-400">0%</strong></span>
+            <span>คะแนนรวม: <strong id="scoreSet2" class="text-slate-200">0</strong></span>
           </div>
         </div>
 
-        <!-- Set 3: Smart Free Digits (2 digits) -->
+        <!-- Set 3: Free 2 Digits -->
         <div class="vip-card p-4 rounded-xl space-y-2 relative overflow-hidden">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2">
             <span class="font-bold text-emerald-400 text-xs tracking-wide no-wrap">เด่นอิสระ (2 ตัวเน้นๆ)</span>
-            <span class="bg-emerald-500/10 text-emerald-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold no-wrap border border-emerald-500/20">Contrarian</span>
+            <span class="bg-emerald-500/10 text-emerald-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold no-wrap border border-emerald-500/20">Top Choice</span>
           </div>
-          <div class="text-center py-2 bg-[#0b0f19]/80 border border-slate-800/80 rounded-lg">
+          <div class="text-center py-2 bg-[#0b0f19]/80 border border-slate-800/80 rounded-lg px-2">
             <div id="numbersSet3" class="text-xl font-bold text-emerald-300 font-mono tracking-widest no-wrap"> - - </div>
-            <div id="detailsSet3" class="text-[10px] text-emerald-300/90 mt-1 font-mono no-wrap">Top 1-2 พร้อมเปอร์เซ็นต์รายตัว</div>
+            <div id="detailsSet3" class="text-[10px] text-emerald-300/90 mt-1.5 font-mono leading-relaxed">-</div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-400 pt-1 font-mono">
-            <span no-wrap>ความแม่นยำ: <strong class="text-emerald-400">Top Choice</strong></span>
-            <span no-wrap>คะแนนรวม: <strong id="scoreSet3" class="text-slate-200">0</strong></span>
+            <span>สัดส่วนชุด: <strong id="shareSet3" class="text-emerald-400">0%</strong></span>
+            <span>คะแนนรวม: <strong id="scoreSet3" class="text-slate-200">0</strong></span>
           </div>
         </div>
-
       </section>
 
-      <!-- Detailed Timeframe Table VIP -->
+      <!-- 4. Detailed Timeframe Table VIP -->
       <section class="vip-card p-4 rounded-xl space-y-3">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
           <div class="flex items-center gap-2">
             <span class="text-amber-400">❖</span>
             <h2 class="font-semibold text-slate-200 text-xs tracking-wider uppercase no-wrap">ตารางเปรียบเทียบเชิงลึก 10 ระดับ (Multi-Timeframe Matrix)</h2>
           </div>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide no-wrap">อัปเดตอัตโนมัติ</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide no-wrap">อัปเดตล่าสุด</span>
         </div>
 
         <div class="overflow-x-auto rounded-lg border border-slate-800">
@@ -223,83 +272,405 @@
                 <th class="p-2.5 text-center text-emerald-300">เด่นอิสระ (2 ตัว)</th>
               </tr>
             </thead>
-            <tbody id="matrixTbody" class="divide-y divide-slate-800/60 font-mono text-center">
-              <tr>
-                <td colspan="4" class="p-6 text-slate-500 no-wrap">ยังไม่มีข้อมูล</td>
-              </tr>
-            </tbody>
+            <tbody id="matrixTbody" class="divide-y divide-slate-800/60 font-mono text-center"></tbody>
           </table>
         </div>
       </section>
 
     </div>
-
   </div>
 
   <script>
-    // ชุดข้อมูลตั้งต้นสำหรับทดสอบกดประมวลผล
-    const defaultSampleData = `24 ก.ย 69 : 63 -- 87
-25 ก.ย 69 : 89 -- 36
-28 ก.ย 69 : 08 -- 77
-29 ก.ย 69 : 72 -- 08
-30 ก.ย 69 : 30 -- 13
-01 ต.ค 69 : 99 -- 18
-02 ต.ค 69 : 22 -- 25
-05 ต.ค 69 : 00 -- 57
-06 ต.ค 69 : 86 -- 29
-07 ต.ค 69 : 07 -- 38
-08 ต.ค 69 : 61 -- 14
-11 ต.ค 69 : 50 -- 52
-12 ต.ค 69 : 01 -- 44
-14 ต.ค 69 : 05 -- 84
-15 ต.ค 69 : 98 -- 13
-19 ต.ค 69 : 32 -- 26
-20 ต.ค 69 : 77 -- 49
-21 ต.ค 69 : 53 -- 98
-22 ต.ค 69 : 78 -- 77
-26 ต.ค 69 : 52 -- 32
-27 ต.ค 69 : 49 -- 20
-28 ต.ค 69 : 89 -- 03
-29 ต.ค 69 : 91 -- 02
-30 ต.ค 69 : 90 -- 90
-02 พ.ย 69 : 97 -- 08
-03 พ.ย 69 : 64 -- 14
-04 พ.ย 69 : 66 -- 91
-05 พ.ย 69 : 65 -- 90
-06 พ.ย 69 : 51 -- 05
-09 พ.ย 69 : 67 -- 74
-10 พ.ย 69 : 17 -- 17
-11 พ.ย 69 : 24 -- 13`;
+    // ฐานข้อมูลสถิติ 344 วัน (04 มิ.ย. 68 - 11 พ.ย. 69) จากเอกสาร
+    const fullArchiveDataset = `04 มิ.ย. 68 : 06-25
+05 มิ.ย. 68 : 85--37
+06 มิ.ย. 68 : 40-33
+09 มิ.ย. 68 : 67--41
+10 มิ.ย. 68 : 55-60
+11 มิ.ย. 68 : 83-86
+12 มิ.ย. 68 : 30--23
+13 มิ.ย. 68 : 65--01
+16 มิ.ย. 68 : 07--92
+17 มิ.ย. 68 : 03-81
+18 มิ.ย. 68 : 37--88
+19 มิ.ย. 68 : 08--34
+20 มิ.ย. 68 : 21--37
+23 มิ.ย. 68 : 98--86
+24 มิ.ย. 68 : 24-10
+25 มิ.ย. 68 : 03-92
+26 มิ.ย. 68 : 74--39
+27 มิ.ย. 68 : 02-28
+30 มิ.ย. 68 : 12--65
+01 ก.ค. 68 : 37--14
+02 ก.ค. 68 : 25-98
+03 ก.ค. 68 : 62--10
+04 ก.ค. 68 : 82--44
+07 ก.ค. 68 : 67--07
+08 ก.ค. 68 : 71--55
+09 ก.ค. 68 : 02--05
+11 ก.ค. 68 : 17-37
+14 ก.ค. 68 : 15-14
+15 ก.ค. 68 : 25-14
+16 ก.ค. 68 : 50-38
+17 ก.ค. 68 : 17-14
+18 ก.ค. 68 : 71-85
+21 ก.ค. 68 : 79-33
+22 ก.ค. 68 : 78--55
+23 ก.ค. 68 : 37--27
+24 ก.ค. 68 : 50--97
+25 ก.ค. 68 : 50-50
+29 ก.ค. 68 : 64-83
+30 ก.ค. 68 : 95-40
+31 ก.ค. 68 : 92--50
+01 ส.ค. 68 : 52-36
+04 ส.ค. 68 : 76--08
+05 ส.ค. 68 : 91--60
+06 ส.ค. 68 : 86--72
+07 ส.ค. 68 : 63--59
+08 ส.ค. 68 : 05--72
+13 ส.ค. 68 : 11-37
+14 ส.ค. 68 : 84--78
+15 ส.ค. 68 : 25--20
+18 ส.ค. 68 : 05--19
+19 ส.ค. 68 : 57--60
+20 ส.ค. 68 : 27--37
+21 ส.ค. 68 : 04--90
+22 ส.ค. 68 : 74--99
+25 ส.ค. 68 : 16-78
+26 ส.ค. 68 : 04-68
+27 ส.ค. 68 : 81-33
+28 ส.ค. 68 : 71--98
+29 ส.ค. 68 : 77--15
+01 ก.ย. 68 : 78--86
+02 ก.ย. 68 : 47--84
+03 ก.ย. 68 : 67--17
+04 ก.ย. 68 : 22-53
+05 ก.ย. 68 : 26--07
+08 ก.ย. 68 : 52--16
+09 ก.ย. 68 : 16--84
+10 ก.ย. 68 : 87--52
+11 ก.ย. 68 : 15-33
+12 ก.ย. 68 : 39--26
+15 ก.ย. 68 : 02--80
+16 ก.ย. 68 : 85-95
+17 ก.ย. 68 : 65--98
+18 ก.ย. 68 : 65--19
+19 ก.ย. 68 : 88--21
+22 ก.ย. 68 : 77-45
+23 ก.ย. 68 : 43--07
+24 ก.ย. 68 : 25--13
+25 ก.ย. 68 : 31--68
+26 ก.ย. 68 : 60--45
+29 ก.ย. 68 : 44-70
+30 ก.ย. 68 : 86--78
+01 ต.ค. 68 : 04-37
+02 ต.ค. 68 : 62-96
+03 ต.ค. 68 : 55-19
+06 ต.ค. 68 : 29-40
+07 ต.ค. 68 : 05-47
+08 ต.ค. 68 : 58-26
+09 ต.ค. 68 : 45-95
+10 ต.ค. 68 : 35-82
+14 ต.ค. 68 : 23-83
+15 ต.ค. 68 : 94-94
+16 ต.ค. 68 : 75-62
+17 ต.ค. 68 : 10-10
+20 ต.ค. 68 : 75-75
+21 ต.ค. 68 : 99-20
+22 ต.ค. 68 : 74-56
+24 ต.ค. 68 : 71-12
+27 ต.ค. 68 : 96-28
+28 ต.ค. 68 : 21-89
+29 ต.ค. 68 : 11--40
+30 ต.ค. 68 : 76-53
+31 ต.ค. 68 : 22-02
+03 พ.ย. 68 : 66-61
+04 พ.ย. 68 : 29--09
+05 พ.ย. 68 : 38-98
+06 พ.ย. 68 : 71-19
+07 พ.ย. 68 : 54-14
+10 พ.ย. 68 : 37-68
+11 พ.ย. 68 : 85--70
+12 พ.ย. 68 : 69-18
+13 พ.ย. 68 : 51--47
+14 พ.ย. 68 : 72-61
+17 พ.ย. 68 : 08-79
+18 พ.ย. 68 : 36-43
+19 พ.ย. 68 : 45-73
+20 พ.ย. 68 : 25-10
+21 พ.ย. 68 : 41--00
+24 พ.ย. 68 : 48-31
+25 พ.ย. 68 : 25-81
+26 พ.ย. 68 : 29--89
+27 พ.ย. 68 : 32-10
+28 พ.ย. 68 : 93-96
+01 ธ.ค. 68 : 90--72
+02 ธ.ค. 68 : 09--80
+03 ธ.ค. 68 : 42-23
+04 ธ.ค. 68 : 06-78
+08 ธ.ค. 68 : 81-92
+09 ธ.ค. 68 : 25-79
+11 ธ.ค. 68 : 30--49
+12 ธ.ค. 68 : 31-03
+15 ธ.ค. 68 : 52--03
+16 ธ.ค. 68 : 37-85
+17 ธ.ค. 68 : 45-57
+18 ธ.ค. 68 : 75-76
+19 ธ.ค. 68 : 50-94
+22 ธ.ค. 68 : 36-85
+23 ธ.ค. 68 : 41-17
+24 ธ.ค. 68 : 42-35
+25 ธ.ค. 68 : 95-78
+26 ธ.ค. 68 : 96-51
+29 ธ.ค. 68 : 76-39
+30 ธ.ค. 68 : 01-77
+05 ม.ค. 69 : 38--57
+06 ม.ค. 69 : 15-53
+07 ม.ค. 69 : 15-24
+08 ม.ค. 69 : 70--08
+09 ม.ค. 69 : 45--98
+12 ม.ค. 69 : 24-01
+13 ม.ค. 69 : 73--01
+14 ม.ค. 69 : 28--07
+15 ม.ค. 69 : 04-96
+16 ม.ค. 69 : 72--03
+19 ม.ค. 69 : 45--05
+20 ม.ค. 69 : 31--76
+21 ม.ค. 69 : 71-68
+22 ม.ค. 69 : 42-44
+23 ม.ค. 69 : 43-91
+26 ม.ค. 69 : 70--72
+27 ม.ค. 69 : 54-51
+28 ม.ค. 69 : 60--03
+29 ม.ค. 69 : 87--73
+30 ม.ค. 69 : 50--28
+02 ก.พ. 69 : 59-25
+03 ก.พ. 69 : 99--10
+04 ก.พ. 69 : 16-40
+05 ก.พ. 69 : 15-38
+06 ก.พ. 69 : 49-16
+09 ก.พ. 69 : 63-91
+10 ก.พ. 69 : 50-41
+11 ก.พ. 69 : 42--05
+12 ก.พ. 69 : 88--32
+13 ก.พ. 69 : 05--16
+16 ก.พ. 69 : 17--99
+17 ก.พ. 69 : 28--88
+18 ก.พ. 69 : 26--71
+19 ก.พ. 69 : 60-13
+20 ก.พ. 69 : 50-16
+23 ก.พ. 69 : 70--47
+24 ก.พ. 69 : 33--08
+25 ก.พ. 69 : 38--19
+26 ก.พ. 69 : 14-42
+27 ก.พ. 69 : 41--64
+02 มี.ค. 69 : 79-17
+04 มี.ค. 69 : 92--12
+05 มี.ค. 69 : 46-92
+06 มี.ค. 69 : 83--79
+09 มี.ค. 69 : 51-74
+10 มี.ค. 69 : 79-65
+11 มี.ค. 69 : 86-40
+12 มี.ค. 69 : 55--06
+13 มี.ค. 69 : 66--54
+16 มี.ค. 69 : 61-22
+17 มี.ค. 69 : 21--85
+18 มี.ค. 69 : 17-51
+19 มี.ค. 69 : 44--56
+20 มี.ค. 69 : 10--94
+23 มี.ค. 69 : 20--40
+24 มี.ค. 69 : 95--97
+25 มี.ค. 69 : 52--17
+26 มี.ค. 69 : 13-20
+27 มี.ค. 69 : 55--58
+30 มี.ค. 69 : 20--28
+31 มี.ค. 69 : 68--40
+01 เม.ย 69 : 07--98
+02 เม.ย 69 : 38-28
+03 เม.ย 69 : 15-03
+07 เม.ย 69 : 65-34
+08 เม.ย 69 : 96-38
+09 เม.ย 69 : 12-63
+10 เม.ย 69 : 53-43
+16 เม.ย 69 : 07-30
+18 เม.ย 69 : 39-59
+20 เม.ย 69 : 52-51
+21 เม.ย 69 : 97--03
+22 เม.ย 69 : 51-48
+23 เม.ย 69 : 17-53
+24 เม.ย 69 : 88--08
+27 เม.ย 69 : 13-39
+28 เม.ย 69 : 13-00
+29 เม.ย 69 : 21-43
+30 เม.ย 69 : 54-90
+05 พ.ค 69 : 98-05
+06 พ.ค 69 : 54-13
+07 พ.ค 69 : 21--34
+08 พ.ค 69 : 26-63
+11 พ.ค 69 : 56--99
+12 พ.ค 69 : 70-69
+13 พ.ค 69 : 55--60
+14 พ.ค 69 : 14-21
+15 พ.ค 69 : 08-59
+18 พ.ค 69 : 14-43
+19 พ.ค 69 : 33-97
+20 พ.ค 69 : 43-37
+21 พ.ค 69 : 67-74
+22 พ.ค 69 : 20-73
+25 พ.ค 69 : 05-35
+26 พ.ค 69 : 38-68
+27 พ.ค 69 : 87-54
+28 พ.ค 69 : 88-70
+29 พ.ค 69 : 24-75
+02 มิ.ย 69 : 42-60
+04 มิ.ย 69 : 02-90
+05 มิ.ย 69 : 65--06
+08 มิ.ย 69 : 96-83
+09 มิ.ย 69 : 45-56
+10 มิ.ย 69 : 96-99
+11 มิ.ย 69 : 28-23
+12 มิ.ย 69 : 98-11
+15 มิ.ย 69 : 82--28
+16 มิ.ย 69 : 35-51
+17 มิ.ย 69 : 26-79
+18 มิ.ย 69 : 36-66
+19 มิ.ย 69 : 24-01
+22 มิ.ย 69 : 60--39
+23 มิ.ย 69 : 98--06
+24 มิ.ย 69 : 68-29
+25 มิ.ย 69 : 66-52
+26 มิ.ย 69 : 62-48
+29 มิ.ย 69 : 59-16
+30 มิ.ย 69 : 73-48
+01 ก.ค 69 : 30-33
+02 ก.ค 69 : 29--60
+03 ก.ค 69 : 38--82
+06 ก.ค 69 : 01-81
+07 ก.ค 69 : 79-34
+08 ก.ค 69 : 83-52
+09 ก.ค 69 : 66--05
+10 ก.ค 69 : 75-55
+13 ก.ค 69 : 48--02
+14 ก.ค 69 : 17-33
+15 ก.ค 69 : 80-16
+16 ก.ค 69 : 76-97
+17 ก.ค 69 : 53-43
+20 ก.ค 69 : 66--00
+21 ก.ค 69 : 57--70
+22 ก.ค 69 : 58-41
+24 ก.ค 69 : 03-39
+25 ก.ค 69 : 15-94
+26 ก.ค 69 : 85-73
+30 ก.ค 69 : 30-17
+31 ก.ค 69 : 16-42
+03 ส.ค 69 : 20-05
+04 ส.ค 69 : 71-37
+05 ส.ค 69 : 87-83
+06 ส.ค 69 : 31-45
+07 ส.ค 69 : 75-01
+10 ส.ค 69 : 27-61
+11 ส.ค 69 : 56-20
+13 ส.ค 69 : 54-63
+14 ส.ค 69 : 13-68
+17 ส.ค 69 : 23-40
+18 ส.ค 69 : 19-28
+19 ส.ค 69 : 53-60
+20 ส.ค 69 : 69-92
+21 ส.ค 69 : 60-80
+24 ส.ค 69 : 22-53
+25 ส.ค 69 : 11-13
+26 ส.ค 69 : 78-29
+27 ส.ค 69 : 35-04
+28 ส.ค 69 : 85-20
+31 ส.ค 69 : 79-64
+01 ก.ย 69 : 87-83
+02 ก.ย 69 : 17--77
+03 ก.ย 69 : 71--23
+04 ก.ย 69 : 26-81
+07 ก.ย 69 : 59--22
+08 ก.ย 69 : 38-98
+09 ก.ย 69 : 96-90
+10 ก.ย 69 : 75--78
+11 ก.ย 69 : 69-23
+14 ก.ย 69 : 82-79
+15 ก.ย 69 : 13-68
+16 ก.ย 69 : 57-31
+17 ก.ย 69 : 04-41
+18 ก.ย 69 : 98--57
+21 ก.ย 69 : 01-34
+22 ก.ย 69 : 71-46
+23 ก.ย 69 : 36--04
+24 ก.ย 69 : 63-87
+25 ก.ย 69 : 89-36
+28 ก.ย 69 : 08-77
+29 ก.ย 69 : 72--08
+30 ก.ย 69 : 30-13
+01 ต.ค 69 : 99-18
+02 ต.ค 69 : 22-25
+05 ต.ค 69 : 00-57
+06 ต.ค 69 : 86-29
+07 ต.ค 69 : 07-38
+08 ต.ค 69 : 61-14
+11 ต.ค 69 : 50-52
+12 ต.ค 69 : 01-44
+14 ต.ค 69 : 05-84
+15 ต.ค 69 : 98-13
+19 ต.ค 69 : 32-26
+20 ต.ค 69 : 77-49
+21 ต.ค 69 : 53-98
+22 ต.ค 69 : 78-77
+26 ต.ค 69 : 52-32
+27 ต.ค 69 : 49-20
+28 ต.ค 69 : 89-03
+29 ต.ค 69 : 91-02
+30 ต.ค 69 : 90-90
+02 พ.ย 69 : 97--08
+03 พ.ย 69 : 64-14
+04 พ.ย 69 : 66-91
+05 พ.ย 69 : 65-90
+06 พ.ย 69 : 51-05
+09 พ.ย 69 : 67-74
+10 พ.ย 69 : 17-17
+11 พ.ย 69 : 24-13`;
 
-    window.onload = function() {
-      // ใส่ข้อมูลตั้งต้นไว้ให้ในช่องกรอกข้อมูล แต่ซ่อนผลลัพธ์ไว้จนกว่าจะกดประมวลผล
-      document.getElementById('rawInput').value = defaultSampleData;
-    };
+    const PURE_MATH_FORMULAS = generatePureMathFormulas();
 
-    function parseTextData(textArray) {
+    function loadFullArchive() {
+      document.getElementById('rawInput').value = fullArchiveDataset;
+    }
+
+    // Smart Auto-Parser รองรับข้อมูลที่ก๊อปปี้จาก PDF/ตาราง (เช่น | คั่น, 6114 ติดกัน, บรรทัดขาด)
+    function parseFlexibleData(rawText) {
+      const cleaned = rawText
+        .replace(/\|/g, ' ')
+        .replace(/\r/g, '')
+        .replace(/\n\s*([^\d\n]{2,10}\s*\d{2})\s*\n\s*:/g, ' $1 :')
+        .replace(/(\d{1,2}\s+[^\d\s:]+\.?\s+\d{2})\s*\n\s*(\d{2})/g, '$1 : $2');
+
       const records = [];
-      const regex = /(\d{1,2})\s+([^\d\s]+)\.?\s+(\d{2})\s*:\s*(\d{2})\s*-+\s*(\d{2})/;
+      // จับรูปแบบ: วันที่ เดือน ปี (มี : หรือไม่มีก็ได้) ตามด้วยเลข 2 หลักคั่น -/-- หรือเลข 4 หลักติดกัน
+      const regex = /(\d{1,2})\s+([^\d\s:|]+)\.?\s+(\d{2})\s*:?\s*(\d{2})(?:\s*-+\s*|\s*)(\d{2})/g;
+      let match;
 
-      textArray.forEach(line => {
-        const match = line.match(regex);
-        if (match) {
-          const noon = match[4];
-          const eve = match[5];
-          records.push({
-            day: match[1].padStart(2, '0'),
-            month: match[2].trim().replace('.', ''),
-            year: match[3],
-            dateStr: `${match[1].padStart(2, '0')} ${match[2].trim()} ${match[3]}`,
-            noon: noon,
-            noonTen: parseInt(noon[0]),
-            noonUnit: parseInt(noon[1]),
-            eve: eve,
-            eveTen: parseInt(eve[0]),
-            eveUnit: parseInt(eve[1]),
-            allDigits: new Set([parseInt(noon[0]), parseInt(noon[1]), parseInt(eve[0]), parseInt(eve[1])])
-          });
-        }
-      });
+      while ((match = regex.exec(cleaned)) !== null) {
+        const noon = match[4];
+        const eve = match[5];
+        records.push({
+          dateStr: `${match[1].padStart(2, '0')} ${match[2].trim().replace('.', '')} ${match[3]}`,
+          noon,
+          noonTen: parseInt(noon[0], 10),
+          noonUnit: parseInt(noon[1], 10),
+          eve,
+          eveTen: parseInt(eve[0], 10),
+          eveUnit: parseInt(eve[1], 10),
+          allDigits: new Set([
+            parseInt(noon[0], 10),
+            parseInt(noon[1], 10),
+            parseInt(eve[0], 10),
+            parseInt(eve[1], 10)
+          ])
+        });
+      }
       return records;
     }
 
@@ -320,12 +691,11 @@
       for (let p = 0; p < 4; p++) {
         stepModes.forEach(mode => {
           formulas.push({
-            id: `A_${p}_${mode.name}`,
             desc: `[1วัน] ${posNames[p]} เดินแต้ม ${mode.name}`,
             type: '1 วันล่าสุด',
             lag: 1,
             targetPos: p,
-            calc: (records, targetIdx) => mode.fn(getPosVal(records[targetIdx - 1], p))
+            calc: (records, idx) => mode.fn(getPosVal(records[idx - 1], p))
           });
         });
       }
@@ -341,35 +711,26 @@
         for (let p2 = p1 + 1; p2 < 4; p2++) {
           pairStepModes.forEach(mode => {
             formulas.push({
-              id: `B_${p1}_${p2}_${mode.name}`,
               desc: `[1วัน] (${posNames[p1]} + ${posNames[p2]}) ${mode.name}`,
               type: '1 วันล่าสุด',
               lag: 1,
               targetPos: -1,
-              calc: (records, targetIdx) => {
-                const d1 = records[targetIdx - 1];
-                return mode.fn(getPosVal(d1, p1) + getPosVal(d1, p2));
-              }
+              calc: (records, idx) => mode.fn(getPosVal(records[idx - 1], p1) + getPosVal(records[idx - 1], p2))
             });
           });
         }
       }
 
       const multiSets = [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3], [0, 1, 2, 3]];
-      multiSets.forEach((set, idx) => {
+      multiSets.forEach(set => {
         const label = set.map(i => posNames[i]).join('+');
         pairStepModes.forEach(mode => {
           formulas.push({
-            id: `C_${idx}_${mode.name}`,
             desc: `[1วัน] (${label}) ${mode.name}`,
             type: '1 วันล่าสุด',
             lag: 1,
             targetPos: -1,
-            calc: (records, targetIdx) => {
-              const d1 = records[targetIdx - 1];
-              const sum = set.reduce((acc, p) => acc + getPosVal(d1, p), 0);
-              return mode.fn(sum);
-            }
+            calc: (records, idx) => mode.fn(set.reduce((acc, p) => acc + getPosVal(records[idx - 1], p), 0))
           });
         });
       });
@@ -377,12 +738,11 @@
       for (let p = 0; p < 4; p++) {
         stepModes.slice(0, 3).forEach(mode => {
           formulas.push({
-            id: `D_single_${p}_${mode.name}`,
             desc: `[ข้ามวัน D-2] ${posNames[p]} ${mode.name}`,
             type: 'ข้ามวัน (D-2)',
             lag: 2,
             targetPos: p,
-            calc: (records, targetIdx) => mode.fn(getPosVal(records[targetIdx - 2], p))
+            calc: (records, idx) => mode.fn(getPosVal(records[idx - 2], p))
           });
         });
       }
@@ -391,16 +751,11 @@
         for (let p1 = 0; p1 < 4; p1++) {
           pairStepModes.forEach(mode => {
             formulas.push({
-              id: `E_${p2}_${p1}_${mode.name}`,
               desc: `[2วันทบ] ${posNames[p2]}(D-2) + ${posNames[p1]}(D-1) ${mode.name}`,
               type: 'ผสาน 2 วัน',
               lag: 2,
               targetPos: -1,
-              calc: (records, targetIdx) => {
-                const d2 = records[targetIdx - 2];
-                const d1 = records[targetIdx - 1];
-                return mode.fn(getPosVal(d2, p2) + getPosVal(d1, p1));
-              }
+              calc: (records, idx) => mode.fn(getPosVal(records[idx - 2], p2) + getPosVal(records[idx - 1], p1))
             });
           });
         }
@@ -409,17 +764,15 @@
       for (let p = 0; p < 4; p++) {
         pairStepModes.forEach(mode => {
           formulas.push({
-            id: `F_3daySum_${p}_${mode.name}`,
             desc: `[3วันทบ] รวม ${posNames[p]} (3วันติด) ${mode.name}`,
             type: 'ผสาน 3 วัน',
             lag: 3,
             targetPos: p,
-            calc: (records, targetIdx) => {
-              const sum = getPosVal(records[targetIdx - 3], p) +
-                          getPosVal(records[targetIdx - 2], p) +
-                          getPosVal(records[targetIdx - 1], p);
-              return mode.fn(sum);
-            }
+            calc: (records, idx) => mode.fn(
+              getPosVal(records[idx - 3], p) +
+              getPosVal(records[idx - 2], p) +
+              getPosVal(records[idx - 1], p)
+            )
           });
         });
       }
@@ -427,106 +780,269 @@
       return formulas;
     }
 
-    function runPureMathContrarian(allRecords) {
-      const formulas = generatePureMathFormulas();
-      document.getElementById('formulaCountBadge').innerText = `${formulas.length} สูตรบริสุทธิ์`;
-      document.getElementById('formulaCountBadge').classList.remove('hidden');
+    // Bell-Curve Rebound Weighting: พีคสุดช่วงหลุด 3-6 วัน และลดน้ำหนักเมื่อหลุดแช่เกิน 7 วัน
+    function getSmartReboundWeight(missStreak) {
+      if (missStreak <= 0) return 0;
+      if (missStreak === 1) return 1.0;
+      if (missStreak === 2) return 2.8;
+      if (missStreak === 3) return 7.5;
+      if (missStreak === 4) return 14.0;
+      if (missStreak === 5) return 20.0;
+      if (missStreak === 6) return 22.0; // จุดดีดกลับสูงสุด
+      if (missStreak === 7) return 15.0; // เริ่มชะลอตัว
+      return Math.max(5.0, 15.0 - (missStreak - 7) * 2.5); // ลดน้ำหนักสูตรหลุดแช่
+    }
 
-      if (allRecords.length < 5) return { finalTop2: [0, 1], tensReboundScore: Array(10).fill(0), unitsReboundScore: Array(10).fill(0), digitReboundScore: Array(10).fill(0) };
+    // แกนคำนวณหลักสำหรับทำนาย "วันถัดไป" จากชุดข้อมูลย้อนหลังที่ส่งเข้ามา
+    function computePredictionForSlice(records, includeDetails = false) {
+      const n = records.length;
+      const lastIdx = n - 1;
 
       const digitReboundScore = Array(10).fill(0);
       const tensReboundScore = Array(10).fill(0);
       const unitsReboundScore = Array(10).fill(0);
-
       const digitHitCount = Array(10).fill(0);
-      const digitLongMissCount = Array(10).fill(0);
+      const digitSweetSpotCount = Array(10).fill(0);
       const evaluatedFormulas = [];
 
-      const lastIdx = allRecords.length - 1;
+      // โมเมนตัมระยะสั้น (3 วันล่าสุด)
+      const recentMomentum = Array(10).fill(0);
+      records.slice(-3).forEach(r => r.allDigits.forEach(d => recentMomentum[d]++));
 
-      formulas.forEach(f => {
+      PURE_MATH_FORMULAS.forEach(f => {
+        if (n <= f.lag) return;
         let currentMissStreak = 0;
         for (let i = lastIdx; i >= f.lag; i--) {
-          const pred = f.calc(allRecords, i);
-          const actualSet = allRecords[i].allDigits;
-          const isHit = actualSet.has(pred[0]) || actualSet.has(pred[1]);
-
-          if (!isHit) {
+          const pred = f.calc(records, i);
+          const actualSet = records[i].allDigits;
+          if (!actualSet.has(pred[0]) && !actualSet.has(pred[1])) {
             currentMissStreak++;
           } else {
             break;
           }
         }
 
-        const nextPred = f.calc(allRecords, allRecords.length);
-        let d1 = nextPred[0];
-        let d2 = nextPred[1] === d1 ? (d1 + 1) % 10 : nextPred[1];
+        const nextPred = f.calc(records, n);
+        const d1 = nextPred[0];
+        const d2 = nextPred[1] === d1 ? (d1 + 1) % 10 : nextPred[1];
         const cleanPred = [d1, d2].sort((a, b) => a - b);
 
-        let weight = 0;
-        if (currentMissStreak === 1) {
-          weight = 1.0;
-        } else if (currentMissStreak === 2) {
-          weight = 2.5;
-        } else if (currentMissStreak >= 3) {
-          weight = Math.pow(currentMissStreak, 2.3) * (currentMissStreak <= 8 ? 1.2 : 1.0);
-        }
+        const weight = getSmartReboundWeight(currentMissStreak);
 
         if (weight > 0) {
           cleanPred.forEach(digit => {
-            digitReboundScore[digit] += weight;
+            // Dual-Confirmation Filter
+            const momentumFactor = (recentMomentum[digit] === 0 && currentMissStreak > 5) ? 0.85 : 1.0;
+            const finalScore = weight * momentumFactor;
+
+            digitReboundScore[digit] += finalScore;
             digitHitCount[digit]++;
-            if (currentMissStreak >= 3) {
-              digitLongMissCount[digit]++;
+            if (currentMissStreak >= 3 && currentMissStreak <= 6) {
+              digitSweetSpotCount[digit]++;
             }
 
             if (f.targetPos === 0 || f.targetPos === 2) {
-              tensReboundScore[digit] += weight * 1.2;
+              tensReboundScore[digit] += finalScore * 1.25;
             } else if (f.targetPos === 1 || f.targetPos === 3) {
-              unitsReboundScore[digit] += weight * 1.2;
+              unitsReboundScore[digit] += finalScore * 1.25;
             } else {
-              tensReboundScore[digit] += weight * 0.5;
-              unitsReboundScore[digit] += weight * 0.5;
+              tensReboundScore[digit] += finalScore * 0.5;
+              unitsReboundScore[digit] += finalScore * 0.5;
             }
           });
         }
 
-        evaluatedFormulas.push({
-          ...f,
-          missStreak: currentMissStreak,
-          nextPred: cleanPred,
-          weight
-        });
+        if (includeDetails) {
+          evaluatedFormulas.push({
+            ...f,
+            missStreak: currentMissStreak,
+            nextPred: cleanPred,
+            weight
+          });
+        }
       });
 
-      const rankedDigits = digitReboundScore
+      // Multi-Timeframe Consensus
+      const periods = [1, 2, 3, 5, 7, 10, 14, 20, 25, 30];
+      const validPeriods = periods.filter(p => n >= p);
+      if (validPeriods.length === 0) validPeriods.push(n);
+
+      const globalTensScore = Array(10).fill(0);
+      const globalUnitsScore = Array(10).fill(0);
+      const timeframeResults = [];
+
+      validPeriods.forEach(days => {
+        const sliceData = records.slice(-days);
+        const tFreq = Array(10).fill(0);
+        const uFreq = Array(10).fill(0);
+        const fFreq = Array(10).fill(0);
+
+        sliceData.forEach(r => {
+          new Set([r.noonTen, r.eveTen]).forEach(t => tFreq[t]++);
+          new Set([r.noonUnit, r.eveUnit]).forEach(u => uFreq[u]++);
+          r.allDigits.forEach(d => fFreq[d]++);
+        });
+
+        const topTens = getTopDigits(tFreq, 5);
+        const topUnits = getTopDigits(uFreq, 5);
+        const weight = days <= 3 ? 3.0 : (days <= 7 ? 2.2 : (days <= 14 ? 1.5 : 1.0));
+
+        topTens.forEach((d, idx) => { globalTensScore[d] += (5 - idx) * weight; });
+        topUnits.forEach((d, idx) => { globalUnitsScore[d] += (5 - idx) * weight; });
+
+        if (includeDetails) {
+          timeframeResults.push({
+            days,
+            topTens,
+            topUnits,
+            topFree: calculateSmartFreeDigits(tFreq, uFreq, fFreq)
+          });
+        }
+      });
+
+      const hybridTensScore = Array(10).fill(0);
+      const hybridUnitsScore = Array(10).fill(0);
+
+      const maxCT = Math.max(...globalTensScore) || 1;
+      const maxRT = Math.max(...tensReboundScore) || 1;
+      const maxCU = Math.max(...globalUnitsScore) || 1;
+      const maxRU = Math.max(...unitsReboundScore) || 1;
+
+      for (let i = 0; i < 10; i++) {
+        hybridTensScore[i] = ((globalTensScore[i] / maxCT) * 40) + ((tensReboundScore[i] / maxRT) * 60);
+        hybridUnitsScore[i] = ((globalUnitsScore[i] / maxCU) * 40) + ((unitsReboundScore[i] / maxRU) * 60);
+      }
+
+      const tensTop5 = getTopDigitsByScore(hybridTensScore, 5);
+      const unitsTop5 = getTopDigitsByScore(hybridUnitsScore, 5);
+
+      const rankedFree = digitReboundScore
         .map((score, digit) => ({
           digit,
           score,
           totalSupport: digitHitCount[digit],
-          longMissSupport: digitLongMissCount[digit]
+          sweetSpotSupport: digitSweetSpotCount[digit]
         }))
-        .sort((a, b) => b.score - a.score || b.longMissSupport - a.longMissSupport || b.totalSupport - a.totalSupport);
+        .sort((a, b) => b.score - a.score || b.sweetSpotSupport - a.sweetSpotSupport || b.totalSupport - a.totalSupport);
 
-      const top1 = rankedDigits[0];
-      const top2 = rankedDigits[1];
-      const finalTop2 = [top1.digit, top2.digit].sort((a, b) => a - b);
+      const freeTop2 = [rankedFree[0].digit, rankedFree[1].digit].sort((a, b) => a - b);
 
-      document.getElementById('pureMathTop2').innerText = finalTop2.join('       ');
+      return {
+        tensNums: tensTop5.nums,
+        unitsNums: unitsTop5.nums,
+        freeNums: freeTop2,
+        hybridTensScore,
+        hybridUnitsScore,
+        digitReboundScore,
+        rankedFree,
+        evaluatedFormulas,
+        timeframeResults
+      };
+    }
+
+    // Walk-Forward Backtest จำลองการคำนวณย้อนหลังจริงทีละวัน
+    function runWalkForwardBacktest(allRecords) {
+      const startIdx = Math.max(10, allRecords.length - 120); // ทดสอบย้อนหลังสูงสุด 120 วันทำการล่าสุดเพื่อความเร็วและแม่นยำ
+      const stats = {
+        tens: { hits: 0, misses: 0, curWin: 0, curLoss: 0, maxWin: 0, maxLoss: 0, lastStatus: null },
+        units: { hits: 0, misses: 0, curWin: 0, curLoss: 0, maxWin: 0, maxLoss: 0, lastStatus: null },
+        free: { hits: 0, misses: 0, curWin: 0, curLoss: 0, maxWin: 0, maxLoss: 0, lastStatus: null }
+      };
+
+      const updateStat = (obj, isHit) => {
+        if (isHit) {
+          obj.hits++;
+          obj.curWin++;
+          obj.curLoss = 0;
+          if (obj.curWin > obj.maxWin) obj.maxWin = obj.curWin;
+          obj.lastStatus = { type: 'win', count: obj.curWin };
+        } else {
+          obj.misses++;
+          obj.curLoss++;
+          obj.curWin = 0;
+          if (obj.curLoss > obj.maxLoss) obj.maxLoss = obj.curLoss;
+          obj.lastStatus = { type: 'loss', count: obj.curLoss };
+        }
+      };
+
+      for (let i = startIdx; i < allRecords.length; i++) {
+        const pastSlice = allRecords.slice(0, i);
+        const actual = allRecords[i];
+        const pred = computePredictionForSlice(pastSlice, false);
+
+        // เช็กหลักสิบ (เข้าเที่ยงหรือเย็นอย่างน้อย 1 รอบ)
+        const hitTens = pred.tensNums.includes(actual.noonTen) || pred.tensNums.includes(actual.eveTen);
+        // เช็กหลักหน่วย (เข้าเที่ยงหรือเย็นอย่างน้อย 1 รอบ)
+        const hitUnits = pred.unitsNums.includes(actual.noonUnit) || pred.unitsNums.includes(actual.eveUnit);
+        // เช็กเด่นอิสระ 2 ตัว (มาตัวใดตัวหนึ่งใน 4 หลักของวัน)
+        const hitFree = actual.allDigits.has(pred.freeNums[0]) || actual.allDigits.has(pred.freeNums[1]);
+
+        updateStat(stats.tens, hitTens);
+        updateStat(stats.units, hitUnits);
+        updateStat(stats.free, hitFree);
+      }
+
+      return { stats, totalRounds: allRecords.length - startIdx };
+    }
+
+    function renderKPIBox(prefix, statObj, totalRounds) {
+      const rate = totalRounds > 0 ? ((statObj.hits / totalRounds) * 100).toFixed(1) : '0.0';
+      document.getElementById(`kpi${prefix}Rate`).innerText = `${rate}%`;
+      document.getElementById(`kpi${prefix}HitMiss`).innerText = `${statObj.hits} / ${statObj.misses} รอบ`;
+      document.getElementById(`kpi${prefix}MaxWin`).innerText = `${statObj.maxWin} วันติด`;
+      document.getElementById(`kpi${prefix}MaxLoss`).innerText = `${statObj.maxLoss} วันติด`;
+
+      const curEl = document.getElementById(`kpi${prefix}Current`);
+      if (!statObj.lastStatus) {
+        curEl.innerText = '-';
+      } else if (statObj.lastStatus.type === 'win') {
+        curEl.innerText = `เข้า ${statObj.lastStatus.count} วันติด`;
+        curEl.className = 'text-right font-bold text-emerald-400';
+      } else {
+        curEl.innerText = `หลุด ${statObj.lastStatus.count} วันติด`;
+        curEl.className = 'text-right font-bold text-rose-400';
+      }
+    }
+
+    function processAllSystems() {
+      const rawText = document.getElementById('rawInput').value;
+      const allRecords = parseFlexibleData(rawText);
+
+      if (allRecords.length < 12) {
+        alert('กรุณากรอกข้อมูลสถิติอย่างน้อย 12 วันทำการขึ้นไป เพื่อประมวลผลและวัดผลย้อนหลังครับ');
+        return;
+      }
+
+      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันทำการ`;
+      document.getElementById('formulaCountBadge').innerText = `${PURE_MATH_FORMULAS.length} สูตรบริสุทธิ์`;
+      document.getElementById('formulaCountBadge').classList.remove('hidden');
+
+      // 1. รัน Walk-Forward Backtest
+      const backtest = runWalkForwardBacktest(allRecords);
+      document.getElementById('backtestRangeLabel').innerText = `ทดสอบย้อนหลัง ${backtest.totalRounds} วันทำการล่าสุด (ไม่แอบดูอนาคต)`;
+      renderKPIBox('Tens', backtest.stats.tens, backtest.totalRounds);
+      renderKPIBox('Units', backtest.stats.units, backtest.totalRounds);
+      renderKPIBox('Free', backtest.stats.free, backtest.totalRounds);
+
+      // 2. คำนวณรอบถัดไป (Next Round Prediction)
+      const nextPred = computePredictionForSlice(allRecords, true);
+      const top1 = nextPred.rankedFree[0];
+      const top2 = nextPred.rankedFree[1];
+
+      document.getElementById('pureMathTop2').innerText = nextPred.freeNums.join('       ');
       document.getElementById('pureMathSubInfo').innerText =
-        `เลข ${top1.digit} (${top1.score.toFixed(0)} แต้ม | หลุดยาว ${top1.longMissSupport} สูตร) • เลข ${top2.digit} (${top2.score.toFixed(0)} แต้ม | หลุดยาว ${top2.longMissSupport} สูตร)`;
+        `เลข ${top1.digit} (เข้าช่วงพีค ${top1.sweetSpotSupport} สูตร) • เลข ${top2.digit} (เข้าช่วงพีค ${top2.sweetSpotSupport} สูตร)`;
 
-      // คำนวณเปอร์เซ็นต์รายตัวรวม 0-9
-      const totalScoreSum = rankedDigits.reduce((acc, curr) => acc + curr.score, 0) || 1;
-
+      // แถบจัดอันดับ 0-9
+      const totalReboundSum = nextPred.rankedFree.reduce((acc, c) => acc + c.score, 0) || 1;
+      const maxReboundScore = nextPred.rankedFree[0].score || 1;
       const barsContainer = document.getElementById('digitRankingBars');
       barsContainer.innerHTML = '';
-      const maxScore = rankedDigits[0].score || 1;
 
-      rankedDigits.forEach((item, idx) => {
+      nextPred.rankedFree.forEach((item, idx) => {
         const isTop2 = idx < 2;
-        const pctBar = Math.min(100, Math.round((item.score / maxScore) * 100));
-        const exactPct = ((item.score / totalScoreSum) * 100).toFixed(1);
+        const pctBar = Math.min(100, Math.round((item.score / maxReboundScore) * 100));
+        const exactPct = ((item.score / totalReboundSum) * 100).toFixed(1);
 
         const div = document.createElement('div');
         div.className = `p-1.5 rounded-lg border ${isTop2 ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300' : 'bg-slate-900/70 border-slate-800 text-slate-400'}`;
@@ -541,149 +1057,57 @@
         barsContainer.appendChild(div);
       });
 
-      const topFormulas = evaluatedFormulas
+      // ตารางสูตรเด่น (เรียงตามความพร้อมดีดกลับ Sweet Spot 3-6 วันก่อน แล้วค่อยตามน้ำหนัก)
+      const topFormulas = nextPred.evaluatedFormulas
         .filter(f => f.missStreak > 0)
-        .sort((a, b) => b.missStreak - a.missStreak || b.weight - a.weight)
+        .sort((a, b) => b.weight - a.weight || b.missStreak - a.missStreak)
         .slice(0, 10);
 
       const tbody = document.getElementById('contrarianTbody');
       tbody.innerHTML = '';
-
       topFormulas.forEach((f, idx) => {
-        const hasTop2 = f.nextPred.includes(finalTop2[0]) || f.nextPred.includes(finalTop2[1]);
+        const hasTop2 = f.nextPred.includes(nextPred.freeNums[0]) || f.nextPred.includes(nextPred.freeNums[1]);
+        const isSweetSpot = f.missStreak >= 3 && f.missStreak <= 6;
         const tr = document.createElement('tr');
         tr.className = idx % 2 === 0 ? 'bg-[#0b0f19]/50 hover:bg-slate-800/40' : 'bg-[#07090e]/50 hover:bg-slate-800/40';
-
         tr.innerHTML = `
           <td class="p-2 border-r border-slate-800 text-center text-slate-400">#${idx + 1}</td>
           <td class="p-2 border-r border-slate-800 text-slate-200 no-wrap">${f.desc}</td>
           <td class="p-2 border-r border-slate-800 text-center text-[10px] text-slate-400 no-wrap">${f.type}</td>
-          <td class="p-2 border-r border-slate-800 text-center font-bold ${f.missStreak >= 4 ? 'text-rose-400' : 'text-amber-300'} no-wrap">หลุด ${f.missStreak} วันติด</td>
+          <td class="p-2 border-r border-slate-800 text-center font-bold ${isSweetSpot ? 'text-emerald-400' : 'text-amber-300'} no-wrap">หลุด ${f.missStreak} วันติด</td>
           <td class="p-2 text-center font-bold tracking-widest ${hasTop2 ? 'text-emerald-400' : 'text-slate-300'} no-wrap">${f.nextPred.join('  ,  ')}</td>
         `;
         tbody.appendChild(tr);
       });
 
-      return { finalTop2, tensReboundScore, unitsReboundScore, digitReboundScore, totalScoreSum };
-    }
+      // 3. การ์ดสรุปผล 3 ชุดพร้อมเปอร์เซ็นต์รายตัว
+      renderSummaryCard('1', nextPred.tensNums, nextPred.hybridTensScore);
+      renderSummaryCard('2', nextPred.unitsNums, nextPred.hybridUnitsScore);
+      renderSummaryCard('3', nextPred.freeNums, nextPred.digitReboundScore);
 
-    function processAllSystems() {
-      const rawText = document.getElementById('rawInput').value;
-      const lines = rawText.split('\n').filter(l => l.trim() !== '');
-      const allRecords = parseTextData(lines);
+      // 4. ตาราง Multi-Timeframe Matrix
+      renderTable(nextPred.timeframeResults);
 
-      if (allRecords.length === 0) {
-        alert('กรุณากรอกข้อมูลสถิติในรูปแบบที่ถูกต้องก่อนกดประมวลผล');
-        return;
-      }
-
-      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันในระบบ`;
-
-      const contrarianData = runPureMathContrarian(allRecords);
-
-      const periods = [1, 2, 3, 5, 7, 10, 14, 20, 25, 30];
-      const validPeriods = periods.filter(p => allRecords.length >= p);
-      if (validPeriods.length === 0) validPeriods.push(allRecords.length);
-
-      const globalTensScore = Array(10).fill(0);
-      const globalUnitsScore = Array(10).fill(0);
-      const globalFreeScore = Array(10).fill(0);
-
-      const timeframeResults = [];
-
-      validPeriods.forEach(days => {
-        const sliceData = allRecords.slice(-days);
-        const tFreq = Array(10).fill(0);
-        const uFreq = Array(10).fill(0);
-        const fFreq = Array(10).fill(0);
-
-        sliceData.forEach(r => {
-          new Set([r.noonTen, r.eveTen]).forEach(t => tFreq[t]++);
-          new Set([r.noonUnit, r.eveUnit]).forEach(u => uFreq[u]++);
-          r.allDigits.forEach(d => fFreq[d]++);
-        });
-
-        const topTens = getTopDigits(tFreq, 5);
-        const topUnits = getTopDigits(uFreq, 5);
-        const smartFree = calculateSmartFreeDigits(tFreq, uFreq, fFreq);
-
-        let weight = days <= 3 ? 3.0 : (days <= 7 ? 2.2 : (days <= 14 ? 1.5 : 1.0));
-
-        topTens.forEach((d, index) => {
-          globalTensScore[d] += (5 - index) * weight;
-        });
-        topUnits.forEach((d, index) => {
-          globalUnitsScore[d] += (5 - index) * weight;
-        });
-        smartFree.forEach((d, index) => {
-          globalFreeScore[d] += (2 - index) * weight * 2.5;
-        });
-
-        timeframeResults.push({
-          days,
-          topTens,
-          topUnits,
-          topFree: smartFree
-        });
-      });
-
-      const hybridTensScore = Array(10).fill(0);
-      const hybridUnitsScore = Array(10).fill(0);
-
-      const maxConsensusTens = Math.max(...globalTensScore) || 1;
-      const maxReboundTens = Math.max(...contrarianData.tensReboundScore) || 1;
-
-      const maxConsensusUnits = Math.max(...globalUnitsScore) || 1;
-      const maxReboundUnits = Math.max(...contrarianData.unitsReboundScore) || 1;
-
-      for (let i = 0; i < 10; i++) {
-        const normConsensusTens = (globalTensScore[i] / maxConsensusTens) * 40;
-        const normReboundTens = (contrarianData.tensReboundScore[i] / maxReboundTens) * 60;
-        hybridTensScore[i] = normConsensusTens + normReboundTens;
-
-        const normConsensusUnits = (globalUnitsScore[i] / maxConsensusUnits) * 40;
-        const normReboundUnits = (contrarianData.unitsReboundScore[i] / maxReboundUnits) * 60;
-        hybridUnitsScore[i] = normConsensusUnits + normReboundUnits;
-      }
-
-      const consensusTens = getTopDigitsByScore(hybridTensScore, 5);
-      const consensusUnits = getTopDigitsByScore(hybridUnitsScore, 5);
-      
-      // คำนวณเปอร์เซ็นต์และจัดลำดับ Top 1-5 พร้อมแสดงรายละเอียดรายตัว
-      const tensWithPct = formatSetWithPercentage(consensusTens.nums, hybridTensScore);
-      const unitsWithPct = formatSetWithPercentage(consensusUnits.nums, hybridUnitsScore);
-      const freeWithPct = formatSetWithPercentage(contrarianData.finalTop2, contrarianData.digitReboundScore);
-
-      document.getElementById('numbersSet1').innerText = consensusTens.nums.join('     ');
-      document.getElementById('detailsSet1').innerHTML = tensWithPct;
-      document.getElementById('scoreSet1').innerText = consensusTens.maxScore.toFixed(1);
-
-      document.getElementById('numbersSet2').innerText = consensusUnits.nums.join('     ');
-      document.getElementById('detailsSet2').innerHTML = unitsWithPct;
-      document.getElementById('scoreSet2').innerText = consensusUnits.maxScore.toFixed(1);
-
-      document.getElementById('numbersSet3').innerText = contrarianData.finalTop2.join('          ');
-      document.getElementById('detailsSet3').innerHTML = freeWithPct;
-      document.getElementById('scoreSet3').innerText = (contrarianData.digitReboundScore[contrarianData.finalTop2[0]] + contrarianData.digitReboundScore[contrarianData.finalTop2[1]]).toFixed(1);
-
-      renderTable(timeframeResults);
-
-      // แสดงผลลัพธ์ทั้งหมดขึ้นมาทีเดียว
       document.getElementById('resultsContainer').classList.remove('hidden');
-      
-      // เลื่อนหน้าจอลงมาดูผลลัพธ์อย่างนุ่มนวล
       document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function formatSetWithPercentage(numArray, scoreArray) {
-      const totalSum = scoreArray.reduce((acc, curr) => acc + curr, 0) || 1;
-      const details = numArray.map((num, idx) => {
-        const score = scoreArray[num] || 0;
-        const pct = ((score / totalSum) * 100).toFixed(1);
-        const rankLabel = idx === 0 ? 'Top 1' : (idx === 1 ? 'Top 2' : `Top ${idx + 1}`);
-        return `<span class="px-1 text-slate-300"><b>${num}</b>(${rankLabel}:${pct}%)</span>`;
-      });
-      return details.join(' • ');
+    function renderSummaryCard(setId, nums, scoreArray) {
+      const totalSum = scoreArray.reduce((acc, c) => acc + c, 0) || 1;
+      // เรียงลำดับ Top 1 -> Top ตามคะแนนจริงของแต่ละตัว
+      const sortedByScore = [...nums].sort((a, b) => scoreArray[b] - scoreArray[a]);
+      const setScoreSum = sortedByScore.reduce((acc, n) => acc + scoreArray[n], 0);
+      const setSharePct = ((setScoreSum / totalSum) * 100).toFixed(1);
+
+      const detailsHtml = sortedByScore.map((num, idx) => {
+        const pct = ((scoreArray[num] / totalSum) * 100).toFixed(1);
+        return `<span class="inline-block px-1 text-slate-300"><b>${num}</b>(Top${idx + 1}:${pct}%)</span>`;
+      }).join(' • ');
+
+      document.getElementById(`numbersSet${setId}`).innerText = nums.join(setId === '3' ? '          ' : '     ');
+      document.getElementById(`detailsSet${setId}`).innerHTML = detailsHtml;
+      document.getElementById(`shareSet${setId}`).innerText = `${setSharePct}%`;
+      document.getElementById(`scoreSet${setId}`).innerText = setScoreSum.toFixed(1);
     }
 
     function calculateSmartFreeDigits(tFreq, uFreq, fFreq) {
@@ -692,11 +1116,8 @@
         let score = fFreq[i] * 1.0;
         const isTopTen = getTopDigits(tFreq, 4).includes(i);
         const isTopUnit = getTopDigits(uFreq, 4).includes(i);
-        if (isTopTen && isTopUnit) {
-          score += 6.0;
-        } else if (isTopTen || isTopUnit) {
-          score += 2.5;
-        }
+        if (isTopTen && isTopUnit) score += 6.0;
+        else if (isTopTen || isTopUnit) score += 2.5;
         combinedScores[i] = score;
       }
       return combinedScores
@@ -727,11 +1148,9 @@
     function renderTable(results) {
       const tbody = document.getElementById('matrixTbody');
       tbody.innerHTML = '';
-
       results.forEach((res, idx) => {
         const tr = document.createElement('tr');
         tr.className = idx % 2 === 0 ? 'bg-[#0b0f19]/40 hover:bg-slate-800/40 transition-colors' : 'bg-[#07090e]/40 hover:bg-slate-800/40 transition-colors';
-
         tr.innerHTML = `
           <td class="p-2.5 border-r border-slate-800 text-amber-400 font-semibold no-wrap">ย้อนหลัง ${res.days} วัน</td>
           <td class="p-2.5 border-r border-slate-800 text-slate-200 tracking-wider no-wrap">${res.topTens.join('   •   ')}</td>
@@ -745,7 +1164,7 @@
     function clearData() {
       document.getElementById('rawInput').value = '';
       document.getElementById('resultsContainer').classList.add('hidden');
-      document.getElementById('dataCountBadge').innerText = 'รอข้อมูลสถิติ';
+      document.getElementById('dataCountBadge').innerText = 'พร้อมรับข้อมูล';
       document.getElementById('formulaCountBadge').classList.add('hidden');
     }
   </script>
