@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Myanmar 2D VIP Analytics | v7.2 Ordered Matrix & Smart Filtering</title>
+  <title>Myanmar 2D VIP Analytics | v7.3 Strict Position & Best Pair Matrix</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -67,9 +67,9 @@
         <div class="flex items-center gap-2">
           <span class="text-amber-400 text-sm">❖</span>
           <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase no-wrap">Myanmar 2D VIP Analytics</h1>
-          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v7.2 Ordered Matrix</span>
+          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v7.3 Strict Position Matrix</span>
         </div>
-        <p class="text-[11px] text-slate-400 mt-1 no-wrap">Interactive Hybrid Analytics + ระบบ 8 คู่เจาะเรียงลำดับจากน้อยไปหามาก</p>
+        <p class="text-[11px] text-slate-400 mt-1 no-wrap">Interactive Hybrid Analytics + ล็อกตำแหน่งหลักสิบ/หน่วยแม่นยำ พร้อมคัดกรองคู่ที่ดีที่สุดและเปอร์เซ็นต์</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="formulaCountBadge" class="bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[10px] px-2.5 py-1 rounded-md font-mono hidden">0 สูตรบริสุทธิ์</span>
@@ -145,7 +145,7 @@
         </div>
       </section>
 
-      <!-- Summary Cards VIP with Ordered Matrix -->
+      <!-- Summary Cards VIP with Strict Position & Best Pair Matrix -->
       <section class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <!-- Set 1: Tens Hybrid -->
         <div class="vip-card p-4 rounded-xl space-y-3 relative overflow-hidden">
@@ -159,8 +159,8 @@
           </div>
           <div class="bg-[#0b0f19]/90 border border-amber-500/30 rounded-lg p-2.5 space-y-2 font-mono">
             <div class="flex justify-between items-center text-[10px] text-slate-300 border-b border-slate-800 pb-1">
-              <span>🎯 เจาะรายตัว (เรียงจากน้อยไปมาก)</span>
-              <span class="text-amber-400 font-bold">40 คู่</span>
+              <span>🎯 เจาะหลักสิบ (ตัวหน้าตายตัว + % ประสิทธิภาพ)</span>
+              <span id="bestPairBadge1" class="text-amber-400 font-bold bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/40">Best: -</span>
             </div>
             <div id="matrixPairsSet1" class="space-y-1.5 text-[11px] text-amber-200/90 max-h-48 overflow-y-auto pr-1">
               -
@@ -184,8 +184,8 @@
           </div>
           <div class="bg-[#0b0f19]/90 border border-sky-500/30 rounded-lg p-2.5 space-y-2 font-mono">
             <div class="flex justify-between items-center text-[10px] text-slate-300 border-b border-slate-800 pb-1">
-              <span>🎯 เจาะรายตัว (เรียงจากน้อยไปมาก)</span>
-              <span class="text-sky-400 font-bold">40 คู่</span>
+              <span>🎯 เจาะหลักหน่วย (ตัวหลังตายตัว + % ประสิทธิภาพ)</span>
+              <span id="bestPairBadge2" class="text-sky-400 font-bold bg-sky-950/60 px-1.5 py-0.5 rounded border border-sky-500/40">Best: -</span>
             </div>
             <div id="matrixPairsSet2" class="space-y-1.5 text-[11px] text-sky-200/90 max-h-48 overflow-y-auto pr-1">
               -
@@ -209,8 +209,8 @@
           </div>
           <div class="bg-[#0b0f19]/90 border border-emerald-500/30 rounded-lg p-2.5 space-y-2 font-mono">
             <div class="flex justify-between items-center text-[10px] text-slate-300 border-b border-slate-800 pb-1">
-              <span>🎯 เจาะรายตัว (เรียงจากน้อยไปมาก)</span>
-              <span class="text-emerald-400 font-bold">16 คู่</span>
+              <span>🎯 เด่นอิสระ (วิ่ง/รูดได้ทั้งสิบและหน่วย)</span>
+              <span id="bestPairBadge3" class="text-emerald-400 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/40">Best: -</span>
             </div>
             <div id="matrixPairsSet3" class="space-y-1.5 text-[11px] text-emerald-200/90 max-h-48 overflow-y-auto pr-1">
               -
@@ -584,27 +584,38 @@
       return { finalTop2, tensReboundScore, unitsReboundScore, digitReboundScore, totalScoreSum };
     }
 
-    // ฟังก์ชันสร้าง 8 คู่เจาะ "ต่อตัวเด่นแต่ละตัว" พร้อมจัดเรียงจากน้อยไปหามากอย่างเป็นระเบียบ
-    function generate8PairsForDigitOrdered(digit, allDigits0to9, isTensPosition) {
+    // ฟังก์ชันสร้าง 8 คู่เจาะโดยล็อกตำแหน่งหลักสิบหรือหลักหน่วยอย่างเคร่งครัด
+    function generateStrictPositionPairs(digit, allDigits0to9, isTensPosition, scoreArray) {
       let pairs = [];
       let pool = allDigits0to9.filter(d => d !== digit);
       
       for (let i = 0; i < pool.length && pairs.length < 8; i++) {
         let target = pool[i];
-        let p = isTensPosition ? (digit <= target ? `${digit}${target}` : `${target}${digit}`) : (target <= digit ? `${target}${digit}` : `${digit}${target}`);
+        // ถ้าเป็นหลักสิบ: digit อยู่หน้า (เช่น 01, 02) / ถ้าเป็นหลักหน่วย: digit อยู่หลัง (เช่น 10, 20)
+        let p = isTensPosition ? `${digit}${target}` : `${target}${digit}`;
         if (!pairs.includes(p)) pairs.push(p);
       }
 
       let fallback = 0;
       while (pairs.length < 8 && fallback < 10) {
         let target = (digit + fallback + 1) % 10;
-        let p = isTensPosition ? (digit <= target ? `${digit}${target}` : `${target}${digit}`) : (target <= digit ? `${target}${digit}` : `${digit}${target}`);
+        let p = isTensPosition ? `${digit}${target}` : `${target}${digit}`;
         if (!pairs.includes(p)) pairs.push(p);
         fallback++;
       }
 
-      // จัดเรียงคู่เจาะจากน้อยไปหามาก (เช่น 03, 07, 13 ...)
-      return pairs.slice(0, 8).sort((a, b) => parseInt(a) - parseInt(b));
+      // คำนวณหาเปอร์เซ็นต์ประสิทธิภาพจำลองสำหรับแต่ละคู่จากคะแนน scoreArray
+      const totalScore = scoreArray.reduce((a, b) => a + b, 0) || 1;
+      const scoredPairs = pairs.slice(0, 8).map(pairStr => {
+        let otherDigit = parseInt(isTensPosition ? pairStr[1] : pairStr[0]);
+        let pairScore = (scoreArray[digit] || 1) + (scoreArray[otherDigit] || 1);
+        let pct = ((pairScore / (totalScore * 2)) * 100).toFixed(1);
+        return { pairStr, pct: parseFloat(pct) };
+      });
+
+      // เรียงลำดับจากคู่ที่มีเปอร์เซ็นต์สูงสุดไปน้อยสุด
+      scoredPairs.sort((a, b) => b.pct - a.pct);
+      return scoredPairs;
     }
 
     function processAllSystems() {
@@ -627,7 +638,6 @@
 
       const globalTensScore = Array(10).fill(0);
       const globalUnitsScore = Array(10).fill(0);
-      const globalFreeScore = Array(10).fill(0);
 
       const timeframeResults = [];
 
@@ -654,9 +664,6 @@
         });
         topUnits.forEach((d, index) => {
           globalUnitsScore[d] += (5 - index) * weight;
-        });
-        smartFree.forEach((d, index) => {
-          globalFreeScore[d] += (2 - index) * weight * 2.5;
         });
 
         timeframeResults.push({
@@ -697,41 +704,53 @@
       const sorted0to9ByUnits = [...Array(10).keys()].sort((a, b) => hybridUnitsScore[b] - hybridUnitsScore[a]);
       const sorted0to9ByFree = [...Array(10).keys()].sort((a, b) => contrarianData.digitReboundScore[b] - contrarianData.digitReboundScore[a]);
 
-      // 1. หลักสิบ
+      // 1. หลักสิบ (ล็อกตำแหน่งหน้า)
       document.getElementById('numbersSet1').innerText = consensusTens.nums.join('     ');
       document.getElementById('detailsSet1').innerHTML = tensWithPct;
       document.getElementById('scoreSet1').innerText = consensusTens.maxScore.toFixed(1);
       
       let htmlPairs1 = '';
+      let bestOverallPair1 = { pairStr: '-', pct: 0 };
       consensusTens.nums.forEach(digit => {
-        let pairs = generate8PairsForDigitOrdered(digit, sorted0to9ByUnits, true);
-        htmlPairs1 += `<div class="border-b border-slate-800/60 pb-1 mb-1"><span class="text-amber-400 font-bold">เด่นสิบ [${digit}]:</span> ${pairs.join(' • ')}</div>`;
+        let scoredPairs = generateStrictPositionPairs(digit, sorted0to9ByUnits, true, hybridUnitsScore);
+        if (scoredPairs[0].pct > bestOverallPair1.pct) bestOverallPair1 = scoredPairs[0];
+        let pairListText = scoredPairs.map(sp => `${sp.pairStr}(${sp.pct}%)`).join(' • ');
+        htmlPairs1 += `<div class="border-b border-slate-800/60 pb-1 mb-1"><span class="text-amber-400 font-bold">สิบ[${digit}]:</span> ${pairListText}</div>`;
       });
       document.getElementById('matrixPairsSet1').innerHTML = htmlPairs1;
+      document.getElementById('bestPairBadge1').innerText = `Best: ${bestOverallPair1.pairStr} (${bestOverallPair1.pct}%)`;
 
-      // 2. หลักหน่วย
+      // 2. หลักหน่วย (ล็อกตำแหน่งหลัง)
       document.getElementById('numbersSet2').innerText = consensusUnits.nums.join('     ');
       document.getElementById('detailsSet2').innerHTML = unitsWithPct;
       document.getElementById('scoreSet2').innerText = consensusUnits.maxScore.toFixed(1);
       
       let htmlPairs2 = '';
+      let bestOverallPair2 = { pairStr: '-', pct: 0 };
       consensusUnits.nums.forEach(digit => {
-        let pairs = generate8PairsForDigitOrdered(digit, sorted0to9ByTens, false);
-        htmlPairs2 += `<div class="border-b border-slate-800/60 pb-1 mb-1"><span class="text-sky-400 font-bold">เด่นหน่วย [${digit}]:</span> ${pairs.join(' • ')}</div>`;
+        let scoredPairs = generateStrictPositionPairs(digit, sorted0to9ByTens, false, hybridTensScore);
+        if (scoredPairs[0].pct > bestOverallPair2.pct) bestOverallPair2 = scoredPairs[0];
+        let pairListText = scoredPairs.map(sp => `${sp.pairStr}(${sp.pct}%)`).join(' • ');
+        htmlPairs2 += `<div class="border-b border-slate-800/60 pb-1 mb-1"><span class="text-sky-400 font-bold">หน่วย[${digit}]:</span> ${pairListText}</div>`;
       });
       document.getElementById('matrixPairsSet2').innerHTML = htmlPairs2;
+      document.getElementById('bestPairBadge2').innerText = `Best: ${bestOverallPair2.pairStr} (${bestOverallPair2.pct}%)`;
 
-      // 3. เด่นอิสระ
+      // 3. เด่นอิสระ (วิ่ง/รูดได้ทั้งสิบและหน่วย)
       document.getElementById('numbersSet3').innerText = contrarianData.finalTop2.join('          ');
       document.getElementById('detailsSet3').innerHTML = freeWithPct;
       document.getElementById('scoreSet3').innerText = (contrarianData.digitReboundScore[contrarianData.finalTop2[0]] + contrarianData.digitReboundScore[contrarianData.finalTop2[1]]).toFixed(1);
       
       let htmlPairs3 = '';
+      let bestOverallPair3 = { pairStr: '-', pct: 0 };
       contrarianData.finalTop2.forEach(digit => {
-        let pairs = generate8PairsForDigitOrdered(digit, sorted0to9ByFree, true);
-        htmlPairs3 += `<div class="border-b border-slate-800/60 pb-1 mb-1"><span class="text-emerald-400 font-bold">เด่นอิสระ [${digit}]:</span> ${pairs.join(' • ')}</div>`;
+        let scoredPairs = generateStrictPositionPairs(digit, sorted0to9ByFree, true, contrarianData.digitReboundScore);
+        if (scoredPairs[0].pct > bestOverallPair3.pct) bestOverallPair3 = scoredPairs[0];
+        let pairListText = scoredPairs.map(sp => `${sp.pairStr}(${sp.pct}%)`).join(' • ');
+        htmlPairs3 += `<div class="border-b border-slate-800/60 pb-1 mb-1"><span class="text-emerald-400 font-bold">อิสระ[${digit}]:</span> ${pairListText}</div>`;
       });
       document.getElementById('matrixPairsSet3').innerHTML = htmlPairs3;
+      document.getElementById('bestPairBadge3').innerText = `Best: ${bestOverallPair3.pairStr} (${bestOverallPair3.pct}%)`;
 
       renderTable(timeframeResults);
 
