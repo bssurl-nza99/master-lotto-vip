@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V55.09 Strict & Professional Grid</title>
+<title>เศรษฐีเงินล้าน · Master V55.09 Strict & Compensation Support</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -413,7 +413,7 @@ body {
   font-weight: 700;
 }
 
-/* ส่วนแสดงคู่เจาะแบบจัดระเบียบแยกแถวตามเลขเด่น (แถวใครแถวมัน เรียงจากน้อยไปมาก) */
+/* จัดระเบียบชุดเจาะแยกแถวตามเลขเด่น (สะอาด ไม่เลอะเทอะ) */
 .pairs-grid-rows {
   display: flex;
   flex-direction: column;
@@ -586,7 +586,7 @@ table.audit-table th {
       <div class="logo">เศรษฐี</div>
       <div>
         <b>เศรษฐีเงินล้าน Mobile (Master V55.09)</b>
-        <small>Strict Rule Engine & Professional Rows</small>
+        <small>Strict Rule & Compensation Support Engine</small>
       </div>
     </div>
     <div class="pill">V55.09 Strict</div>
@@ -595,7 +595,7 @@ table.audit-table th {
   <div class="hero">
     <div class="hero-tag">ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ (เศรษฐีเงินล้าน)</div>
     <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.09 Strict)</em></h1>
-    <p>นับผลเลขเด่นเฉพาะหลักสิบ/หน่วย, คำนวณเปอร์เซ็นต์จากจำนวนรอบจริง, จับคู่เลขเจาะ 10 คู่เต็ม แยกแถวระเบียบเรียบร้อยตามเลขเด่น</p>
+    <p>ระบบวิเคราะห์คู่ชดเชยอัจฉริยะ พร้อมตารางซัพพอร์ตแสดงรายละเอียดการหลุดและเลขสนับสนุนยืนยันความน่าเชื่อถือ</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -839,7 +839,8 @@ function getRelevantDigits(record) {
   return tensUnitsTop + bottom2;
 }
 
-function analyzeCompensationPairs(records) {
+// ระบบวิเคราะห์คู่ชดเชยและจัดทำตารางสนับสนุน (Compensation & Support Analysis)
+function analyzeCompensationPairsWithSupport(records) {
   let pairStats = {};
   records.forEach((r) => {
     let digits = getRelevantDigits(r);
@@ -863,20 +864,14 @@ function analyzeCompensationPairs(records) {
     }
   });
 
-  let bestPair = null, bestScore = -1;
-  for(let key in pairStats) {
-    let p = pairStats[key];
+  let rankedPairs = Object.values(pairStats).map(p => {
     let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0);
-    if(score > bestScore) {
-      bestScore = score;
-      bestPair = [p.d1, p.d2];
-    }
-  }
+    return { ...p, score };
+  }).sort((a, b) => b.score - a.score);
 
-  return bestPair || [0, 8];
+  return rankedPairs;
 }
 
-// สร้างชุดเจาะแยกแถวตามเลขเด่น: เลขเด่นอยู่หลักสิบ เลขเจาะอยู่หลักหน่วย เรียงจากน้อยไปมาก
 function generateStrictRows(d1, d2) {
   let others = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(x => x !== d1 && x !== d2).sort((a,b) => a - b);
   let topRows = others.slice(0, 5).map(o => `${d1}${o}`);
@@ -888,21 +883,35 @@ function analyzeLotteryRecords(records, lotteryType) {
   const total = records.length;
   if (total === 0) return null;
 
-  const [d1, d2] = analyzeCompensationPairs(records);
+  const rankedPairs = analyzeCompensationPairsWithSupport(records);
+  const bestPairObj = rankedPairs[0] || { d1: 0, d2: 8, currentLoss: 0, maxLoss: 2, hits: 15 };
+  const d1 = bestPairObj.d1;
+  const d2 = bestPairObj.d2;
   const { topRows, bottomRows, allPairs } = generateStrictRows(d1, d2);
 
   let digitHits = 0;
-  let pairHits = 0;
+  let pairHitsWhenDigitHit = 0;
+  let digitHitTotalRounds = 0;
 
   const auditLogs = records.map((r) => {
     const relDigits = getRelevantDigits(r);
     const isDigitHit = relDigits.includes(d1.toString()) || relDigits.includes(d2.toString());
-    if (isDigitHit) digitHits++;
+    if (isDigitHit) {
+      digitHits++;
+      digitHitTotalRounds++;
+    }
 
     const top2 = r.top3.slice(-2);
     const bottom2 = r.bottom2;
-    const isPairHit = allPairs.includes(top2) || allPairs.includes(bottom2) || allPairs.includes(top2.split('').reverse().join('')) || allPairs.includes(bottom2.split('').reverse().join(''));
-    if (isPairHit) pairHits++;
+    const top2Rev = top2.split('').reverse().join('');
+    const bottom2Rev = bottom2.split('').reverse().join('');
+
+    const isPairHit = allPairs.includes(top2) || allPairs.includes(bottom2) || allPairs.includes(top2Rev) || allPairs.includes(bottom2Rev);
+    
+    // คิดเปอร์เซ็นต์เปอร์เซ็นต์เฉพาะงวดที่เลขเด่นเข้า และรองรับเลขกลับตัว
+    if (isDigitHit && isPairHit) {
+      pairHitsWhenDigitHit++;
+    }
 
     return {
       date: r.date,
@@ -916,14 +925,17 @@ function analyzeLotteryRecords(records, lotteryType) {
   });
 
   const cardDigitWinRate = ((digitHits / total) * 100).toFixed(1);
-  const cardPairWinRate = ((pairHits / total) * 100).toFixed(1);
+  const cardPairWinRate = digitHitTotalRounds > 0 ? ((pairHitsWhenDigitHit / digitHitTotalRounds) * 100).toFixed(1) : '0.0';
 
   const latestRecordedDate = records[0] ? records[0].date : '';
   const nextDrawDate = calculateNextDrawDate(latestRecordedDate);
 
   return {
     lotteryType, total, cardDigitWinRate, cardPairWinRate,
-    d1, d2, topRows, bottomRows, auditLogs, nextDrawDate
+    d1, d2, topRows, bottomRows, auditLogs, nextDrawDate,
+    supportData: rankedPairs.slice(0, 5), // ส่งข้อมูล 5 อันดับแรกเพื่อทำตารางซัพพอร์ต
+    currentLoss: bestPairObj.currentLoss,
+    maxLoss: bestPairObj.maxLoss
   };
 }
 
@@ -1012,9 +1024,30 @@ function renderResults(parsedData) {
           </div>
         </div>
 
+        <!-- ตารางแสดงรายละเอียดตัวสนับสนุนและคู่ชดเชย (Support & Compensation Table) -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            📋 ตารางตรวจสอบผลย้อนหลังตามกฎเหล็ก (${type}) - แสดงชุดเจาะครบ 10 คู่
+            🛡️ ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุน (${type}) - คัดเลือกชุดที่ดีที่สุด
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>อันดับคู่ชดเชย</th><th>คู่เลขเด่น</th><th>สถานะการหลุดปัจจุบัน</th><th>สถิติหลุดสูงสุด</th><th>คะแนนความน่าเชื่อถือ</th></tr>
+            </thead>
+            <tbody>
+    `;
+
+    res.supportData.forEach((s, sIdx) => {
+      html += `<tr><td><b>#${sIdx + 1}</b></td><td><b style="color:#b8860b">[${s.d1}, ${s.d2}]</b></td><td>${s.currentLoss} งวดซ้อน</td><td>${s.maxLoss} งวด</td><td><span class="badge-hit">คะแนน ${s.score}</span></td></tr>`;
+    });
+
+    html += `
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-table-container">
+          <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            📋 ตารางตรวจสอบผลย้อนหลังตามกฎเหล็ก (${type}) - ตรวจจับเลขตรงและเลขกลับตัว
           </div>
           <table class="audit-table">
             <thead>
