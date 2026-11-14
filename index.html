@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V55.11 Momentum & Positional Engine</title>
+<title>เศรษฐีเงินล้าน · Master V55.12 Ultimate Intelligence Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -462,6 +462,12 @@ body {
   text-align: center;
 }
 
+.pair-badge.vip {
+  background: linear-gradient(135deg, #fff9e6, #fff3cd);
+  border-color: #d4af37;
+  box-shadow: 0 2px 6px rgba(212,175,55,0.3);
+}
+
 .pair-num {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.65rem;
@@ -584,17 +590,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (Master V55.11)</b>
-        <small>Momentum & Positional Filter Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (Master V55.12)</b>
+        <small>Ultimate Intelligence & VIP Filter Engine</small>
       </div>
     </div>
-    <div class="pill">V55.11 Pro</div>
+    <div class="pill">V55.12 VIP</div>
   </div>
 
   <div class="hero">
     <div class="hero-tag">ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ (เศรษฐีเงินล้าน)</div>
-    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.11 Pro)</em></h1>
-    <p>ระบบวิเคราะห์ความถี่เดี่ยวถ่วงน้ำหนักโมเมนตัมล่าสุด (Recent Momentum) และตารางตำแหน่งหลักสิบ/หลักหน่วย คัดกรองชุดเจาะแม่นยำสูงสุด</p>
+    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.12 VIP)</em></h1>
+    <p>ระบบวิเคราะห์ความถี่เดี่ยวถ่วงน้ำหนักโมเมนตัม และคัดกรองชุดเจาะเน้นพิเศษ VIP พร้อมระบบเตือนภัยความเสี่ยงอัจฉริยะ</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -609,7 +615,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระบบ V55.11 Pro Engine
+        <span>⚡</span> ประมวลผลระบบ V55.12 VIP Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -838,7 +844,6 @@ function getRelevantDigits(record) {
   return tensUnitsTop + bottom2;
 }
 
-// 1. วิเคราะห์ความถี่เดี่ยว 0-9 พร้อม Recent Momentum Weighting (เน้น 5 งวดล่าสุด) และ Positional Analysis
 function analyzeSingleDigitFrequencyWithMomentum(records) {
   let stats = {};
   for(let d=0; d<=9; d++) {
@@ -853,14 +858,12 @@ function analyzeSingleDigitFrequencyWithMomentum(records) {
     for(let d=0; d<=9; d++) {
       let isHit = digits.includes(d.toString());
       let st = stats[d];
-      
-      // เก็บสถิติตำแหน่งหลักสิบ/หลักหน่วย
       if (top2[0] === d.toString() || bottom2[0] === d.toString()) st.tensCount++;
       if (top2[1] === d.toString() || bottom2[1] === d.toString()) st.unitsCount++;
 
       if(isHit) {
         st.hits++;
-        if (idx < 5) st.recentHits++; // โมเมนตัม 5 งวดล่าสุด
+        if (idx < 5) st.recentHits++;
         st.currentWinStreak++;
         if(st.currentWinStreak > st.maxWinStreak) st.maxWinStreak = st.currentWinStreak;
         if(st.currentLoss > st.maxLoss) st.maxLoss = st.currentLoss;
@@ -877,7 +880,6 @@ function analyzeSingleDigitFrequencyWithMomentum(records) {
   return Object.values(stats).sort((a,b) => (b.hits + b.recentHits * 2) - (a.hits + a.recentHits * 2));
 }
 
-// 2. วิเคราะห์คู่ชดเชยและตัวสนับสนุนเชิงลึก พร้อมน้ำหนักโมเมนตัม
 function analyzeCompensationPairsWithSupport(records) {
   let pairStats = {};
   records.forEach((r, idx) => {
@@ -911,27 +913,39 @@ function analyzeCompensationPairsWithSupport(records) {
     return { ...p, winRate, score };
   }).sort((a, b) => b.score - a.score);
 
+  // Dynamic Risk Switch: หากอันดับ #1 หลุดติดต่อกันเกิน 2 งวด ให้สลับไปเลือกอันดับ #2 แทนอัตโนมัติเพื่อความปลอดภัย
+  if (rankedPairs.length > 1 && rankedPairs[0].currentLoss >= 2) {
+    let temp = rankedPairs[0];
+    rankedPairs[0] = rankedPairs[1];
+    rankedPairs[1] = temp;
+  }
+
   return rankedPairs;
 }
 
-// 3. คัดเลือกชุดเจาะ 10 คู่ด้วย Smart Co-occurrence & Positional Weighting
 function generateSmartPairs(d1, d2, records) {
   let pairCounts = {};
   for(let i=0; i<=9; i++) {
-    pairCounts[`${d1}${i}`] = 0;
-    pairCounts[`${d2}${i}`] = 0;
+    pairCounts[`${d1}${i}`] = { count: 0, recentHit: false };
+    pairCounts[`${d2}${i}`] = { count: 0, recentHit: false };
   }
 
-  records.forEach(r => {
+  records.forEach((r, idx) => {
     let top2 = r.top3.slice(-2);
     let bottom2 = r.bottom2;
     [top2, bottom2].forEach(val => {
       if(val.length === 2) {
         let f = parseInt(val[0]), s = parseInt(val[1]);
         if(f === d1 || s === d1 || f === d2 || s === d2) {
-          if(pairCounts[val] !== undefined) pairCounts[val]++;
+          if(pairCounts[val] !== undefined) {
+            pairCounts[val].count++;
+            if(idx < 5) pairCounts[val].recentHit = true;
+          }
           let rev = val.split('').reverse().join('');
-          if(pairCounts[rev] !== undefined) pairCounts[rev]++;
+          if(pairCounts[rev] !== undefined) {
+            pairCounts[rev].count++;
+            if(idx < 5) pairCounts[rev].recentHit = true;
+          }
         }
       }
     });
@@ -942,17 +956,19 @@ function generateSmartPairs(d1, d2, records) {
   for(let i=0; i<=9; i++) {
     let p1 = `${d1}${i}`;
     let p2 = `${d2}${i}`;
-    d1Rows.push({ pair: p1, freq: pairCounts[p1] || 0 });
-    d2Rows.push({ pair: p2, freq: pairCounts[p2] || 0 });
+    d1Rows.push({ pair: p1, ...pairCounts[p1] });
+    d2Rows.push({ pair: p2, ...pairCounts[p2] });
   }
 
-  d1Rows.sort((a,b) => b.freq - a.freq);
-  d2Rows.sort((a,b) => b.freq - a.freq);
+  d1Rows.sort((a,b) => b.count - a.count);
+  d2Rows.sort((a,b) => b.count - a.count);
 
-  let topRows = d1Rows.slice(0, 5).map(x => x.pair).sort((a,b) => parseInt(a) - parseInt(b));
-  let bottomRows = d2Rows.slice(0, 5).map(x => x.pair).sort((a,b) => parseInt(a) - parseInt(b));
+  let topRows = d1Rows.slice(0, 5).map(x => ({ pair: x.pair, isVIP: x.recentHit }));
+  let bottomRows = d2Rows.slice(0, 5).map(x => ({ pair: x.pair, isVIP: x.recentHit }));
 
-  return { topRows, bottomRows, allPairs: [...topRows, ...bottomRows] };
+  let allPairs = [...topRows.map(x=>x.pair), ...bottomRows.map(x=>x.pair)];
+
+  return { topRows, bottomRows, allPairs };
 }
 
 function analyzeLotteryRecords(records, lotteryType) {
@@ -1030,7 +1046,7 @@ function renderResults(parsedData) {
 
   if (analyzedResults.length === 0) return;
 
-  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.11 Pro Engine)</div>`;
+  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.12 VIP Engine)</div>`;
   html += `<div class="lottery-nav-bar">`;
   analyzedResults.forEach((res, idx) => {
     const flag = getFlag(res.lotteryType);
@@ -1049,7 +1065,7 @@ function renderResults(parsedData) {
         <div class="prediction-card-wrapper">
           <div class="prediction-card" id="${cardUniqueId}">
             <div class="card-brand-tag">
-              <span>✦</span> เศรษฐีเงินล้าน <span>✦</span>
+              <span>✦</span> เศรษฐีเงินล้าน VIP <span>✦</span>
             </div>
             <div class="card-top-bar">
               <span class="card-date">สถิติสะสมทั้งหมด: ${res.total} งวด (งวดถัดไป: ${res.nextDrawDate})</span>
@@ -1075,8 +1091,8 @@ function renderResults(parsedData) {
                 <div class="pair-row-label row-gold-label">${res.d1}</div>
                 <div class="pair-row-items">
     `;
-    res.topRows.forEach(p => {
-      html += `<div class="pair-badge"><span class="pair-num">${p}</span><span class="pair-pct">${res.cardPairWinRate}%</span></div>`;
+    res.topRows.forEach(item => {
+      html += `<div class="pair-badge ${item.isVIP ? 'vip' : ''}"><span class="pair-num">${item.pair}${item.isVIP ? ' ★' : ''}</span><span class="pair-pct">${res.cardPairWinRate}%</span></div>`;
     });
     html += `
                 </div>
@@ -1086,8 +1102,8 @@ function renderResults(parsedData) {
                 <div class="pair-row-label row-silver-label">${res.d2}</div>
                 <div class="pair-row-items">
     `;
-    res.bottomRows.forEach(p => {
-      html += `<div class="pair-badge"><span class="pair-num">${p}</span><span class="pair-pct">${res.cardPairWinRate}%</span></div>`;
+    res.bottomRows.forEach(item => {
+      html += `<div class="pair-badge ${item.isVIP ? 'vip' : ''}"><span class="pair-num">${item.pair}${item.isVIP ? ' ★' : ''}</span><span class="pair-pct">${res.cardPairWinRate}%</span></div>`;
     });
     html += `
                 </div>
@@ -1098,7 +1114,7 @@ function renderResults(parsedData) {
 
           <div class="card-action-bar">
             <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-              <span>📷</span> บันทึกภาพการ์ด (Pro Mode)
+              <span>📷</span> บันทึกภาพการ์ด (VIP Mode)
             </button>
           </div>
         </div>
@@ -1183,7 +1199,7 @@ function captureCard(cardId, lotteryName) {
     logging: false
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-V55.11.png`;
+    link.download = `card-${lotteryName}-V55.12.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดสำเร็จ!');
@@ -1242,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล Master V55.11 Pro สำเร็จ!');
+      showToast('ประมวลผล Master V55.12 VIP สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
