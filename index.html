@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์และคาดการณ์ตัวเลขสถิติขั้นสูง (Elite Backtest Engine)</title>
+    <title>ระบบวิเคราะห์และคาดการณ์ตัวเลขสถิติขั้นสูง (Elite Dynamic Backtest Engine)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,15 +17,15 @@
         <header class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-emerald-400 to-cyan-400">
-                    ระบบวิเคราะห์และเจาะเลขเด่นอัจฉริยะ (Elite Backtest Engine)
+                    ระบบวิเคราะห์และเจาะเลขเด่นอัจฉริยะ (Dynamic Elite Engine)
                 </h1>
                 <p class="text-slate-400 text-sm mt-1">
-                    ประมวลผลทุกข้อมูลสถิติอัตโนมัติ | 2 ตัวเด่น | เจาะคู่ชุดละ 5 คู่ (รวม 10 คู่) | ปราศจากการรู้อนาคตและไม่มีเปอร์เซ็นต์ปลอม
+                    ประมวลผลอัจฉริยะตามพลวัตล่าสุด | 2 ตัวเด่น | เจาะคู่ชุดละ 5 คู่ (รวม 10 คู่) | ปราศจากการรู้อนาคตและไม่มีเปอร์เซ็นต์ปลอม
                 </p>
             </div>
             <div class="flex items-center gap-3">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    ● สถานะ: พร้อมประมวลผลย้อนหลัง (Walk-Forward)
+                    ● สถานะ: พร้อมประมวลผลย้อนหลัง (Walk-Forward Dynamic)
                 </span>
             </div>
         </header>
@@ -44,10 +44,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-2">ข้อมูลย้อนหลัง (รองรับทุกรูปแบบสถิติ)</label>
-                    <textarea id="rawInputData" rows="14" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-emerald-500 leading-relaxed" placeholder="วางข้อมูลสถิติที่นี่ เช่น:
-ฮานอยปกติ | 11 พ.ย. 69 | 129 | 79
-ลาวพัฒนา | 11 พ.ย. 69 | 193 | 21
-หุ้นนิคเคอิเช้า | 11 พ.ย. 69 | 248 | 90"></textarea>
+                    <textarea id="rawInputData" rows="14" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-emerald-500 leading-relaxed" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
                 </div>
 
                 <button onclick="runEliteAnalysis()" class="w-full bg-gradient-to-r from-amber-500 via-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-xl shadow-emerald-500/10 text-sm">
@@ -72,10 +69,10 @@
 
                     <!-- ตารางผลการทดสอบย้อนหลัง (Backtest Performance Table) -->
                     <div class="space-y-3">
-                        <h3 class="text-sm font-semibold text-slate-200">📊 ตารางสรุปผลการทดสอบย้อนหลัง (Walk-Forward Backtest Log)</h3>
-                        <div class="overflow-x-auto border border-slate-800 rounded-xl bg-slate-950 max-h-96">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead class="bg-slate-900 text-slate-400 border-b border-slate-800 sticky top-0">
+                        <h3 class="text-sm font-semibold text-slate-200">📊 ตารางสรุปผลการทดสอบย้อนหลัง (งวดล่าสุดอยู่บนสุด / เลื่อนดูด้านข้างได้)</h3>
+                        <div class="overflow-x-auto border border-slate-800 rounded-xl bg-slate-950 max-h-[420px]">
+                            <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
+                                <thead class="bg-slate-900 text-slate-400 border-b border-slate-800 sticky top-0 z-10 shadow-md">
                                     <tr>
                                         <th class="p-3">งวด / รายการ</th>
                                         <th class="p-3">เด่นที่เลือก</th>
@@ -129,16 +126,14 @@
                 return;
             }
 
-            statusDiv.innerText = "กำลังคำนวณและรันระบบ Backtest ย้อนหลัง...";
+            statusDiv.innerText = "กำลังประมวลผล Dynamic Backtest...";
 
-            // แปลงข้อมูลจาก Text เป็นอาเรย์ของงวด
             const lines = rawText.split('\n').filter(line => line.trim() !== '');
             let records = [];
 
             lines.forEach(line => {
                 const numbers = line.match(/\d+/g);
                 if (numbers) {
-                    // ค้นหาเลขท้าย 2 ตัวจากบรรทัด (ปกติจะอยู่ท้ายสุดหรือตัวเลขที่มีความยาว 2 หลัก)
                     let twoDigit = null;
                     for (let i = numbers.length - 1; i >= 0; i--) {
                         if (numbers[i].length === 2) {
@@ -158,8 +153,8 @@
                 return;
             }
 
-            // จัดเรียงข้อมูลจากเก่าไปใหม่เพื่อทำ Walk-Forward Backtest
-            let sortedRecords = [...records].reverse();
+            // จัดเรียงจากเก่าไปใหม่เพื่อคำนวณ Backtest ทีละสเต็ป
+            let chronologicalRecords = [...records].reverse();
 
             let totalBacktests = 0;
             let totalMainHit = 0;
@@ -168,14 +163,13 @@
             let maxStreak = 0;
             let currentMiss = 0;
             let maxMiss = 0;
-            let tableHtml = '';
+            let rawTableRows = [];
 
-            // จำลองการเรียนรู้จากอดีตทีละงวด (เริ่มต้นจากงวดที่ 5 เป็นต้นไป)
-            for (let i = 4; i < sortedRecords.length; i++) {
-                let historyWindow = sortedRecords.slice(0, i);
-                let targetRecord = sortedRecords[i];
+            for (let i = 4; i < chronologicalRecords.length; i++) {
+                let historyWindow = chronologicalRecords.slice(0, i);
+                let targetRecord = chronologicalRecords[i];
 
-                let dominantDigits = getTopTwoDominantDigits(historyWindow);
+                let dominantDigits = getDynamicTopTwo(historyWindow);
                 let elitePairs = generateElitePairs(dominantDigits);
 
                 let actual2D = targetRecord.result2D;
@@ -195,30 +189,45 @@
                     if (currentMiss > maxMiss) maxMiss = currentMiss;
                 }
 
+                rawTableRows.push({
+                    date: targetRecord.date,
+                    dominant: dominantDigits,
+                    pairsSample: elitePairs.all.slice(0, 5).join(', ') + '...',
+                    actual: actual2D,
+                    isMainHit,
+                    isSubHit
+                });
+            }
+
+            // กลับด้านให้งวดล่าสุดอยู่บนสุดตามต้องการ
+            rawTableRows.reverse();
+
+            let tableHtml = '';
+            rawTableRows.forEach(row => {
                 tableHtml += `
                     <tr class="hover:bg-slate-900/60 transition">
-                        <td class="p-3 font-medium text-slate-300 truncate max-w-[200px]" title="${targetRecord.date}">${targetRecord.date}</td>
-                        <td class="p-3 font-mono text-amber-400 font-bold">[${dominantDigits.join(', ')}]</td>
-                        <td class="p-3 font-mono text-slate-400 text-[11px]">${elitePairs.all.slice(0, 5).join(', ')}...</td>
-                        <td class="p-3 text-center font-mono font-bold text-cyan-300">${actual2D}</td>
+                        <td class="p-3 font-medium text-slate-300" title="${row.date}">${row.date}</td>
+                        <td class="p-3 font-mono text-amber-400 font-bold">[${row.dominant.join(', ')}]</td>
+                        <td class="p-3 font-mono text-slate-400 text-[11px]">${row.pairsSample}</td>
+                        <td class="p-3 text-center font-mono font-bold text-cyan-300">${row.actual}</td>
                         <td class="p-3 text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${isMainHit ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-500'}">
-                                ${isMainHit ? 'เข้าเด่น' : 'หลุด'}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${row.isMainHit ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-500'}">
+                                ${row.isMainHit ? 'เข้าเด่น' : 'หลุด'}
                             </span>
                         </td>
                         <td class="p-3 text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${isSubHit ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-slate-800 text-slate-500'}">
-                                ${isSubHit ? '🎯 เจาะเข้าเต็มๆ' : 'หลุด'}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${row.isSubHit ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-slate-800 text-slate-500'}">
+                                ${row.isSubHit ? '🎯 เจาะเข้าเต็มๆ' : 'หลุด'}
                             </span>
                         </td>
                     </tr>
                 `;
-            }
+            });
 
             tableBody.innerHTML = tableHtml;
 
             // คำนวณเลขเด่นสำหรับรอบถัดไป (ใช้อดีตทั้งหมดถึงปัจจุบัน)
-            let latestDominant = getTopTwoDominantDigits(sortedRecords);
+            let latestDominant = getDynamicTopTwo(chronologicalRecords);
             let latestElitePairs = generateElitePairs(latestDominant);
 
             let renderHtml = `
@@ -276,14 +285,17 @@
             statusDiv.innerText = "ประมวลผลย้อนหลังเสร็จสิ้น (เรียลไทม์)";
         }
 
-        // ฟังก์ชันหาเลขเด่น 2 ตัวจากความถี่จริง
-        function getTopTwoDominantDigits(history) {
+        // ฟังก์ชันคำนวณเลขเด่นแบบให้น้ำหนักช่วงสั้น (Recency Weighting) เพื่อให้เลขเปลี่ยนตามรอบล่าสุด
+        function getDynamicTopTwo(history) {
             let freq = {};
-            history.forEach(item => {
+            let len = history.length;
+            history.forEach((item, index) => {
                 let d = item.result2D;
+                // ให้มิติน้ำหนักงวดท้ายๆ มากกว่างวดเก่า เพื่อความแม่นยำตามรอบปัจจุบัน
+                let weight = 1 + (index / len); 
                 if (d && d.length === 2) {
-                    freq[d[0]] = (freq[d[0]] || 0) + 1;
-                    freq[d[1]] = (freq[d[1]] || 0) + 1;
+                    freq[d[0]] = (freq[d[0]] || 0) + weight;
+                    freq[d[1]] = (freq[d[1]] || 0) + weight;
                 }
             });
             let sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
@@ -326,17 +338,35 @@
         }
 
         function loadDefaultSampleData() {
-            const sampleText = `ฮานอยปกติ | 11 พ.ย. 69 | 129 | 79
-ฮานอยปกติ | 10 พ.ย. 69 | 683 | 92
-ฮานอยปกติ | 9 พ.ย. 69 | 372 | 96
-ฮานอยปกติ | 8 พ.ย. 69 | 926 | 90
-ฮานอยปกติ | 7 พ.ย. 69 | 014 | 96
-ฮานอยปกติ | 6 พ.ย. 69 | 477 | 82
-ฮานอยปกติ | 5 พ.ย. 69 | 502 | 00
-ฮานอยปกติ | 4 พ.ย. 69 | 046 | 75
-ฮานอยปกติ | 3 พ.ย. 69 | 446 | 71
-ฮานอยปกติ | 2 พ.ย. 69 | 129 | 81
-ฮานอยปกติ | 1 พ.ย. 69 | 244 | 04`;
+            const sampleText = `ลาวพัฒนา | 11 พ.ย. 69 | 193 | 21
+ลาวพัฒนา | 10 พ.ย. 69 | 546 | 35
+ลาวพัฒนา | 9 พ.ย. 69 | 038 | 70
+ลาวพัฒนา | 6 พ.ย. 69 | 098 | 80
+ลาวพัฒนา | 5 พ.ย. 69 | 079 | 40
+ลาวพัฒนา | 4 พ.ย. 69 | 808 | 88
+ลาวพัฒนา | 3 พ.ย. 69 | 713 | 57
+ลาวพัฒนา | 2 พ.ย. 69 | 155 | 81
+ลาวพัฒนา | 30 ต.ค. 69 | 206 | 32
+ลาวพัฒนา | 29 ต.ค. 69 | 294 | 32
+ลาวพัฒนา | 28 ต.ค. 69 | 618 | 06
+ลาวพัฒนา | 27 ต.ค. 69 | 372 | 33
+ลาวพัฒนา | 26 ต.ค. 69 | 042 | 00
+ลาวพัฒนา | 23 ต.ค. 69 | 111 | 01
+ลาวพัฒนา | 22 ต.ค. 69 | 077 | 80
+ลาวพัฒนา | 21 ต.ค. 69 | 208 | 52
+ลาวพัฒนา | 20 ต.ค. 69 | 767 | 77
+ลาวพัฒนา | 19 ต.ค. 69 | 331 | 63
+ลาวพัฒนา | 16 ต.ค. 69 | 052 | 60
+ลาวพัฒนา | 15 ต.ค. 69 | 261 | 62
+ลาวพัฒนา | 14 ต.ค. 69 | 358 | 03
+ลาวพัฒนา | 13 ต.ค. 69 | 658 | 76
+ลาวพัฒนา | 12 ต.ค. 69 | 592 | 75
+ลาวพัฒนา | 9 ต.ค. 69 | 647 | 56
+ลาวพัฒนา | 8 ต.ค. 69 | 998 | 69
+ลาวพัฒนา | 7 ต.ค. 69 | 090 | 00
+ลาวพัฒนา | 6 ต.ค. 69 | 878 | 18
+ลาวพัฒนา | 5 ต.ค. 69 | 607 | 26
+ลาวพัฒนา | 2 ต.ค. 69 | 693 | 46`;
             document.getElementById('rawInputData').value = sampleText;
             runEliteAnalysis();
         }
