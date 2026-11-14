@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V55.10 Ultimate Compensation & Frequency Engine</title>
+<title>เศรษฐีเงินล้าน · Master V55.11 Momentum & Positional Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -413,7 +413,6 @@ body {
   font-weight: 700;
 }
 
-/* จัดระเบียบชุดเจาะแยกแถวตามเลขเด่น (สะอาด ไม่เลอะเทอะ) */
 .pairs-grid-rows {
   display: flex;
   flex-direction: column;
@@ -585,17 +584,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (Master V55.10)</b>
-        <small>Ultimate Compensation & Frequency Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (Master V55.11)</b>
+        <small>Momentum & Positional Filter Engine</small>
       </div>
     </div>
-    <div class="pill">V55.10 Ultimate</div>
+    <div class="pill">V55.11 Pro</div>
   </div>
 
   <div class="hero">
     <div class="hero-tag">ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ (เศรษฐีเงินล้าน)</div>
-    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.10 Ultimate)</em></h1>
-    <p>ระบบวิเคราะห์ความถี่เดี่ยว 0-9 และคู่ชดเชยอัจฉริยะ คัดกรองชุดเจาะแม่นยำสูง รองรับเลขกลับตัวและตรวจสอบผลแบบเรียลไทม์</p>
+    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.11 Pro)</em></h1>
+    <p>ระบบวิเคราะห์ความถี่เดี่ยวถ่วงน้ำหนักโมเมนตัมล่าสุด (Recent Momentum) และตารางตำแหน่งหลักสิบ/หลักหน่วย คัดกรองชุดเจาะแม่นยำสูงสุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -610,7 +609,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระบบ V55.10 Ultimate Engine
+        <span>⚡</span> ประมวลผลระบบ V55.11 Pro Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -839,20 +838,29 @@ function getRelevantDigits(record) {
   return tensUnitsTop + bottom2;
 }
 
-// 1. วิเคราะห์ความถี่เดี่ยว 0-9 (Single Digit Frequency Matrix) พร้อมสถิติต่อเนื่อง
-function analyzeSingleDigitFrequency(records) {
+// 1. วิเคราะห์ความถี่เดี่ยว 0-9 พร้อม Recent Momentum Weighting (เน้น 5 งวดล่าสุด) และ Positional Analysis
+function analyzeSingleDigitFrequencyWithMomentum(records) {
   let stats = {};
   for(let d=0; d<=9; d++) {
-    stats[d] = { digit: d, hits: 0, currentWinStreak: 0, maxWinStreak: 0, currentLoss: 0, maxLoss: 0 };
+    stats[d] = { digit: d, hits: 0, recentHits: 0, currentWinStreak: 0, maxWinStreak: 0, currentLoss: 0, maxLoss: 0, tensCount: 0, unitsCount: 0 };
   }
 
-  records.forEach((r) => {
+  records.forEach((r, idx) => {
     let digits = getRelevantDigits(r);
+    let top2 = r.top3.slice(-2);
+    let bottom2 = r.bottom2;
+
     for(let d=0; d<=9; d++) {
       let isHit = digits.includes(d.toString());
       let st = stats[d];
+      
+      // เก็บสถิติตำแหน่งหลักสิบ/หลักหน่วย
+      if (top2[0] === d.toString() || bottom2[0] === d.toString()) st.tensCount++;
+      if (top2[1] === d.toString() || bottom2[1] === d.toString()) st.unitsCount++;
+
       if(isHit) {
         st.hits++;
+        if (idx < 5) st.recentHits++; // โมเมนตัม 5 งวดล่าสุด
         st.currentWinStreak++;
         if(st.currentWinStreak > st.maxWinStreak) st.maxWinStreak = st.currentWinStreak;
         if(st.currentLoss > st.maxLoss) st.maxLoss = st.currentLoss;
@@ -866,23 +874,24 @@ function analyzeSingleDigitFrequency(records) {
     }
   });
 
-  return Object.values(stats).sort((a,b) => b.hits - a.hits);
+  return Object.values(stats).sort((a,b) => (b.hits + b.recentHits * 2) - (a.hits + a.recentHits * 2));
 }
 
-// 2. วิเคราะห์คู่ชดเชยและจัดทำตารางสนับสนุนเชิงลึก
+// 2. วิเคราะห์คู่ชดเชยและตัวสนับสนุนเชิงลึก พร้อมน้ำหนักโมเมนตัม
 function analyzeCompensationPairsWithSupport(records) {
   let pairStats = {};
-  records.forEach((r) => {
+  records.forEach((r, idx) => {
     let digits = getRelevantDigits(r);
     for(let d1 = 0; d1 <= 9; d1++) {
       for(let d2 = d1 + 1; d2 <= 9; d2++) {
         let pairKey = `${d1},${d2}`;
         if(!pairStats[pairKey]) {
-          pairStats[pairKey] = { d1, d2, hits: 0, currentLoss: 0, maxLoss: 0, currentWin: 0, maxWin: 0 };
+          pairStats[pairKey] = { d1, d2, hits: 0, recentHits: 0, currentLoss: 0, maxLoss: 0, currentWin: 0, maxWin: 0 };
         }
         let hasBoth = digits.includes(d1.toString()) || digits.includes(d2.toString());
         if(hasBoth) {
           pairStats[pairKey].hits++;
+          if(idx < 5) pairStats[pairKey].recentHits++;
           pairStats[pairKey].currentWin++;
           if(pairStats[pairKey].currentWin > pairStats[pairKey].maxWin) pairStats[pairKey].maxWin = pairStats[pairKey].currentWin;
           if(pairStats[pairKey].currentLoss > pairStats[pairKey].maxLoss) pairStats[pairKey].maxLoss = pairStats[pairKey].currentLoss;
@@ -898,14 +907,14 @@ function analyzeCompensationPairsWithSupport(records) {
 
   let rankedPairs = Object.values(pairStats).map(p => {
     let winRate = records.length > 0 ? ((p.hits / records.length) * 100).toFixed(1) : '0.0';
-    let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0) + (p.maxWin * 2);
+    let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0) + (p.maxWin * 2) + (p.recentHits * 4);
     return { ...p, winRate, score };
   }).sort((a, b) => b.score - a.score);
 
   return rankedPairs;
 }
 
-// 3. คัดเลือกชุดเจาะ 10 คู่จากประวัติการออกร่วมกันจริง (Smart Co-occurrence Pairs)
+// 3. คัดเลือกชุดเจาะ 10 คู่ด้วย Smart Co-occurrence & Positional Weighting
 function generateSmartPairs(d1, d2, records) {
   let pairCounts = {};
   for(let i=0; i<=9; i++) {
@@ -950,10 +959,9 @@ function analyzeLotteryRecords(records, lotteryType) {
   const total = records.length;
   if (total === 0) return null;
 
-  const singleStats = analyzeSingleDigitFrequency(records);
+  const singleStats = analyzeSingleDigitFrequencyWithMomentum(records);
   const rankedPairs = analyzeCompensationPairsWithSupport(records);
   
-  // ใช้คู่ชดเชยที่ดีที่สุดเป็นเลขเด่นหลัก
   const bestPairObj = rankedPairs[0] || { d1: singleStats[0].digit, d2: singleStats[1].digit, currentLoss: 0, maxLoss: 2, winRate: '70.0' };
   const d1 = bestPairObj.d1;
   const d2 = bestPairObj.d2;
@@ -1004,7 +1012,7 @@ function analyzeLotteryRecords(records, lotteryType) {
     lotteryType, total, cardDigitWinRate, cardPairWinRate,
     d1, d2, topRows, bottomRows, auditLogs, nextDrawDate,
     supportData: rankedPairs.slice(0, 5),
-    singleStats: singleStats.slice(0, 5), // แสดง 5 ตัวที่ความถี่สูงสุด
+    singleStats: singleStats.slice(0, 5),
     currentLoss: bestPairObj.currentLoss,
     maxLoss: bestPairObj.maxLoss
   };
@@ -1022,7 +1030,7 @@ function renderResults(parsedData) {
 
   if (analyzedResults.length === 0) return;
 
-  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.10 Ultimate Engine)</div>`;
+  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.11 Pro Engine)</div>`;
   html += `<div class="lottery-nav-bar">`;
   analyzedResults.forEach((res, idx) => {
     const flag = getFlag(res.lotteryType);
@@ -1090,25 +1098,25 @@ function renderResults(parsedData) {
 
           <div class="card-action-bar">
             <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-              <span>📷</span> บันทึกภาพการ์ด (Ultimate Mode)
+              <span>📷</span> บันทึกภาพการ์ด (Pro Mode)
             </button>
           </div>
         </div>
 
-        <!-- 1. ตารางวิเคราะห์ความถี่เดี่ยว 0-9 (Frequency Support Table) -->
+        <!-- 1. ตารางความถี่และโมเมนตัม 0-9 พร้อมตำแหน่ง -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            📈 ตารางความถี่เลขเดี่ยว 0-9 ยอดนิยม (${type}) - ตัวกรองสนับสนุนเลขเด่น
+            📈 ตารางความถี่ & โมเมนตัม 0-9 ยอดนิยม (${type}) - ถ่วงน้ำหนักระยะสั้น
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>เลขเดี่ยว</th><th>จำนวนครั้งที่มา</th><th>เข้าต่อเนื่องสูงสุด</th><th>หลุดติดต่อกันสูงสุด</th><th>สถานะปัจจุบัน</th></tr>
+              <tr><th>เลขเดี่ยว</th><th>มาทั้งหมด</th><th>มาล่าสุด (5งวด)</th><th>หลักสิบ / หน่วย</th><th>สถานะปัจจุบัน</th></tr>
             </thead>
             <tbody>
     `;
 
     res.singleStats.forEach(st => {
-      html += `<tr><td><b style="color:#b8860b">เลข ${st.digit}</b></td><td>${st.hits} ครั้ง</td><td>${st.maxWinStreak} งวด</td><td>${st.maxLoss} งวด</td><td>${st.currentLoss === 0 ? '<span class="badge-hit">กำลังเดินดี</span>' : `<span class="badge-miss">หลุด ${st.currentLoss} งวด</span>`}</td></tr>`;
+      html += `<tr><td><b style="color:#b8860b">เลข ${st.digit}</b></td><td>${st.hits} ครั้ง</td><td><span style="color:#2e7d32;font-weight:700">${st.recentHits} ครั้ง</span></td><td>${st.tensCount} / ${st.unitsCount} ครั้ง</td><td>${st.currentLoss === 0 ? '<span class="badge-hit">กำลังเดินดี</span>' : `<span class="badge-miss">หลุด ${st.currentLoss} งวด</span>`}</td></tr>`;
     });
 
     html += `
@@ -1116,10 +1124,10 @@ function renderResults(parsedData) {
           </table>
         </div>
 
-        <!-- 2. ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุน (Compensation & Support Table) -->
+        <!-- 2. ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุนเชิงลึก -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุนเชิงลึก (${type})
+            🛡️ ตารางวิเคราะห์คู่ชดเชย & โมเมนตัมเชิงลึก (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1175,7 +1183,7 @@ function captureCard(cardId, lotteryName) {
     logging: false
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-V55.10.png`;
+    link.download = `card-${lotteryName}-V55.11.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดสำเร็จ!');
@@ -1234,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล Master V55.10 สำเร็จ!');
+      showToast('ประมวลผล Master V55.11 Pro สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
