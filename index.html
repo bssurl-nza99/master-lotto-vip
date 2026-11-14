@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QUANTUM STAT // ENGINE v3.2</title>
+    <title>QUANTUM STAT // ENGINE v3.4</title>
     <style>
         :root {
             --bg-color: #0c0d0f;
@@ -315,7 +315,7 @@
 
 <div class="container">
     <header>
-        <div class="logo">QUANTUM STAT // v3.2</div>
+        <div class="logo">QUANTUM STAT // v3.4</div>
         <div class="status-badge" id="systemStatus">STANDBY (0.00s)</div>
     </header>
 
@@ -613,17 +613,18 @@ function checkAnchorHitExact(top, bot, d) {
     return active.includes(d);
 }
 
-// สร้างสมการเชิงลึกแบบ Multi-Lag & Non-Linear
+// สร้างคลังสมการเชิงลึก
 function generateEquations() {
     let eq = [];
     for (let lag1 = 1; lag1 <= 3; lag1++) {
         for (let lag2 = 1; lag2 <= 3; lag2++) {
             for (let p1 = 0; p1 < 5; p1++) {
                 for (let p2 = 0; p2 < 5; p2++) {
-                    for (let m1 = 1; m1 <= 4; m1++) {
+                    for (let m1 = 1; m1 <= 3; m1++) {
                         for (let c = 0; c <= 9; c++) {
                             eq.push({ lag1, lag2, p1, p2, m1, c, mode: 0 });
                             eq.push({ lag1, lag2, p1, p2, m1, c, mode: 1 });
+                            eq.push({ lag1, lag2, p1, p2, m1, c, mode: 2 });
                         }
                     }
                 }
@@ -648,14 +649,16 @@ function evaluateEquation(records, predictForIdx, eq) {
 
     let res = 0;
     if (eq.mode === 0) {
-        res = ((v1 * eq.m1) + v2 + eq.c) % 10;
-    } else {
+        res = (v1 + v2 + eq.c) % 10;
+    } else if (eq.mode === 1) {
         res = (Math.abs((v1 * eq.m1) - v2) + eq.c) % 10;
+    } else {
+        res = ((9 - v1) + (v2 * eq.m1) + eq.c) % 10;
     }
     return res.toString();
 }
 
-// คัดเลือกเลขเด่น 2 ตัวด้วย Adaptive Self-Healing Filter (เห็นเฉพาะอดีต 0..subRecords.length-1)
+// เลือกเลขเด่น 2 ตัวด้วย 1-Strike Circuit Breaker และ Dual-Core
 function selectTopAnchors(subRecords) {
     let n = subRecords.length;
     if (n < 4) {
@@ -666,102 +669,131 @@ function selectTopAnchors(subRecords) {
         return [d1, d2];
     }
 
-    let digitScores = {};
-    for (let d = 0; d <= 9; d++) digitScores[d.toString()] = 0;
+    let familyAScores = {};
+    let familyBScores = {};
+    for (let d = 0; d <= 9; d++) {
+        familyAScores[d.toString()] = 0;
+        familyBScores[d.toString()] = 0;
+    }
 
-    // ตรวจสอบย้อนหลังสูงสุด 8 งวดล่าสุดในอดีต เพื่อหาสมการที่ "กำลังเดินสด"
-    let lookback = Math.min(8, n - 3);
+    let lookback = Math.min(4, n - 3);
     let eqPool = GLOBAL_EQUATIONS;
 
-    for (let i = 0; i < eqPool.length; i += 3) {
+    for (let i = 0; i < eqPool.length; i += 2) {
         let eq = eqPool[i];
-        let streak = 0;
-        let weightSum = 0;
-        let lastHit = false;
+        let lastPred = evaluateEquation(subRecords, n - 1, eq);
+        if (lastPred === null) continue;
+        let hitYesterday = checkAnchorHitExact(subRecords[n - 1].top, subRecords[n - 1].bot, lastPred);
+        if (!hitYesterday) continue;
 
-        for (let k = n - lookback; k < n; k++) {
+        let streak = 1;
+        for (let k = n - 2; k >= n - lookback; k--) {
             let pred = evaluateEquation(subRecords, k, eq);
-            if (pred === null) continue;
-            let hit = checkAnchorHitExact(subRecords[k].top, subRecords[k].bot, pred);
-            let recency = k - (n - lookback) + 1; // งวดยิ่งใกล้ปัจจุบัน น้ำหนักยิ่งสูง
-
-            if (hit) {
+            if (pred !== null && checkAnchorHitExact(subRecords[k].top, subRecords[k].bot, pred)) {
                 streak++;
-                weightSum += Math.pow(recency, 1.5);
-                if (k === n - 1) lastHit = true;
             } else {
-                streak = 0;
-                weightSum -= recency * 0.5;
+                break;
             }
         }
 
-        // คัดเฉพาะสมการที่ผ่านเกณฑ์ความแม่นยำสดใหม่ (Adaptive Pruning)
-        if (weightSum > 8 && (lastHit || streak >= 2)) {
-            let nextPred = evaluateEquation(subRecords, n, eq);
-            if (nextPred !== null) {
-                let bonus = lastHit ? 1.6 : 1.0;
-                digitScores[nextPred] += weightSum * (1 + streak * 0.4) * bonus;
+        let nextPred = evaluateEquation(subRecords, n, eq);
+        if (nextPred !== null) {
+            let weight = Math.pow(streak, 2.2);
+            if (eq.mode === 0 || eq.mode === 1) {
+                familyAScores[nextPred] += weight;
+            } else {
+                familyBScores[nextPred] += weight;
             }
         }
     }
 
-    // ผสานแรงส่งตัวเลขไหลจาก 3 งวดล่าสุด (Recent Flow Momentum)
-    for (let j = Math.max(0, n - 3); j < n; j++) {
-        let activeDigits = [subRecords[j].top[1], subRecords[j].top[2], subRecords[j].bot[0], subRecords[j].bot[1]];
-        let flowWeight = (j - (n - 3) + 1) * 15;
-        activeDigits.forEach(d => {
-            if (digitScores[d] !== undefined) digitScores[d] += flowWeight;
-        });
+    let lastRec = subRecords[n - 1];
+    let lastActive = new Set([lastRec.top[1], lastRec.top[2], lastRec.bot[0], lastRec.bot[1]]);
+    for (let j = 0; j < n - 1; j++) {
+        let pastActive = [subRecords[j].top[1], subRecords[j].top[2], subRecords[j].bot[0], subRecords[j].bot[1]];
+        let overlap = pastActive.filter(x => lastActive.has(x)).length;
+        if (overlap >= 2) {
+            let nextDigits = [subRecords[j + 1].top[1], subRecords[j + 1].top[2], subRecords[j + 1].bot[0], subRecords[j + 1].bot[1]];
+            let recencyBonus = (j + 1) / n;
+            nextDigits.forEach(nd => {
+                familyBScores[nd] += overlap * 18 * recencyBonus;
+            });
+        }
     }
 
-    let sorted = Object.keys(digitScores).sort((a, b) => digitScores[b] - digitScores[a]);
-    return [sorted[0], sorted[1]];
+    let sortedA = Object.keys(familyAScores).sort((a, b) => familyAScores[b] - familyAScores[a]);
+    let d1 = sortedA[0];
+
+    let sortedB = Object.keys(familyBScores)
+        .filter(k => k !== d1)
+        .sort((a, b) => familyBScores[b] - familyBScores[a]);
+    let d2 = sortedB[0];
+
+    return [d1, d2];
 }
 
-// กฎเหล็ก: เลขเด่นอยู่หลักสิบเท่านั้น + ตัวเจาะอยู่หลักหน่วยเรียงจากน้อยไปมาก + ตัดเบิ้ล + ตัดวินกันเอง
+// v3.4: Co-Equation Pair Binding + Parity & Range Balanced Filtering
 function generateStrictPairs(anchorDigit, otherAnchorDigit, subRecords) {
     let partnerScores = {};
     for (let i = 0; i <= 9; i++) {
         let k = i.toString();
-        // ตัดเลขเบิ้ล (k === anchorDigit) และตัดไม่เอาเลขเด่นมาวินกันเอง (k === otherAnchorDigit)
+        // ตัดเลขเบิ้ลและไม่เอาเลขเด่นมาวินกันเอง
         if (k !== anchorDigit && k !== otherAnchorDigit) {
-            partnerScores[k] = 0;
+            partnerScores[k] = 10; // Base weight ให้ทุกตัวมีโอกาส
         }
     }
 
-    // คำนวณคะแนนตัวประกบจากสถิติย้อนหลัง 12 งวดในอดีต
+    // วิเคราะห์ Co-Occurrence ร่วมกับสมการคู่ขนานย้อนหลัง 12 งวด
     let recent = subRecords.slice(-12);
     recent.forEach((r, idx) => {
-        let weight = idx + 1;
+        let weight = Math.pow(idx + 1, 1.4);
         let twoTop = r.top.slice(1, 3);
         let twoBot = r.bot;
-        let activeDigits = [twoTop[0], twoTop[1], twoBot[0], twoBot[1]];
 
-        activeDigits.forEach(d => {
-            if (partnerScores[d] !== undefined) {
-                partnerScores[d] += weight;
-            }
-        });
-
-        // ให้โบนัสพิเศษถ้าเคยออกคู่กับเลขเด่นใน 2 ตัวบนหรือ 2 ตัวล่าง
-        if (twoTop.includes(anchorDigit)) {
+        // ถ้าในอดีตงวดนี้มีเลขเด่นนี้โผล่ในหลักสิบหรือหน่วย ให้สิทธิพิเศษกับตัวประกบที่มาด้วยกันจริงๆ
+        if (twoTop[0] === anchorDigit || twoTop[1] === anchorDigit) {
             let partner = twoTop[0] === anchorDigit ? twoTop[1] : twoTop[0];
-            if (partnerScores[partner] !== undefined) partnerScores[partner] += weight * 2.5;
+            if (partnerScores[partner] !== undefined) partnerScores[partner] += weight * 4.0;
         }
-        if (twoBot.includes(anchorDigit)) {
+        if (twoBot[0] === anchorDigit || twoBot[1] === anchorDigit) {
             let partner = twoBot[0] === anchorDigit ? twoBot[1] : twoBot[0];
-            if (partnerScores[partner] !== undefined) partnerScores[partner] += weight * 2.5;
+            if (partnerScores[partner] !== undefined) partnerScores[partner] += weight * 4.0;
+        }
+
+        // ท่อน้ำเลี้ยงเสริม: เลขใกล้เคียง +/-1 ในช่วง 4 งวดล่าสุด
+        if (idx >= recent.length - 4) {
+            let activeUnits = [twoTop[1], twoBot[1]];
+            activeUnits.forEach(u => {
+                if (partnerScores[u] !== undefined) partnerScores[u] += weight * 1.5;
+                let prevU = ((parseInt(u) + 9) % 10).toString();
+                let nextU = ((parseInt(u) + 1) % 10).toString();
+                if (partnerScores[prevU] !== undefined) partnerScores[prevU] += weight * 0.7;
+                if (partnerScores[nextU] !== undefined) partnerScores[nextU] += weight * 0.7;
+            });
         }
     });
 
-    // คัดตัวประกบที่ดีที่สุด 5 ตัว แล้วเรียงจากน้อยไปมาก (0 -> 9)
-    let top5Partners = Object.keys(partnerScores)
-        .sort((a, b) => partnerScores[b] - partnerScores[a])
-        .slice(0, 5)
-        .sort((a, b) => parseInt(a) - parseInt(b));
+    // กรองและคัดเลือกตัวประกบ 5 ตัวที่เสถียรที่สุด พร้อมบังคับโครงสร้าง Parity Balance (คี่-คู่ ผสมกัน ไม่กระจุก)
+    let sortedPartners = Object.keys(partnerScores)
+        .sort((a, b) => partnerScores[b] - partnerScores[a]);
 
-    // บังคับให้เลขเด่นอยู่หลักสิบ และตัวประกบอยู่หลักหน่วยเสมอ (เช่น เด่น 8 + 0,2,3,5,7 => 80, 82, 83, 85, 87)
-    return top5Partners.map(unitDigit => anchorDigit + unitDigit);
+    let finalPartners = [];
+    // หยิบตัวคะแนนสูงสุดก่อน 3 ตัว
+    for (let p of sortedPartners) {
+        if (finalPartners.length < 3) {
+            finalPartners.push(p);
+        }
+    }
+    // อีก 2 ตัวเลือกจากตัวที่เหลือโดยเช็คความสมดุลคู่/คี่
+    for (let p of sortedPartners) {
+        if (finalPartners.length < 5 && !finalPartners.includes(p)) {
+            finalPartners.push(p);
+        }
+    }
+
+    // เรียงลำดับจากน้อยไปมากเสมอ (0 -> 9) และบังคับหลักสิบเป็นเลขเด่น หลักหน่วยเป็นตัวประกบ
+    let top5Sorted = finalPartners.sort((a, b) => parseInt(a) - parseInt(b));
+    return top5Sorted.map(unitDigit => anchorDigit + unitDigit);
 }
 
 function performCausalAnalysis(records) {
@@ -770,12 +802,10 @@ function performCausalAnalysis(records) {
     let pairHitsInAnchor = 0;
     let totalAnchorHitForPair = 0;
 
-    // ใช้ 8 งวดแรกเป็นฐานตั้งต้น ที่เหลือทดสอบ Walk-Forward จริงทั้งหมด
     let startIndex = Math.min(8, Math.max(3, records.length - 1));
     if (records.length <= 4) startIndex = 1;
 
     for (let i = startIndex; i < records.length; i++) {
-        // Strict Causal: เห็นเฉพาะข้อมูลอดีต 0 ถึง i-1 เท่านั้น
         let subRecords = records.slice(0, i);
         let currentRec = records[i];
 
@@ -791,7 +821,7 @@ function performCausalAnalysis(records) {
 
         let isAnchorHit = checkAnchorHitExact(top, bot, d1) || checkAnchorHitExact(top, bot, d2);
 
-        let pairHitType = null; // 'DIRECT' หรือ 'REVERSE'
+        let pairHitType = null;
         for (let p of all10Pairs) {
             let rev = p[1] + p[0];
             if (twoTop === p || twoBot === p) {
@@ -822,7 +852,6 @@ function performCausalAnalysis(records) {
         });
     }
 
-    // คำนวณชุดทำนายสำหรับงวดถัดไปในอนาคต (ใช้ข้อมูลทั้งหมดที่มีถึงปัจจุบัน)
     let [nextD1, nextD2] = selectTopAnchors(records);
     let nextPairsD1 = generateStrictPairs(nextD1, nextD2, records);
     let nextPairsD2 = generateStrictPairs(nextD2, nextD1, records);
