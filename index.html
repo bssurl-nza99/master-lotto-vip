@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V55.10 Dynamic Pair Co-occurrence Engine</title>
+<title>เศรษฐีเงินล้าน · Master V55.09 Strict & Compensation Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -23,68 +23,560 @@
   --red: #c62828;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { scroll-behavior: smooth; font-size: 12px; }
-body { margin: 0; background: var(--bg-main); color: var(--text-dark); font-family: 'Prompt', sans-serif; min-height: 100vh; padding-bottom: 40px; }
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: auto;
+}
 
-.shell { width: 100%; max-width: 600px; margin: 0 auto; padding: 12px 10px; }
-.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.brand { display: flex; align-items: center; gap: 10px; }
-.logo { width: 32px; height: 32px; border-radius: 99px; display: grid; place-items: center; background: linear-gradient(135deg, #e6c875, #a67c1e); color: #fff; font-weight: 800; font-size: 0.7rem; box-shadow: 0 4px 10px rgba(166, 124, 30, 0.3); flex-shrink: 0; }
-.brand b { display: block; font-size: 0.7rem; color: #4a3b18; font-weight: 700; line-height: 1.2; }
-.brand small { display: block; font-size: 0.45rem; color: var(--text-muted); }
-.pill { padding: 5px 10px; border: 1px solid var(--line-gold); border-radius: 99px; background: rgba(255, 251, 240, 0.95); color: #967219; font-size: 0.45rem; font-weight: 700; white-space: nowrap; }
+html {
+  scroll-behavior: smooth;
+  font-size: 12px;
+}
 
-.hero { padding: 14px 16px; margin-bottom: 12px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 16px; background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(252,247,237,0.95)); box-shadow: var(--shadow-lux); }
-.hero-tag { font-size: 0.42rem; font-weight: 800; letter-spacing: 1px; color: #a67c1e; text-transform: uppercase; }
-.hero h1 { margin: 4px 0; font-size: 1rem; line-height: 1.3; font-weight: 800; }
-.hero h1 em { font-style: normal; background: linear-gradient(135deg, #c49828, #825e0c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.hero p { margin: 0; font-size: 0.48rem; line-height: 1.4; color: var(--text-muted); }
+body {
+  margin: 0;
+  background: var(--bg-main);
+  color: var(--text-dark);
+  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
 
-.panel { background: var(--panel-bg); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 16px; box-shadow: var(--shadow-lux); margin-bottom: 12px; padding: 12px; }
-.bulkbox label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.52rem; font-weight: 700; color: #856414; }
-.bulk { display: block; width: 100%; min-height: 140px; resize: vertical; padding: 10px; border: 1px solid var(--line-soft); border-radius: 10px; background: #fff; color: var(--text-dark); outline: none; font-family: 'IBM Plex Mono', monospace; font-size: 0.5rem; line-height: 1.4; margin-bottom: 10px; }
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.run { grid-column: 1 / -1; min-height: 40px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #c49828, #8c6511); color: #fff; font-size: 0.65rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(140, 101, 17, 0.35); }
-.clear, .sample-btn { min-height: 36px; border: 1px solid var(--line-soft); border-radius: 10px; background: #fff; color: #7c7263; font-size: 0.55rem; font-weight: 600; cursor: pointer; }
-.sample-btn { background: rgba(255, 248, 230, 0.9); border-color: rgba(212, 175, 55, 0.4); color: #8c6511; }
+.shell {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 12px 10px;
+}
 
-.section-title { font-size: 0.7rem; font-weight: 800; color: #78590f; margin: 16px 0 10px; display: flex; align-items: center; gap: 6px; border-left: 3.5px solid #c49828; padding-left: 8px; }
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 
-.prediction-card-wrapper { position: relative; margin-bottom: 18px; }
-.prediction-card { padding: 20px 16px; border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 22px; background: linear-gradient(180deg, #ffffff 0%, #fffcf5 100%); box-shadow: 0 15px 40px rgba(120, 90, 40, 0.12); position: relative; overflow: hidden; }
-.card-brand-tag { position: absolute; top: 14px; right: 14px; font-size: 0.42rem; font-weight: 700; color: #9a7311; background: linear-gradient(135deg, rgba(255,248,230,0.95), rgba(255,241,204,0.95)); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; gap: 4px; }
-.card-top-bar { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; border-bottom: 1.5px dashed #ebdcb8; padding-bottom: 10px; padding-right: 110px; }
-.card-date { font-size: 0.5rem; font-weight: 700; color: var(--text-muted); }
-.card-title-group { display: flex; align-items: center; gap: 8px; }
-.card-flag { font-size: 1.4rem; line-height: 1; }
-.card-lottery-name { font-size: 0.95rem; font-weight: 800; color: #322c23; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-.hero-digits-wrap { display: flex; justify-content: center; gap: 16px; margin: 16px 0; }
-.digit-box-item { width: 90px; height: 80px; background: #fff; border: 2px solid #dfd1b0; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0,0,0,0.04); }
-.digit-circle { font-size: 1.2rem; font-weight: 800; color: #fff; width: 50px; height: 36px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 4px; background: var(--gold-grad); font-family: 'IBM Plex Mono', monospace; }
-.digit-rate { font-size: 0.38rem; color: #726758; font-weight: 700; }
+.logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 99px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #e6c875, #a67c1e);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.7rem;
+  box-shadow: 0 4px 10px rgba(166, 124, 30, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+}
 
-.pairs-grid-box { background: #fff; border: 1.5px solid #dfd1b0; border-radius: 14px; padding: 14px 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 14px; box-shadow: 0 6px 20px rgba(120, 90, 40, 0.05); }
-.pair-badge { background: #fff; border: 1px solid #ebdcb8; border-radius: 10px; padding: 8px 4px; text-align: center; }
-.pair-badge.highlight-top1 { background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98)); border: 1.5px solid #d4af37; }
-.pair-badge.highlight-top2 { background: linear-gradient(135deg, rgba(245,247,250,0.98), rgba(230,235,240,0.98)); border: 1.5px solid #a8b2bc; }
-.pair-badge.highlight-top3 { background: linear-gradient(135deg, rgba(253,242,242,0.98), rgba(248,230,230,0.98)); border: 1.5px solid #b76e79; }
-.pair-num { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; font-weight: 800; color: #322c23; display: block; margin-bottom: 2px; }
-.pair-pct { font-size: 0.38rem; color: #827768; font-weight: 600; display: block; }
+.brand b {
+  display: block;
+  font-size: 0.7rem;
+  color: #4a3b18;
+  font-weight: 700;
+  line-height: 1.2;
+}
 
-.card-action-bar { display: flex; justify-content: flex-end; margin-top: 8px; margin-bottom: 16px; }
-.screenshot-btn { background: linear-gradient(135deg, #c49828, #8c6511); color: #fff; border: 0; padding: 7px 15px; border-radius: 10px; font-size: 0.52rem; font-weight: 700; cursor: pointer; }
+.brand small {
+  display: block;
+  font-size: 0.45rem;
+  color: var(--text-muted);
+}
 
-.summary-table-container { overflow-x: auto; margin-bottom: 18px; border: 1px solid var(--line-soft); border-radius: 12px; background: #fff; padding: 10px; box-shadow: var(--shadow-lux); }
-table.audit-table { width: 100%; border-collapse: collapse; font-size: 0.48rem; min-width: 300px; }
-table.audit-table th, table.audit-table td { border: 1px solid #f0e6d6; padding: 7px 5px; text-align: center; white-space: nowrap; }
-table.audit-table th { background: #faf5eb; color: #78590f; font-weight: 700; }
-.badge-hit { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; padding: 2px 6px; border-radius: 99px; font-weight: 700; display: inline-block; }
-.badge-miss { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 2px 6px; border-radius: 99px; font-weight: 700; display: inline-block; }
+.pill {
+  padding: 5px 10px;
+  border: 1px solid var(--line-gold);
+  border-radius: 99px;
+  background: rgba(255, 251, 240, 0.95);
+  color: #967219;
+  font-size: 0.45rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
-.toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 30px); opacity: 0; padding: 8px 16px; border-radius: 99px; color: #fff; background: #846210; font-size: 0.55rem; font-weight: 600; transition: all 0.25s ease; pointer-events: none; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.25); white-space: nowrap; }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.hero {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(252,247,237,0.95));
+  box-shadow: var(--shadow-lux);
+}
+
+.hero-tag {
+  font-size: 0.42rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #a67c1e;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 4px 0;
+  font-size: 1rem;
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, #c49828, #825e0c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  margin: 0;
+  font-size: 0.48rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lux);
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.bulkbox label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: #856414;
+}
+
+.bulk {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text-dark);
+  outline: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.bulk:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.run {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #c49828, #8c6511);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(140, 101, 17, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.run:active {
+  transform: scale(0.98);
+}
+
+.clear, .sample-btn {
+  min-height: 36px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: #fff;
+  color: #7c7263;
+  font-size: 0.55rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sample-btn {
+  background: rgba(255, 248, 230, 0.9);
+  border-color: rgba(212, 175, 55, 0.4);
+  color: #8c6511;
+}
+
+.mobile-alert {
+  display: none;
+  padding: 10px;
+  border-radius: 10px;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  color: #c62828;
+  font-size: 0.52rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.mobile-alert.show {
+  display: block;
+}
+
+.section-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #78590f;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-left: 3.5px solid #c49828;
+  padding-left: 8px;
+}
+
+.lottery-nav-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 2px 12px 2px;
+  margin-bottom: 14px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lottery-nav-bar::-webkit-scrollbar {
+  height: 5px;
+}
+
+.lottery-nav-bar::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+.nav-tab-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--line-gold);
+  border-radius: 10px;
+  background: #fff;
+  color: #78590f;
+  font-size: 0.5rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  flex-shrink: 0;
+}
+
+.nav-tab-btn.active {
+  background: linear-gradient(135deg, #c49828, #8c6511);
+  color: #fff;
+  border-color: #8c6511;
+  box-shadow: 0 4px 10px rgba(140, 101, 17, 0.35);
+}
+
+.prediction-card-wrapper {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.prediction-card {
+  padding: 20px 16px;
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #fffcf5 100%);
+  box-shadow: 0 15px 40px rgba(120, 90, 40, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.prediction-card::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.card-brand-tag {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-size: 0.42rem;
+  font-weight: 700;
+  color: #9a7311;
+  background: linear-gradient(135deg, rgba(255,248,230,0.95), rgba(255,241,204,0.95));
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 3px 6px rgba(212, 175, 55, 0.15);
+}
+
+.card-top-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 16px;
+  border-bottom: 1.5px dashed #ebdcb8;
+  padding-bottom: 10px;
+  padding-right: 110px;
+}
+
+.card-date {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-flag {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.card-lottery-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #322c23;
+  letter-spacing: -0.2px;
+}
+
+.hero-digits-wrap {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.digit-box-item {
+  width: 76px;
+  height: 76px;
+  background: #fff;
+  border: 2px solid #dfd1b0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+  transition: transform 0.2s ease;
+}
+
+.digit-box-item:hover {
+  transform: translateY(-2px);
+}
+
+.digit-circle {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.digit-gold .digit-circle { background: var(--gold-grad); }
+.digit-silver .digit-circle { background: var(--silver-grad); }
+
+.digit-rate {
+  font-size: 0.42rem;
+  color: #726758;
+  font-weight: 700;
+}
+
+.pairs-grid-box {
+  background: #fff;
+  border: 1.5px solid #dfd1b0;
+  border-radius: 14px;
+  padding: 14px 10px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+  box-shadow: 0 6px 20px rgba(120, 90, 40, 0.05);
+}
+
+.pair-badge {
+  background: #fff;
+  border: 1px solid #ebdcb8;
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.pair-badge.highlight-top1 {
+  background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98));
+  border: 1.5px solid #d4af37;
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.25);
+}
+
+.pair-badge.highlight-top2 {
+  background: linear-gradient(135deg, rgba(245,247,250,0.98), rgba(230,235,240,0.98));
+  border: 1.5px solid #a8b2bc;
+  box-shadow: 0 3px 8px rgba(168, 178, 188, 0.25);
+}
+
+.pair-badge.highlight-top3 {
+  background: linear-gradient(135deg, rgba(253,242,242,0.98), rgba(248,230,230,0.98));
+  border: 1.5px solid #b76e79;
+  box-shadow: 0 3px 8px rgba(183, 110, 121, 0.25);
+}
+
+.pair-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #322c23;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.highlight-top1 .pair-num { color: #8a650d; }
+.highlight-top2 .pair-num { color: #4a525d; }
+.highlight-top3 .pair-num { color: #7d3f48; }
+
+.pair-pct {
+  font-size: 0.38rem;
+  color: #827768;
+  font-weight: 600;
+  display: block;
+}
+
+.card-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.screenshot-btn {
+  background: linear-gradient(135deg, #c49828, #8c6511);
+  color: #fff;
+  border: 0;
+  padding: 7px 15px;
+  border-radius: 10px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 10px rgba(140, 101, 17, 0.3);
+}
+
+.screenshot-btn:active {
+  transform: scale(0.97);
+}
+
+.summary-table-container {
+  overflow-x: auto;
+  margin-bottom: 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+  box-shadow: var(--shadow-lux);
+}
+
+table.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.48rem;
+  min-width: 300px;
+}
+
+table.audit-table th,
+table.audit-table td {
+  border: 1px solid #f0e6d6;
+  padding: 7px 5px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+table.audit-table th {
+  background: #faf5eb;
+  color: #78590f;
+  font-weight: 700;
+}
+
+.badge-hit {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  padding: 2px 6px;
+  border-radius: 99px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.badge-miss {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  padding: 2px 6px;
+  border-radius: 99px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translate(-50%, 30px);
+  opacity: 0;
+  padding: 8px 16px;
+  border-radius: 99px;
+  color: #fff;
+  background: #846210;
+  font-size: 0.55rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  pointer-events: none;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -95,39 +587,46 @@ table.audit-table th { background: #faf5eb; color: #78590f; font-weight: 700; }
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (Master V55.10)</b>
-        <small>Dynamic Pair Co-occurrence & Max Streak Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (Master V55.09)</b>
+        <small>Strict Rule Engine & Compensation Matrix</small>
       </div>
     </div>
-    <div class="pill">V55.10 Pro</div>
+    <div class="pill">V55.09 Strict</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">ระบบวิเคราะห์คู่สัมพันธ์ลอตเตอรี่อัจฉริยะ</div>
-    <h1>ระบบพยากรณ์คู่ชดเชย <em>(Master V55.10)</em></h1>
-    <p>วิเคราะห์คู่สัมพันธ์เด่น (Complementary Pairs) ตรวจจับรอบหลุดสูงสุด และเลือกชุดคู่เด่นที่ดีที่สุดตามสถิติจริง</p>
+    <div class="hero-tag">ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ (เศรษฐีเงินล้าน)</div>
+    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.09 Strict)</em></h1>
+    <p>นับผลเลขเด่นเฉพาะหลักสิบ/หน่วย, คำนวณเปอร์เซ็นต์จากจำนวนรอบจริง, จับคู่เลขเจาะ 10 คู่เต็ม พร้อมระบบคู่ชดเชยอัจฉริยะ</p>
   </div>
+
+  <div id="mobileAlert" class="mobile-alert"></div>
 
   <div class="panel bulkbox">
     <label for="inputData">
       <span>วางสถิติจาก PDF หรือฐานข้อมูลของคุณ:</span>
       <span id="dataCount" style="color:#b8860b">0 รายการ</span>
     </label>
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่..."></textarea>
+
+    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;ลาวพัฒนา | 12 พ.ย. 69&#10;836&#10;98"></textarea>
+
     <div class="actions">
-      <button id="runBtn" class="run" type="button">⚡ ประมวลผลระบบคู่สัมพันธ์ V55.10 Pro</button>
+      <button id="runBtn" class="run" type="button">
+        <span>⚡</span> ประมวลผลระบบ V55.09 Strict Engine
+      </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
     </div>
   </div>
 
+  <div id="auditOutput"></div>
   <div id="resultOutput"></div>
 </div>
 
 <div id="toast" class="toast">ดำเนินการสำเร็จ</div>
 
 <script>
-const SAMPLE_PDF_DATA = `ลาวพัฒนา | 12 พ.ย. 69
+const SAMPLE_LAO_DATA = `ลาวพัฒนา | 12 พ.ย. 69
 836
 98
 ลาวพัฒนา | 11 พ.ย. 69
@@ -218,27 +717,88 @@ const SAMPLE_PDF_DATA = `ลาวพัฒนา | 12 พ.ย. 69
 693
 46`;
 
-const FLAG_MAP = { 'ลาว': '🇱🇦', 'ฮานอย': '🇻🇳', 'ไทย': '🇹🇭', 'ดาวโจนส์': '🇺🇸', 'DEFAULT': '🎯' };
+const FLAG_MAP = {
+  'ลาว': '🇱🇦', 'ล.': '🇱🇦',
+  'ฮานอย': '🇻🇳', 'ไทย': '🇹🇭',
+  'DEFAULT': '🎯'
+};
+
+const THAI_MONTHS = {
+  'ม.ค.': 0, 'ก.พ.': 1, 'มี.ค.': 2, 'เม.ย.': 3, 'พ.ค.': 4, 'มิ.ย.': 5,
+  'ก.ค.': 6, 'ส.ค.': 7, 'ก.ย.': 8, 'ต.ค.': 9, 'พ.ย.': 10, 'ธ.ค.': 11
+};
+const THAI_MONTHS_ARR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function parseThaiDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return new Date(NaN);
+  const parts = dateStr.trim().split(/\s+/);
+  if (parts.length < 3) return new Date(NaN);
+  const day = parseInt(parts[0], 10);
+  const month = THAI_MONTHS[parts[1]];
+  let year = parseInt(parts[2], 10);
+  if (!Number.isInteger(day) || month === undefined || !Number.isFinite(year)) return new Date(NaN);
+  if (year >= 0 && year < 100) year += 2500;
+  if (year >= 2400) year -= 543;
+  return new Date(year, month, day);
+}
+
+function formatThaiDate(dateObj) {
+  if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return 'ไม่ระบุวันที่';
+  const day = dateObj.getDate();
+  const monthStr = THAI_MONTHS_ARR[dateObj.getMonth()];
+  const thaiShortYear = String((dateObj.getFullYear() + 543) % 100).padStart(2, '0');
+  return `${day} ${monthStr} ${thaiShortYear}`;
+}
+
+function calculateNextDrawDate(lastDateStr) {
+  let dateObj = parseThaiDate(lastDateStr);
+  if (Number.isNaN(dateObj.getTime())) return 'ไม่ระบุวันที่';
+  dateObj.setDate(dateObj.getDate() + 1);
+  return formatThaiDate(dateObj);
+}
 
 function getFlag(typeName) {
-  for (const key in FLAG_MAP) { if (typeName.includes(key)) return FLAG_MAP[key]; }
+  for (const key in FLAG_MAP) {
+    if (typeName.includes(key)) return FLAG_MAP[key];
+  }
   return '🎯';
 }
 
 function formatDisplayName(rawName) {
-  if (rawName.includes('ลาว')) return 'ล. พัฒนา';
-  return rawName.trim();
+  let name = rawName.trim().replace(/\s+/g, ' ');
+  if (name.startsWith('ลาว')) {
+    let sub = name.replace('ลาว', '').trim();
+    return sub ? `ล. ${sub}` : 'ล. พัฒนา';
+  }
+  return name;
+}
+
+function showAlert(msg) {
+  const box = document.getElementById('mobileAlert');
+  if (box) {
+    box.innerText = msg;
+    box.classList.add('show');
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function clearAlert() {
+  const box = document.getElementById('mobileAlert');
+  if (box) { box.classList.remove('show'); box.innerText = ''; }
 }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
-  if (t) { t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
+  if (t) {
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
 }
 
 function parsePDFText(rawText) {
   if (!rawText || typeof rawText !== 'string') return {};
   const grouped = {};
-  const seen = new Set();
   let currentLottery = null, currentDate = null, pendingTop3 = null;
   const lines = rawText.replace(/\r/g, '').split('\n').map(x => x.trim());
 
@@ -259,11 +819,6 @@ function parsePDFText(rawText) {
       if (currentLottery) ensureType(currentLottery);
       continue;
     }
-    if (!/^\d+$/.test(line) && !currentLottery) {
-      currentLottery = line;
-      ensureType(currentLottery);
-      continue;
-    }
     if (/^\d{3}$/.test(line)) {
       pendingTop3 = line;
       continue;
@@ -271,202 +826,129 @@ function parsePDFText(rawText) {
     if (/^\d{2}$/.test(line) && pendingTop3 && currentLottery) {
       const key = ensureType(currentLottery);
       const date = currentDate || `งวดที่ ${grouped[key].length + 1}`;
-      const uniqueKey = `${key}||${date}||${pendingTop3}||${line}`;
-      if (!seen.has(uniqueKey)) {
-        seen.add(uniqueKey);
-        grouped[key].push({ date, top3: pendingTop3, bottom2: line });
-      }
+      grouped[key].push({ date, top3: pendingTop3, bottom2: line });
       pendingTop3 = null;
       currentDate = null;
     }
   }
-
-  for (const k in grouped) { grouped[k].reverse(); } // เรียงจากเก่าไปใหม่
   return grouped;
 }
 
-// อัลกอริทึมค้นหา "คู่ชดเชย / คู่สัมพันธ์ที่ดีที่สุด" (Dynamic Pair Co-occurrence)
-function getBestComplementaryPair(historicalRecords) {
-  let pairCounts = {};
+// กฎเหล็ก: นับผลเลขเด่นเฉพาะหลักสิบและหลักหน่วยบน (2 ตัวท้ายของ 3 ตัวบน) หรือล่าง
+function getRelevantDigits(record) {
+  const top3 = String(record.top3 || '');
+  const tensUnitsTop = top3.length >= 2 ? top3.slice(-2) : top3;
+  const bottom2 = String(record.bottom2 || '');
+  return tensUnitsTop + bottom2;
+}
 
-  historicalRecords.forEach(r => {
-    let tens = r.top3[1];
-    let units = r.top3[2];
-    let bot = r.bottom2;
-    let pool = new Set([tens, units, bot[0], bot[1]]);
-    let arr = Array.from(pool).map(x => parseInt(x, 10)).sort((a,b)=>a-b);
-
-    for(let i=0; i<arr.length; i++) {
-      for(let j=i+1; j<arr.length; j++) {
-        let pKey = `${arr[i]}-${arr[j]}`;
-        pairCounts[pKey] = (pairCounts[pKey] || 0) + 1;
+// ระบบคำนวณคู่สัมพันธ์และเลขชดเชยอัจฉริยะ (Compensation Matrix)
+function analyzeCompensationPairs(records) {
+  let pairStats = {};
+  
+  // เก็บสถิติการออกร่วมกันและการหลุดติดต่อกันของทุกคู่ตัวเลข (00-99)
+  records.forEach((r, index) => {
+    let digits = getRelevantDigits(r);
+    for(let d1 = 0; d1 <= 9; d1++) {
+      for(let d2 = d1 + 1; d2 <= 9; d2++) {
+        let pairKey = `${d1},${d2}`;
+        if(!pairStats[pairKey]) {
+          pairStats[pairKey] = { d1, d2, hits: 0, currentLoss: 0, maxLoss: 0, history: [] };
+        }
+        let hasBoth = digits.includes(d1.toString()) || digits.includes(d2.toString());
+        if(hasBoth) {
+          pairStats[pairKey].hits++;
+          if(pairStats[pairKey].currentLoss > pairStats[pairKey].maxLoss) {
+            pairStats[pairKey].maxLoss = pairStats[pairKey].currentLoss;
+          }
+          pairStats[pairKey].currentLoss = 0;
+          pairStats[pairKey].history.push(true);
+        } else {
+          pairStats[pairKey].currentLoss++;
+          pairStats[pairKey].history.push(false);
+        }
       }
     }
   });
 
-  let sortedPairs = Object.entries(pairCounts).sort((a,b) => b[1] - a[1]);
-  if(sortedPairs.length > 0) {
-    let topPair = sortedPairs[0][0].split('-').map(Number);
-    return { d1: topPair[0], d2: topPair[1] };
-  }
-  return { d1: 0, d2: 8 };
-}
-
-// สร้างชุดเจาะ 10 คู่จากคู่ชดเชย (ห้ามวนเลขเด่นตัวเอง และไม่มีเลขเบิ้ล)
-function generate10Pairs(d1, d2) {
-  let pairs = [];
-  for (let i = 0; i <= 9; i++) {
-    if (i !== d1 && i !== d2) {
-      pairs.push(`${d1}${i}`);
-      pairs.push(`${d2}${i}`);
+  // ค้นหาคู่ที่มีสถิติเด่น: หลุดติดต่อกันใกล้เคียงหรือเท่ากับสถิติหลุดสูงสุด (มีโอกาสกลับมาตามหลักชดเชย)
+  let bestPair = null, bestScore = -1;
+  for(let key in pairStats) {
+    let p = pairStats[key];
+    // ให้คะแนนจากความถี่และความน่าจะเป็นที่จะกลับมา (ชดเชย)
+    let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0);
+    if(score > bestScore) {
+      bestScore = score;
+      bestPair = [p.d1, p.d2];
     }
   }
-  return pairs.slice(0, 10);
+
+  return bestPair || [0, 8];
 }
 
-// ตรวจสอบผลเลขเด่น (หลักสิบ/หน่วย บน หรือ 2 ตัวล่าง ห้ามหลักร้อย)
-function checkDigitHit(top3, bottom2, d) {
-  let hundreds = top3[0];
-  let tens = top3[1];
-  let units = top3[2];
-  let dStr = d.toString();
-  return ((tens === dStr || units === dStr) || bottom2.includes(dStr)) && (hundreds !== dStr);
-}
-
-// ตรวจสอบผลเลขเจาะ (รองรับการกลับตัว และกรณีเด่นชนกัน)
-function checkPairHit(top3, bottom2, d1, d2, pairs) {
-  let top2 = top3.slice(-2);
-  let top2Rev = top2.split('').reverse().join('');
-  let bot = bottom2;
-  let botRev = bot.split('').reverse().join('');
-
-  let dm1 = `${d1}${d2}`, dm2 = `${d2}${d1}`;
-  if (top2 === dm1 || top2 === dm2 || top2Rev === dm1 || top2Rev === dm2 ||
-      bot === dm1 || bot === dm2 || botRev === dm1 || botRev === dm2) return true;
-
-  for (let p of pairs) {
-    let pRev = p.split('').reverse().join('');
-    if (top2 === p || top2 === pRev || bot === p || bot === pRev) return true;
+// สร้างชุดเจาะ 10 คู่เต็มแบบไม่วนเลขเด่น และรองรับเลขกลับตัว
+function generateStrictPairs(d1, d2) {
+  let pairs = [];
+  let baseDigits = [d1, d2];
+  let others = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(x => x !== d1 && x !== d2);
+  
+  // สร้าง 10 คู่เต็มตามกฎ strict
+  for(let i = 0; i < 5; i++) {
+    let o = others[i % others.length];
+    pairs.push(`${d1}${o}`);
+    pairs.push(`${d2}${o}`);
   }
-  return false;
+  return pairs.slice(0, 10);
 }
 
 function analyzeLotteryRecords(records, lotteryType) {
   const total = records.length;
   if (total === 0) return null;
 
-  let auditLogs = [];
+  // คำนวณเลขเด่นตามหลักคู่ชดเชยอัจฉริยะจากประวัติจริง
+  const [d1, d2] = analyzeCompensationPairs(records);
+  const rawPairs = generateStrictPairs(d1, d2);
+
   let digitHits = 0;
   let pairHits = 0;
-  let digitHitRounds = 0;
 
-  for (let i = 1; i < total; i++) {
-    let pastData = records.slice(0, i);
-    let targetRecord = records[i];
-    
-    let bestPair = getBestComplementaryPair(pastData);
-    let d1 = bestPair.d1;
-    let d2 = bestPair.d2;
-    let pairs = generate10Pairs(d1, d2);
-    
-    let d1Hit = checkDigitHit(targetRecord.top3, targetRecord.bottom2, d1);
-    let d2Hit = checkDigitHit(targetRecord.top3, targetRecord.bottom2, d2);
-    let isDigitHit = d1Hit || d2Hit;
+  const auditLogs = records.map((r) => {
+    const relDigits = getRelevantDigits(r);
+    const isDigitHit = relDigits.includes(d1.toString()) || relDigits.includes(d2.toString());
+    if (isDigitHit) digitHits++;
 
-    let isPairHit = checkPairHit(targetRecord.top3, targetRecord.bottom2, d1, d2, pairs);
-
-    if (isDigitHit) { digitHits++; digitHitRounds++; }
+    const top2 = r.top3.slice(-2);
+    const bottom2 = r.bottom2;
+    const isPairHit = rawPairs.includes(top2) || rawPairs.includes(bottom2) || rawPairs.includes(top2.split('').reverse().join('')) || rawPairs.includes(bottom2.split('').reverse().join(''));
     if (isPairHit) pairHits++;
 
-    auditLogs.push({
-      date: targetRecord.date,
-      top3: targetRecord.top3,
-      bottom2: targetRecord.bottom2,
+    return {
+      date: r.date,
+      top3: r.top3,
+      bottom2: r.bottom2,
       pred: `${d1}, ${d2}`,
-      predPairs: pairs,
+      predPairs: rawPairs,
       isDigitHit,
       isPairHit
-    });
-  }
+    };
+  });
 
-  let latestBest = getBestComplementaryPair(records);
-  let d1 = latestBest.d1;
-  let d2 = latestBest.d2;
-  let latestPairs = generate10Pairs(d1, d2);
+  const cardDigitWinRate = ((digitHits / total) * 100).toFixed(1);
+  const cardPairWinRate = ((pairHits / total) * 100).toFixed(1);
 
-  let evalCount = auditLogs.length > 0 ? auditLogs.length : 1;
-  let digitRate = ((digitHits / evalCount) * 100).toFixed(1);
-  let pairRate = digitHitRounds > 0 ? ((pairHits / digitHitRounds) * 100).toFixed(1) : '0.0';
-
-  let formattedPairs = latestPairs.map((p, idx) => ({
+  const formattedPairs = rawPairs.map((p, idx) => ({
     pair: p,
-    highlightClass: idx === 0 ? 'highlight-top1' : (idx === 1 ? 'highlight-top2' : (idx === 2 ? 'highlight-top3' : '')),
-    pct: `${pairRate}%`
+    highlightClass: idx === 0 || idx === 1 ? 'highlight-top1' : (idx === 2 || idx === 3 ? 'highlight-top2' : ''),
+    pct: `${cardPairWinRate}%`
   }));
 
+  const latestRecordedDate = records[0] ? records[0].date : '';
+  const nextDrawDate = calculateNextDrawDate(latestRecordedDate);
+
   return {
-    lotteryType, total,
-    d1, d2,
-    cardDigitWinRate: digitRate,
-    cardPairWinRate: pairRate,
-    formattedPairs,
-    auditLogs: auditLogs.reverse()
+    lotteryType, total, cardDigitWinRate, cardPairWinRate,
+    d1, d2, formattedPairs, auditLogs, nextDrawDate
   };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const inputData = document.getElementById('inputData');
-  const dataCount = document.getElementById('dataCount');
-  const runBtn = document.getElementById('runBtn');
-  const sampleBtn = document.getElementById('sampleBtn');
-  const clearBtn = document.getElementById('clearBtn');
-
-  inputData.value = SAMPLE_PDF_DATA;
-  let parsedInit = parsePDFText(SAMPLE_PDF_DATA);
-  dataCount.innerText = `${Object.values(parsedInit).reduce((a,b)=>a+b.length,0)} รายการ (1 ประเภท)`;
-
-  inputData.addEventListener('input', () => {
-    const parsed = parsePDFText(inputData.value);
-    let totalCount = Object.values(parsed).reduce((acc, arr) => acc + arr.length, 0);
-    dataCount.innerText = `${totalCount} รายการ (${Object.keys(parsed).length} ประเภท)`;
-  });
-
-  sampleBtn.addEventListener('click', () => {
-    inputData.value = SAMPLE_PDF_DATA;
-    let totalCount = Object.values(parsePDFText(SAMPLE_PDF_DATA)).reduce((acc, arr) => acc + arr.length, 0);
-    dataCount.innerText = `${totalCount} รายการ (1 ประเภท)`;
-    showToast('โหลดข้อมูลตัวอย่างแล้ว');
-  });
-
-  clearBtn.addEventListener('click', () => {
-    inputData.value = '';
-    dataCount.innerText = '0 รายการ';
-    document.getElementById('resultOutput').innerHTML = '';
-    showToast('ล้างข้อมูลเรียบร้อย');
-  });
-
-  runBtn.addEventListener('click', () => {
-    try {
-      const parsedData = parsePDFText(inputData.value);
-      if (Object.keys(parsedData).length === 0) { alert('⚠️ กรุณากรอกข้อมูลสถิติ'); return; }
-      renderResults(parsedData);
-      showToast('ประมวลผล Master V55.10 สำเร็จ!');
-    } catch (err) { alert(`เกิดข้อผิดพลาด: ${err.message}`); }
-  });
-
-  runBtn.click();
-});
-
-function captureCard(cardId, lotteryName) {
-  const cardElement = document.getElementById(cardId);
-  if (!cardElement) return;
-  html2canvas(cardElement, { scale: 4, useCORS: true, backgroundColor: '#fffcf5', logging: false }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `card-${lotteryName}-V55.10.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showToast('บันทึกภาพการ์ดสำเร็จ!');
-  });
 }
 
 function renderResults(parsedData) {
@@ -481,33 +963,43 @@ function renderResults(parsedData) {
 
   if (analyzedResults.length === 0) return;
 
-  let html = `<div class="section-title">📊 ผลพยากรณ์คู่สัมพันธ์ (Master V55.10 Pro Engine)</div>`;
+  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.09 Strict Engine)</div>`;
+  html += `<div class="lottery-nav-bar">`;
+  analyzedResults.forEach((res, idx) => {
+    const flag = getFlag(res.lotteryType);
+    html += `<button class="nav-tab-btn ${idx === 0 ? 'active' : ''}" data-target="${idx}" onclick="switchLotteryTab('${idx}')">${flag} ${res.lotteryType}</button>`;
+  });
+  html += `</div>`;
 
   analyzedResults.forEach((res, idx) => {
     const flag = getFlag(res.lotteryType);
     const cardUniqueId = `predictionCard_${idx}`;
+    const groupUniqueId = `group_${idx}`;
+    const type = res.lotteryType;
 
     html += `
-      <div class="lottery-group-panel">
+      <div class="lottery-group-panel" id="${groupUniqueId}" style="display: ${idx === 0 ? 'block' : 'none'};">
         <div class="prediction-card-wrapper">
           <div class="prediction-card" id="${cardUniqueId}">
-            <div class="card-brand-tag"><span>✦</span> เศรษฐีเงินล้าน <span>✦</span></div>
+            <div class="card-brand-tag">
+              <span>✦</span> เศรษฐีเงินล้าน <span>✦</span>
+            </div>
             <div class="card-top-bar">
-              <span class="card-date">สถิติสะสมทั้งหมด: ${res.total} งวด</span>
+              <span class="card-date">สถิติสะสมทั้งหมด: ${res.total} งวด (งวดถัดไป: ${res.nextDrawDate})</span>
               <div class="card-title-group">
                 <span class="card-flag">${flag}</span>
-                <span class="card-lottery-name">${res.lotteryType} (คู่ชดเชยเด่น)</span>
+                <span class="card-lottery-name">${type}</span>
               </div>
             </div>
 
             <div class="hero-digits-wrap">
               <div class="digit-box-item digit-gold">
                 <div class="digit-circle">${res.d1}</div>
-                <span class="digit-rate">คู่หลัก (${res.cardDigitWinRate}%)</span>
+                <span class="digit-rate">ความแม่น ${res.cardDigitWinRate}%</span>
               </div>
               <div class="digit-box-item digit-silver">
                 <div class="digit-circle">${res.d2}</div>
-                <span class="digit-rate">คู่ชดเชย (${res.cardDigitWinRate}%)</span>
+                <span class="digit-rate">ความแม่น ${res.cardDigitWinRate}%</span>
               </div>
             </div>
 
@@ -518,7 +1010,7 @@ function renderResults(parsedData) {
       html += `
               <div class="pair-badge ${p.highlightClass}">
                 <span class="pair-num">${p.pair}</span>
-                <span class="pair-pct">เจาะ ${res.cardPairWinRate}%</span>
+                <span class="pair-pct">เจาะ ${p.pct}</span>
               </div>
       `;
     });
@@ -528,25 +1020,25 @@ function renderResults(parsedData) {
           </div>
 
           <div class="card-action-bar">
-            <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${res.lotteryType}')">
-              <span>📷</span> บันทึกภาพการ์ด (Pro Mode)
+            <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
+              <span>📷</span> บันทึกภาพการ์ด (Strict Mode)
             </button>
           </div>
         </div>
 
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            📋 ตารางตรวจสอบผลย้อนหลังคู่สัมพันธ์ (${res.lotteryType}) - แสดงชุดเจาะครบ 10 คู่
+            📋 ตารางตรวจสอบผลย้อนหลังตามกฎเหล็ก (${type}) - แสดงชุดเจาะครบ 10 คู่
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>คู่สัมพันธ์เด่น</th><th>เลขเจาะ (10 คู่)</th><th>ผลเด่น</th><th>ผลเจาะ</th></tr>
+              <tr><th>งวดวันที่</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th><th>เลขเด่น</th><th>เลขเจาะ (10 คู่)</th><th>ผลเด่น</th><th>ผลเจาะ</th></tr>
             </thead>
             <tbody>
     `;
 
     res.auditLogs.forEach(log => {
-      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td style="font-size:0.42rem; max-width:180px; white-space:normal;">${log.predPairs.join(', ')}</td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td></tr>`;
+      html += `<tr><td>${log.date}</td><td><b>${log.top3}</b></td><td><b>${log.bottom2}</b></td><td><b style="color:#b8860b">${log.pred}</b></td><td style="font-size:0.42rem">${log.predPairs.join(', ')}</td><td>${log.isDigitHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td><td>${log.isPairHit ? '<span class="badge-hit">เข้า</span>' : '<span class="badge-miss">หลุด</span>'}</td></tr>`;
     });
 
     html += `
@@ -560,6 +1052,82 @@ function renderResults(parsedData) {
   container.innerHTML = html;
   container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function captureCard(cardId, lotteryName) {
+  const cardElement = document.getElementById(cardId);
+  if (!cardElement) return;
+  html2canvas(cardElement, {
+    scale: 4,
+    useCORS: true,
+    backgroundColor: '#fffcf5',
+    logging: false
+  }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `card-${lotteryName}-V55.09.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพการ์ดสำเร็จ!');
+  });
+}
+
+function switchLotteryTab(targetGroup) {
+  const allTabs = document.querySelectorAll('.nav-tab-btn');
+  allTabs.forEach(tab => tab.classList.remove('active'));
+  const selectedTab = document.querySelector(`.nav-tab-btn[data-target="${targetGroup}"]`);
+  if (selectedTab) selectedTab.classList.add('active');
+
+  document.querySelectorAll('.lottery-group-panel').forEach(panel => {
+    panel.style.display = panel.id === `group_${targetGroup}` ? 'block' : 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inputData = document.getElementById('inputData');
+  const dataCount = document.getElementById('dataCount');
+  const runBtn = document.getElementById('runBtn');
+  const sampleBtn = document.getElementById('sampleBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  inputData.addEventListener('input', () => {
+    const parsed = parsePDFText(inputData.value);
+    let totalCount = Object.values(parsed).reduce((acc, arr) => acc + arr.length, 0);
+    dataCount.innerText = `${totalCount} รายการ (${Object.keys(parsed).length} ประเภท)`;
+    clearAlert();
+  });
+
+  sampleBtn.addEventListener('click', () => {
+    inputData.value = SAMPLE_LAO_DATA;
+    const parsed = parsePDFText(SAMPLE_LAO_DATA);
+    let totalCount = Object.values(parsed).reduce((acc, arr) => acc + arr.length, 0);
+    dataCount.innerText = `${totalCount} รายการ (${Object.keys(parsed).length} ประเภท)`;
+    clearAlert();
+    showToast('โหลดข้อมูลตัวอย่างสำเร็จ');
+  });
+
+  clearBtn.addEventListener('click', () => {
+    inputData.value = '';
+    dataCount.innerText = '0 รายการ';
+    document.getElementById('resultOutput').innerHTML = '';
+    clearAlert();
+    showToast('ล้างข้อมูลเรียบร้อย');
+  });
+
+  runBtn.addEventListener('click', () => {
+    clearAlert();
+    try {
+      const rawText = inputData.value;
+      const parsedData = parsePDFText(rawText);
+      if (Object.keys(parsedData).length === 0) {
+        showAlert('⚠️ ไม่พบข้อมูลสถิติที่ถูกต้อง กรุณาตรวจสอบรูปแบบ');
+        return;
+      }
+      renderResults(parsedData);
+      showToast('ประมวลผล Master V55.09 สำเร็จ!');
+    } catch (err) {
+      showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
+    }
+  });
+});
 </script>
 </body>
 </html>
