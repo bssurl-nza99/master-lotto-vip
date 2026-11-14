@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V55.09 Strict & Compensation Support</title>
+<title>เศรษฐีเงินล้าน · Master V55.10 Ultimate Compensation & Frequency Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -585,17 +585,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (Master V55.09)</b>
-        <small>Strict Rule & Compensation Support Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (Master V55.10)</b>
+        <small>Ultimate Compensation & Frequency Engine</small>
       </div>
     </div>
-    <div class="pill">V55.09 Strict</div>
+    <div class="pill">V55.10 Ultimate</div>
   </div>
 
   <div class="hero">
     <div class="hero-tag">ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ (เศรษฐีเงินล้าน)</div>
-    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.09 Strict)</em></h1>
-    <p>ระบบวิเคราะห์คู่ชดเชยอัจฉริยะ พร้อมตารางซัพพอร์ตแสดงรายละเอียดการหลุดและเลขสนับสนุนยืนยันความน่าเชื่อถือ</p>
+    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.10 Ultimate)</em></h1>
+    <p>ระบบวิเคราะห์ความถี่เดี่ยว 0-9 และคู่ชดเชยอัจฉริยะ คัดกรองชุดเจาะแม่นยำสูง รองรับเลขกลับตัวและตรวจสอบผลแบบเรียลไทม์</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -610,7 +610,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระบบ V55.09 Strict Engine
+        <span>⚡</span> ประมวลผลระบบ V55.10 Ultimate Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -839,7 +839,37 @@ function getRelevantDigits(record) {
   return tensUnitsTop + bottom2;
 }
 
-// ระบบวิเคราะห์คู่ชดเชยและจัดทำตารางสนับสนุน (Compensation & Support Analysis)
+// 1. วิเคราะห์ความถี่เดี่ยว 0-9 (Single Digit Frequency Matrix) พร้อมสถิติต่อเนื่อง
+function analyzeSingleDigitFrequency(records) {
+  let stats = {};
+  for(let d=0; d<=9; d++) {
+    stats[d] = { digit: d, hits: 0, currentWinStreak: 0, maxWinStreak: 0, currentLoss: 0, maxLoss: 0 };
+  }
+
+  records.forEach((r) => {
+    let digits = getRelevantDigits(r);
+    for(let d=0; d<=9; d++) {
+      let isHit = digits.includes(d.toString());
+      let st = stats[d];
+      if(isHit) {
+        st.hits++;
+        st.currentWinStreak++;
+        if(st.currentWinStreak > st.maxWinStreak) st.maxWinStreak = st.currentWinStreak;
+        if(st.currentLoss > st.maxLoss) st.maxLoss = st.currentLoss;
+        st.currentLoss = 0;
+      } else {
+        st.currentLoss++;
+        if(st.currentLoss > st.maxLoss) st.maxLoss = st.currentLoss;
+        if(st.currentWinStreak > st.maxWinStreak) st.maxWinStreak = st.currentWinStreak;
+        st.currentWinStreak = 0;
+      }
+    }
+  });
+
+  return Object.values(stats).sort((a,b) => b.hits - a.hits);
+}
+
+// 2. วิเคราะห์คู่ชดเชยและจัดทำตารางสนับสนุนเชิงลึก
 function analyzeCompensationPairsWithSupport(records) {
   let pairStats = {};
   records.forEach((r) => {
@@ -848,34 +878,71 @@ function analyzeCompensationPairsWithSupport(records) {
       for(let d2 = d1 + 1; d2 <= 9; d2++) {
         let pairKey = `${d1},${d2}`;
         if(!pairStats[pairKey]) {
-          pairStats[pairKey] = { d1, d2, hits: 0, currentLoss: 0, maxLoss: 0 };
+          pairStats[pairKey] = { d1, d2, hits: 0, currentLoss: 0, maxLoss: 0, currentWin: 0, maxWin: 0 };
         }
         let hasBoth = digits.includes(d1.toString()) || digits.includes(d2.toString());
         if(hasBoth) {
           pairStats[pairKey].hits++;
-          if(pairStats[pairKey].currentLoss > pairStats[pairKey].maxLoss) {
-            pairStats[pairKey].maxLoss = pairStats[pairKey].currentLoss;
-          }
+          pairStats[pairKey].currentWin++;
+          if(pairStats[pairKey].currentWin > pairStats[pairKey].maxWin) pairStats[pairKey].maxWin = pairStats[pairKey].currentWin;
+          if(pairStats[pairKey].currentLoss > pairStats[pairKey].maxLoss) pairStats[pairKey].maxLoss = pairStats[pairKey].currentLoss;
           pairStats[pairKey].currentLoss = 0;
         } else {
           pairStats[pairKey].currentLoss++;
+          if(pairStats[pairKey].currentWin > pairStats[pairKey].maxWin) pairStats[pairKey].maxWin = pairStats[pairKey].currentWin;
+          pairStats[pairKey].currentWin = 0;
         }
       }
     }
   });
 
   let rankedPairs = Object.values(pairStats).map(p => {
-    let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0);
-    return { ...p, score };
+    let winRate = records.length > 0 ? ((p.hits / records.length) * 100).toFixed(1) : '0.0';
+    let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0) + (p.maxWin * 2);
+    return { ...p, winRate, score };
   }).sort((a, b) => b.score - a.score);
 
   return rankedPairs;
 }
 
-function generateStrictRows(d1, d2) {
-  let others = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(x => x !== d1 && x !== d2).sort((a,b) => a - b);
-  let topRows = others.slice(0, 5).map(o => `${d1}${o}`);
-  let bottomRows = others.slice(0, 5).map(o => `${d2}${o}`);
+// 3. คัดเลือกชุดเจาะ 10 คู่จากประวัติการออกร่วมกันจริง (Smart Co-occurrence Pairs)
+function generateSmartPairs(d1, d2, records) {
+  let pairCounts = {};
+  for(let i=0; i<=9; i++) {
+    pairCounts[`${d1}${i}`] = 0;
+    pairCounts[`${d2}${i}`] = 0;
+  }
+
+  records.forEach(r => {
+    let top2 = r.top3.slice(-2);
+    let bottom2 = r.bottom2;
+    [top2, bottom2].forEach(val => {
+      if(val.length === 2) {
+        let f = parseInt(val[0]), s = parseInt(val[1]);
+        if(f === d1 || s === d1 || f === d2 || s === d2) {
+          if(pairCounts[val] !== undefined) pairCounts[val]++;
+          let rev = val.split('').reverse().join('');
+          if(pairCounts[rev] !== undefined) pairCounts[rev]++;
+        }
+      }
+    });
+  });
+
+  let d1Rows = [];
+  let d2Rows = [];
+  for(let i=0; i<=9; i++) {
+    let p1 = `${d1}${i}`;
+    let p2 = `${d2}${i}`;
+    d1Rows.push({ pair: p1, freq: pairCounts[p1] || 0 });
+    d2Rows.push({ pair: p2, freq: pairCounts[p2] || 0 });
+  }
+
+  d1Rows.sort((a,b) => b.freq - a.freq);
+  d2Rows.sort((a,b) => b.freq - a.freq);
+
+  let topRows = d1Rows.slice(0, 5).map(x => x.pair).sort((a,b) => parseInt(a) - parseInt(b));
+  let bottomRows = d2Rows.slice(0, 5).map(x => x.pair).sort((a,b) => parseInt(a) - parseInt(b));
+
   return { topRows, bottomRows, allPairs: [...topRows, ...bottomRows] };
 }
 
@@ -883,11 +950,15 @@ function analyzeLotteryRecords(records, lotteryType) {
   const total = records.length;
   if (total === 0) return null;
 
+  const singleStats = analyzeSingleDigitFrequency(records);
   const rankedPairs = analyzeCompensationPairsWithSupport(records);
-  const bestPairObj = rankedPairs[0] || { d1: 0, d2: 8, currentLoss: 0, maxLoss: 2, hits: 15 };
+  
+  // ใช้คู่ชดเชยที่ดีที่สุดเป็นเลขเด่นหลัก
+  const bestPairObj = rankedPairs[0] || { d1: singleStats[0].digit, d2: singleStats[1].digit, currentLoss: 0, maxLoss: 2, winRate: '70.0' };
   const d1 = bestPairObj.d1;
   const d2 = bestPairObj.d2;
-  const { topRows, bottomRows, allPairs } = generateStrictRows(d1, d2);
+
+  const { topRows, bottomRows, allPairs } = generateSmartPairs(d1, d2, records);
 
   let digitHits = 0;
   let pairHitsWhenDigitHit = 0;
@@ -908,7 +979,6 @@ function analyzeLotteryRecords(records, lotteryType) {
 
     const isPairHit = allPairs.includes(top2) || allPairs.includes(bottom2) || allPairs.includes(top2Rev) || allPairs.includes(bottom2Rev);
     
-    // คิดเปอร์เซ็นต์เปอร์เซ็นต์เฉพาะงวดที่เลขเด่นเข้า และรองรับเลขกลับตัว
     if (isDigitHit && isPairHit) {
       pairHitsWhenDigitHit++;
     }
@@ -933,7 +1003,8 @@ function analyzeLotteryRecords(records, lotteryType) {
   return {
     lotteryType, total, cardDigitWinRate, cardPairWinRate,
     d1, d2, topRows, bottomRows, auditLogs, nextDrawDate,
-    supportData: rankedPairs.slice(0, 5), // ส่งข้อมูล 5 อันดับแรกเพื่อทำตารางซัพพอร์ต
+    supportData: rankedPairs.slice(0, 5),
+    singleStats: singleStats.slice(0, 5), // แสดง 5 ตัวที่ความถี่สูงสุด
     currentLoss: bestPairObj.currentLoss,
     maxLoss: bestPairObj.maxLoss
   };
@@ -951,7 +1022,7 @@ function renderResults(parsedData) {
 
   if (analyzedResults.length === 0) return;
 
-  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.09 Strict Engine)</div>`;
+  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.10 Ultimate Engine)</div>`;
   html += `<div class="lottery-nav-bar">`;
   analyzedResults.forEach((res, idx) => {
     const flag = getFlag(res.lotteryType);
@@ -1019,25 +1090,25 @@ function renderResults(parsedData) {
 
           <div class="card-action-bar">
             <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-              <span>📷</span> บันทึกภาพการ์ด (Strict Mode)
+              <span>📷</span> บันทึกภาพการ์ด (Ultimate Mode)
             </button>
           </div>
         </div>
 
-        <!-- ตารางแสดงรายละเอียดตัวสนับสนุนและคู่ชดเชย (Support & Compensation Table) -->
+        <!-- 1. ตารางวิเคราะห์ความถี่เดี่ยว 0-9 (Frequency Support Table) -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุน (${type}) - คัดเลือกชุดที่ดีที่สุด
+            📈 ตารางความถี่เลขเดี่ยว 0-9 ยอดนิยม (${type}) - ตัวกรองสนับสนุนเลขเด่น
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>อันดับคู่ชดเชย</th><th>คู่เลขเด่น</th><th>สถานะการหลุดปัจจุบัน</th><th>สถิติหลุดสูงสุด</th><th>คะแนนความน่าเชื่อถือ</th></tr>
+              <tr><th>เลขเดี่ยว</th><th>จำนวนครั้งที่มา</th><th>เข้าต่อเนื่องสูงสุด</th><th>หลุดติดต่อกันสูงสุด</th><th>สถานะปัจจุบัน</th></tr>
             </thead>
             <tbody>
     `;
 
-    res.supportData.forEach((s, sIdx) => {
-      html += `<tr><td><b>#${sIdx + 1}</b></td><td><b style="color:#b8860b">[${s.d1}, ${s.d2}]</b></td><td>${s.currentLoss} งวดซ้อน</td><td>${s.maxLoss} งวด</td><td><span class="badge-hit">คะแนน ${s.score}</span></td></tr>`;
+    res.singleStats.forEach(st => {
+      html += `<tr><td><b style="color:#b8860b">เลข ${st.digit}</b></td><td>${st.hits} ครั้ง</td><td>${st.maxWinStreak} งวด</td><td>${st.maxLoss} งวด</td><td>${st.currentLoss === 0 ? '<span class="badge-hit">กำลังเดินดี</span>' : `<span class="badge-miss">หลุด ${st.currentLoss} งวด</span>`}</td></tr>`;
     });
 
     html += `
@@ -1045,6 +1116,28 @@ function renderResults(parsedData) {
           </table>
         </div>
 
+        <!-- 2. ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุน (Compensation & Support Table) -->
+        <div class="summary-table-container">
+          <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
+            🛡️ ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุนเชิงลึก (${type})
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr><th>อันดับคู่ชดเชย</th><th>คู่เลขเด่น</th><th>ความแม่นยำ (%)</th><th>สถานะหลุดปัจจุบัน</th><th>สถิติหลุดสูงสุด</th><th>คะแนนความน่าเชื่อถือ</th></tr>
+            </thead>
+            <tbody>
+    `;
+
+    res.supportData.forEach((s, sIdx) => {
+      html += `<tr><td><b>#${sIdx + 1}</b></td><td><b style="color:#b8860b">[${s.d1}, ${s.d2}]</b></td><td>${s.winRate}%</td><td>${s.currentLoss} งวดซ้อน</td><td>${s.maxLoss} งวด</td><td><span class="badge-hit">คะแนน ${s.score}</span></td></tr>`;
+    });
+
+    html += `
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. ตารางตรวจสอบผลย้อนหลัง -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
             📋 ตารางตรวจสอบผลย้อนหลังตามกฎเหล็ก (${type}) - ตรวจจับเลขตรงและเลขกลับตัว
@@ -1082,7 +1175,7 @@ function captureCard(cardId, lotteryName) {
     logging: false
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-V55.09.png`;
+    link.download = `card-${lotteryName}-V55.10.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดสำเร็จ!');
@@ -1141,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล Master V55.09 สำเร็จ!');
+      showToast('ประมวลผล Master V55.10 สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
