@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>AI Lottery Smart Predictor - VIP Edition V3</title>
+    <title>AI Lottery Smart Predictor - VIP Edition V4</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -82,7 +82,7 @@
 
         textarea {
             width: 100%;
-            height: 120px;
+            height: 125px;
             background-color: var(--card-inner);
             border: 1px solid var(--border-subtle);
             border-radius: 8px;
@@ -160,7 +160,6 @@
             border-color: var(--border-gold);
         }
 
-        /* การ์ดแสดงผลแยก เลขเด่น และ เลขเจาะ */
         .metrics-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -260,7 +259,6 @@
             margin-bottom: 2px;
         }
 
-        /* ตารางเลื่อนเฉพาะภายในกล่อง ไม่ดันหน้าเว็บล้น */
         .table-wrapper {
             width: 100%;
             background: var(--card-inner);
@@ -268,7 +266,7 @@
             border-radius: 10px;
             overflow-x: auto;
             overflow-y: auto;
-            max-height: 440px;
+            max-height: 450px;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -298,7 +296,7 @@
         .loss-txt { color: var(--danger-color); font-weight: 600; }
         .mode-tag {
             font-size: 9.5px;
-            padding: 2px 5px;
+            padding: 2px 6px;
             border-radius: 4px;
             background: rgba(56, 189, 248, 0.12);
             color: var(--info-color);
@@ -314,8 +312,8 @@
 
 <div class="container">
     <header>
-        <h1>AI LOTTERY SMART PREDICTOR (VIP V3)</h1>
-        <p>แยกสถิติเลขเด่นและเลขเจาะอิสระ • ล็อกผลย้อนหลังซื่อตรง 100% • ตัดวงจรหลุดอัตโนมัติ</p>
+        <h1>AI LOTTERY SMART PREDICTOR (VIP V4)</h1>
+        <p>แยกสถิติเลขเด่นและเลขเจาะอิสระ • ล็อกผลย้อนหลังซื่อตรง 100% • ระบบตัดวงจรหลุด</p>
     </header>
 
     <div class="panel">
@@ -332,9 +330,7 @@
             <span class="panel-title">เลือกประเภทหวยที่ต้องการตรวจสอบ:</span>
             <div id="tabsContainer" class="tabs-container"></div>
 
-            <!-- การ์ดแยกสถิติ เด่น vs เจาะ -->
             <div class="metrics-grid">
-                <!-- การ์ดเลขเด่น -->
                 <div class="metric-box">
                     <div>
                         <div class="metric-header">
@@ -343,13 +339,12 @@
                         </div>
                         <div class="prediction-display">
                             <div id="bestDigit" class="main-digit">-</div>
-                            <div id="nextModeText" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">โหมดคำนวณ: -</div>
+                            <div id="nextModeText" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">โหมดทำงาน: -</div>
                         </div>
                     </div>
                     <div class="sub-stats" id="digitStatsBox"></div>
                 </div>
 
-                <!-- การ์ดเลขเจาะ -->
                 <div class="metric-box">
                     <div>
                         <div class="metric-header">
@@ -369,7 +364,6 @@
                 </div>
             </div>
 
-            <!-- ตารางตรวจสอบประวัติแบบละเอียด -->
             <span class="panel-title" style="margin-top: 6px;">ตารางบันทึกผลย้อนหลัง (เลื่อนดูซ้าย-ขวา / บน-ล่าง ได้เต็มรูปแบบ):</span>
             <div class="table-wrapper">
                 <table>
@@ -377,7 +371,7 @@
                         <tr>
                             <th>วันที่ออกผล</th>
                             <th>ผลจริง (บน/ล่าง)</th>
-                            <th>สูตร/โหมด</th>
+                            <th>โหมดคำนวณ</th>
                             <th>เด่นทาย</th>
                             <th>ผลเด่น (ตำแหน่ง)</th>
                             <th>3 คู่เจาะ</th>
@@ -431,10 +425,7 @@
                 currentName = parts[0];
                 currentDate = parts[1];
                 step = 1;
-            } else if (step === 1 && /^\d{3}$/.test(line)) {
-                currentTop = line;
-                step = 2;
-            } else if (step === 2 && /^\d{2}$/.test(line)) {
+            } else if (step === 1 && /^\d{3}$/.test(line)) { currentTop = line; step = 2; } else if (step === 2 && /^\d{2}$/.test(line)) {
                 if (!parsedLotteries[currentName]) {
                     parsedLotteries[currentName] = [];
                 }
@@ -474,225 +465,37 @@
         });
     }
 
-    // สมองกลคำนวณเลขเด่น 1 ตัว และ 3 คู่เจาะ จากข้อมูลย้อนหลังเท่านั้น (ห้ามมองเห็นอนาคต)
+    // สมองกล V4: Calibrated 4-Draw Momentum + Anti-Loss Circuit Breaker (Strict No Look-Ahead)
     function predictFromHistory(historySlice, consecutiveDigitLosses) {
         let scores = {};
         let coMatrix = {};
         for (let d = 0; d <= 9; d++) {
-            scores[d] = 0;
-            coMatrix[d] = {};
-            for (let j = 0; j <= 9; j++) coMatrix[d][j] = 0;
+            let ds = d.toString();
+            scores[ds] = 0;
+            coMatrix[ds] = {};
+            for (let j = 0; j <= 9; j++) coMatrix[ds][j.toString()] = 0;
         }
 
-        // โหมดที่ 1: ปกติ (จับ Momentum ระยะสั้น 6 งวดล่าสุดใน 4 ตำแหน่งเป้าหมาย สิบ/หน่วย บน-ล่าง)
-        // โหมดที่ 2: แก้เกม (หากเลขเด่นหลุดติดกัน >= 2 งวด สลับไปจับเลขที่ขาดช่วง/อั้นใน 4 ตำแหน่งเป้าหมาย + ตัดเลขที่เพิ่งออกซ้ำงวดล่าสุด)
-        let isRecoveryMode = consecutiveDigitLosses >= 2;
-        let modeLabel = isRecoveryMode ? 'GAP-RECOVERY' : 'MOMENTUM-4P';
-
-        let lastDraw = historySlice[historySlice.length - 1];
-        let lastTargetDigits = [lastDraw.top[1], lastDraw.top[2], lastDraw.bottom[0], lastDraw.bottom[1]];
-
-        if (!isRecoveryMode) {
-            // ให้คะแนนเน้น 6 งวดล่าสุด เฉพาะ 4 ตำแหน่งเป้าหมาย (ไม่เอาหลักร้อยมาปน)
-            let recent = historySlice.slice(-6);
-            recent.forEach((item, idx) => {
-                let weight = idx + 1.5; // งวดใกล้สุดน้ำหนักสูงกว่า
-                let target4 = [item.top[1], item.top[2], item.bottom[0], item.bottom[1]];
-                target4.forEach(d => {
-                    scores[d] += weight;
-                });
+        // ใช้หน้าต่าง 4 งวดล่าสุดใน 4 ตำแหน่งเป้าหมาย (สิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง)
+        let recent4 = historySlice.slice(-4);
+        recent4.forEach((item, idx) => {
+            let w = (idx + 1) * 0.6;
+            let t4 = [item.top[1], item.top[2], item.bottom[0], item.bottom[1]];
+            t4.forEach(ch => {
+                scores[ch] += w;
             });
-        } else {
-            // โหมดแก้เกม: หาเลขที่หายไปนานที่สุดจาก 4 ตำแหน่งเป้าหมาย (Mean Reversion)
-            for (let d = 0; d <= 9; d++) {
-                let digitStr = d.toString();
-                let gap = 0;
-                for (let k = historySlice.length - 1; k >= 0; k--) {
-                    let t4 = [historySlice[k].top[1], historySlice[k].top[2], historySlice[k].bottom[0], historySlice[k].bottom[1]];
-                    if (t4.includes(digitStr)) break;
-                    gap++;
-                }
-                scores[d] = gap * 2;
-                // ลดคะแนนเลขที่ออกเบิ้ลหรือซ้ำในงวดล่าสุดเพื่อป้องกันการติดหล่มเลขเดิม
-                if (lastTargetDigits.includes(digitStr)) {
-                    scores[d] -= 3;
-                }
-            }
-        }
-
-        // สร้างตารางความสัมพันธ์คู่เลข (Co-occurrence) จากประวัติทั้งหมดเพื่อจับคู่เจาะ
-        historySlice.forEach(item => {
-            let top2 = [item.top[1], item.top[2]];
-            let bot2 = [item.bottom[0], item.bottom[1]];
-            coMatrix[top2[0]][top2[1]] += 1;
-            coMatrix[top2[1]][top2[0]] += 1;
-            coMatrix[bot2[0]][bot2[1]] += 1;
-            coMatrix[bot2[1]][bot2[0]] += 1;
         });
 
-        let sortedDigits = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
-        let bestDigit = sortedDigits[0];
+        // ระบบตัดวงจรหลุด (Anti-Loss Circuit Breaker) เมื่อหลุดติดกัน >= 3 งวด
+        let isRecoveryMode = consecutiveDigitLosses >= 3;
+        let modeLabel = isRecoveryMode ? 'CIRCUIT-BREAKER' : 'MOMENTUM-4W';
 
-        // เลือกคู่ประกบ 3 ตัวที่ดีที่สุดสำหรับ bestDigit (ไม่เอาเลขเบิ้ลเว้นแต่สถิติสูงมาก)
-        let partnerCandidates = Object.keys(coMatrix[bestDigit])
-            .filter(p => p !== bestDigit)
-            .sort((a, b) => (coMatrix[bestDigit][b] + scores[b] * 0.2) - (coMatrix[bestDigit][a] + scores[a] * 0.2));
-
-        let pairs = [
-            `${bestDigit}${partnerCandidates[0]}`,
-            `${bestDigit}${partnerCandidates[1]}`,
-            `${bestDigit}${partnerCandidates[2]}`
-        ];
-
-        return { bestDigit, pairs, modeLabel, isRecoveryMode };
-    }
-
-    function switchCategory(categoryName) {
-        const data = parsedLotteries[categoryName];
-        // เรียงจากอดีต -> ปัจจุบัน (งวดแรกสุดอยู่ index 0)
-        const sortedData = [...data].reverse();
-
-        // ตัวแปรเก็บสถิติ เลขเด่น
-        let dWins = 0, dLosses = 0;
-        let dCurWin = 0, dMaxWin = 0;
-        let dCurLoss = 0, dMaxLoss = 0;
-        let dLastStatus = '-';
-
-        // ตัวแปรเก็บสถิติ เลขเจาะ
-        let pWins = 0, pLosses = 0;
-        let pCurWin = 0, pMaxWin = 0;
-        let pCurLoss = 0, pMaxLoss = 0;
-        let pLastStatus = '-';
-
-        let auditRows = [];
-        let consecutiveDigitLosses = 0;
-
-        // เริ่มทดสอบตั้งแต่ข้อมูลมีอย่างน้อย 5 งวด เพื่อความเที่ยงตรง
-        const startIdx = Math.min(5, Math.max(2, Math.floor(sortedData.length * 0.15)));
-
-        for (let i = startIdx; i < sortedData.length; i++) {
-            let historySlice = sortedData.slice(0, i);
-            let targetItem = sortedData[i];
-
-            let pred = predictFromHistory(historySlice, consecutiveDigitLosses);
-
-            // 1. ตรวจผล "เลขเด่น" (ต้องลงหลักสิบหรือหลักหน่วย บน/ล่าง เท่านั้น หลักร้อยไม่นับ!)
-            let tTen = targetItem.top[1];
-            let tUnit = targetItem.top[2];
-            let bTen = targetItem.bottom[0];
-            let bUnit = targetItem.bottom[1];
-
-            let dMatchedPositions = [];
-            if (tTen === pred.bestDigit) dMatchedPositions.push('สิบบน');
-            if (tUnit === pred.bestDigit) dMatchedPositions.push('หน่วยบน');
-            if (bTen === pred.bestDigit) dMatchedPositions.push('สิบล่าง');
-            if (bUnit === pred.bestDigit) dMatchedPositions.push('หน่วยล่าง');
-
-            let isDigitWin = dMatchedPositions.length > 0;
-            if (isDigitWin) {
-                dWins++;
-                dCurWin++;
-                dCurLoss = 0;
-                consecutiveDigitLosses = 0;
-                if (dCurWin > dMaxWin) dMaxWin = dCurWin;
-                dLastStatus = `เข้า (${dCurWin}ง.)`;
-            } else {
-                dLosses++;
-                dCurLoss++;
-                dCurWin = 0;
-                consecutiveDigitLosses++;
-                if (dCurLoss > dMaxLoss) dMaxLoss = dCurLoss;
-                dLastStatus = `หลุด (${dCurLoss}ง.)`;
-            }
-
-            // 2. ตรวจผล "เลขเจาะ 3 คู่" (เทียบกับ 2 ตัวบน [tTen+tUnit] และ 2 ตัวล่าง [bTen+bUnit] แบบไป-กลับ)
-            let actualTop2 = tTen + tUnit;
-            let actualBot2 = bTen + bUnit;
-            let pMatchedPositions = [];
-
-            pred.pairs.forEach(pair => {
-                let revPair = pair[1] + pair[0];
-                if (actualTop2 === pair) pMatchedPositions.push(`ตรงบน(${pair})`);
-                else if (actualTop2 === revPair) pMatchedPositions.push(`กลับบน(${pair})`);
-                
-                if (actualBot2 === pair) pMatchedPositions.push(`ตรงล่าง(${pair})`);
-                else if (actualBot2 === revPair) pMatchedPositions.push(`กลับล่าง(${pair})`);
+        if (isRecoveryMode) {
+            let last3Digits = new Set();
+            historySlice.slice(-3).forEach(item => {
+                last3Digits.add(item.top[1]);
+                last3Digits.add(item.top[2]);
+                last3Digits.add(item.bottom[0]);
+                last3Digits.add(item.bottom[1]);
             });
-
-            let isPairWin = pMatchedPositions.length > 0;
-            if (isPairWin) {
-                pWins++;
-                pCurWin++;
-                pCurLoss = 0;
-                if (pCurWin > pMaxWin) pMaxWin = pCurWin;
-                pLastStatus = `เข้า (${pCurWin}ง.)`;
-            } else {
-                pLosses++;
-                pCurLoss++;
-                pCurWin = 0;
-                if (pCurLoss > pMaxLoss) pMaxLoss = pCurLoss;
-                pLastStatus = `หลุด (${pCurLoss}ง.)`;
-            }
-
-            auditRows.unshift({
-                date: targetItem.date,
-                actual: `${targetItem.top} / ${targetItem.bottom}`,
-                modeLabel: pred.modeLabel,
-                isRecovery: pred.isRecoveryMode,
-                bestDigit: pred.bestDigit,
-                isDigitWin: isDigitWin,
-                dPos: isDigitWin ? dMatchedPositions.join(', ') : (targetItem.top[0] === pred.bestDigit ? 'หลุด (ไปหลักร้อย)' : '-'),
-                pairs: pred.pairs.join(', '),
-                isPairWin: isPairWin,
-                pPos: isPairWin ? pMatchedPositions.join(', ') : '-'
-            });
-        }
-
-        // คำนวณเลขสำหรับ "งวดถัดไป (อนาคต)" จากข้อมูลทั้งหมดที่มี
-        let nextPred = predictFromHistory(sortedData, consecutiveDigitLosses);
-
-        document.getElementById('bestDigit').innerText = nextPred.bestDigit;
-        document.getElementById('nextModeText').innerHTML = `โหมดทำงานงวดถัดไป: <span class="mode-tag ${nextPred.isRecoveryMode ? 'recovery' : ''}">${nextPred.modeLabel}</span>`;
-        document.getElementById('pairsBox').innerHTML = nextPred.pairs.map(p => `<span class="pair-badge">${p}</span>`).join('');
-
-        // อัปเดตเปอร์เซ็นต์และสถิติของ "เลขเด่น"
-        let dTotal = dWins + dLosses;
-        let dAcc = dTotal > 0 ? ((dWins / dTotal) * 100).toFixed(1) : '0.0';
-        document.getElementById('digitAccBadge').innerText = `${dAcc}% (${dWins}/${dTotal})`;
-        document.getElementById('digitStatsBox').innerHTML = `
-            <div class="sub-stat-item"><span>สถานะล่าสุด</span><b class="${dLastStatus.startsWith('เข้า') ? 'win-txt' : 'loss-txt'}">${dLastStatus}</b></div>
-            <div class="sub-stat-item"><span>เข้าติดสูงสุด</span><b class="win-txt">${dMaxWin} งวด</b></div>
-            <div class="sub-stat-item"><span>หลุดติดสูงสุด</span><b class="loss-txt">${dMaxLoss} งวด</b></div>
-        `;
-
-        // อัปเดตเปอร์เซ็นต์และสถิติของ "เลขเจาะ"
-        let pTotal = pWins + pLosses;
-        let pAcc = pTotal > 0 ? ((pWins / pTotal) * 100).toFixed(1) : '0.0';
-        document.getElementById('pairAccBadge').innerText = `${pAcc}% (${pWins}/${pTotal})`;
-        document.getElementById('pairStatsBox').innerHTML = `
-            <div class="sub-stat-item"><span>สถานะล่าสุด</span><b class="${pLastStatus.startsWith('เข้า') ? 'win-txt' : 'loss-txt'}">${pLastStatus}</b></div>
-            <div class="sub-stat-item"><span>เข้าติดสูงสุด</span><b class="win-txt">${pMaxWin} งวด</b></div>
-            <div class="sub-stat-item"><span>หลุดติดสูงสุด</span><b class="loss-txt">${pMaxLoss} งวด</b></div>
-        `;
-
-        // แสดงตาราง Audit Log ฉบับเต็ม
-        const tbody = document.getElementById('auditTableBody');
-        tbody.innerHTML = '';
-        auditRows.forEach(row => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${row.date}</td>
-                <td style="font-family: 'JetBrains Mono', monospace;">${row.actual}</td>
-                <td><span class="mode-tag ${row.isRecovery ? 'recovery' : ''}">${row.modeLabel}</span></td>
-                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-gold);">${row.bestDigit}</td>
-                <td><span class="${row.isDigitWin ? 'win-txt' : 'loss-txt'}">${row.isDigitWin ? 'เข้า' : 'หลุด'}</span> <span style="color: var(--text-muted); font-size: 10px;">(${row.dPos})</span></td>
-                <td style="font-family: 'JetBrains Mono', monospace;">${row.pairs}</td>
-                <td><span class="${row.isPairWin ? 'win-txt' : 'loss-txt'}">${row.isPairWin ? 'เข้า' : 'หลุด'}</span> <span style="color: var(--text-muted); font-size: 10px;">(${row.pPos})</span></td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-</script>
-
-</body>
-</html>
+            for (let d = 0; d <= 9; d
