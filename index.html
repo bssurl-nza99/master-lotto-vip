@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QUANTUM STAT // ENGINE v3.1</title>
+    <title>QUANTUM STAT // ENGINE v3.2</title>
     <style>
         :root {
             --bg-color: #0c0d0f;
@@ -14,7 +14,7 @@
             --text-secondary: #94a3b8;
             --text-muted: #64748b;
             --accent-green: #10b981;
-            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
             --accent-blue: #3b82f6;
             --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
         }
@@ -26,7 +26,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
             background-color: var(--bg-color);
             color: var(--text-primary);
             font-family: var(--font-mono);
@@ -34,7 +34,9 @@
             line-height: 1.4;
             padding: 12px;
             width: 100%;
+            max-width: 100vw;
             overflow-x: hidden;
+            touch-action: pan-y;
         }
 
         .container {
@@ -79,6 +81,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            white-space: nowrap;
         }
 
         .input-panel {
@@ -167,11 +170,13 @@
             font-size: 12px;
             font-weight: 700;
             color: var(--text-primary);
+            white-space: nowrap;
         }
 
         .lottery-meta {
             color: var(--text-muted);
             font-size: 9px;
+            white-space: nowrap;
         }
 
         .metrics-grid {
@@ -194,6 +199,7 @@
         .metric-item {
             display: flex;
             flex-direction: column;
+            white-space: nowrap;
         }
 
         .metric-label {
@@ -234,6 +240,7 @@
             margin-bottom: 4px;
             display: flex;
             justify-content: space-between;
+            white-space: nowrap;
         }
 
         .anchor-number {
@@ -247,7 +254,7 @@
             color: var(--text-primary);
             font-size: 11px;
             letter-spacing: 0.05em;
-            word-spacing: 2px;
+            word-spacing: 4px;
             white-space: nowrap;
             overflow-x: auto;
         }
@@ -260,11 +267,12 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             background: var(--bg-color);
+            touch-action: pan-x pan-y;
         }
 
         table {
             width: 100%;
-            min-width: 600px;
+            min-width: 660px;
             border-collapse: collapse;
             font-size: 10px;
             white-space: nowrap;
@@ -272,8 +280,9 @@
 
         th, td {
             text-align: left;
-            padding: 6px 8px;
+            padding: 6px 10px;
             border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
         }
 
         th {
@@ -289,6 +298,7 @@
         }
 
         .tag-hit { color: var(--accent-green); font-weight: 600; }
+        .tag-rev { color: var(--accent-amber); font-weight: 600; }
         .tag-miss { color: var(--text-muted); }
 
         .sample-link {
@@ -296,6 +306,7 @@
             cursor: pointer;
             text-decoration: underline;
             font-size: 10px;
+            white-space: nowrap;
         }
         .sample-link:active { opacity: 0.7; }
     </style>
@@ -304,7 +315,7 @@
 
 <div class="container">
     <header>
-        <div class="logo">QUANTUM STAT // v3.1</div>
+        <div class="logo">QUANTUM STAT // v3.2</div>
         <div class="status-badge" id="systemStatus">STANDBY (0.00s)</div>
     </header>
 
@@ -590,6 +601,7 @@ function runEngine() {
     document.getElementById('systemStatus').innerText = `VERIFIED (${duration}s)`;
 }
 
+// กฎเหล็ก: นับเข้าเฉพาะ สิบบน, หน่วยบน, สิบล่าง, หน่วยล่าง เท่านั้น (ไม่นับหลักร้อยบน)
 function checkAnchorHitExact(top, bot, d) {
     let active = [];
     if (top.length >= 3) {
@@ -601,29 +613,155 @@ function checkAnchorHitExact(top, bot, d) {
     return active.includes(d);
 }
 
+// สร้างสมการเชิงลึกแบบ Multi-Lag & Non-Linear
 function generateEquations() {
     let eq = [];
-    for (let i = 0; i < 150000; i++) {
-        let lag = (i % 3) + 1;
-        let pos1 = i % 5;
-        let pos2 = Math.floor(i / 5) % 5;
-        let mult = (i % 4) + 1;
-        eq.push({lag, pos1, pos2, mult});
+    for (let lag1 = 1; lag1 <= 3; lag1++) {
+        for (let lag2 = 1; lag2 <= 3; lag2++) {
+            for (let p1 = 0; p1 < 5; p1++) {
+                for (let p2 = 0; p2 < 5; p2++) {
+                    for (let m1 = 1; m1 <= 4; m1++) {
+                        for (let c = 0; c <= 9; c++) {
+                            eq.push({ lag1, lag2, p1, p2, m1, c, mode: 0 });
+                            eq.push({ lag1, lag2, p1, p2, m1, c, mode: 1 });
+                        }
+                    }
+                }
+            }
+        }
     }
     return eq;
 }
 
 const GLOBAL_EQUATIONS = generateEquations();
 
-function evaluateEquation(records, idx, eq) {
-    let targetIdx = idx - eq.lag;
-    if (targetIdx < 0) return null;
-    let rec = records[targetIdx];
-    let strVal = rec.top + rec.bot;
-    let v1 = parseInt(strVal[eq.pos1] || '0');
-    let v2 = parseInt(strVal[eq.pos2] || '0');
-    let res = Math.abs((v1 * eq.mult) - v2) % 10;
+function evaluateEquation(records, predictForIdx, eq) {
+    let idx1 = predictForIdx - eq.lag1;
+    let idx2 = predictForIdx - eq.lag2;
+    if (idx1 < 0 || idx2 < 0) return null;
+
+    let s1 = records[idx1].top + records[idx1].bot;
+    let s2 = records[idx2].top + records[idx2].bot;
+
+    let v1 = parseInt(s1[eq.p1] || '0');
+    let v2 = parseInt(s2[eq.p2] || '0');
+
+    let res = 0;
+    if (eq.mode === 0) {
+        res = ((v1 * eq.m1) + v2 + eq.c) % 10;
+    } else {
+        res = (Math.abs((v1 * eq.m1) - v2) + eq.c) % 10;
+    }
     return res.toString();
+}
+
+// คัดเลือกเลขเด่น 2 ตัวด้วย Adaptive Self-Healing Filter (เห็นเฉพาะอดีต 0..subRecords.length-1)
+function selectTopAnchors(subRecords) {
+    let n = subRecords.length;
+    if (n < 4) {
+        let last = subRecords[n - 1];
+        let d1 = last ? last.top[2] : "0";
+        let d2 = last ? last.bot[1] : "8";
+        if (d1 === d2) d2 = ((parseInt(d1) + 1) % 10).toString();
+        return [d1, d2];
+    }
+
+    let digitScores = {};
+    for (let d = 0; d <= 9; d++) digitScores[d.toString()] = 0;
+
+    // ตรวจสอบย้อนหลังสูงสุด 8 งวดล่าสุดในอดีต เพื่อหาสมการที่ "กำลังเดินสด"
+    let lookback = Math.min(8, n - 3);
+    let eqPool = GLOBAL_EQUATIONS;
+
+    for (let i = 0; i < eqPool.length; i += 3) {
+        let eq = eqPool[i];
+        let streak = 0;
+        let weightSum = 0;
+        let lastHit = false;
+
+        for (let k = n - lookback; k < n; k++) {
+            let pred = evaluateEquation(subRecords, k, eq);
+            if (pred === null) continue;
+            let hit = checkAnchorHitExact(subRecords[k].top, subRecords[k].bot, pred);
+            let recency = k - (n - lookback) + 1; // งวดยิ่งใกล้ปัจจุบัน น้ำหนักยิ่งสูง
+
+            if (hit) {
+                streak++;
+                weightSum += Math.pow(recency, 1.5);
+                if (k === n - 1) lastHit = true;
+            } else {
+                streak = 0;
+                weightSum -= recency * 0.5;
+            }
+        }
+
+        // คัดเฉพาะสมการที่ผ่านเกณฑ์ความแม่นยำสดใหม่ (Adaptive Pruning)
+        if (weightSum > 8 && (lastHit || streak >= 2)) {
+            let nextPred = evaluateEquation(subRecords, n, eq);
+            if (nextPred !== null) {
+                let bonus = lastHit ? 1.6 : 1.0;
+                digitScores[nextPred] += weightSum * (1 + streak * 0.4) * bonus;
+            }
+        }
+    }
+
+    // ผสานแรงส่งตัวเลขไหลจาก 3 งวดล่าสุด (Recent Flow Momentum)
+    for (let j = Math.max(0, n - 3); j < n; j++) {
+        let activeDigits = [subRecords[j].top[1], subRecords[j].top[2], subRecords[j].bot[0], subRecords[j].bot[1]];
+        let flowWeight = (j - (n - 3) + 1) * 15;
+        activeDigits.forEach(d => {
+            if (digitScores[d] !== undefined) digitScores[d] += flowWeight;
+        });
+    }
+
+    let sorted = Object.keys(digitScores).sort((a, b) => digitScores[b] - digitScores[a]);
+    return [sorted[0], sorted[1]];
+}
+
+// กฎเหล็ก: เลขเด่นอยู่หลักสิบเท่านั้น + ตัวเจาะอยู่หลักหน่วยเรียงจากน้อยไปมาก + ตัดเบิ้ล + ตัดวินกันเอง
+function generateStrictPairs(anchorDigit, otherAnchorDigit, subRecords) {
+    let partnerScores = {};
+    for (let i = 0; i <= 9; i++) {
+        let k = i.toString();
+        // ตัดเลขเบิ้ล (k === anchorDigit) และตัดไม่เอาเลขเด่นมาวินกันเอง (k === otherAnchorDigit)
+        if (k !== anchorDigit && k !== otherAnchorDigit) {
+            partnerScores[k] = 0;
+        }
+    }
+
+    // คำนวณคะแนนตัวประกบจากสถิติย้อนหลัง 12 งวดในอดีต
+    let recent = subRecords.slice(-12);
+    recent.forEach((r, idx) => {
+        let weight = idx + 1;
+        let twoTop = r.top.slice(1, 3);
+        let twoBot = r.bot;
+        let activeDigits = [twoTop[0], twoTop[1], twoBot[0], twoBot[1]];
+
+        activeDigits.forEach(d => {
+            if (partnerScores[d] !== undefined) {
+                partnerScores[d] += weight;
+            }
+        });
+
+        // ให้โบนัสพิเศษถ้าเคยออกคู่กับเลขเด่นใน 2 ตัวบนหรือ 2 ตัวล่าง
+        if (twoTop.includes(anchorDigit)) {
+            let partner = twoTop[0] === anchorDigit ? twoTop[1] : twoTop[0];
+            if (partnerScores[partner] !== undefined) partnerScores[partner] += weight * 2.5;
+        }
+        if (twoBot.includes(anchorDigit)) {
+            let partner = twoBot[0] === anchorDigit ? twoBot[1] : twoBot[0];
+            if (partnerScores[partner] !== undefined) partnerScores[partner] += weight * 2.5;
+        }
+    });
+
+    // คัดตัวประกบที่ดีที่สุด 5 ตัว แล้วเรียงจากน้อยไปมาก (0 -> 9)
+    let top5Partners = Object.keys(partnerScores)
+        .sort((a, b) => partnerScores[b] - partnerScores[a])
+        .slice(0, 5)
+        .sort((a, b) => parseInt(a) - parseInt(b));
+
+    // บังคับให้เลขเด่นอยู่หลักสิบ และตัวประกบอยู่หลักหน่วยเสมอ (เช่น เด่น 8 + 0,2,3,5,7 => 80, 82, 83, 85, 87)
+    return top5Partners.map(unitDigit => anchorDigit + unitDigit);
 }
 
 function performCausalAnalysis(records) {
@@ -632,52 +770,45 @@ function performCausalAnalysis(records) {
     let pairHitsInAnchor = 0;
     let totalAnchorHitForPair = 0;
 
-    let startIndex = Math.max(5, records.length - 15);
-    if (startIndex >= records.length) startIndex = Math.max(0, records.length - 10);
-
-    let lastPrediction = null;
+    // ใช้ 8 งวดแรกเป็นฐานตั้งต้น ที่เหลือทดสอบ Walk-Forward จริงทั้งหมด
+    let startIndex = Math.min(8, Math.max(3, records.length - 1));
+    if (records.length <= 4) startIndex = 1;
 
     for (let i = startIndex; i < records.length; i++) {
+        // Strict Causal: เห็นเฉพาะข้อมูลอดีต 0 ถึง i-1 เท่านั้น
         let subRecords = records.slice(0, i);
         let currentRec = records[i];
 
-        let d1 = "3", d2 = "7";
-        if (subRecords.length >= 5) {
-            let scoreMap = {};
-            for (let eq of GLOBAL_EQUATIONS.slice(0, 40000)) {
-                let val = evaluateEquation(subRecords, subRecords.length - 1, eq);
-                if (val !== null) {
-                    scoreMap[val] = (scoreMap[val] || 0) + 1;
-                }
-            }
-            let sortedDigits = Object.keys(scoreMap).sort((a,b) => scoreMap[b] - scoreMap[a]);
-            if (sortedDigits.length >= 2) {
-                d1 = sortedDigits[0];
-                d2 = sortedDigits[1];
-            }
-        }
-
-        let pairsD1 = generatePairs(d1, subRecords);
-        let pairsD2 = generatePairs(d2, subRecords);
-        let all10Pairs = [...pairsD1, ...pairsD2].sort();
+        let [d1, d2] = selectTopAnchors(subRecords);
+        let pairsD1 = generateStrictPairs(d1, d2, subRecords);
+        let pairsD2 = generateStrictPairs(d2, d1, subRecords);
+        let all10Pairs = [...pairsD1, ...pairsD2];
 
         let top = currentRec.top;
         let bot = currentRec.bot;
+        let twoTop = top.slice(1, 3);
+        let twoBot = bot;
+
         let isAnchorHit = checkAnchorHitExact(top, bot, d1) || checkAnchorHitExact(top, bot, d2);
-        
-        let exactPairMatched = false;
+
+        let pairHitType = null; // 'DIRECT' หรือ 'REVERSE'
         for (let p of all10Pairs) {
             let rev = p[1] + p[0];
-            if (top.includes(p) || top.includes(rev) || bot.includes(p) || bot.includes(rev)) {
-                exactPairMatched = true;
+            if (twoTop === p || twoBot === p) {
+                pairHitType = 'DIRECT';
                 break;
+            }
+            if (twoTop === rev || twoBot === rev) {
+                if (pairHitType !== 'DIRECT') pairHitType = 'REVERSE';
             }
         }
 
-        if (isAnchorHit) anchorHits++;
         if (isAnchorHit) {
+            anchorHits++;
             totalAnchorHitForPair++;
-            if (exactPairMatched) pairHitsInAnchor++;
+            if (pairHitType !== null) {
+                pairHitsInAnchor++;
+            }
         }
 
         auditLog.unshift({
@@ -685,19 +816,22 @@ function performCausalAnalysis(records) {
             top: top,
             bot: bot,
             anchor: `${d1} - ${d2}`,
-            pairs: all10Pairs.join(' '),
+            pairsDisplay: `${pairsD1.join(' ')} | ${pairsD2.join(' ')}`,
             isAnchorHit: isAnchorHit,
-            isPairHit: exactPairMatched
+            pairHitType: pairHitType
         });
-
-        if (i === records.length - 1) {
-            lastPrediction = { d1, d2, pairsD1, pairsD2 };
-        }
     }
 
-    if (!lastPrediction && records.length > 0) {
-        lastPrediction = { d1: "3", d2: "7", pairsD1: generatePairs("3", records), pairsD2: generatePairs("7", records) };
-    }
+    // คำนวณชุดทำนายสำหรับงวดถัดไปในอนาคต (ใช้ข้อมูลทั้งหมดที่มีถึงปัจจุบัน)
+    let [nextD1, nextD2] = selectTopAnchors(records);
+    let nextPairsD1 = generateStrictPairs(nextD1, nextD2, records);
+    let nextPairsD2 = generateStrictPairs(nextD2, nextD1, records);
+    let nextPrediction = {
+        d1: nextD1,
+        d2: nextD2,
+        pairsD1: nextPairsD1,
+        pairsD2: nextPairsD2
+    };
 
     let totalWalkCount = auditLog.length;
     let anchorHitRate = totalWalkCount > 0 ? Math.round((anchorHits / totalWalkCount) * 100) : 0;
@@ -711,26 +845,8 @@ function performCausalAnalysis(records) {
         pairHitsInAnchor,
         totalAnchorHitForPair,
         auditLog,
-        lastPrediction
+        nextPrediction
     };
-}
-
-function generatePairs(digit, subRecords) {
-    let freq = {};
-    for (let i = 0; i <= 9; i++) freq[i.toString()] = 0;
-
-    subRecords.slice(-12).forEach(r => {
-        let s = r.top + r.bot;
-        for (let char of s) {
-            if (freq[char] !== undefined) freq[char]++;
-        }
-    });
-
-    let candidates = Object.keys(freq).filter(k => k !== digit).sort((a,b) => freq[b] - freq[a]);
-    let top5 = candidates.slice(0, 5);
-    let rawPairs = top5.map(p => digit + p);
-    let sortedPairs = rawPairs.map(p => p.split('').sort().join('')).sort();
-    return sortedPairs;
 }
 
 function copyToClipboard(text) {
@@ -741,23 +857,29 @@ function copyToClipboard(text) {
 
 function renderLotteryCard(catName, records, analysis) {
     let latest = records[records.length - 1];
-    let pred = analysis.lastPrediction;
+    let pred = analysis.nextPrediction;
     let pairs1Str = pred.pairsD1.join(' ');
     let pairs2Str = pred.pairsD2.join(' ');
-    let fullPairsText = `เด่น ${pred.d1}: ${pairs1Str} | เด่น ${pred.d2}: ${pairs2Str}`;
+    let fullPairsText = `${catName} | เด่น ${pred.d1}: ${pairs1Str} | เด่น ${pred.d2}: ${pairs2Str}`;
 
     let auditRows = analysis.auditLog.map(row => {
         let anchorStatus = row.isAnchorHit ? '<span class="tag-hit">เข้าเด่น</span>' : '<span class="tag-miss">พลาด</span>';
         let pairStatus = '-';
         if (row.isAnchorHit) {
-            pairStatus = row.isPairHit ? '<span class="tag-hit">เข้าเจาะ 2 ตัว!</span>' : '<span class="tag-miss">พลาด</span>';
+            if (row.pairHitType === 'DIRECT') {
+                pairStatus = '<span class="tag-hit">เข้าเจาะตรง</span>';
+            } else if (row.pairHitType === 'REVERSE') {
+                pairStatus = '<span class="tag-rev">เข้าเจาะกลับ</span>';
+            } else {
+                pairStatus = '<span class="tag-miss">พลาด</span>';
+            }
         }
         return `
             <tr>
                 <td>${row.date}</td>
                 <td>${row.top}/${row.bot}</td>
                 <td>${row.anchor}</td>
-                <td style="color:var(--text-secondary);">${row.pairs}</td>
+                <td style="color:var(--text-secondary);">${row.pairsDisplay}</td>
                 <td>${anchorStatus}</td>
                 <td>${pairStatus}</td>
             </tr>
@@ -769,14 +891,14 @@ function renderLotteryCard(catName, records, analysis) {
             <div class="lottery-header">
                 <div>
                     <span class="lottery-name">${catName}</span>
-                    <div class="lottery-meta">${records.length} งวด | ทดสอบ ${analysis.totalWalkCount} งวด</div>
+                    <div class="lottery-meta">ฐานข้อมูล ${records.length} งวด | ทดสอบ Walk-Forward ${analysis.totalWalkCount} งวด</div>
                 </div>
                 <button onclick="copyToClipboard('${fullPairsText}')">คัดลอก</button>
             </div>
 
             <div class="metrics-grid">
                 <div class="metric-item">
-                    <span class="metric-label">งวดล่าสุด</span>
+                    <span class="metric-label">งวดล่าสุดในระบบ</span>
                     <span class="metric-value">${latest.date} (${latest.top}/${latest.bot})</span>
                 </div>
                 <div class="metric-item">
@@ -791,19 +913,19 @@ function renderLotteryCard(catName, records, analysis) {
 
             <div class="prediction-box">
                 <div class="anchor-col">
-                    <div class="anchor-title"><span>เด่นหลักที่ 1</span><span>(เรียงน้อยไปมาก)</span></div>
+                    <div class="anchor-title"><span>เด่นหลักที่ 1 (หลักสิบ)</span><span>(หลักหน่วยเรียงน้อยไปมาก)</span></div>
                     <div class="anchor-number">${pred.d1}</div>
-                    <div class="pairs-list">${pred.pairsD1.join('  ')}</div>
+                    <div class="pairs-list">${pairs1Str}</div>
                 </div>
                 <div class="anchor-col">
-                    <div class="anchor-title"><span>เด่นหลักที่ 2</span><span>(เรียงน้อยไปมาก)</span></div>
+                    <div class="anchor-title"><span>เด่นหลักที่ 2 (หลักสิบ)</span><span>(หลักหน่วยเรียงน้อยไปมาก)</span></div>
                     <div class="anchor-number">${pred.d2}</div>
-                    <div class="pairs-list">${pred.pairsD2.join('  ')}</div>
+                    <div class="pairs-list">${pairs2Str}</div>
                 </div>
             </div>
 
             <div class="section-title" style="margin-top:10px; margin-bottom:4px;">
-                <span>STRICT CAUSAL WALK-FORWARD AUDIT LOG</span>
+                <span>STRICT CAUSAL WALK-FORWARD AUDIT LOG (เลื่อนซ้าย-ขวาได้)</span>
             </div>
             <div class="table-wrapper">
                 <table>
@@ -811,10 +933,10 @@ function renderLotteryCard(catName, records, analysis) {
                         <tr>
                             <th>งวดวันที่</th>
                             <th>บน/ล่าง</th>
-                            <th>เด่น</th>
-                            <th>ชุดเจาะ 10 คู่ (ไป-กลับ)</th>
-                            <th>ผลเด่น</th>
-                            <th>ผลเจาะ</th>
+                            <th>เลขเด่น</th>
+                            <th>ชุดเจาะ 10 คู่ (เด่นหลักสิบ • ไป-กลับ)</th>
+                            <th>ผลเลขเด่น</th>
+                            <th>ผลเลขเจาะ</th>
                         </tr>
                     </thead>
                     <tbody>
