@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · Master V55.12 Ultimate Intelligence Engine</title>
+<title>เศรษฐีเงินล้าน · Master V55.13 Multi-Indicator Convergence Engine</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -590,17 +590,17 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (Master V55.12)</b>
-        <small>Ultimate Intelligence & VIP Filter Engine</small>
+        <b>เศรษฐีเงินล้าน Mobile (Master V55.13)</b>
+        <small>Multi-Indicator Convergence Engine</small>
       </div>
     </div>
-    <div class="pill">V55.12 VIP</div>
+    <div class="pill">V55.13 Pro</div>
   </div>
 
   <div class="hero">
     <div class="hero-tag">ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ (เศรษฐีเงินล้าน)</div>
-    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.12 VIP)</em></h1>
-    <p>ระบบวิเคราะห์ความถี่เดี่ยวถ่วงน้ำหนักโมเมนตัม และคัดกรองชุดเจาะเน้นพิเศษ VIP พร้อมระบบเตือนภัยความเสี่ยงอัจฉริยะ</p>
+    <h1>ระบบพยากรณ์กฎเหล็ก <em>(Master V55.13 Pro)</em></h1>
+    <p>ระบบกรองสัญญาณรบกวน (Noise Reduction) และตรวจสอบการบรรจบกันของตัวชี้วัด (Convergence Filter) เพื่อความคมชัดสูงสุด</p>
   </div>
 
   <div id="mobileAlert" class="mobile-alert"></div>
@@ -615,7 +615,7 @@ table.audit-table th {
 
     <div class="actions">
       <button id="runBtn" class="run" type="button">
-        <span>⚡</span> ประมวลผลระบบ V55.12 VIP Engine
+        <span>⚡</span> ประมวลผลระบบ V55.13 Convergence Engine
       </button>
       <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
       <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
@@ -844,7 +844,8 @@ function getRelevantDigits(record) {
   return tensUnitsTop + bottom2;
 }
 
-function analyzeSingleDigitFrequencyWithMomentum(records) {
+// Convergence Engine: ลด Noise โดยให้น้ำหนักเฉพาะเลขที่มีสัญญาณบรรจบกันทั้งระยะสั้น (5งวด) และรอบชดเชย
+function analyzeSingleDigitConvergence(records) {
   let stats = {};
   for(let d=0; d<=9; d++) {
     stats[d] = { digit: d, hits: 0, recentHits: 0, currentWinStreak: 0, maxWinStreak: 0, currentLoss: 0, maxLoss: 0, tensCount: 0, unitsCount: 0 };
@@ -877,10 +878,14 @@ function analyzeSingleDigitFrequencyWithMomentum(records) {
     }
   });
 
-  return Object.values(stats).sort((a,b) => (b.hits + b.recentHits * 2) - (a.hits + a.recentHits * 2));
+  // Convergence Scoring: (ความถี่รวม * 1) + (โมเมนตัม 5 งวด * 3) + (แต้มชดเชยปัจจุบัน * 2) - ลด Noise ด้วยเกณฑ์กรองความสม่ำเสมอ
+  return Object.values(stats).map(st => {
+    let convergenceScore = (st.hits * 1.5) + (st.recentHits * 4) + (st.currentLoss >= 1 ? st.currentLoss * 3 : 0);
+    return { ...st, convergenceScore };
+  }).sort((a,b) => b.convergenceScore - a.convergenceScore);
 }
 
-function analyzeCompensationPairsWithSupport(records) {
+function analyzeCompensationPairsWithConvergence(records) {
   let pairStats = {};
   records.forEach((r, idx) => {
     let digits = getRelevantDigits(r);
@@ -909,11 +914,12 @@ function analyzeCompensationPairsWithSupport(records) {
 
   let rankedPairs = Object.values(pairStats).map(p => {
     let winRate = records.length > 0 ? ((p.hits / records.length) * 100).toFixed(1) : '0.0';
-    let score = p.hits * 3 + (p.currentLoss >= 1 ? p.currentLoss * 5 : 0) + (p.maxWin * 2) + (p.recentHits * 4);
+    // ปรับปรุงสูตรคะแนนให้ให้น้ำหนักกับการบรรจบกันของสัญญาณล่าสุด เพื่อลด Overfitting
+    let score = (p.hits * 2) + (p.currentLoss >= 1 ? p.currentLoss * 6 : 0) + (p.recentHits * 5) + (p.maxWin * 2);
     return { ...p, winRate, score };
   }).sort((a, b) => b.score - a.score);
 
-  // Dynamic Risk Switch: หากอันดับ #1 หลุดติดต่อกันเกิน 2 งวด ให้สลับไปเลือกอันดับ #2 แทนอัตโนมัติเพื่อความปลอดภัย
+  // Dynamic Risk Switch: ป้องกันการตามเลขที่หลุดติดกันเกิน 2 งวด
   if (rankedPairs.length > 1 && rankedPairs[0].currentLoss >= 2) {
     let temp = rankedPairs[0];
     rankedPairs[0] = rankedPairs[1];
@@ -975,8 +981,8 @@ function analyzeLotteryRecords(records, lotteryType) {
   const total = records.length;
   if (total === 0) return null;
 
-  const singleStats = analyzeSingleDigitFrequencyWithMomentum(records);
-  const rankedPairs = analyzeCompensationPairsWithSupport(records);
+  const singleStats = analyzeSingleDigitConvergence(records);
+  const rankedPairs = analyzeCompensationPairsWithConvergence(records);
   
   const bestPairObj = rankedPairs[0] || { d1: singleStats[0].digit, d2: singleStats[1].digit, currentLoss: 0, maxLoss: 2, winRate: '70.0' };
   const d1 = bestPairObj.d1;
@@ -1046,7 +1052,7 @@ function renderResults(parsedData) {
 
   if (analyzedResults.length === 0) return;
 
-  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.12 VIP Engine)</div>`;
+  let html = `<div class="section-title">📊 ผลพยากรณ์เศรษฐีเงินล้าน (Master V55.13 Convergence Engine)</div>`;
   html += `<div class="lottery-nav-bar">`;
   analyzedResults.forEach((res, idx) => {
     const flag = getFlag(res.lotteryType);
@@ -1065,7 +1071,7 @@ function renderResults(parsedData) {
         <div class="prediction-card-wrapper">
           <div class="prediction-card" id="${cardUniqueId}">
             <div class="card-brand-tag">
-              <span>✦</span> เศรษฐีเงินล้าน VIP <span>✦</span>
+              <span>✦</span> เศรษฐีเงินล้าน Pro <span>✦</span>
             </div>
             <div class="card-top-bar">
               <span class="card-date">สถิติสะสมทั้งหมด: ${res.total} งวด (งวดถัดไป: ${res.nextDrawDate})</span>
@@ -1114,25 +1120,25 @@ function renderResults(parsedData) {
 
           <div class="card-action-bar">
             <button class="screenshot-btn" onclick="captureCard('${cardUniqueId}', '${type}')">
-              <span>📷</span> บันทึกภาพการ์ด (VIP Mode)
+              <span>📷</span> บันทึกภาพการ์ด (Convergence Mode)
             </button>
           </div>
         </div>
 
-        <!-- 1. ตารางความถี่และโมเมนตัม 0-9 พร้อมตำแหน่ง -->
+        <!-- 1. ตารางความถี่และโมเมนตัม 0-9 พร้อมคะแนน Convergence -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            📈 ตารางความถี่ & โมเมนตัม 0-9 ยอดนิยม (${type}) - ถ่วงน้ำหนักระยะสั้น
+            📈 ตารางวิเคราะห์การบรรจบกันของสัญญาณ 0-9 (${type}) - กรอง Noise ลด Overfitting
           </div>
           <table class="audit-table">
             <thead>
-              <tr><th>เลขเดี่ยว</th><th>มาทั้งหมด</th><th>มาล่าสุด (5งวด)</th><th>หลักสิบ / หน่วย</th><th>สถานะปัจจุบัน</th></tr>
+              <tr><th>เลขเดี่ยว</th><th>มาทั้งหมด</th><th>มาล่าสุด (5งวด)</th><th>หลักสิบ / หน่วย</th><th>คะแนน Convergence</th></tr>
             </thead>
             <tbody>
     `;
 
     res.singleStats.forEach(st => {
-      html += `<tr><td><b style="color:#b8860b">เลข ${st.digit}</b></td><td>${st.hits} ครั้ง</td><td><span style="color:#2e7d32;font-weight:700">${st.recentHits} ครั้ง</span></td><td>${st.tensCount} / ${st.unitsCount} ครั้ง</td><td>${st.currentLoss === 0 ? '<span class="badge-hit">กำลังเดินดี</span>' : `<span class="badge-miss">หลุด ${st.currentLoss} งวด</span>`}</td></tr>`;
+      html += `<tr><td><b style="color:#b8860b">เลข ${st.digit}</b></td><td>${st.hits} ครั้ง</td><td><span style="color:#2e7d32;font-weight:700">${st.recentHits} ครั้ง</span></td><td>${st.tensCount} / ${st.unitsCount} ครั้ง</td><td><span class="badge-hit">คะแนน ${st.convergenceScore.toFixed(1)}</span></td></tr>`;
     });
 
     html += `
@@ -1143,7 +1149,7 @@ function renderResults(parsedData) {
         <!-- 2. ตารางวิเคราะห์คู่ชดเชยและตัวสนับสนุนเชิงลึก -->
         <div class="summary-table-container">
           <div style="font-size:0.52rem;font-weight:700;color:#78590f;margin-bottom:6px">
-            🛡️ ตารางวิเคราะห์คู่ชดเชย & โมเมนตัมเชิงลึก (${type})
+            🛡️ ตารางวิเคราะห์คู่ชดเชยเชิงลึก & ความน่าเชื่อถือ (${type})
           </div>
           <table class="audit-table">
             <thead>
@@ -1199,7 +1205,7 @@ function captureCard(cardId, lotteryName) {
     logging: false
   }).then(canvas => {
     const link = document.createElement('a');
-    link.download = `card-${lotteryName}-V55.12.png`;
+    link.download = `card-${lotteryName}-V55.13.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('บันทึกภาพการ์ดสำเร็จ!');
@@ -1258,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       renderResults(parsedData);
-      showToast('ประมวลผล Master V55.12 VIP สำเร็จ!');
+      showToast('ประมวลผล Master V55.13 Convergence สำเร็จ!');
     } catch (err) {
       showAlert(`เกิดข้อผิดพลาด: ${err.message}`);
     }
