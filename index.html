@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Myanmar 2D VIP Analytics | v8.9 Quantum-Compensatory Engine</title>
+  <title>Myanmar 2D VIP Analytics | v9.0 Persistent Compensatory Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -67,9 +67,9 @@
         <div class="flex items-center gap-2">
           <span class="text-amber-400 text-sm">❖</span>
           <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase no-wrap">Myanmar 2D VIP Analytics</h1>
-          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v8.9 Compensatory Engine</span>
+          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v9.0 Persistent Engine</span>
         </div>
-        <p class="text-[11px] text-slate-400 mt-1 no-wrap">Interactive Quantum Analytics + Rolling Compensatory Backtest & Network Sync</p>
+        <p class="text-[11px] text-slate-400 mt-1 no-wrap">Auto-Persistent Storage + Rolling Compensatory Backtest & Network Sync</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="formulaCountBadge" class="bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[10px] px-2.5 py-1 rounded-md font-mono hidden">0 สูตรบริสุทธิ์</span>
@@ -77,21 +77,21 @@
       </div>
     </header>
 
-    <!-- Raw Data Input Section -->
+    <!-- Raw Data Input Section (Collapsible / Persistent Backend View) -->
     <section class="vip-card p-4 rounded-xl space-y-3">
       <div class="flex justify-between items-center">
-        <label for="rawInput" class="font-semibold text-slate-200 text-xs tracking-wide no-wrap">📥 ช่องกรอกข้อมูลสถิติรายวัน (Input Dataset)</label>
-        <span class="text-[10px] text-slate-400 no-wrap">รูปแบบ: 🗓 DD ม.ค. YY : 00 -- 00</span>
+        <label for="rawInput" class="font-semibold text-slate-200 text-xs tracking-wide no-wrap">📥 ฐานข้อมูลสถิติหลังบ้าน (Auto-Saved Dataset)</label>
+        <span class="text-[10px] text-emerald-400 no-wrap">💾 บันทึกอัตโนมัติ ไม่ต้องกรอกซ้ำ</span>
       </div>
 
-      <textarea id="rawInput" rows="5" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-3 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500/60 leading-relaxed transition-all shadow-inner" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
+      <textarea id="rawInput" rows="4" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-3 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500/60 leading-relaxed transition-all shadow-inner" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
 
       <div class="flex gap-3 pt-1">
-        <button id="btnProcess" onclick="processAllSystems()" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg shadow-amber-900/20 no-wrap tracking-wide text-sm">
-          ✦ ประมวลผลระบบเลขชดเชยอัจฉริยะ (Compensatory Process)
+        <button id="btnProcess" onclick="saveAndProcessSystems()" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg shadow-amber-900/20 no-wrap tracking-wide text-sm">
+          ✦ บันทึกและประมวลผลเครือข่าย (Save & Process)
         </button>
-        <button id="btnClear" onclick="clearData()" class="bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-medium py-2.5 px-4 rounded-lg transition-all no-wrap">
-          ล้างข้อมูล
+        <button id="btnClear" onclick="clearPersistentData()" class="bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-medium py-2.5 px-4 rounded-lg transition-all no-wrap">
+          รีเซ็ตข้อมูลตั้งต้น
         </button>
       </div>
     </section>
@@ -291,7 +291,14 @@
 🗓 16  พ.ย 69 :   65 -- 31`;
 
     window.onload = function() {
-      document.getElementById('rawInput').value = defaultSampleData;
+      // โหลดข้อมูลจาก LocalStorage อัตโนมัติ (Persistent Storage)
+      const savedData = localStorage.getItem('myanmar2d_persistent_dataset');
+      if (savedData) {
+        document.getElementById('rawInput').value = savedData;
+      } else {
+        document.getElementById('rawInput').value = defaultSampleData;
+        localStorage.setItem('myanmar2d_persistent_dataset', defaultSampleData);
+      }
       processAllSystems();
     };
 
@@ -652,7 +659,6 @@
       return formulas;
     }
 
-    // Contrarian Engine พร้อมระบบ Rolling Compensatory Backtest
     function runPureMathContrarian(allRecords) {
       const formulas = generatePureMathFormulas();
       document.getElementById('formulaCountBadge').innerText = `${formulas.length} สูตรบริสุทธิ์`;
@@ -673,7 +679,6 @@
 
       const digitHitCount = Array(10).fill(0);
       const evaluatedFormulas = [];
-
       const lastIdx = allRecords.length - 1;
 
       let recentEvenCount = 0;
@@ -834,35 +839,26 @@
       return { finalTop2, tensReboundScore, unitsReboundScore, digitReboundScore, totalScoreSum };
     }
 
-    // ระบบคำนวณเลขชดเชย (Compensatory Residual Calculation) ทีละวันย้อนหลัง
     function calculateRollingCompensatoryScores(allRecords) {
       const tenCompScores = Array(10).fill(0);
       const unitCompScores = Array(10).fill(0);
-
       const maxLookback = Math.min(30, allRecords.length);
 
-      // จำลองการย้อนหลังทีละวัน (Rolling Backtest) เพื่อหาว่าเลขตัวไหนขาดหายไปนาน (Compensatory Gap)
       for (let dayOffset = 1; dayOffset <= maxLookback; dayOffset++) {
         const targetIdx = allRecords.length - dayOffset;
         if (targetIdx < 0) break;
 
         const rec = allRecords[targetIdx];
-        const weight = Math.exp(-0.05 * (dayOffset - 1)); // น้ำหนักถ่วงให้อดีตใกล้เคียงมีความสำคัญสูงกว่า
+        const weight = Math.exp(-0.05 * (dayOffset - 1));
 
-        // ตรวจสอบหลักสิบ (เที่ยง / เย็น)
         const activeTens = new Set([rec.noonTen, rec.eveTen]);
         for (let d = 0; d < 10; d++) {
-          if (!activeTens.has(d)) {
-            tenCompScores[d] += 1.5 * weight; // ถ้าวันนั้นเลขสิบตัวนี้ไม่มา ได้แต้มชดเชยสะสม
-          }
+          if (!activeTens.has(d)) tenCompScores[d] += 1.5 * weight;
         }
 
-        // ตรวจสอบหลักหน่วย (เที่ยง / เย็น)
         const activeUnits = new Set([rec.noonUnit, rec.eveUnit]);
         for (let d = 0; d < 10; d++) {
-          if (!activeUnits.has(d)) {
-            unitCompScores[d] += 1.5 * weight; // ถ้าวันนั้นเลขหน่วยตัวนี้ไม่มา ได้แต้มชดเชยสะสม
-          }
+          if (!activeUnits.has(d)) unitCompScores[d] += 1.5 * weight;
         }
       }
 
@@ -921,6 +917,13 @@
       return 'text-slate-400 font-light';
     }
 
+    function saveAndProcessSystems() {
+      const rawText = document.getElementById('rawInput').value;
+      // บันทึกลง LocalStorage อัตโนมัติทันที
+      localStorage.setItem('myanmar2d_persistent_dataset', rawText);
+      processAllSystems();
+    }
+
     function processAllSystems() {
       const rawText = document.getElementById('rawInput').value;
       const lines = rawText.split('\n').filter(l => l.trim() !== '');
@@ -931,7 +934,7 @@
         return;
       }
 
-      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันในระบบ`;
+      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันในระบบ (Auto-Saved)`;
 
       const contrarianData = runPureMathContrarian(allRecords);
       const compensatory = calculateRollingCompensatoryScores(allRecords);
@@ -979,7 +982,6 @@
         });
       });
 
-      // ผสานคะแนนเครือข่ายเข้ากับ "ระบบเลขชดเชย (Compensatory Engine)"
       const hybridTensScore = Array(10).fill(0);
       const hybridUnitsScore = Array(10).fill(0);
 
@@ -1091,7 +1093,6 @@
       renderTable(timeframeResults);
 
       document.getElementById('resultsContainer').classList.remove('hidden');
-      document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
     function formatSetWithPercentage(numArray, scoreArray) {
@@ -1163,11 +1164,13 @@
       });
     }
 
-    function clearData() {
-      document.getElementById('rawInput').value = '';
-      document.getElementById('resultsContainer').classList.add('hidden');
-      document.getElementById('dataCountBadge').innerText = 'รอข้อมูลสถิติ';
-      document.getElementById('formulaCountBadge').classList.add('hidden');
+    function clearPersistentData() {
+      if (confirm('คุณต้องการรีเซ็ตข้อมูลสถิติกลับเป็นค่าตั้งต้นใช่หรือไม่?')) {
+        localStorage.removeItem('myanmar2d_persistent_dataset');
+        document.getElementById('rawInput').value = defaultSampleData;
+        localStorage.setItem('myanmar2d_persistent_dataset', defaultSampleData);
+        processAllSystems();
+      }
     }
   </script>
 </body>
