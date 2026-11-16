@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Myanmar 2D VIP Analytics | v10.0 Stabilized Markov-Quantum Engine</title>
+  <title>Myanmar 2D VIP Analytics | v10.5 Stable Parser & 30-Day Cap</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -67,9 +67,9 @@
         <div class="flex items-center gap-2">
           <span class="text-amber-400 text-sm">❖</span>
           <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase no-wrap">Myanmar 2D VIP Analytics</h1>
-          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v10.0 Stabilized Markov-Quantum</span>
+          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v10.5 Stable Parser & 30-Day Cap</span>
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">ระบบลดความผันผวน (Log-Damped Contrarian + EWMA) ผสาน Markov รอบเที่ยง➔เย็น และตัวอ่านข้อมูลรองรับไฟล์ PDF</p>
+        <p class="text-[11px] text-slate-400 mt-1">ระบบอ่านข้อมูลสถิติรูปแบบเดิม (🗓 DD ม.ค. YY : 00 -- 00) พร้อมระบบตัดจบกรอบเวลาวิเคราะห์ 30 วันอัตโนมัติ</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="formulaCountBadge" class="bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[10px] px-2.5 py-1 rounded-md font-mono hidden">0 สูตรเสถียร</span>
@@ -80,11 +80,11 @@
     <!-- Raw Data Input Section -->
     <section class="vip-card p-4 rounded-xl space-y-3">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <label for="rawInput" class="font-semibold text-slate-200 text-xs tracking-wide no-wrap">📥 ช่องกรอกข้อมูลสถิติรายวัน (รองรับทั้งข้อความปกติและก๊อปปี้จาก PDF)</label>
-        <button onclick="loadFullArchive()" class="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono">โหลดฐานข้อมูลเต็ม (มิ.ย. 68 - พ.ย. 69)</button>
+        <label for="rawInput" class="font-semibold text-slate-200 text-xs tracking-wide no-wrap">📥 ช่องกรอกข้อมูลสถิติรายวัน (รองรับรูปแบบ 🗓 DD ม.ค. YY : 00 -- 00)</label>
+        <span class="text-[10px] text-amber-400 font-mono">ระบบตัดประมวลผลอัตโนมัติไม่เกิน 30 วันล่าสุด</span>
       </div>
 
-      <textarea id="rawInput" rows="6" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-3 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500/60 leading-relaxed transition-all shadow-inner" placeholder="วางข้อมูลสถิติย้อนหลังที่นี่..."></textarea>
+      <textarea id="rawInput" rows="7" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-3 text-slate-300 font-mono text-[11px] focus:outline-none focus:border-amber-500/60 leading-relaxed transition-all shadow-inner" placeholder="วางข้อมูลสถิติที่นี่..."></textarea>
 
       <!-- Today Noon Session Input -->
       <div class="bg-[#0b0f19]/90 border border-cyan-500/30 rounded-lg p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -97,7 +97,7 @@
 
       <div class="flex gap-3 pt-1">
         <button id="btnProcess" onclick="processAllSystems()" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg shadow-amber-900/20 no-wrap tracking-wide text-sm">
-          ✦ ประมวลผลระดับควอนตัม (Quantum Process v10.0)
+          ✦ ประมวลผลระดับควอนตัม (Quantum Process v10.5)
         </button>
         <button id="btnClear" onclick="clearData()" class="bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-medium py-2.5 px-4 rounded-lg transition-all no-wrap">
           ล้างข้อมูล
@@ -150,7 +150,7 @@
         </div>
       </section>
 
-      <!-- 3. PURE MATH CONTRARIAN ENGINE (LOG-DAMPED STABILIZED) -->
+      <!-- 3. PURE MATH CONTRARIAN ENGINE -->
       <section class="vip-card-emerald p-4 rounded-xl space-y-3 relative overflow-hidden">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-emerald-800/40 pb-2 gap-2">
           <div class="flex items-center gap-2">
@@ -308,77 +308,56 @@
   </div>
 
   <script>
-    const defaultArchiveData = `24 ก.ย 69 : 63 -- 87
-25 ก.ย 69 : 89 -- 36
-28 ก.ย 69 : 08 -- 77
-29 ก.ย 69 : 72 -- 08
-30 ก.ย 69 : 30 -- 13
-01 ต.ค 69 : 99 -- 18
-02 ต.ค 69 : 22 -- 25
-05 ต.ค 69 : 00 -- 57
-06 ต.ค 69 : 86 -- 29
-07 ต.ค 69 : 07 -- 38
-08 ต.ค 69 : 61 -- 14
-11 ต.ค 69 : 50 -- 52
-12 ต.ค 69 : 01 -- 44
-14 ต.ค 69 : 05 -- 84
-15 ต.ค 69 : 98 -- 13
-19 ต.ค 69 : 32 -- 26
-20 ต.ค 69 : 77 -- 49
-21 ต.ค 69 : 53 -- 98
-22 ต.ค 69 : 78 -- 77
-26 ต.ค 69 : 52 -- 32
-27 ต.ค 69 : 49 -- 20
-28 ต.ค 69 : 89 -- 03
-29 ต.ค 69 : 91 -- 02
-30 ต.ค 69 : 90 -- 90
-02 พ.ย 69 : 97 -- 08
-03 พ.ย 69 : 64 -- 14
-04 พ.ย 69 : 66 -- 91
-05 พ.ย 69 : 65 -- 90
-06 พ.ย 69 : 51 -- 05
-09 พ.ย 69 : 67 -- 74
-10 พ.ย 69 : 17 -- 17
-11 พ.ย 69 : 24 -- 13
-12 พ.ย 69 : 00 -- 60
-13 พ.ย 69 : 32 -- 80`;
+    const defaultSampleInput = `🗓 28  ต.ค 69 :   89 -- 03
+🗓 29  ต.ค 69 :   91 -- 02
+🗓 30  ต.ค 69 :   90 -- 90
+🗓 02  พ.ย 69 :   97 -- 08
+🗓 03  พ.ย 69 :   64 -- 14
+🗓 04  พ.ย 69 :   66 -- 91
+🗓 05  พ.ย 69 :   65 -- 90
+🗓 06  พ.ย 69 :   51 -- 05
+🗓 09  พ.ย 69 :   67 -- 74
+🗓 10  พ.ย 69 :   17 -- 17
+🗓 11  พ.ย 69 :   24 -- 13
+🗓 12  พ.ย 69 :   00 -- 60
+🗓 13  พ.ย 69 :   32 -- 80`;
 
     window.onload = function() {
-      document.getElementById('rawInput').value = defaultArchiveData;
+      document.getElementById('rawInput').value = defaultSampleInput;
+      processAllSystems();
     };
 
-    function loadFullArchive() {
-      document.getElementById('rawInput').value = defaultArchiveData;
-      processAllSystems();
-    }
-
-    // PDF-Resilient Parser: รองรับการก๊อปปี้ที่มีเครื่องหมาย | หรือขึ้นบรรทัดใหม่คั่น
+    // Stable Parser ที่รองรับรูปแบบ 🗓 DD ม.ค. YY : 00 -- 00 และตัดจบไม่เกิน 30 วันล่าสุด
     function parseTextData(rawText) {
-      const cleaned = rawText
-        .replace(/\|/g, ' ')
-        .replace(/\r?\n+/g, ' ')
-        .replace(/\s+/g, ' ');
-
+      const lines = rawText.split('\n');
       const records = [];
-      const regex = /(\d{1,2})\s*:?\s*([ก-ฮ]+\.?)\s+(\d{2})\s*:?\s*(\d{2})\s*-+\s*(\d{2})/g;
-      let match;
+      // รองรับบรรทัดที่มีหรือไม่มีอีโมจิ 🗓 และรองรับช่องว่างยืดหยุ่น
+      const regex = /(?:🗓)?\s*(\d{1,2})\s+([ก-ฮa-zA-Z\.]+)\s+(\d{2})\s*:\s*(\d{2})\s*--\s*(\d{2})/;
 
-      while ((match = regex.exec(cleaned)) !== null) {
-        const noon = match[4];
-        const eve = match[5];
-        records.push({
-          day: match[1].padStart(2, '0'),
-          month: match[2].trim().replace('.', ''),
-          year: match[3],
-          dateStr: `${match[1].padStart(2, '0')} ${match[2].trim()} ${match[3]}`,
-          noon: noon,
-          noonTen: parseInt(noon[0]),
-          noonUnit: parseInt(noon[1]),
-          eve: eve,
-          eveTen: parseInt(eve[0]),
-          eveUnit: parseInt(eve[1]),
-          allDigits: new Set([parseInt(noon[0]), parseInt(noon[1]), parseInt(eve[0]), parseInt(eve[1])])
-        });
+      lines.forEach(line => {
+        const match = line.trim().match(regex);
+        if (match) {
+          const noon = match[4];
+          const eve = match[5];
+          records.push({
+            day: match[1].padStart(2, '0'),
+            month: match[2].trim().replace('.', ''),
+            year: match[3],
+            dateStr: `${match[1].padStart(2, '0')} ${match[2].trim()} ${match[3]}`,
+            noon: noon,
+            noonTen: parseInt(noon[0]),
+            noonUnit: parseInt(noon[1]),
+            eve: eve,
+            eveTen: parseInt(eve[0]),
+            eveUnit: parseInt(eve[1]),
+            allDigits: new Set([parseInt(noon[0]), parseInt(noon[1]), parseInt(eve[0]), parseInt(eve[1])])
+          });
+        }
+      });
+
+      // ควบคุมไม่ให้เกิน 30 วัน (ตัดเอา 30 วันล่าสุดเสมอตามเงื่อนไขที่กำหนด)
+      if (records.length > 30) {
+        return records.slice(-30);
       }
       return records;
     }
@@ -435,85 +414,15 @@
         }
       }
 
-      const multiSets = [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3], [0, 1, 2, 3]];
-      multiSets.forEach((set, idx) => {
-        const label = set.map(i => posNames[i]).join('+');
-        pairStepModes.forEach(mode => {
-          formulas.push({
-            id: `C_${idx}_${mode.name}`,
-            desc: `[1วัน] (${label}) ${mode.name}`,
-            type: '1 วันล่าสุด',
-            lag: 1,
-            targetPos: -1,
-            calc: (records, targetIdx) => {
-              const d1 = records[targetIdx - 1];
-              const sum = set.reduce((acc, p) => acc + getPosVal(d1, p), 0);
-              return mode.fn(sum);
-            }
-          });
-        });
-      });
-
-      for (let p = 0; p < 4; p++) {
-        stepModes.slice(0, 3).forEach(mode => {
-          formulas.push({
-            id: `D_single_${p}_${mode.name}`,
-            desc: `[ข้ามวัน D-2] ${posNames[p]} ${mode.name}`,
-            type: 'ข้ามวัน (D-2)',
-            lag: 2,
-            targetPos: p,
-            calc: (records, targetIdx) => mode.fn(getPosVal(records[targetIdx - 2], p))
-          });
-        });
-      }
-
-      for (let p2 = 0; p2 < 4; p2++) {
-        for (let p1 = 0; p1 < 4; p1++) {
-          pairStepModes.forEach(mode => {
-            formulas.push({
-              id: `E_${p2}_${p1}_${mode.name}`,
-              desc: `[2วันทบ] ${posNames[p2]}(D-2) + ${posNames[p1]}(D-1) ${mode.name}`,
-              type: 'ผสาน 2 วัน',
-              lag: 2,
-              targetPos: -1,
-              calc: (records, targetIdx) => {
-                const d2 = records[targetIdx - 2];
-                const d1 = records[targetIdx - 1];
-                return mode.fn(getPosVal(d2, p2) + getPosVal(d1, p1));
-              }
-            });
-          });
-        }
-      }
-
-      for (let p = 0; p < 4; p++) {
-        pairStepModes.forEach(mode => {
-          formulas.push({
-            id: `F_3daySum_${p}_${mode.name}`,
-            desc: `[3วันทบ] รวม ${posNames[p]} (3วันติด) ${mode.name}`,
-            type: 'ผสาน 3 วัน',
-            lag: 3,
-            targetPos: p,
-            calc: (records, targetIdx) => {
-              const sum = getPosVal(records[targetIdx - 3], p) +
-                          getPosVal(records[targetIdx - 2], p) +
-                          getPosVal(records[targetIdx - 1], p);
-              return mode.fn(sum);
-            }
-          });
-        });
-      }
-
       return formulas;
     }
 
-    // Stabilized Log-Damped Contrarian Engine (ลดความผันผวน + กรอง Bayesian Hit Rate)
     function runStabilizedContrarian(allRecords, todayNoonObj) {
       const formulas = generatePureMathFormulas();
       document.getElementById('formulaCountBadge').innerText = `${formulas.length} สูตรเสถียร`;
       document.getElementById('formulaCountBadge').classList.remove('hidden');
 
-      if (allRecords.length < 5) {
+      if (allRecords.length < 3) {
         return { finalTop2: [0, 1], tensReboundScore: Array(10).fill(0), unitsReboundScore: Array(10).fill(0), digitReboundScore: Array(10).fill(0) };
       }
 
@@ -523,14 +432,13 @@
       const digitHitCount = Array(10).fill(0);
       const evaluatedFormulas = [];
       const lastIdx = allRecords.length - 1;
-      const rollingStart = Math.max(0, allRecords.length - 90); // 90-day rolling window กันข้อมูลเก่าเกินไปดึงค่าเพี้ยน
 
       formulas.forEach(f => {
         let currentMissStreak = 0;
         let totalHits = 0;
         let totalChecked = 0;
 
-        for (let i = lastIdx; i >= Math.max(f.lag, rollingStart); i--) {
+        for (let i = lastIdx; i >= Math.max(f.lag, 0); i--) {
           const pred = f.calc(allRecords, i);
           const actualSet = allRecords[i].allDigits;
           const isHit = actualSet.has(pred[0]) || actualSet.has(pred[1]);
@@ -543,23 +451,14 @@
           }
         }
 
-        // Bayesian Smoothed Hit Rate
         const smoothHitRate = (totalHits + 2) / (totalChecked + 4);
-        if (smoothHitRate < 0.25 && currentMissStreak > 8) return;
-
         const nextPred = f.calc(allRecords, allRecords.length);
         let d1 = nextPred[0];
         let d2 = nextPred[1] === d1 ? (d1 + 1) % 10 : nextPred[1];
         const cleanPred = [d1, d2].sort((a, b) => a - b);
 
-        // Log-Damped Cap: จำกัดเพดาน streak สูงสุดที่ 5 เพื่อไม่ให้ 1 สูตรกลบอีก 140 สูตร
         const cappedStreak = Math.min(currentMissStreak, 5);
-        let weight = 0;
-        if (cappedStreak > 0) {
-          weight = (1.0 + 1.4 * Math.log1p(cappedStreak) * cappedStreak) * Math.pow(smoothHitRate, 1.5);
-        } else {
-          weight = 0.25 * smoothHitRate; // แรงส่งต่อเนื่องกรณีเพิ่งเข้า
-        }
+        let weight = cappedStreak > 0 ? (1.0 + 1.4 * Math.log1p(cappedStreak) * cappedStreak) * Math.pow(smoothHitRate, 1.5) : 0.25 * smoothHitRate;
 
         cleanPred.forEach(digit => {
           digitReboundScore[digit] += weight;
@@ -584,7 +483,6 @@
         });
       });
 
-      // ผสานแรงเหวี่ยงจากรอบเที่ยงวันนี้ (ถ้ามี) เข้าสู่คะแนนดีดกลับทันที
       if (todayNoonObj) {
         const { nTen, nUnit } = todayNoonObj;
         const noonDerived = [nTen, nUnit, (nTen + nUnit) % 10, Math.abs(nTen - nUnit)];
@@ -654,7 +552,6 @@
       return { finalTop2, tensReboundScore, unitsReboundScore, digitReboundScore };
     }
 
-    // สร้างเมทริกซ์เปลี่ยนผ่าน Markov (รอบเที่ยง -> รอบเย็น) จากข้อมูลทั้งหมด
     function buildNoonToEveMarkov(allRecords) {
       const tenMatrix = Array.from({ length: 10 }, () => Array(10).fill(0.5));
       const unitMatrix = Array.from({ length: 10 }, () => Array(10).fill(0.5));
@@ -717,11 +614,11 @@
       const allRecords = parseTextData(rawText);
 
       if (allRecords.length === 0) {
-        alert('กรุณากรอกข้อมูลสถิติในรูปแบบที่ถูกต้องก่อนกดประมวลผล');
+        alert('กรุณากรอกข้อมูลสถิติในรูปแบบที่ถูกต้อง (เช่น 🗓 28 ต.ค 69 : 89 -- 03)');
         return;
       }
 
-      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันในระบบ`;
+      document.getElementById('dataCountBadge').innerText = `${allRecords.length} วันในระบบ (Cap 30)`;
 
       const todayNoonVal = document.getElementById('todayNoonInput').value.trim();
       const hasTodayNoon = /^\d{2}$/.test(todayNoonVal);
@@ -734,7 +631,6 @@
       const contrarianData = runStabilizedContrarian(allRecords, todayNoonObj);
       const markov = buildNoonToEveMarkov(allRecords);
 
-      // 1. คำนวณ EWMA (Exponentially Weighted Moving Average) ลดอาการคะแนนตกหน้าผา
       const ewmaTens = Array(10).fill(0);
       const ewmaUnits = Array(10).fill(0);
       allRecords.forEach((r, idx) => {
@@ -745,7 +641,6 @@
         ewmaUnits[r.noonUnit] += decay * 0.55;
       });
 
-      // 2. คำนวณ Multi-Timeframe สำหรับตารางที่ 5 (คงชุดเดิมไว้ครบ)
       const periods = [1, 2, 3, 5, 7, 10, 14, 20, 25, 30];
       const validPeriods = periods.filter(p => allRecords.length >= p);
       if (validPeriods.length === 0) validPeriods.push(allRecords.length);
@@ -777,7 +672,6 @@
         timeframeResults.push({ days, topTens, topUnits, topFree: smartFree });
       });
 
-      // 3. ผสานคะแนน Hybrid 3 แกน (EWMA 30% + Multi-Timeframe 25% + Stabilized Contrarian 45%)
       const hybridTensScore = Array(10).fill(0);
       const hybridUnitsScore = Array(10).fill(0);
 
@@ -793,7 +687,6 @@
         hybridUnitsScore[i] = ((ewmaUnits[i] / maxEwmaU) * 30) + ((globalUnitsScore[i] / maxGlobalU) * 25) + ((contrarianData.unitsReboundScore[i] / maxRebU) * 45);
       }
 
-      // ถ้าป้อนรอบเที่ยงวันนี้ ให้ผสานค่า Markov Transition จริงจากสถิติ 352 วัน
       const activeNoon = todayNoonObj || {
         raw: allRecords[allRecords.length - 1].noon,
         nTen: allRecords[allRecords.length - 1].noonTen,
@@ -826,7 +719,6 @@
           if (t !== u) {
             let p = `${t}${u}`;
             let score = (hybridTensScore[t] || 0) + (hybridUnitsScore[u] || 0);
-            // โบนัสหากเป็นคู่กลับหรือตัวซ้ำกับรอบเที่ยง
             if (hasTodayNoon && (p === `${activeNoon.nUnit}${activeNoon.nTen}` || t === activeNoon.nTen || u === activeNoon.nUnit)) {
               score += 4.5;
             }
@@ -849,13 +741,13 @@
       });
       document.getElementById('strictIntersectionGrid').innerHTML = strictGridHtml;
 
-      // --- ตารางที่ 2: DOUBLES TRACKER & MARKOV SESSION ---
+      // --- ตารางที่ 2: DOUBLES TRACKER & SESSION MOMENTUM ---
       let daysSinceDouble = 0;
       for (let i = allRecords.length - 1; i >= 0; i--) {
         if (allRecords[i].noonTen === allRecords[i].noonUnit || allRecords[i].eveTen === allRecords[i].eveUnit) break;
         daysSinceDouble++;
       }
-      document.getElementById('doubleGapBadge').innerText = `ระยะห่างเบิ้ลล่าสุด: ${daysSinceDouble} วัน (ค่าเฉลี่ยออกทุก 5.6 วัน)`;
+      document.getElementById('doubleGapBadge').innerText = `ระยะห่างเบิ้ลล่าสุด: ${daysSinceDouble} วัน`;
 
       let doublesScored = [0,1,2,3,4,5,6,7,8,9].map(d => ({
         pair: `${d}${d}`,
@@ -878,15 +770,15 @@
       let momentumText = '';
       if (hasTodayNoon) {
         momentumText = `⚡ <strong class="text-cyan-300">วิเคราะห์สดรอบเที่ยงวันนี้: ${todayNoonVal}</strong> (สิบ: ${todayNoonVal[0]}, หน่วย: ${todayNoonVal[1]})<br>`;
-        momentumText += `• จากสถิติ Markov ${allRecords.length} วัน เมื่อเที่ยงออกตระกูล <strong>${todayNoonVal}</strong> รอบเย็นมักมีแรงดึงดูดไปที่ <strong class="text-amber-300">หลักสิบ ${bestMarkovTen}X</strong> และ <strong class="text-amber-300">หลักหน่วย X${bestMarkovUnit}</strong> (เด่นสุด: <strong>${bestMarkovTen}${bestMarkovUnit}</strong>)`;
+        momentumText += `• จากสถิติ Markov เมื่อเที่ยงออกตระกูล <strong>${todayNoonVal}</strong> รอบเย็นมีแรงดึงดูดไปที่ <strong class="text-amber-300">หลักสิบ ${bestMarkovTen}X</strong> และ <strong class="text-amber-300">หลักหน่วย X${bestMarkovUnit}</strong> (เด่นสุด: <strong>${bestMarkovTen}${bestMarkovUnit}</strong>)`;
       } else {
         const lastRec = allRecords[allRecords.length - 1];
-        momentumText = `ข้อมูลปิดวันล่าสุด (${lastRec.dateStr}): เที่ยง <strong class="text-slate-200">${lastRec.noon}</strong> ➔ เย็น <strong class="text-slate-200">${lastRec.eve}</strong><br>`;
+        momentumText = `ข้อมูลวันล่าสุด (${lastRec.dateStr}): เที่ยง <strong class="text-slate-200">${lastRec.noon}</strong> ➔ เย็น <strong class="text-slate-200">${lastRec.eve}</strong><br>`;
         momentumText += `• กรอกผลรอบเที่ยงในช่องด้านบนเพื่อเปิดระบบคำนวณ <strong class="text-cyan-300">Markov เที่ยง➔เย็น</strong> แบบเรียลไทม์ครับ`;
       }
       document.getElementById('sessionMomentumInfo').innerHTML = momentumText;
 
-      // --- ตารางที่ 4: RENDER ORIGINAL SETS (คงโครงสร้างเดิมครบถ้วน) ---
+      // --- ตารางที่ 4: RENDER ORIGINAL SETS ---
       document.getElementById('numbersSet1').innerText = consensusTens.nums.join('     ');
       document.getElementById('detailsSet1').innerHTML = formatSetWithPercentage(consensusTens.nums, hybridTensScore);
       document.getElementById('scoreSet1').innerText = consensusTens.maxScore.toFixed(1);
