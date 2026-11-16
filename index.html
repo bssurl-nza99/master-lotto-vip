@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Myanmar 2D VIP Analytics | v8.5 Pure-Math Extended Matrix</title>
+  <title>Myanmar 2D VIP Analytics | v8.6 Pure-Math Extended Matrix</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -67,7 +67,7 @@
         <div class="flex items-center gap-2">
           <span class="text-amber-400 text-sm">❖</span>
           <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase no-wrap">Myanmar 2D VIP Analytics</h1>
-          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v8.5 Pure-Math Extended</span>
+          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v8.6 Pure-Math Extended</span>
         </div>
         <p class="text-[11px] text-slate-400 mt-1 no-wrap">Interactive Quantum Analytics + ระบบกรองความสัมพันธ์คู่เจาะอัจฉริยะ ล็อกตำแหน่งสิบ/หน่วย และไล่เฉดสีสะอาดตา</p>
       </div>
@@ -723,12 +723,12 @@
         const hitRate = totalHits / (totalChecked || 1);
         if (hitRate < 0.15 && currentMissStreak > 10) return;
 
-        // คำนวณค่าเฉลี่ยและส่วนเบี่ยงเบนมาตรฐานของการหลุด (Gap Z-Score)
+        // คำนวณค่าเฉลี่ยและส่วนเบี่ยงเบนมาตรฐานของการหลุด (Gap Z-Score) ป้องกัน Variance Collapse
         let zScore = 0;
         if (historicalGaps.length > 1) {
           const meanGap = historicalGaps.reduce((a, b) => a + b, 0) / historicalGaps.length;
           const variance = historicalGaps.reduce((acc, g) => acc + Math.pow(g - meanGap, 2), 0) / historicalGaps.length;
-          const stdDev = Math.sqrt(variance) || 0.5;
+          const stdDev = Math.max(Math.sqrt(variance), 1.0);
           zScore = (currentMissStreak - meanGap) / stdDev;
         }
 
@@ -1063,11 +1063,13 @@
 
     function formatSetWithPercentage(numArray, scoreArray) {
       const totalSum = scoreArray.reduce((acc, curr) => acc + curr, 0) || 1;
-      const details = numArray.map((num, idx) => {
+      const rankedByScore = [...numArray].sort((a, b) => (scoreArray[b] || 0) - (scoreArray[a] || 0));
+
+      const details = numArray.map((num) => {
         const score = scoreArray[num] || 0;
         const pct = ((score / totalSum) * 100).toFixed(1);
-        const rankLabel = idx === 0 ? 'Top 1' : (idx === 1 ? 'Top 2' : `Top ${idx + 1}`);
-        return `<span class="px-1 text-slate-300"><b>${num}</b>(${rankLabel}:${pct}%)</span>`;
+        const actualRank = rankedByScore.indexOf(num) + 1;
+        return `<span class="px-1 text-slate-300"><b>${num}</b>(Top ${actualRank}:${pct}%)</span>`;
       });
       return details.join(' • ');
     }
