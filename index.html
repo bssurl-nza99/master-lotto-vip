@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Myanmar 2D VIP Analytics | v10.0 Precision Engine</title>
+  <title>Myanmar 2D VIP Analytics | v10.5 Precision & Balanced Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -79,7 +79,7 @@
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-amber-400 text-sm">❖</span>
           <h1 class="text-sm sm:text-base font-bold tracking-wider text-slate-100 uppercase no-wrap">Myanmar 2D VIP Analytics</h1>
-          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v10.0 Precision Engine</span>
+          <span class="bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">v10.5 Precision &amp; Balanced Engine</span>
         </div>
         <p class="text-[11px] text-slate-400 mt-1">30-Draw Active Window + 350-Draw Historical Prior • รอบเที่ยง 12:30 น. / รอบเย็น 16:30 น.</p>
       </div>
@@ -223,7 +223,7 @@
         <div class="vip-card p-3.5 sm:p-4 rounded-xl space-y-3 border border-emerald-500/30">
           <div class="border-b border-slate-800 pb-2 flex justify-between items-center">
             <h2 class="font-bold text-emerald-300 text-xs tracking-wider">👑 TOP NUMBERS (HOT TO COLD)</h2>
-            <span class="text-[10px] text-slate-400 font-mono">10 คู่เจาะคัดพิเศษ</span>
+            <span class="text-[10px] text-slate-400 font-mono">10 คู่เจาะสมดุล</span>
           </div>
           <div id="smartPairTop10List" class="grid grid-cols-5 gap-2 text-center font-mono"></div>
         </div>
@@ -357,7 +357,6 @@
 05 พ.ย 69 : 65 -- 90 | 06 พ.ย 69 : 51 -- 05 | 09 พ.ย 69 : 67 -- 74 | 10 พ.ย 69 : 17 -- 17 | 11 พ.ย 69 : 24 -- 13
 `;
 
-    // ข้อมูลตัวอย่าง 30 งวดล่าสุดในช่องกรอกหน้าเว็บ
     const defaultSampleData = `🗓 02  ต.ค 69 :   22 -- 25
 🗓 05  ต.ค 69 :   00 -- 57
 🗓 06  ต.ค 69 :   86 -- 29
@@ -430,7 +429,6 @@
       return parseBulkRecords(textArray.join('\n'));
     }
 
-    // สร้างโมเดลฐานสถิติระยะยาว 350 งวด (Transition Matrix เย็น->เที่ยง, เที่ยง->เย็น, และ Pair Affinity)
     function buildHistoricalPriorModel(records) {
       const tensFreq = Array(10).fill(1);
       const unitsFreq = Array(10).fill(1);
@@ -448,14 +446,12 @@
         unitsFreq[r.eveUnit]++;
         r.allDigits.forEach(d => digitFreq[d]++);
 
-        // เชื่อมโยงในวันเดียวกัน: เที่ยง (12:30) -> เย็น (16:30)
         noonToEveTens[r.noonTen][r.eveTen] += 1;
         noonToEveUnits[r.noonUnit][r.eveUnit] += 1;
 
         pairAffinity.set(r.noon, (pairAffinity.get(r.noon) || 0) + 1);
         pairAffinity.set(r.eve, (pairAffinity.get(r.eve) || 0) + 1);
 
-        // เชื่อมโยงข้ามวัน: เย็นเมื่อวาน -> เที่ยง/เย็นวันถัดไป
         if (idx > 0) {
           const prev = records[idx - 1];
           eveToNextTens[prev.eveTen][r.noonTen] += 1.2;
@@ -477,7 +473,6 @@
       };
     }
 
-    // คำนวณวันที่งวดถัดไปอัตโนมัติ (ข้ามเสาร์-อาทิตย์)
     function formatNextDrawDate(latestRecord) {
       const monthMap = {
         'มค': 0, 'มกราคม': 0, 'กพ': 1, 'กุมภาพันธ์': 1,
@@ -496,11 +491,10 @@
         return `${latestRecord.day} - ?? - ${latestRecord.year}`;
       }
 
-      const ceYear = yearShort + 1957; // แปลง พ.ศ. 2 หลัก (เช่น 69 -> 2569) เป็น ค.ศ. (2026)
+      const ceYear = yearShort + 1957;
       const nextDate = new Date(ceYear, monthIdx, dayNum);
       nextDate.setDate(nextDate.getDate() + 1);
 
-      // หวยพม่า 2D ออกวันจันทร์-ศุกร์ (หากตรงวันเสาร์หรืออาทิตย์ให้เลื่อนเป็นวันจันทร์)
       if (nextDate.getDay() === 6) {
         nextDate.setDate(nextDate.getDate() + 2);
       } else if (nextDate.getDay() === 0) {
@@ -781,7 +775,6 @@
         const currentMissStreak = runningGap;
         const hitRate = totalHits / (totalChecked || 1);
 
-        // กรองสูตรที่ Out-of-sample ต่ำเกินไปออก เพื่อกัน Overfitting
         if (hitRate < 0.25 && currentMissStreak > 8) return;
 
         let zScore = 0;
@@ -797,7 +790,6 @@
         let d2 = nextPred[1] === d1 ? (d1 + 1) % 10 : nextPred[1];
         const cleanPred = [d1, d2].sort((a, b) => a - b);
 
-        // ปรับสมดุลน้ำหนัก (Regularized Z-Score + HitRate Stability)
         let weight = 0;
         const clampedZ = Math.max(-1, Math.min(zScore, 3.0));
         const zMultiplier = clampedZ > 0 ? (1 + clampedZ * 0.22) : 0.85;
@@ -833,7 +825,6 @@
         });
       });
 
-      // ผสานความน่าจะเป็นจากฐานข้อมูล 350 งวดจริง (Bayesian Shrinkage 18%) เพื่อความเสถียรข้ามงวด
       if (HISTORICAL_PRIOR_MODEL) {
         const lastRec = activeRecords[lastIdx];
         const priorDigitSum = HISTORICAL_PRIOR_MODEL.digitFreq.reduce((a, b) => a + b, 0) || 1;
@@ -935,7 +926,7 @@
     }
 
     function evaluateFreePositionWalkForward(records, minTrainingDays = 10) {
-      const results = { total: 0, selectedHits: 0, tensHits: 0, unitsHits: 0 };
+      const results = { total: 0, anyPosHits: 0, selectedHits: 0, tensHits: 0, unitsHits: 0 };
       for (let prefixLength = minTrainingDays; prefixLength < records.length; prefixLength++) {
         const training = records.slice(Math.max(0, prefixLength - 30), prefixLength);
         if (training.length < minTrainingDays) continue;
@@ -943,16 +934,21 @@
         const decision = getFreePositionDecision(prediction);
         const digits = prediction.finalTop2 || [];
         const target = records[prefixLength];
+
         const actualTens = new Set([target.noonTen, target.eveTen]);
         const actualUnits = new Set([target.noonUnit, target.eveUnit]);
+        const anyHit = digits.some(digit => target.allDigits.has(digit));
         const tensHit = digits.some(digit => actualTens.has(digit));
         const unitsHit = digits.some(digit => actualUnits.has(digit));
         const selectedHit = decision.useTens ? tensHit : unitsHit;
+
         results.total++;
+        if (anyHit) results.anyPosHits++;
         if (tensHit) results.tensHits++;
         if (unitsHit) results.unitsHits++;
         if (selectedHit) results.selectedHits++;
       }
+      results.anyPosRate = results.total ? (results.anyPosHits / results.total) * 100 : 0;
       results.selectedRate = results.total ? (results.selectedHits / results.total) * 100 : 0;
       results.tensRate = results.total ? (results.tensHits / results.total) * 100 : 0;
       results.unitsRate = results.total ? (results.unitsHits / results.total) * 100 : 0;
@@ -967,9 +963,13 @@
         return;
       }
       el.innerHTML = `
-        <div class="grid grid-cols-3 gap-2 text-center font-mono">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
+          <div class="rounded-lg bg-emerald-950/40 border border-emerald-600/40 p-2">
+            <div class="text-[9px] text-emerald-300">เข้าเป้า TOP 2 (ไม่จำกัดตำแหน่ง)</div>
+            <div class="font-bold text-base text-emerald-300">${validation.anyPosHits}/${validation.total} (${validation.anyPosRate.toFixed(1)}%)</div>
+          </div>
           <div class="rounded-lg bg-slate-900/80 border border-slate-700 p-2">
-            <div class="text-[9px] text-slate-400">ระบบเลือกอัตโนมัติ</div>
+            <div class="text-[9px] text-slate-400">เจาะตำแหน่งอัตโนมัติ</div>
             <div class="font-bold text-base text-amber-300">${validation.selectedHits}/${validation.total} (${validation.selectedRate.toFixed(1)}%)</div>
           </div>
           <div class="rounded-lg bg-slate-900/80 border border-slate-700 p-2">
@@ -981,18 +981,18 @@
             <div class="font-bold text-base text-slate-200">${validation.unitsHits}/${validation.total} (${validation.unitsRate.toFixed(1)}%)</div>
           </div>
         </div>
-        <div class="text-[10px] text-slate-400">ตำแหน่งแนะนำรอบถัดไป: <strong class="text-emerald-300">${currentDecision.useTens ? 'หลักสิบ (dX)' : 'หลักหน่วย (Xd)'}</strong> (สิบ ${currentDecision.tensScore.toFixed(1)} vs หน่วย ${currentDecision.unitsScore.toFixed(1)})</div>
+        <div class="text-[10px] text-slate-400">ตำแหน่งแนะนำหลักรอบถัดไป: <strong class="text-emerald-300">${currentDecision.useTens ? 'หลักสิบ (dX)' : 'หลักหน่วย (Xd)'}</strong> (สิบ ${currentDecision.tensScore.toFixed(1)} vs หน่วย ${currentDecision.unitsScore.toFixed(1)})</div>
       `;
     }
 
-    // สร้างชุดเจาะ 8 คู่ต่อแถว คัด 8 ตัวประกบที่คมที่สุด (ตัดตัวที่อ่อนที่สุด 1 ตัวออก) และเรียงเลขจากน้อยไปมาก
-    function generateQuantumFilteredPairs(digit, rankedOppositeDigits, isTensPosition, oppositeScoreArray, activeRecords) {
-      const candidatePool = rankedOppositeDigits.filter(d => d !== digit);
+    // สร้างชุดเจาะ 8 คู่ต่อแถว โดยใช้คะแนนผสาน (60% ตำแหน่ง + 40% เครือข่ายหลัก) เพื่อให้ตัวตัดออกสอดคล้องกันทั้งกระดาน
+    function generateQuantumFilteredPairs(digit, blendedOppositeRank, isTensPosition, oppositeBlendedScores, activeRecords) {
+      const candidatePool = blendedOppositeRank.filter(d => d !== digit);
       const selectedOpposite = candidatePool.slice(0, 8);
 
       const scoredPairs = selectedOpposite.map(otherDigit => {
         const pairStr = isTensPosition ? `${digit}${otherDigit}` : `${otherDigit}${digit}`;
-        const baseScore = (oppositeScoreArray[otherDigit] || 1);
+        const baseScore = (oppositeBlendedScores[otherDigit] || 1);
 
         let recentMatchCount = 0;
         activeRecords.slice(-15).forEach(r => {
@@ -1013,7 +1013,6 @@
       const scoreRankMap = {};
       sortedByScore.forEach((sp, idx) => { scoreRankMap[sp.pairStr] = idx; });
 
-      // เรียงเลขคู่ในแถวจากน้อยไปมากตามรูปแบบตารางมาตรฐาน (เช่น 01--02--03--04--05--06--07--08)
       scoredPairs.sort((a, b) => parseInt(a.pairStr, 10) - parseInt(b.pairStr, 10));
       return { scoredPairs, scoreRankMap };
     }
@@ -1035,7 +1034,6 @@
         return;
       }
 
-      // บังคับตัดอ่านเฉพาะ 30 งวดล่าสุดเสมอ ตามข้อกำหนด
       const analysisRecords = parsedAll.slice(-30);
       const nextDrawDateStr = formatNextDrawDate(analysisRecords[analysisRecords.length - 1]);
 
@@ -1087,11 +1085,21 @@
         hybridUnitsScore[i] = ((globalUnitsScore[i] / maxConsensusUnits) * 42) + ((contrarianData.unitsReboundScore[i] / maxReboundUnits) * 58);
       }
 
+      // สร้างคะแนนผสาน (60% ตำแหน่ง + 40% เครือข่ายหลัก) สำหรับคัดตัวตัดออก 1 ตัวให้สอดคล้องกันทั้งกระดาน
+      const maxNetScore = Math.max(...contrarianData.digitReboundScore) || 1;
+      const blendedTensForPair = Array(10).fill(0);
+      const blendedUnitsForPair = Array(10).fill(0);
+      for (let i = 0; i < 10; i++) {
+        const netNorm = (contrarianData.digitReboundScore[i] / maxNetScore) * 100;
+        blendedTensForPair[i] = (hybridTensScore[i] * 0.60) + (netNorm * 0.40);
+        blendedUnitsForPair[i] = (hybridUnitsScore[i] * 0.60) + (netNorm * 0.40);
+      }
+
       const consensusTens = getTopDigitsByScore(hybridTensScore, 5);
       const consensusUnits = getTopDigitsByScore(hybridUnitsScore, 5);
 
-      const sorted0to9ByTens = [...Array(10).keys()].sort((a, b) => hybridTensScore[b] - hybridTensScore[a] || a - b);
-      const sorted0to9ByUnits = [...Array(10).keys()].sort((a, b) => hybridUnitsScore[b] - hybridUnitsScore[a] || a - b);
+      const sorted0to9ByBlendedTens = [...Array(10).keys()].sort((a, b) => blendedTensForPair[b] - blendedTensForPair[a] || a - b);
+      const sorted0to9ByBlendedUnits = [...Array(10).keys()].sort((a, b) => blendedUnitsForPair[b] - blendedUnitsForPair[a] || a - b);
       const sorted0to9ByNetwork = contrarianData.networkRankedDigits.map(item => item.digit);
 
       const pairCandidates = [];
@@ -1105,7 +1113,7 @@
 
       let htmlPairs1 = '';
       consensusTens.nums.forEach(digit => {
-        const { scoredPairs, scoreRankMap } = generateQuantumFilteredPairs(digit, sorted0to9ByUnits, true, hybridUnitsScore, analysisRecords);
+        const { scoredPairs, scoreRankMap } = generateQuantumFilteredPairs(digit, sorted0to9ByBlendedUnits, true, blendedUnitsForPair, analysisRecords);
         tensPairRows.push({ digit, pairs: scoredPairs.map(sp => sp.pairStr) });
         scoredPairs.forEach(sp => pairCandidates.push({ pairStr: sp.pairStr, score: sp.score, source: 'TENS' }));
         const pairListText = scoredPairs.map(sp => `<span class="${getColorClassForRank(scoreRankMap[sp.pairStr])}">${sp.pairStr}</span>`).join('<span class="text-slate-600">--</span>');
@@ -1119,7 +1127,7 @@
 
       let htmlPairs2 = '';
       consensusUnits.nums.forEach(digit => {
-        const { scoredPairs, scoreRankMap } = generateQuantumFilteredPairs(digit, sorted0to9ByTens, false, hybridTensScore, analysisRecords);
+        const { scoredPairs, scoreRankMap } = generateQuantumFilteredPairs(digit, sorted0to9ByBlendedTens, false, blendedTensForPair, analysisRecords);
         unitsPairRows.push({ digit, pairs: scoredPairs.map(sp => sp.pairStr) });
         scoredPairs.forEach(sp => pairCandidates.push({ pairStr: sp.pairStr, score: sp.score, source: 'UNITS' }));
         const pairListText = scoredPairs.map(sp => `<span class="${getColorClassForRank(scoreRankMap[sp.pairStr])}">${sp.pairStr}</span>`).join('<span class="text-slate-600">--</span>');
@@ -1141,8 +1149,8 @@
       let htmlPairs3 = '';
       freePositionRows.forEach(position => {
         const { digit, isTensPosition, label } = position;
-        const oppositeRanked = isTensPosition ? sorted0to9ByUnits : sorted0to9ByTens;
-        const oppositeScores = isTensPosition ? hybridUnitsScore : hybridTensScore;
+        const oppositeRanked = isTensPosition ? sorted0to9ByBlendedUnits : sorted0to9ByBlendedTens;
+        const oppositeScores = isTensPosition ? blendedUnitsForPair : blendedTensForPair;
         const { scoredPairs, scoreRankMap } = generateQuantumFilteredPairs(digit, oppositeRanked, isTensPosition, oppositeScores, analysisRecords);
         freePairRows.push({ digit, label, pairs: scoredPairs.map(sp => sp.pairStr) });
         scoredPairs.forEach(sp => pairCandidates.push({ pairStr: sp.pairStr, score: sp.score, source: 'FREE' }));
@@ -1153,7 +1161,7 @@
 
       renderTable(timeframeResults);
 
-      // คัดชุดเจาะ TOP NUMBERS (10 คู่เจาะที่แม่นและคมที่สุดจากแกน TOP 1 และ TOP 2)
+      // คัดชุดเจาะ TOP NUMBERS (10 คู่เจาะสมดุล จำกัดโควตาเลขแกนละไม่เกิน 4 คู่ เพื่อกระจายความเสี่ยง)
       const smartPairGroups = buildAnchoredSmartPairs(
         contrarianData.networkTop2,
         tensPairRows,
@@ -1170,7 +1178,6 @@
         rank: idx + 1
       }));
 
-      // Render TOP 10 Single Digits
       document.getElementById('networkTop10List').innerHTML = contrarianData.networkRankedDigits.map((item, index) => `
         <div class="rounded-lg border ${index === 0 ? 'border-amber-400/70 bg-amber-950/30' : 'border-slate-700/70 bg-slate-900/70'} py-2">
           <div class="text-[9px] text-slate-400">TOP ${index + 1}</div>
@@ -1178,7 +1185,6 @@
         </div>
       `).join('');
 
-      // Render TOP NUMBERS (10 Pairs)
       document.getElementById('smartPairTop10List').innerHTML = smartPairRanking.map(item => `
         <div class="rounded-lg border ${item.rank === 1 ? 'border-emerald-400/70 bg-emerald-950/40' : 'border-slate-700/70 bg-slate-900/70'} py-2">
           <div class="text-[9px] text-slate-400">TOP ${item.rank}</div>
@@ -1186,7 +1192,6 @@
         </div>
       `).join('');
 
-      // สร้างข้อความสรุป VIP MEMBER ที่สะอาดและถูกต้อง 100%
       const summaryText = buildAllSummary({
         nextDrawDateStr,
         topDigits: sorted0to9ByNetwork,
@@ -1206,7 +1211,7 @@
       document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // คัดเลือก 10 คู่เจาะที่คมที่สุดโดยผสานแรงสนับสนุนข้ามชุด + ความแม่นยำรายตำแหน่ง + ฐานสถิติ 350 งวด
+    // คัดเลือก 10 คู่เจาะสมดุล: จำกัดโควตาเลขแกนแต่ละตัวไม่เกิน 4 คู่ และไม่ให้คู่กลับซ้ำกัน
     function buildAnchoredSmartPairs(anchors, tensRows, unitsRows, freeRows, candidates, activeRecords, hybridTensScore, hybridUnitsScore) {
       const allRows = [
         ...tensRows.map(row => ({ source: 'TENS', ...row })),
@@ -1236,7 +1241,9 @@
         });
       });
 
-      const anchorSet = new Set(anchors.slice(0, 2).map(Number));
+      const anchor1 = Number(anchors[0]);
+      const anchor2 = Number(anchors[1]);
+      const anchorSet = new Set([anchor1, anchor2]);
       const poolMap = new Map();
 
       allRows.forEach(row => {
@@ -1255,13 +1262,14 @@
             : 0;
           const recentHits = recentHistoryCount.get(pair) || 0;
 
-          // ให้โบนัสคู่ที่ผูกกับเลขแกน TOP 1 และชนข้ามชุด (TENS + UNITS + FREE)
-          const anchorBonus = (dTen === anchors[0] || dUnit === anchors[0]) ? 12 : 6;
-          const totalCompositeScore = (occ.sources.size * 25) + (occ.count * 10) + (posStrength * 0.45) + (histAffinity * 1.2) + (recentHits * 3) + anchorBonus;
+          const anchorBonus = (dTen === anchor1 || dUnit === anchor1) ? 10 : 8;
+          const totalCompositeScore = (occ.sources.size * 14) + (occ.count * 6) + (posStrength * 0.55) + (histAffinity * 1.3) + (recentHits * 3) + anchorBonus;
 
           if (!poolMap.has(pair) || totalCompositeScore > poolMap.get(pair).compositeScore) {
             poolMap.set(pair, {
               pairStr: pair,
+              dTen,
+              dUnit,
               sourceCount: occ.sources.size,
               hits: occ.count,
               compositeScore: totalCompositeScore
@@ -1270,18 +1278,35 @@
         });
       });
 
-      // ป้องกันเลขกลับซ้ำกันใน TOP 10 (เลือกทิศทางที่คะแนนสูงกว่า)
       const sortedPool = [...poolMap.values()].sort((a, b) => b.compositeScore - a.compositeScore || a.pairStr.localeCompare(b.pairStr));
       const selected = [];
       const usedCanonical = new Set();
+      const digitUsageCount = Array(10).fill(0);
 
+      // รอบแรก: คัดคู่ที่คะแนนสูงสุดโดยจำกัดโควตาไม่ให้เลขตัวใดตัวหนึ่งติดเกิน 4 คู่
       for (const item of sortedPool) {
         if (selected.length >= 10) break;
         const rev = item.pairStr[1] + item.pairStr[0];
         const canonical = item.pairStr < rev ? item.pairStr : rev;
         if (usedCanonical.has(canonical)) continue;
+        if (digitUsageCount[item.dTen] >= 4 || digitUsageCount[item.dUnit] >= 4) continue;
+
         usedCanonical.add(canonical);
+        digitUsageCount[item.dTen]++;
+        digitUsageCount[item.dUnit]++;
         selected.push(item);
+      }
+
+      // รอบสำรอง: หากยังไม่ครบ 10 คู่ ให้เติมจากคู่ที่ดีที่สุดที่ยังไม่ซ้ำ
+      if (selected.length < 10) {
+        for (const item of sortedPool) {
+          if (selected.length >= 10) break;
+          const rev = item.pairStr[1] + item.pairStr[0];
+          const canonical = item.pairStr < rev ? item.pairStr : rev;
+          if (usedCanonical.has(canonical)) continue;
+          usedCanonical.add(canonical);
+          selected.push(item);
+        }
       }
 
       return { combinedTop10: selected };
@@ -1299,7 +1324,6 @@
       return rows.map(row => `${row.label}: ${row.pairs.join('--')}`).join('\n');
     }
 
-    // จัดรูปแบบข้อความสรุปให้ตรงตามต้นแบบ 100% และเว้นวรรคไม่เกิน 1 บรรทัดว่าง
     function buildAllSummary(data) {
       const lines = [
         `📅 ${data.nextDrawDateStr}`,
@@ -1333,7 +1357,6 @@
       return lines.join('\n');
     }
 
-    // ระบบคัดลอกลงคลิปบอร์ดทันที (รองรับทั้ง HTTPS, Local File, iOS Safari และ Android WebView)
     async function copyAllSummary() {
       const output = document.getElementById('allSummaryOutput');
       const status = document.getElementById('copyStatus');
@@ -1348,7 +1371,6 @@
 
       let success = false;
 
-      // วิธีที่ 1: Modern Clipboard API
       try {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
           await navigator.clipboard.writeText(text);
@@ -1358,7 +1380,6 @@
         success = false;
       }
 
-      // วิธีที่ 2: Temporary Offscreen Textarea + execCommand('copy') (รองรับมือถือและไฟล์ออฟไลน์)
       if (!success) {
         try {
           const tempArea = document.createElement('textarea');
@@ -1379,7 +1400,6 @@
         }
       }
 
-      // วิธีที่ 3: Direct Selection Fallback บนช่องแสดงผลหลัก
       if (!success) {
         output.focus();
         output.select();
