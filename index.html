@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AETHER QUANT v5 // Adaptive Causal Multi-Table Lottery Engine</title>
+<title>AETHER QUANT // Quantum Multi-Table Statistical Lottery Engine</title>
 <style>
   :root {
     --bg-void: #07090f;
@@ -135,6 +135,7 @@
     border-color: var(--cyan);
   }
 
+  /* Required action row: Process on left, Clear on right, strictly on one line */
   .action-row {
     display: flex;
     flex-direction: row;
@@ -277,6 +278,7 @@
     color: var(--text-muted);
   }
 
+  /* Horizontal scroll ONLY; no vertical clipping/scroll inside table container */
   .table-hscroll {
     width: 100%;
     overflow-x: auto;
@@ -350,13 +352,6 @@
     font-weight: 700;
   }
 
-  .audit-note-bar {
-    padding: 6px 11px;
-    background: rgba(16, 185, 129, 0.08);
-    border-top: 1px solid var(--border-grid);
-    font-size: 10.5px;
-    color: var(--text-muted);
-  }
 
   .all-lottery-banner {
     background: linear-gradient(90deg, rgba(17, 24, 39, 0.98), rgba(13, 18, 29, 0.98));
@@ -430,8 +425,8 @@
 <div class="app-shell">
   <div class="top-bar">
     <div>
-      <div class="brand-title">AETHER QUANT v5 // ADAPTIVE CAUSAL MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
-      <div class="brand-sub">ปรับน้ำหนักอัตโนมัติรายประเภทหวย • คัดคู่ลดซ้ำซ้อน • ไม่เห็นอนาคต 100% • ครบทั้ง 13 ตาราง</div>
+      <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
+      <div class="brand-sub">แยกประเภทหวยอัตโนมัติ • จำกัดสูงสุด 30 งวดล่าสุด • ข้ามวันงดออกผลตามงวดจริง • เลื่อนซ้าย-ขวาเท่านั้น</div>
     </div>
     <div class="status-pill" id="engineStatus">พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
   </div>
@@ -660,118 +655,11 @@
     };
   }
 
-  // 6 independent strictly-causal signal channels computed ONLY from `subDraws`
-  function computeSignalChannels(subDraws) {
-    const m = subDraws.length;
-    const last = subDraws[m - 1];
-
-    // S0: Exponential-decay + full presence frequency
-    const sFreq = Array(10).fill(0);
-    for (let idx = 0; idx < m; idx++) {
-      const w = Math.exp(-0.08 * (m - 1 - idx));
-      const uniq = new Set(subDraws[idx].tenUnitDigits);
-      for (const d of uniq) sFreq[d] += w;
-    }
-    const maxF = Math.max(...sFreq, 1e-9);
-    for (let d = 0; d < 10; d++) sFreq[d] /= maxF;
-
-    // S1: Short-window (last 6 draws) hit density
-    const w6 = subDraws.slice(-6);
-    const len6 = Math.max(1, w6.length);
-    const sShort = Array.from({ length: 10 }, (_, d) =>
-      w6.filter((dr) => dr.tenUnitDigits.includes(d)).length / len6
-    );
-
-    // S2: Mean-reversion gap curve (sweet spot 2-4 draws absent)
-    const sGap = Array(10).fill(0);
-    for (let d = 0; d < 10; d++) {
-      let g = 0;
-      for (let i = m - 1; i >= 0; i--) {
-        if (subDraws[i].tenUnitDigits.includes(d)) break;
-        g += 1;
-      }
-      sGap[d] = g === 2 || g === 3 ? 1.0 : g === 4 ? 0.75 : g === 1 ? 0.35 : g === 0 ? 0.15 : 0.25;
-    }
-
-    // S3: First-order Markov transition (Laplace-smoothed)
-    const trans = Array.from({ length: 10 }, () => Array(10).fill(0));
-    const tout = Array(10).fill(0);
-    for (let i = 0; i < m - 1; i++) {
-      const uniqA = new Set(subDraws[i].tenUnitDigits);
-      const uniqB = new Set(subDraws[i + 1].tenUnitDigits);
-      for (const a of uniqA) {
-        for (const b of uniqB) {
-          trans[a][b] += 1;
-          tout[a] += 1;
-        }
-      }
-    }
-    const sMarkov = Array(10).fill(0);
-    const lastUniq = new Set(last.tenUnitDigits);
-    for (let y = 0; y < 10; y++) {
-      let acc = 0;
-      for (const x of lastUniq) {
-        acc += (trans[x][y] + 0.5) / (tout[x] + 5.0);
-      }
-      sMarkov[y] = acc;
-    }
-    const maxM = Math.max(...sMarkov, 1e-9);
-    for (let d = 0; d < 10; d++) sMarkov[d] /= maxM;
-
-    // S4: Direct carry-over from last draw's ten-unit digits
-    const sCarry = Array.from({ length: 10 }, (_, d) => (last.tenUnitDigits.includes(d) ? 1.0 : 0.0));
-
-    // S5: Walk-forward validated 10 pure arithmetic formulas
-    const baseSeed = last.tenUnitDigits.reduce((s, x) => s + x, 0);
-    const baseline = Math.round((baseSeed % 10 + (m % 10)) / 2) % 10;
-    const fdefs = [
-      (d) => [(d.tensTop + d.unitsBot + baseline) % 10, (d.tensTop + d.unitsBot + 5) % 10],
-      (d) => [Math.abs(d.tensBot - d.unitsTop) % 10, (Math.abs(d.tensBot - d.unitsTop) + baseline) % 10],
-      (d) => [(d.tensTop * d.unitsTop) % 10, ((d.tensTop * d.unitsTop) + 3 + baseline) % 10],
-      (d) => [(d.tensBot + d.unitsBot + baseline) % 10, (d.tensBot + d.unitsBot + 7) % 10],
-      (d) => [(d.hundredsTop + d.tensTop + d.unitsTop) % 10, (d.hundredsTop + d.tensTop + d.unitsTop + baseline + 1) % 10],
-      (d) => [Math.abs(d.unitsBot - d.tensTop) % 10, (Math.abs(d.unitsBot - d.tensTop) + 4) % 10],
-      (d) => [(d.tensBot + baseline + 2) % 10, (d.unitsBot + baseline + 6) % 10],
-      (d) => [Math.abs((d.tensTop + d.unitsTop) - (d.tensBot + d.unitsBot)) % 10, (baseline + 8) % 10],
-      (d) => [(d.tensBot * d.unitsBot) % 10, ((d.tensBot * d.unitsBot) + baseline + 2) % 10],
-      (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10]
-    ];
-    const sMath = Array(10).fill(0);
-    const formulaVotes = Array(10).fill(0);
-    const evStart = Math.max(1, m - 12);
-    for (const fn of fdefs) {
-      let fh = 0;
-      let et = 0;
-      for (let i = evStart; i < m; i++) {
-        let [a, b] = fn(subDraws[i - 1]);
-        if (a === b) b = (b + 1) % 10;
-        et += 1;
-        if (subDraws[i].tenUnitDigits.includes(a) || subDraws[i].tenUnitDigits.includes(b)) {
-          fh += 1;
-        }
-      }
-      const rate = et > 0 ? fh / et : 0.55;
-      let [na, nb] = fn(last);
-      if (na === nb) nb = (nb + 1) % 10;
-      sMath[na] += rate;
-      sMath[nb] += rate;
-      formulaVotes[na] += 1;
-      formulaVotes[nb] += 1;
-    }
-    const maxA = Math.max(...sMath, 1e-9);
-    for (let d = 0; d < 10; d++) sMath[d] /= maxA;
-
-    return {
-      channels: [sFreq, sShort, sGap, sMarkov, sCarry, sMath],
-      formulaVotes
-    };
-  }
-
-  // Strictly causal (zero future lookahead) online meta-adaptive ranker + 45-pair optimizer
-  function evaluateAdaptiveModel(histDraws) {
+  // Strictly causal (zero future lookahead) multi-regime ranker for 0-9 ten-unit digits
+  function rankDigitsFromHistory(histDraws) {
     const n = histDraws.length;
     if (n === 0) {
-      const emptyItems = Array.from({ length: 10 }, (_, d) => ({
+      return Array.from({ length: 10 }, (_, d) => ({
         digit: d,
         score: 0,
         slotCount: 0,
@@ -785,135 +673,67 @@
         signalGroups: 0,
         confidenceLabel: "ต่ำ (ข้อมูลน้อย)"
       }));
-      return {
-        ranked: emptyItems,
-        topPair: [0, 1],
-        backup3: 2,
-        channelWeights: [1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6],
-        markovRaw: Array(10).fill(0)
-      };
     }
 
-    if (n === 1) {
-      const tu = histDraws[0].tenUnitDigits;
-      const d1 = tu[0];
-      const d2 = tu.find((x) => x !== d1) ?? ((d1 + 1) % 10);
-      const d3 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((x) => x !== d1 && x !== d2) ?? 0;
-      const items = Array.from({ length: 10 }, (_, d) => ({
-        digit: d,
-        score: d === d1 ? 20 : d === d2 ? 18 : tu.includes(d) ? 12 : 5,
-        slotCount: tu.filter((x) => x === d).length,
-        drawHits: tu.includes(d) ? 1 : 0,
-        recent12Slots: tu.filter((x) => x === d).length,
-        gap: tu.includes(d) ? 0 : 1,
-        formulaVotes: 0,
-        pairVote: d === d1 || d === d2 ? 1 : 0,
-        coldVote: 0,
-        patCount: 0,
-        signalGroups: tu.includes(d) ? 1 : 0,
-        confidenceLabel: "เฝ้าระวัง (ข้อมูล 1 งวด)"
-      })).sort((a, b) => b.score - a.score || a.digit - b.digit);
-      return {
-        ranked: items,
-        topPair: [d1, d2],
-        backup3: d3,
-        channelWeights: [1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6],
-        markovRaw: Array(10).fill(0)
-      };
-    }
+    const lastDraw = histDraws[n - 1];
+    const baseSeed = lastDraw.tenUnitDigits.reduce((s, x) => s + x, 0);
+    const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
 
-    // Online causal meta-validation on historical steps inside `histDraws` ONLY
-    const K = 6;
-    const sigHits = Array(K).fill(1.0);
-    const sigEvals = Array(K).fill(2.0);
-    const metaStart = Math.max(2, n - 14);
+    const formulaDefs = [
+      (d) => [(d.tensTop + d.unitsBot + baseline) % 10, (d.tensTop + d.unitsBot + 5) % 10],
+      (d) => [Math.abs(d.tensBot - d.unitsTop) % 10, (Math.abs(d.tensBot - d.unitsTop) + baseline) % 10],
+      (d) => [(d.tensTop * d.unitsTop) % 10, ((d.tensTop * d.unitsTop) + 3 + baseline) % 10],
+      (d) => [(d.tensBot + d.unitsBot + baseline) % 10, (d.tensBot + d.unitsBot + 7) % 10],
+      (d) => [(d.hundredsTop + d.tensTop + d.unitsTop) % 10, (d.hundredsTop + d.tensTop + d.unitsTop + baseline + 1) % 10],
+      (d) => [Math.abs(d.unitsBot - d.tensTop) % 10, (Math.abs(d.unitsBot - d.tensTop) + 4) % 10],
+      (d) => [(d.tensBot + baseline + 2) % 10, (d.unitsBot + baseline + 6) % 10],
+      (d) => [Math.abs((d.tensTop + d.unitsTop) - (d.tensBot + d.unitsBot)) % 10, (baseline + 8) % 10],
+      (d) => [(d.tensBot * d.unitsBot) % 10, ((d.tensBot * d.unitsBot) + baseline + 2) % 10],
+      (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10]
+    ];
 
-    for (let t = metaStart; t < n; t++) {
-      const { channels } = computeSignalChannels(histDraws.slice(0, t));
-      const targetTu = histDraws[t].tenUnitDigits;
-      for (let k = 0; k < K; k++) {
-        const vec = channels[k];
-        let best1 = 0;
-        let best2 = 1;
-        if (vec[1] > vec[0]) {
-          best1 = 1;
-          best2 = 0;
-        }
-        for (let d = 2; d < 10; d++) {
-          if (vec[d] > vec[best1]) {
-            best2 = best1;
-            best1 = d;
-          } else if (vec[d] > vec[best2]) {
-            best2 = d;
-          }
-        }
-        sigEvals[k] += 1.0;
-        if (targetTu.includes(best1) || targetTu.includes(best2)) {
-          sigHits[k] += 1.0;
+    const formulaWeight = Array(10).fill(0);
+    const formulaVotes = Array(10).fill(0);
+    const evalStart = Math.max(1, n - 15);
+
+    for (const fn of formulaDefs) {
+      let fHits = 0;
+      let evalTotal = 0;
+      for (let i = evalStart; i < n; i++) {
+        let [a, b] = fn(histDraws[i - 1]);
+        if (a === b) b = (b + 1) % 10;
+        evalTotal += 1;
+        if (histDraws[i].tenUnitDigits.includes(a) || histDraws[i].tenUnitDigits.includes(b)) {
+          fHits += 1;
         }
       }
+      const accRate = evalTotal > 0 ? fHits / evalTotal : 0.5;
+      let [na, nb] = fn(lastDraw);
+      if (na === nb) nb = (nb + 1) % 10;
+      formulaWeight[na] += accRate * 11;
+      formulaWeight[nb] += accRate * 11;
+      formulaVotes[na] += 1;
+      formulaVotes[nb] += 1;
     }
 
-    const rawW = sigHits.map((h, k) => Math.pow(h / sigEvals[k], 3));
-    const sumW = rawW.reduce((s, x) => s + x, 0) || 1.0;
-    const weights = rawW.map((w) => w / sumW);
-
-    const { channels: curChannels, formulaVotes } = computeSignalChannels(histDraws);
-    const digitScore = Array.from({ length: 10 }, (_, d) => {
-      let s = 0;
-      for (let k = 0; k < K; k++) s += weights[k] * curChannels[k][d];
-      return s;
-    });
-
-    // Direct 45-pair joint coverage optimization (rewards complementary pairs, penalizes redundant overlap)
-    const w10 = histDraws.slice(-10);
-    const len10 = Math.max(1, w10.length);
-    let bestPair = [0, 1];
-    let bestPairVal = -1e9;
-
-    for (let a = 0; a < 10; a++) {
-      for (let b = a + 1; b < 10; b++) {
-        let joint10 = 0;
-        let both10 = 0;
-        for (const dr of w10) {
-          const ha = dr.tenUnitDigits.includes(a);
-          const hb = dr.tenUnitDigits.includes(b);
-          if (ha || hb) joint10 += 1;
-          if (ha && hb) both10 += 1;
-        }
-        const val =
-          (digitScore[a] + digitScore[b]) * 1.45 +
-          (joint10 / len10) * 0.40 -
-          (both10 / len10) * 0.15;
-        if (val > bestPairVal) {
-          bestPairVal = val;
+    // Best compensating pair strictly on histDraws
+    let bestPair = null;
+    let bestPairScore = -1e9;
+    for (let a = 0; a <= 9; a++) {
+      for (let b = a + 1; b <= 9; b++) {
+        const hitsArr = histDraws.map((dr) => dr.tenUnitDigits.includes(a) || dr.tenUnitDigits.includes(b));
+        const pct = (hitsArr.filter(Boolean).length / n) * 100;
+        const st = calcStreaks(hitsArr);
+        const hitCeilingNow = st.currentStatus === "หลุด" && st.maxMiss > 0 && st.currentStreak >= st.maxMiss;
+        const sc = pct * 1.1 + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
+        if (sc > bestPairScore) {
+          bestPairScore = sc;
           bestPair = [a, b];
         }
       }
     }
 
-    if (digitScore[bestPair[1]] > digitScore[bestPair[0]]) {
-      bestPair = [bestPair[1], bestPair[0]];
-    }
-
-    // Pattern follow-up strictly on histDraws for reporting & signal count
-    const lastDraw = histDraws[n - 1];
-    const patMap = new Map();
-    for (let i = 0; i < n - 1; i++) {
-      const cur = histDraws[i];
-      const nxt = histDraws[i + 1];
-      const ev = cur.tenUnitDigits.filter((x) => x % 2 === 0).length;
-      const hi = cur.tenUnitDigits.filter((x) => x >= 5).length;
-      const key = `${ev >= 2 ? "คู่เด่น" : "คี่เด่น"}/${hi >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
-      if (!patMap.has(key)) patMap.set(key, Array(10).fill(0));
-      for (const dg of nxt.tenUnitDigits) patMap.get(key)[dg] += 1;
-    }
-    const lastEv = lastDraw.tenUnitDigits.filter((x) => x % 2 === 0).length;
-    const lastHi = lastDraw.tenUnitDigits.filter((x) => x >= 5).length;
-    const lastKey = `${lastEv >= 2 ? "คู่เด่น" : "คี่เด่น"}/${lastHi >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
-    const followCounts = patMap.get(lastKey) || Array(10).fill(0);
-
-    // Cold streak count strictly on histDraws
+    // Cold streak top-5 vote on histDraws (capped so cold streak alone never dominates)
     const coldList = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -929,7 +749,11 @@
             streak += 1;
           }
           const lastShift = (n * k) % 10;
-          coldList.push({ d1: (a + lastShift) % 10, d2: (b + lastShift) % 10, streak });
+          coldList.push({
+            d1: (a + lastShift) % 10,
+            d2: (b + lastShift) % 10,
+            streak
+          });
         }
       }
     }
@@ -940,15 +764,32 @@
       coldVote[c.d2] += 1;
     }
 
+    // Pattern follow-up strictly on histDraws
+    const patMap = new Map();
+    for (let i = 0; i < n - 1; i++) {
+      const cur = histDraws[i];
+      const nxt = histDraws[i + 1];
+      const ev = cur.tenUnitDigits.filter((x) => x % 2 === 0).length;
+      const hi = cur.tenUnitDigits.filter((x) => x >= 5).length;
+      const key = `${ev >= 2 ? "คู่เด่น" : "คี่เด่น"}/${hi >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
+      if (!patMap.has(key)) patMap.set(key, Array(10).fill(0));
+      for (const dg of nxt.tenUnitDigits) patMap.get(key)[dg] += 1;
+    }
+    const lastEv = lastDraw.tenUnitDigits.filter((x) => x % 2 === 0).length;
+    const lastHi = lastDraw.tenUnitDigits.filter((x) => x >= 5).length;
+    const lastKey = `${lastEv >= 2 ? "คู่เด่น" : "คี่เด่น"}/${lastHi >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
+    const followCounts = patMap.get(lastKey) || Array(10).fill(0);
+
     const shortWin = histDraws.slice(-12);
     const shortLen = Math.max(1, shortWin.length);
-    const items = [];
 
-    for (let d = 0; d < 10; d++) {
+    const items = [];
+    for (let d = 0; d <= 9; d++) {
       const slotCount = histDraws.reduce((s, dr) => s + dr.tenUnitDigits.filter((x) => x === d).length, 0);
       const drawHits = histDraws.filter((dr) => dr.tenUnitDigits.includes(d)).length;
       const recent12Slots = shortWin.reduce((s, dr) => s + dr.tenUnitDigits.filter((x) => x === d).length, 0);
       const recent12Hits = shortWin.filter((dr) => dr.tenUnitDigits.includes(d)).length;
+      const r3 = histDraws.slice(-3).filter((dr) => dr.tenUnitDigits.includes(d)).length;
 
       let gap = 0;
       for (let i = n - 1; i >= 0; i--) {
@@ -956,14 +797,35 @@
         gap += 1;
       }
 
-      const pairVote = bestPair.includes(d) ? 1 : 0;
+      const pairVote = bestPair && bestPair.includes(d) ? 1 : 0;
+      const gapBonus = gap >= 2 && gap <= 4 ? 2.0 : gap === 5 ? 1.0 : gap >= 6 ? -1.4 : 0.0;
+      const satPenalty = r3 >= 2 ? -1.2 : 0.0;
+      const shortRateBonus = (recent12Hits / shortLen) * 5.0 + recent12Slots * 0.4;
+      const cappedColdBonus = Math.min(2.5, coldVote[d] * 0.25);
+
+      // Count independent signal groups supporting digit `d`
       let signalGroups = 0;
       if (drawHits / n >= 0.3 || recent12Hits / shortLen >= 0.33) signalGroups += 1;
       if (formulaVotes[d] >= 2) signalGroups += 1;
-      if (curChannels[3][d] >= 0.65 || followCounts[d] >= 2) signalGroups += 1;
+      if (pairVote > 0 || followCounts[d] >= 2) signalGroups += 1;
       if (gap >= 2 && gap <= 4) signalGroups += 1;
 
-      const scaledScore = Number((digitScore[d] * 100 + (pairVote ? 8.0 : 0)).toFixed(2));
+      const score = Number(
+        (
+          slotCount * 1.3 +
+          drawHits * 2.5 +
+          (drawHits / n) * 13.0 +
+          shortRateBonus +
+          formulaWeight[d] * 1.136 +
+          formulaVotes[d] * 1.4 +
+          pairVote * 5.0 +
+          followCounts[d] * 1.4 +
+          cappedColdBonus +
+          gapBonus +
+          satPenalty
+        ).toFixed(2)
+      );
+
       const confidenceLabel =
         signalGroups >= 3
           ? "สูง (3+ กลุ่มหนุน)"
@@ -973,8 +835,7 @@
 
       items.push({
         digit: d,
-        score: scaledScore,
-        rawAdaptiveScore: Number((digitScore[d] * 100).toFixed(2)),
+        score,
         slotCount,
         drawHits,
         recent12Slots,
@@ -988,30 +849,13 @@
       });
     }
 
-    items.sort((a, b) => {
-      const aTop = a.digit === bestPair[0] ? 2 : a.digit === bestPair[1] ? 1 : 0;
-      const bTop = b.digit === bestPair[0] ? 2 : b.digit === bestPair[1] ? 1 : 0;
-      if (bTop !== aTop) return bTop - aTop;
-      return b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit;
-    });
-
-    const backup3 = items.find((x) => !bestPair.includes(x.digit))?.digit ?? ((bestPair[1] + 1) % 10);
-
-    return {
-      ranked: items,
-      topPair: bestPair,
-      backup3,
-      channelWeights: weights,
-      markovRaw: curChannels[3]
-    };
-  }
-
-  function rankDigitsFromHistory(histDraws) {
-    return evaluateAdaptiveModel(histDraws).ranked;
+    items.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
+    return items;
   }
 
   function selectTwoDigitsFromHistory(histDraws) {
-    return evaluateAdaptiveModel(histDraws).topPair;
+    const ranked = rankDigitsFromHistory(histDraws);
+    return [ranked[0].digit, ranked[1].digit];
   }
 
   function analyzeLottery(pack) {
@@ -1053,10 +897,10 @@
     const auditHitPct = auditBool.length > 0 ? Number(((auditHitCount / auditBool.length) * 100).toFixed(1)) : 0;
 
     // Next draw ranking using all `n` draws
-    const nextModel = evaluateAdaptiveModel(chrono);
-    const nextRanked = nextModel.ranked;
-    const [nextP1, nextP2] = nextModel.topPair;
-    const nextBackup3 = nextModel.backup3;
+    const nextRanked = rankDigitsFromHistory(chrono);
+    const nextP1 = nextRanked[0].digit;
+    const nextP2 = nextRanked[1].digit;
+    const nextBackup3 = nextRanked[2] ? nextRanked[2].digit : nextP1;
 
     // Table 2: Overall 0-9 frequency in ten-unit positions
     const t2 = [];
@@ -1413,7 +1257,7 @@
     coldCandidates.sort((x, y) => y.coldRounds - x.coldRounds || x.formulaCode.localeCompare(y.formulaCode));
     const t10 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
 
-    // Table 11: Quantum consensus & final 2-digit pick (aligned with causal adaptive engine)
+    // Table 11: Quantum consensus & final 2-digit pick (aligned with causal walk-forward engine)
     const latestPat = (() => {
       if (n === 0) return null;
       const last = chrono[n - 1];
@@ -1500,21 +1344,6 @@
       };
     });
 
-    // Table 13: Markov transition + Adaptive Channel Weight breakdown
-    const t13 = Array.from({ length: 10 }, (_, d) => {
-      const mkVal = Number(nextModel.markovRaw[d].toFixed(3));
-      const adaptVal = nextRanked.find((r) => r.digit === d)?.rawAdaptiveScore ?? 0;
-      return {
-        digit: d,
-        markovScore: mkVal,
-        adaptiveScore: adaptVal,
-        transStrength: mkVal >= 0.72 ? "แรงส่งสูง" : mkVal >= 0.48 ? "ปานกลาง" : "อ่อน"
-      };
-    }).sort((a, b) => b.markovScore - a.markovScore || b.adaptiveScore - a.adaptiveScore || a.digit - b.digit);
-
-    const wPcts = nextModel.channelWeights.map((w) => Math.round(w * 100));
-    const adaptiveWeightSummary = `ความถี่ ${wPcts[0]}% • สั้น ${wPcts[1]}% • ดีดกลับ ${wPcts[2]}% • Markov ${wPcts[3]}% • ซ้ำงวด ${wPcts[4]}% • สูตร ${wPcts[5]}%`;
-
     return {
       pack,
       audit: {
@@ -1539,8 +1368,6 @@
       t10,
       t11,
       t12,
-      t13,
-      adaptiveWeightSummary,
       topTwo,
       backupDigit3: nextBackup3,
       statsSummary: {
@@ -1825,18 +1652,6 @@
       )
       .join("");
 
-    const t13Rows = cur.t13
-      .map(
-        (r, idx) => `<tr>
-          <td class="num-gold">${idx + 1}</td>
-          <td class="num-gold">${r.digit}</td>
-          <td>${r.markovScore}</td>
-          <td>${r.adaptiveScore}</td>
-          <td class="${r.markovScore >= 0.72 ? "st-hot" : r.markovScore >= 0.48 ? "st-rebound" : "st-steady"}">${esc(r.transStrength)}</td>
-        </tr>`
-      )
-      .join("");
-
     const overall = computeOverallAccuracy(analysisMap);
     const allLotteryCardsHtml = overall.perLottery
       .map((item) => {
@@ -1880,8 +1695,8 @@
           <div class="hero-note">สถานะปัจจุบัน: ${esc(au.currentStatus)} (${au.currentStreak})</div>
         </div>
         <div class="hero-card">
-          <div class="hero-label">สมดุลน้ำหนักอัตโนมัติ &amp; โมเมนตัมล่าสุด</div>
-          <div class="hero-value" style="font-size:12px;">${esc(cur.adaptiveWeightSummary)}</div>
+          <div class="hero-label">โมเมนตัมสูง-ต่ำ &amp; แพทเทิร์นล่าสุด</div>
+          <div class="hero-value" style="font-size:13px;">สูง ${s.highPct}% / ต่ำ ${s.lowPct}% • เบสกลาง ${s.baseline}</div>
           <div class="hero-note">${esc(s.momentumForecast)} • ${esc(s.latestPat)}</div>
         </div>
       </div>
@@ -2102,24 +1917,6 @@
           </table>
         </div>
       </div>
-
-      <div class="table-section">
-        <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 13 // ตารางแรงส่งการเปลี่ยนผ่าน Markov &amp; คะแนนปรับน้ำหนักอัตโนมัติรายหวย (0–9)</div>
-          <div class="table-meta">${esc(cur.adaptiveWeightSummary)}</div>
-        </div>
-        <div class="table-hscroll">
-          <table class="lux-grid">
-            <thead>
-              <tr>
-                <th>อันดับ</th><th>เลข</th><th>ดัชนี Markov เปลี่ยนผ่าน</th><th>คะแนนปรับน้ำหนักอัตโนมัติ</th><th>ระดับแรงส่ง</th>
-              </tr>
-            </thead>
-            <tbody>${t13Rows}</tbody>
-          </table>
-        </div>
-        <div class="audit-note-bar">หมายเหตุความซื่อสัตย์: ทุกงวดย้อนหลังคำนวณจากข้อมูลที่เกิดขึ้นก่อนหน้านั้นเท่านั้น (Walk-Forward) ไม่มีการย้อนดูอนาคตหรือปรับแต่งตัวเลข</div>
-      </div>
     `;
 
     root.querySelectorAll(".lottery-btn").forEach((btn) => {
@@ -2224,8 +2021,6 @@
   window.__LOTTERY_ENGINE__ = {
     parseDrawsFromText,
     analyzeLottery,
-    computeSignalChannels,
-    evaluateAdaptiveModel,
     rankDigitsFromHistory,
     selectTwoDigitsFromHistory,
     computeOverallAccuracy,
