@@ -498,6 +498,12 @@
     font-size: 10.5px;
     color: var(--cyan);
   }
+  .copy-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
   .btn-copy-post {
     padding: 4px 10px;
     font-size: 10.5px;
@@ -507,9 +513,18 @@
     border: 1px solid var(--gold);
     cursor: pointer;
   }
+  .btn-copy-single {
+    padding: 4px 9px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--cyan);
+    background: var(--cyan-soft);
+    border: 1px solid rgba(34, 211, 238, 0.5);
+    cursor: pointer;
+  }
   textarea.copy-preview {
     width: 100%;
-    min-height: 115px;
+    min-height: 170px;
     background: #06080d;
     color: var(--text-main);
     border: 1px solid var(--border-grid);
@@ -583,6 +598,7 @@
 
   let latestAnalysis = null;
   let activeLotteryKey = null;
+  let processedOrderKeys = [];
 
   function normalizeText(str) {
     if (!str) return "";
@@ -841,6 +857,25 @@
     return `🌐 ${clean}`;
   }
 
+  function formatSingleLotteryPostBlock(analysisItem) {
+    if (!analysisItem || !analysisItem.pack || !analysisItem.nextSelection) return "";
+    const header = formatLotteryCopyHeader(analysisItem.pack.lotteryName);
+    const pairLines = analysisItem.nextSelection.groups.map(
+      (g) => `${g.mainDigit} : ${g.pairs.map((pr) => pr.pairText).join("--")}`
+    );
+    return [header, ...pairLines].join("\n");
+  }
+
+  function formatAllLotteriesPostText(analysisMap, orderedKeys) {
+    const keys = Array.isArray(orderedKeys) && orderedKeys.length > 0
+      ? orderedKeys.filter((k) => Boolean(analysisMap[k]))
+      : Object.keys(analysisMap || {});
+    return keys
+      .map((k) => formatSingleLotteryPostBlock(analysisMap[k]))
+      .filter((blk) => blk.length > 0)
+      .join("\n\n");
+  }
+
   function rankDigitsFromHistory(histDraws) {
     const n = histDraws.length;
     if (n === 0) {
@@ -964,6 +999,17 @@
 
     const shortWin = histDraws.slice(-12);
     const shortLen = Math.max(1, shortWin.length);
+    const midWin = histDraws.slice(-6);
+    const midLen = Math.max(1, midWin.length);
+
+    const recentHighCount = shortWin.reduce((s, dr) => s + dr.tenUnitDigits.filter((x) => x >= 5).length, 0);
+    const recentLowCount = shortWin.length * 4 - recentHighCount;
+    const reboundHighBias = recentLowCount > recentHighCount + 4;
+    const reboundLowBias = recentHighCount > recentLowCount + 4;
+
+    const recentEvenCount = shortWin.reduce((s, dr) => s + dr.tenUnitDigits.filter((x) => x % 2 === 0).length, 0);
+    const recentOddCount = shortWin.length * 4 - recentEvenCount;
+    const paritySwitchBias = Math.abs(recentEvenCount - recentOddCount) >= 6;
 
     const items = [];
     for (let d = 0; d <= 9; d++) {
@@ -971,6 +1017,7 @@
       const drawHits = histDraws.filter((dr) => dr.tenUnitDigits.includes(d)).length;
       const recent12Slots = shortWin.reduce((s, dr) => s + dr.tenUnitDigits.filter((x) => x === d).length, 0);
       const recent12Hits = shortWin.filter((dr) => dr.tenUnitDigits.includes(d)).length;
+      const recent6Hits = midWin.filter((dr) => dr.tenUnitDigits.includes(d)).length;
       const r3 = histDraws.slice(-3).filter((dr) => dr.tenUnitDigits.includes(d)).length;
 
       let gap = 0;
@@ -980,10 +1027,18 @@
       }
 
       const pairVote = bestPair && bestPair.includes(d) ? 1 : 0;
-      const gapBonus = gap >= 2 && gap <= 4 ? 2.0 : gap === 5 ? 1.0 : gap >= 6 ? -1.4 : 0.0;
+      const gapBonus = gap >= 2 && gap <= 4 ? 2.4 : gap === 5 ? 1.2 : gap >= 6 ? -1.4 : 0.0;
       const satPenalty = r3 >= 2 ? -1.2 : 0.0;
-      const shortRateBonus = (recent12Hits / shortLen) * 5.0 + recent12Slots * 0.4;
+      const shortRateBonus =
+        (recent12Hits / shortLen) * 5.2 +
+        (recent6Hits / midLen) * 2.8 +
+        recent12Slots * 0.45;
       const cappedColdBonus = Math.min(2.5, coldVote[d] * 0.25);
+
+      let regimeBonus = 0;
+      if (reboundHighBias && d >= 5 && gap >= 1 && gap <= 5) regimeBonus += 1.5;
+      if (reboundLowBias && d <= 4 && gap >= 1 && gap <= 5) regimeBonus += 1.5;
+      if (paritySwitchBias && gap >= 2 && gap <= 4) regimeBonus += 0.9;
 
       let signalGroups = 0;
       if (drawHits / n >= 0.3 || recent12Hits / shortLen >= 0.33) signalGroups += 1;
@@ -1003,6 +1058,7 @@
           followCounts[d] * 1.4 +
           cappedColdBonus +
           gapBonus +
+          regimeBonus +
           satPenalty
         ).toFixed(2)
       );
@@ -1082,18 +1138,18 @@
             const nxt = histDraws[i + 1];
             const kTop = canonicalPairKey(nxt.tensTop, nxt.unitsTop);
             const kBot = canonicalPairKey(nxt.tensBot, nxt.unitsBot);
-            if (kTop === targetKey || kBot === targetKey) transitionSupport += 2.5;
-            if (nxt.tenUnitDigits.includes(partnerD)) transitionSupport += 0.6;
+            if (kTop === targetKey || kBot === targetKey) transitionSupport += 2.8;
+            if (nxt.tenUnitDigits.includes(partnerD)) transitionSupport += 0.7;
           }
         }
       }
 
       const partnerRankScore = rankScoreMap.get(partnerD) || 0;
-      const gapSweetSpot = pairGap >= 3 && pairGap <= 14 ? 2.2 : pairGap <= 2 ? -1.5 : 0.5;
+      const gapSweetSpot = pairGap >= 3 && pairGap <= 14 ? 2.4 : pairGap <= 2 ? -1.5 : 0.6;
       const totalScore =
-        exactPairHits * 6.5 +
-        recentPairHits * 4.0 +
-        partnerRankScore * 0.42 +
+        exactPairHits * 6.8 +
+        recentPairHits * 4.5 +
+        partnerRankScore * 0.45 +
         transitionSupport +
         gapSweetSpot;
 
@@ -1833,7 +1889,9 @@
   }
 
   function renderAnalysis(analysisMap) {
-    const keys = Object.keys(analysisMap);
+    const keys = processedOrderKeys.length > 0
+      ? processedOrderKeys.filter((k) => Boolean(analysisMap[k]))
+      : Object.keys(analysisMap);
     const root = document.getElementById("resultsRoot");
     if (keys.length === 0) {
       root.innerHTML = `<div class="empty-state">ไม่พบข้อมูลประเภทหวยที่ถูกต้อง กรุณาตรวจสอบรูปแบบข้อความหรือไฟล์ PDF</div>`;
@@ -1850,6 +1908,8 @@
     const au = cur.audit;
     const sel = cur.nextSelection;
     const top3Text = [...sel.mainThree].sort((a, b) => a - b).join(" - ");
+    const allPostText = formatAllLotteriesPostText(analysisMap, keys);
+    const singlePostText = formatSingleLotteryPostBlock(cur);
 
     const selectorHtml = keys
       .map((k) => {
@@ -2061,7 +2121,11 @@
       .join("");
 
     const overall = computeOverallAccuracy(analysisMap);
-    const allLotteryCardsHtml = overall.perLottery
+    const orderedPerLottery = keys
+      .map((k) => overall.perLottery.find((x) => x.lotteryName === k))
+      .filter(Boolean);
+
+    const allLotteryCardsHtml = orderedPerLottery
       .map((item) => {
         const isAct = item.lotteryName === activeLotteryKey ? "active" : "";
         const pctCls = item.evaluated === 0 ? "" : item.hitPct >= 65 ? "st-hot" : item.hitPct >= 50 ? "st-steady" : "st-cool";
@@ -2134,15 +2198,13 @@
         </div>
         <div class="copy-box-wrap">
           <div class="copy-box-head">
-            <span>ช่องคัดลอกโพสต์ (แปลงชื่อ ฮ.น / ล. และธงชาติอัตโนมัติ)</span>
-            <button type="button" class="btn-copy-post" id="btnCopyFormattedPost">คัดลอกข้อความ</button>
+            <span>ช่องคัดลอกโพสต์ทั้งหมด (${keys.length} ประเภทหวยเรียงต่อกัน • เว้น 1 บรรทัดระหว่างหวย)</span>
+            <div class="copy-btn-group">
+              <button type="button" class="btn-copy-post" id="btnCopyFormattedPost">คัดลอกทั้งหมด (${keys.length})</button>
+              <button type="button" class="btn-copy-single" id="btnCopySinglePost">คัดลอกเฉพาะหวยนี้</button>
+            </div>
           </div>
-          <textarea class="copy-preview" id="formattedPostBox" readonly>${esc(
-            [
-              formatLotteryCopyHeader(p.lotteryName),
-              ...sel.groups.map((g) => `${g.mainDigit} : ${g.pairs.map((pr) => pr.pairText).join("--")}`)
-            ].join("\n")
-          )}</textarea>
+          <textarea class="copy-preview" id="formattedPostBox" readonly>${esc(allPostText)}</textarea>
         </div>
       </div>
 
@@ -2367,20 +2429,42 @@
       </div>
     `;
 
+    function copyTextToClipboard(textToCopy) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).catch(() => {});
+      }
+      const tempArea = document.createElement("textarea");
+      tempArea.value = textToCopy;
+      tempArea.setAttribute("readonly", "");
+      tempArea.style.position = "fixed";
+      tempArea.style.left = "-9999px";
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand("copy");
+      } catch (err) {}
+      document.body.removeChild(tempArea);
+    }
+
     const copyBtn = document.getElementById("btnCopyFormattedPost");
+    const copySingleBtn = document.getElementById("btnCopySinglePost");
     const copyBox = document.getElementById("formattedPostBox");
     if (copyBtn && copyBox) {
       copyBtn.addEventListener("click", function () {
-        copyBox.select();
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(copyBox.value).catch(() => {});
-        }
-        try {
-          document.execCommand("copy");
-        } catch (err) {}
+        copyBox.value = allPostText;
+        copyTextToClipboard(allPostText);
         const prevTxt = copyBtn.textContent;
-        copyBtn.textContent = "คัดลอกแล้ว";
+        copyBtn.textContent = "คัดลอกทั้งหมดแล้ว";
         setTimeout(() => { copyBtn.textContent = prevTxt; }, 1400);
+      });
+    }
+    if (copySingleBtn && copyBox) {
+      copySingleBtn.addEventListener("click", function () {
+        copyBox.value = singlePostText;
+        copyTextToClipboard(singlePostText);
+        const prevTxt = copySingleBtn.textContent;
+        copySingleBtn.textContent = "คัดลอกหวยนี้แล้ว";
+        setTimeout(() => { copySingleBtn.textContent = prevTxt; }, 1400);
       });
     }
 
@@ -2404,13 +2488,16 @@
     const statusEl = document.getElementById("engineStatus");
     const parsed = parseDrawsFromText(raw);
     const analyzed = {};
+    const orderKeys = [];
     for (const [k, v] of Object.entries(parsed)) {
       if (v.usedCount > 0) {
         analyzed[k] = analyzeLottery(v);
+        orderKeys.push(k);
       }
     }
     latestAnalysis = analyzed;
-    const count = Object.keys(analyzed).length;
+    processedOrderKeys = orderKeys;
+    const count = orderKeys.length;
     const overallNow = computeOverallAccuracy(analyzed);
     statusEl.textContent = count > 0
       ? `ประมวลผลสำเร็จ ${count} ประเภทหวย • เด่น 3 ตัวรวม ${overallNow.overallPct}% (${overallNow.totalHits}/${overallNow.totalEvaluated}) • เจาะ 15 คู่ ${overallNow.overallDrillPct}% (${overallNow.totalDrillHits}/${overallNow.totalDrillEvaluated})`
@@ -2423,6 +2510,7 @@
     document.getElementById("pdfFileInput").value = "";
     latestAnalysis = null;
     activeLotteryKey = null;
+    processedOrderKeys = [];
     document.getElementById("engineStatus").textContent = "ล้างข้อมูลแล้ว • พร้อมประมวลผล";
     document.getElementById("resultsRoot").innerHTML =
       `<div class="empty-state">ล้างข้อมูลเรียบร้อยแล้ว กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล" ทางซ้าย</div>`;
@@ -2509,6 +2597,8 @@
     evaluateDrawThreeAndFifteen,
     computeOverallAccuracy,
     formatLotteryCopyHeader,
+    formatSingleLotteryPostBlock,
+    formatAllLotteriesPostText,
     runMultiLotteryWalkForwardTest,
     runProcess,
     runClear
