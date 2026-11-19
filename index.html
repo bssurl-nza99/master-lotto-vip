@@ -923,7 +923,6 @@
       .join("\n\n");
   }
 
-  // เบสอ้างอิงเฉพาะข้อมูลที่มีอยู่ใน histDraws เท่านั้น (ห้ามใช้งวดอนาคต)
   function computeCausalBaseline(histDraws) {
     const n = histDraws.length;
     if (n === 0) return 0;
@@ -947,6 +946,7 @@
     ];
   }
 
+  // คัดกรองเฉพาะสัญญาณที่มีความสอดคล้องและไม่พึ่งอนาคต (100% Causal)
   function rankDigitsFromHistory(histDraws) {
     const n = histDraws.length;
     if (n === 0) {
@@ -968,8 +968,6 @@
 
     const lastDraw = histDraws[n - 1];
     const baseline = computeCausalBaseline(histDraws);
-    // ปรับน้ำหนักสถิติระยะยาวให้สอดคล้องกับขนาดข้อมูลจริง (ไม่ฝืนเมื่อข้อมูลน้อย)
-    const sampleScale = Math.min(1, Math.max(0.45, n / 15));
     const formulaDefs = buildFormulaDefs(baseline);
 
     const formulaWeight = Array(10).fill(0);
@@ -991,8 +989,8 @@
       const accRate = evalTotal > 0 ? fHits / evalTotal : 0.5;
       let [na, nb] = fn(lastDraw);
       if (na === nb) nb = (nb + 1) % 10;
-      formulaWeight[na] += accRate * 11 * sampleScale;
-      formulaWeight[nb] += accRate * 11 * sampleScale;
+      formulaWeight[na] += accRate * 11;
+      formulaWeight[nb] += accRate * 11;
       formulaVotes[na] += 1;
       formulaVotes[nb] += 1;
     }
@@ -1005,7 +1003,7 @@
         const pct = (hitsArr.filter(Boolean).length / n) * 100;
         const st = calcStreaks(hitsArr);
         const hitCeilingNow = st.currentStatus === "หลุด" && st.maxMiss > 0 && st.currentStreak >= st.maxMiss;
-        const sc = pct * 1.1 * sampleScale + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
+        const sc = pct * 1.1 + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
         if (sc > bestPairScore) {
           bestPairScore = sc;
           bestPair = [a, b];
@@ -1088,15 +1086,7 @@
       }
 
       const pairVote = bestPair && bestPair.includes(d) ? 1 : 0;
-      // แยกโซนระยะห่างให้ชัด: 2-4 รอรอบกำลังดี, 5-6 เริ่มลุ้นดีด, 7+ ห่างยาวจัดให้ชั่งน้ำหนัก
-      const gapBonus =
-        gap >= 2 && gap <= 4
-          ? 2.4
-          : gap >= 5 && gap <= 6
-          ? 1.1
-          : gap >= 7
-          ? -1.6
-          : 0.0;
+      const gapBonus = gap >= 2 && gap <= 4 ? 2.4 : gap === 5 ? 1.2 : gap >= 6 ? -1.4 : 0.0;
       const satPenalty = r3 >= 2 ? -1.2 : 0.0;
       const shortRateBonus =
         (recent12Hits / shortLen) * 5.2 +
@@ -1115,11 +1105,14 @@
       if (pairVote > 0 || followCounts[d] >= 2) signalGroups += 1;
       if (gap >= 2 && gap <= 4) signalGroups += 1;
 
+      // โบนัสเล็กน้อยเฉพาะตัวเลขที่มีอย่างน้อย 2 กลุ่มสัญญาณหนุน เพื่อลดสัญญาณรบกวนแบบไม่โอเวอร์ฟิต
+      const consensusBonus = signalGroups >= 3 ? 1.2 : signalGroups === 2 ? 0.5 : -0.4;
+
       const score = Number(
         (
-          slotCount * 1.3 * sampleScale +
-          drawHits * 2.5 * sampleScale +
-          (drawHits / n) * 13.0 * sampleScale +
+          slotCount * 1.3 +
+          drawHits * 2.5 +
+          (drawHits / n) * 13.0 +
           shortRateBonus +
           formulaWeight[d] * 1.136 +
           formulaVotes[d] * 1.4 +
@@ -1128,7 +1121,8 @@
           cappedColdBonus +
           gapBonus +
           regimeBonus +
-          satPenalty
+          satPenalty +
+          consensusBonus
         ).toFixed(2)
       );
 
@@ -1182,7 +1176,6 @@
     function scorePartnerForMain(mainD, partnerD) {
       let exactPairHits = 0;
       let recentPairHits = 0;
-      let coOccurInDraw = 0;
       let pairGap = 0;
       let gapStopped = false;
       const targetKey = canonicalPairKey(mainD, partnerD);
@@ -1198,9 +1191,6 @@
           gapStopped = true;
         } else if (!gapStopped) {
           pairGap += 1;
-        }
-        if (dr.tenUnitDigits.includes(mainD) && dr.tenUnitDigits.includes(partnerD)) {
-          coOccurInDraw += 1;
         }
       }
 
@@ -1219,14 +1209,12 @@
         }
       }
       const boundedTransitionSupport = Math.min(6.0, rawTransitionSupport);
-      const boundedCoOccurBonus = Math.min(4.5, coOccurInDraw * 1.1);
 
       const partnerRankScore = rankScoreMap.get(partnerD) || 0;
       const gapSweetSpot = pairGap >= 3 && pairGap <= 14 ? 2.0 : pairGap <= 2 ? -1.2 : 0.5;
       const totalScore =
         exactPairHits * 6.8 +
         recentPairHits * 4.2 +
-        boundedCoOccurBonus +
         partnerRankScore * 0.45 +
         boundedTransitionSupport +
         gapSweetSpot;
@@ -1340,10 +1328,9 @@
     };
   }
 
-  function analyzeLottery(pack) {
-    const chrono = pack.chrono;
+  // แหล่งกลางเพียงหนึ่งเดียวสำหรับคำนวณผลงาน Walk-Forward ของแต่ละหวย (Single Source of Truth)
+  function computeWalkForwardStats(chrono) {
     const n = chrono.length;
-
     const startIdx = n >= 4 ? 3 : 1;
     const auditLogs = [];
     const mainBool = [];
@@ -1387,19 +1374,47 @@
     const auditStreaks = calcStreaks(mainBool);
     const drillStreaks = calcStreaks(drillBoolWhenMainHit);
 
-    const auditHitCount = mainBool.filter(Boolean).length;
-    const auditMissCount = mainBool.length - auditHitCount;
-    const auditHitPct = mainBool.length > 0 ? Number(((auditHitCount / mainBool.length) * 100).toFixed(1)) : 0;
+    const totalEvaluated = mainBool.length;
+    const hits = mainBool.filter(Boolean).length;
+    const misses = totalEvaluated - hits;
+    const hitPct = totalEvaluated > 0 ? Number(((hits / totalEvaluated) * 100).toFixed(1)) : 0;
 
-    const drillEvaluatedCount = drillBoolWhenMainHit.length;
-    const drillHitCount = drillBoolWhenMainHit.filter(Boolean).length;
-    const drillMissCount = drillEvaluatedCount - drillHitCount;
-    const drillHitPct = drillEvaluatedCount > 0 ? Number(((drillHitCount / drillEvaluatedCount) * 100).toFixed(1)) : 0;
+    const drillEvaluated = drillBoolWhenMainHit.length;
+    const drillHits = drillBoolWhenMainHit.filter(Boolean).length;
+    const drillMisses = drillEvaluated - drillHits;
+    const drillHitPct = drillEvaluated > 0 ? Number(((drillHits / drillEvaluated) * 100).toFixed(1)) : 0;
 
-    const directFifteenHitCount = directFifteenBoolWhenMainHit.filter(Boolean).length;
-    const directFifteenPct = drillEvaluatedCount > 0
-      ? Number(((directFifteenHitCount / drillEvaluatedCount) * 100).toFixed(1))
+    const directFifteenHits = directFifteenBoolWhenMainHit.filter(Boolean).length;
+    const directFifteenPct = drillEvaluated > 0
+      ? Number(((directFifteenHits / drillEvaluated) * 100).toFixed(1))
       : 0;
+
+    return {
+      rows: auditLogs,
+      totalEvaluated,
+      hits,
+      misses,
+      hitPct,
+      maxHit: auditStreaks.maxHit,
+      maxMiss: auditStreaks.maxMiss,
+      currentStatus: auditStreaks.currentStatus,
+      currentStreak: auditStreaks.currentStreak,
+      drillEvaluated,
+      drillHits,
+      drillMisses,
+      drillHitPct,
+      drillMaxHit: drillStreaks.maxHit,
+      drillMaxMiss: drillStreaks.maxMiss,
+      directFifteenHits,
+      directFifteenPct,
+      selfWinOnlyCount
+    };
+  }
+
+  function analyzeLottery(pack) {
+    const chrono = pack.chrono;
+    const n = chrono.length;
+    const au = computeWalkForwardStats(chrono);
 
     const nextSelection = selectThreeDigitsAndFifteenPairs(chrono);
     const nextRanked = nextSelection.ranked;
@@ -1647,7 +1662,6 @@
     allPairs.sort((x, y) => y.pairScore - x.pairScore || y.hitPct - x.hitPct);
     const t7 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
 
-    // ตารางที่ 8 ประเมินแบบก้าวทีละงวด (causal rolling baseline ณ แต่ละงวดก่อนหน้า ไม่แอบดูอนาคต)
     const formulaTemplates = buildFormulaDefs(0);
     const t8 = formulaTemplates.map((tpl, fIdx) => {
       const hitsArr = [];
@@ -1837,11 +1851,11 @@
       };
     });
 
-    const lowSampleCaution = mainBool.length < 8;
+    const lowSampleCaution = au.totalEvaluated < 8;
     const stabilityTier =
-      !lowSampleCaution && auditHitPct >= 75 && (drillEvaluatedCount === 0 || drillHitPct >= 75)
+      !lowSampleCaution && au.hitPct >= 75 && (au.drillEvaluated === 0 || au.drillHitPct >= 75)
         ? { code: "TIER_A", label: "เสถียรสูง", badgeClass: "st-hot" }
-        : !lowSampleCaution && (auditHitPct >= 70 || drillHitPct >= 75)
+        : !lowSampleCaution && (au.hitPct >= 70 || au.drillHitPct >= 75)
         ? { code: "TIER_B", label: "เกณฑ์ดี / เจาะคม", badgeClass: "st-rebound" }
         : { code: "TIER_WATCH", label: lowSampleCaution ? "ข้อมูลน้อย / เฝ้าระวัง" : "ผันผวน / เฝ้าระวัง", badgeClass: "st-cool" };
 
@@ -1850,26 +1864,7 @@
 
     return {
       pack,
-      audit: {
-        rows: auditLogs,
-        totalEvaluated: mainBool.length,
-        hits: auditHitCount,
-        misses: auditMissCount,
-        hitPct: auditHitPct,
-        maxHit: auditStreaks.maxHit,
-        maxMiss: auditStreaks.maxMiss,
-        currentStatus: auditStreaks.currentStatus,
-        currentStreak: auditStreaks.currentStreak,
-        drillEvaluated: drillEvaluatedCount,
-        drillHits: drillHitCount,
-        drillMisses: drillMissCount,
-        drillHitPct: drillHitPct,
-        drillMaxHit: drillStreaks.maxHit,
-        drillMaxMiss: drillStreaks.maxMiss,
-        directFifteenHits: directFifteenHitCount,
-        directFifteenPct,
-        selfWinOnlyCount
-      },
+      audit: au,
       nextSelection,
       t2,
       t3,
@@ -1889,7 +1884,7 @@
         firstDrawDate,
         latestDrawDate,
         usedDraws: n,
-        evaluatedDraws: mainBool.length
+        evaluatedDraws: au.totalEvaluated
       },
       statsSummary: {
         doubleDraws,
@@ -1916,6 +1911,8 @@
     let totalDrillEvaluated = 0;
     let totalDrillHits = 0;
     let totalDrillMisses = 0;
+    let totalDirectFifteenHits = 0;
+    let totalSelfWinOnly = 0;
 
     for (const [name, an] of entries) {
       const evaluated = an && an.audit ? Number(an.audit.totalEvaluated || 0) : 0;
@@ -1927,6 +1924,9 @@
       const drillHits = an && an.audit ? Number(an.audit.drillHits || 0) : 0;
       const drillMisses = an && an.audit ? Number(an.audit.drillMisses || Math.max(0, drillEvaluated - drillHits)) : 0;
       const drillHitPct = drillEvaluated > 0 ? Number(((drillHits / drillEvaluated) * 100).toFixed(1)) : 0;
+
+      const directHits = an && an.audit ? Number(an.audit.directFifteenHits || 0) : 0;
+      const selfWinCnt = an && an.audit ? Number(an.audit.selfWinOnlyCount || 0) : 0;
 
       const usedDraws = an && an.pack ? Number(an.pack.usedCount || 0) : 0;
       const nextPick = an && Array.isArray(an.topThree) && an.topThree.length >= 3
@@ -1946,6 +1946,8 @@
       totalDrillEvaluated += drillEvaluated;
       totalDrillHits += drillHits;
       totalDrillMisses += drillMisses;
+      totalDirectFifteenHits += directHits;
+      totalSelfWinOnly += selfWinCnt;
 
       perLottery.push({
         lotteryName: name,
@@ -1958,6 +1960,8 @@
         drillHits,
         drillMisses,
         drillHitPct,
+        directHits,
+        selfWinCnt,
         nextPick,
         tier,
         maxMissMain,
@@ -1974,6 +1978,10 @@
     const overallDrillPct = totalDrillEvaluated > 0
       ? Number(((totalDrillHits / totalDrillEvaluated) * 100).toFixed(1))
       : 0;
+    const overallDirectFifteenPct = totalDrillEvaluated > 0
+      ? Number(((totalDirectFifteenHits / totalDrillEvaluated) * 100).toFixed(1))
+      : 0;
+
     const eligibleLotteries = perLottery.filter((r) => r.drillEvaluated > 0);
     const meanDrillPct = eligibleLotteries.length > 0
       ? Number((eligibleLotteries.reduce((acc, r) => acc + r.drillHitPct, 0) / eligibleLotteries.length).toFixed(1))
@@ -1991,6 +1999,9 @@
       totalDrillHits,
       totalDrillMisses,
       overallDrillPct,
+      totalDirectFifteenHits,
+      overallDirectFifteenPct,
+      totalSelfWinOnly,
       meanDrillPct,
       perLottery
     };
@@ -2293,6 +2304,7 @@
             เด่น 3 ตัว: เข้า ${overall.totalHits} / หลุด ${overall.totalMisses} = <span class="num-gold">${overall.overallPct}%</span>
             &nbsp;|&nbsp;
             ชุดเจาะ 15 คู่ (นับเฉพาะงวดเด่นเข้า): เข้า ${overall.totalDrillHits} / หลุด ${overall.totalDrillMisses} (จาก ${overall.totalDrillEvaluated} งวด) = <span class="num-gold">${overall.overallDrillPct}%</span>
+            &nbsp;<span style="font-size:10px;color:var(--text-muted);">(เจาะ 15 คู่ตรง/กลับ ${overall.totalDirectFifteenHits}/${overall.totalDrillEvaluated} = ${overall.overallDirectFifteenPct}% • เด่นวิน ${overall.totalSelfWinOnly})</span>
           </div>
         </div>
         <div class="filter-toolbar">
@@ -2702,13 +2714,14 @@
     }
   }
 
+  // เรียกใช้ศูนย์กลางคำนวณเดียวกัน 100% เพื่อรับประกันว่าเปอร์เซ็นต์ตรงกันทุกจุด
   function runMultiLotteryWalkForwardTest(rawText) {
     const parsed = parseDrawsFromText(rawText);
     const summary = [];
     for (const [name, pack] of Object.entries(parsed)) {
       const chrono = pack.chrono;
       const n = chrono.length;
-      if (n < 4) {
+      if (n < 4 && n < 2) {
         summary.push({
           lotteryName: name,
           usedDraws: n,
@@ -2721,29 +2734,16 @@
         });
         continue;
       }
-      let hits = 0;
-      let evaluated = 0;
-      let drillHits = 0;
-      let drillEvaluated = 0;
-      for (let i = 3; i < n; i++) {
-        const sel = selectThreeDigitsAndFifteenPairs(chrono.slice(0, i));
-        const ev = evaluateDrawThreeAndFifteen(chrono[i], sel);
-        evaluated += 1;
-        if (ev.mainHit) {
-          hits += 1;
-          drillEvaluated += 1;
-          if (ev.drillHit) drillHits += 1;
-        }
-      }
+      const wf = computeWalkForwardStats(chrono);
       summary.push({
         lotteryName: name,
         usedDraws: n,
-        evaluated,
-        hits,
-        hitPct: evaluated > 0 ? Number(((hits / evaluated) * 100).toFixed(1)) : 0,
-        drillEvaluated,
-        drillHits,
-        drillHitPct: drillEvaluated > 0 ? Number(((drillHits / drillEvaluated) * 100).toFixed(1)) : 0
+        evaluated: wf.totalEvaluated,
+        hits: wf.hits,
+        hitPct: wf.hitPct,
+        drillEvaluated: wf.drillEvaluated,
+        drillHits: wf.drillHits,
+        drillHitPct: wf.drillHitPct
       });
     }
     return summary;
@@ -2755,6 +2755,7 @@
     rankDigitsFromHistory,
     selectThreeDigitsAndFifteenPairs,
     evaluateDrawThreeAndFifteen,
+    computeWalkForwardStats,
     computeOverallAccuracy,
     formatLotteryCopyHeader,
     formatSingleLotteryPostBlock,
