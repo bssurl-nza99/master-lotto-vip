@@ -353,6 +353,14 @@
   }
 
 
+  .audit-note-bar {
+    padding: 6px 11px;
+    background: rgba(16, 185, 129, 0.08);
+    border-top: 1px solid var(--border-grid);
+    font-size: 10.5px;
+    color: var(--text-muted);
+  }
+
   .all-lottery-banner {
     background: linear-gradient(90deg, rgba(17, 24, 39, 0.98), rgba(13, 18, 29, 0.98));
     border: 1px solid var(--border-accent);
@@ -853,9 +861,77 @@
     return items;
   }
 
+  function computeMarkovNextScores(histDraws) {
+    const n = histDraws.length;
+    const scores = Array(10).fill(0);
+    if (n < 2) return scores;
+    const trans = Array.from({ length: 10 }, () => Array(10).fill(0));
+    const transOut = Array(10).fill(0);
+    for (let i = 0; i < n - 1; i++) {
+      for (const a of histDraws[i].tenUnitDigits) {
+        for (const b of histDraws[i + 1].tenUnitDigits) {
+          trans[a][b] += 1;
+          transOut[a] += 1;
+        }
+      }
+    }
+    const lastTu = histDraws[n - 1].tenUnitDigits;
+    for (let y = 0; y < 10; y++) {
+      let s = 0;
+      for (const x of lastTu) {
+        const denom = transOut[x];
+        if (denom > 0) s += (trans[x][y] + 0.5) / (denom + 5.0);
+      }
+      scores[y] = Number(s.toFixed(3));
+    }
+    return scores;
+  }
+
   function selectTwoDigitsFromHistory(histDraws) {
+    const n = histDraws.length;
+    if (n === 0) return [0, 1];
+    if (n === 1) {
+      const tu = histDraws[0].tenUnitDigits;
+      const d1 = tu[0];
+      const d2 = tu.find((x) => x !== d1) ?? ((d1 + 1) % 10);
+      return [d1, d2];
+    }
+
     const ranked = rankDigitsFromHistory(histDraws);
-    return [ranked[0].digit, ranked[1].digit];
+    const markov = computeMarkovNextScores(histDraws);
+    const w5 = histDraws.slice(-5);
+    const w10 = histDraws.slice(-10);
+    const len5 = Math.max(1, w5.length);
+    const len10 = Math.max(1, w10.length);
+
+    const scoreMap = new Map();
+    for (const r of ranked) {
+      const d = r.digit;
+      const hits5 = w5.filter((dr) => dr.tenUnitDigits.includes(d)).length;
+      const hits10 = w10.filter((dr) => dr.tenUnitDigits.includes(d)).length;
+      const combined = r.score + markov[d] * 4.5 + (hits5 / len5) * 4.5 + (hits10 / len10) * 3.0;
+      scoreMap.set(d, combined);
+    }
+
+    const ordered = [...ranked].sort((a, b) => scoreMap.get(b.digit) - scoreMap.get(a.digit) || a.digit - b.digit);
+    const d1 = ordered[0].digit;
+
+    let bestD2 = ordered[1] ? ordered[1].digit : ((d1 + 1) % 10);
+    let bestJoint = -1e9;
+    const d1RecentMisses = w5.filter((dr) => !dr.tenUnitDigits.includes(d1)).length;
+
+    for (const candObj of ordered.slice(1, 5)) {
+      const cand = candObj.digit;
+      const joint10 = w10.filter((dr) => dr.tenUnitDigits.includes(d1) || dr.tenUnitDigits.includes(cand)).length;
+      const candHits5 = w5.filter((dr) => dr.tenUnitDigits.includes(cand)).length;
+      const compBonus = candHits5 > 0 ? d1RecentMisses * 0.55 : 0;
+      const val = scoreMap.get(cand) + (joint10 / len10) * 5.0 + compBonus;
+      if (val > bestJoint) {
+        bestJoint = val;
+        bestD2 = cand;
+      }
+    }
+    return [d1, bestD2];
   }
 
   function analyzeLottery(pack) {
@@ -898,9 +974,8 @@
 
     // Next draw ranking using all `n` draws
     const nextRanked = rankDigitsFromHistory(chrono);
-    const nextP1 = nextRanked[0].digit;
-    const nextP2 = nextRanked[1].digit;
-    const nextBackup3 = nextRanked[2] ? nextRanked[2].digit : nextP1;
+    const [nextP1, nextP2] = selectTwoDigitsFromHistory(chrono);
+    const nextBackup3 = nextRanked.find((r) => r.digit !== nextP1 && r.digit !== nextP2)?.digit ?? ((nextP2 + 1) % 10);
 
     // Table 2: Overall 0-9 frequency in ten-unit positions
     const t2 = [];
@@ -1368,6 +1443,14 @@
       t10,
       t11,
       t12,
+      t13: (() => {
+        const mk = computeMarkovNextScores(chrono);
+        return Array.from({ length: 10 }, (_, d) => ({
+          digit: d,
+          markovScore: mk[d],
+          transStrength: mk[d] >= 0.45 ? "แรงส่งสูง" : mk[d] >= 0.25 ? "ปานกลาง" : "อ่อน"
+        })).sort((a, b) => b.markovScore - a.markovScore || a.digit - b.digit);
+      })(),
       topTwo,
       backupDigit3: nextBackup3,
       statsSummary: {
@@ -1632,6 +1715,17 @@
           <td>${r.patMention}</td>
           <td class="num-gold">${r.compositeScore}</td>
           <td class="${r.statusClass}">${esc(r.statusLabel)}</td>
+        </tr>`
+      )
+      .join("");
+
+    const t13Rows = cur.t13
+      .map(
+        (r, idx) => `<tr>
+          <td class="num-gold">${idx + 1}</td>
+          <td class="num-gold">${r.digit}</td>
+          <td>${r.markovScore}</td>
+          <td class="${r.markovScore >= 0.45 ? "st-hot" : r.markovScore >= 0.25 ? "st-rebound" : "st-steady"}">${esc(r.transStrength)}</td>
         </tr>`
       )
       .join("");
@@ -1917,6 +2011,24 @@
           </table>
         </div>
       </div>
+
+      <div class="table-section">
+        <div class="table-title-bar">
+          <div class="table-title">ตารางที่ 13 // ตารางแรงส่งการเปลี่ยนผ่านเลขตามลำดับงวด (Markov Transition • ไม่เห็นอนาคต)</div>
+          <div class="table-meta">คำนวณจากความสัมพันธ์เลขงวดก่อนหน้าสู่งวดถัดไปเฉพาะข้อมูลอดีต</div>
+        </div>
+        <div class="table-hscroll">
+          <table class="lux-grid">
+            <thead>
+              <tr>
+                <th>อันดับ</th><th>เลข</th><th>คะแนนแรงส่ง Markov</th><th>ระดับแรงส่ง</th>
+              </tr>
+            </thead>
+            <tbody>${t13Rows}</tbody>
+          </table>
+        </div>
+        <div class="audit-note-bar">หมายเหตุความซื่อสัตย์: ทุกงวดย้อนหลังคำนวณจากข้อมูลที่เกิดขึ้นก่อนหน้านั้นเท่านั้น (Walk-Forward) ไม่มีการย้อนดูอนาคตหรือปรับแต่งตัวเลข</div>
+      </div>
     `;
 
     root.querySelectorAll(".lottery-btn").forEach((btn) => {
@@ -2022,6 +2134,7 @@
     parseDrawsFromText,
     analyzeLottery,
     rankDigitsFromHistory,
+    computeMarkovNextScores,
     selectTwoDigitsFromHistory,
     computeOverallAccuracy,
     runMultiLotteryWalkForwardTest,
