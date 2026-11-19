@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AETHER QUANT v5 // Adaptive Causal Multi-Table Lottery Engine</title>
+<title>AETHER QUANT v6 // Bayesian-Adaptive Causal Multi-Table Lottery Engine</title>
 <style>
   :root {
     --bg-void: #07090f;
@@ -430,8 +430,8 @@
 <div class="app-shell">
   <div class="top-bar">
     <div>
-      <div class="brand-title">AETHER QUANT v5 // ADAPTIVE CAUSAL MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
-      <div class="brand-sub">ปรับน้ำหนักอัตโนมัติรายประเภทหวย • คัดคู่ลดซ้ำซ้อน • ไม่เห็นอนาคต 100% • ครบทั้ง 13 ตาราง</div>
+      <div class="brand-title">AETHER QUANT v6 // BAYESIAN-ADAPTIVE CAUSAL MULTI-TABLE LOTTERY ENGINE</div>
+      <div class="brand-sub">แกนหลักเดียวกันแบบ Bayesian Shrinkage • คัดคู่ 45 คู่ลดซ้ำซ้อน • ไม่เห็นอนาคต 100% • ครบทั้ง 13 ตาราง</div>
     </div>
     <div class="status-pill" id="engineStatus">พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
   </div>
@@ -471,6 +471,7 @@
   }
 
   const MAX_DRAWS = 30;
+  const RANDOM_TWO_DIGIT_BASELINE = 0.5904; // 1 - (0.8)^4
   const THAI_MONTHS = {
     "ม.ค.": 1, "มค": 1,
     "ก.พ.": 2, "กพ": 2,
@@ -660,15 +661,15 @@
     };
   }
 
-  // 6 independent strictly-causal signal channels computed ONLY from `subDraws`
+  // 6 strictly-causal signal channels computed ONLY from `subDraws` (no future lookahead)
   function computeSignalChannels(subDraws) {
     const m = subDraws.length;
     const last = subDraws[m - 1];
 
-    // S0: Exponential-decay + full presence frequency
+    // S0: Multi-scale Bayesian-smoothed frequency (long + exponential decay)
     const sFreq = Array(10).fill(0);
     for (let idx = 0; idx < m; idx++) {
-      const w = Math.exp(-0.08 * (m - 1 - idx));
+      const w = 0.6 + 0.4 * Math.exp(-0.07 * (m - 1 - idx));
       const uniq = new Set(subDraws[idx].tenUnitDigits);
       for (const d of uniq) sFreq[d] += w;
     }
@@ -690,10 +691,10 @@
         if (subDraws[i].tenUnitDigits.includes(d)) break;
         g += 1;
       }
-      sGap[d] = g === 2 || g === 3 ? 1.0 : g === 4 ? 0.75 : g === 1 ? 0.35 : g === 0 ? 0.15 : 0.25;
+      sGap[d] = g === 2 || g === 3 ? 1.0 : g === 4 ? 0.78 : g === 1 ? 0.42 : g === 0 ? 0.25 : 0.20;
     }
 
-    // S3: First-order Markov transition (Laplace-smoothed)
+    // S3: First-order Markov transition with strong Laplace prior (+1.5 / +15.0)
     const trans = Array.from({ length: 10 }, () => Array(10).fill(0));
     const tout = Array(10).fill(0);
     for (let i = 0; i < m - 1; i++) {
@@ -711,17 +712,21 @@
     for (let y = 0; y < 10; y++) {
       let acc = 0;
       for (const x of lastUniq) {
-        acc += (trans[x][y] + 0.5) / (tout[x] + 5.0);
+        acc += (trans[x][y] + 1.5) / (tout[x] + 15.0);
       }
       sMarkov[y] = acc;
     }
     const maxM = Math.max(...sMarkov, 1e-9);
     for (let d = 0; d < 10; d++) sMarkov[d] /= maxM;
 
-    // S4: Direct carry-over from last draw's ten-unit digits
-    const sCarry = Array.from({ length: 10 }, (_, d) => (last.tenUnitDigits.includes(d) ? 1.0 : 0.0));
+    // S4: Sticky carry-over from last 2 draws (0.75 latest + 0.25 previous)
+    const prev2 = m >= 2 ? subDraws[m - 2].tenUnitDigits : [];
+    const sCarry = Array.from(
+      { length: 10 },
+      (_, d) => (last.tenUnitDigits.includes(d) ? 0.75 : 0.0) + (prev2.includes(d) ? 0.25 : 0.0)
+    );
 
-    // S5: Walk-forward validated 10 pure arithmetic formulas
+    // S5: Walk-forward validated 10 pure arithmetic formulas with Bayesian shrinkage toward 0.5904
     const baseSeed = last.tenUnitDigits.reduce((s, x) => s + x, 0);
     const baseline = Math.round((baseSeed % 10 + (m % 10)) / 2) % 10;
     const fdefs = [
@@ -738,7 +743,7 @@
     ];
     const sMath = Array(10).fill(0);
     const formulaVotes = Array(10).fill(0);
-    const evStart = Math.max(1, m - 12);
+    const evStart = Math.max(1, m - 14);
     for (const fn of fdefs) {
       let fh = 0;
       let et = 0;
@@ -750,11 +755,11 @@
           fh += 1;
         }
       }
-      const rate = et > 0 ? fh / et : 0.55;
+      const shrunkRate = (fh + 3.0 * RANDOM_TWO_DIGIT_BASELINE) / (et + 3.0);
       let [na, nb] = fn(last);
       if (na === nb) nb = (nb + 1) % 10;
-      sMath[na] += rate;
-      sMath[nb] += rate;
+      sMath[na] += shrunkRate;
+      sMath[nb] += shrunkRate;
       formulaVotes[na] += 1;
       formulaVotes[nb] += 1;
     }
@@ -767,13 +772,14 @@
     };
   }
 
-  // Strictly causal (zero future lookahead) online meta-adaptive ranker + 45-pair optimizer
+  // Single Unified Bayesian-Adaptive Causal Core (anti-variance shrinkage prevents chasing noise on low-signal lotteries)
   function evaluateAdaptiveModel(histDraws) {
     const n = histDraws.length;
     if (n === 0) {
       const emptyItems = Array.from({ length: 10 }, (_, d) => ({
         digit: d,
         score: 0,
+        rawAdaptiveScore: 0,
         slotCount: 0,
         drawHits: 0,
         recent12Slots: 0,
@@ -802,6 +808,7 @@
       const items = Array.from({ length: 10 }, (_, d) => ({
         digit: d,
         score: d === d1 ? 20 : d === d2 ? 18 : tu.includes(d) ? 12 : 5,
+        rawAdaptiveScore: d === d1 ? 20 : d === d2 ? 18 : tu.includes(d) ? 12 : 5,
         slotCount: tu.filter((x) => x === d).length,
         drawHits: tu.includes(d) ? 1 : 0,
         recent12Slots: tu.filter((x) => x === d).length,
@@ -823,10 +830,13 @@
     }
 
     // Online causal meta-validation on historical steps inside `histDraws` ONLY
+    // Bayesian prior (6 pseudo-draws at 59.04% random baseline) prevents overfitting noisy draws
     const K = 6;
-    const sigHits = Array(K).fill(1.0);
-    const sigEvals = Array(K).fill(2.0);
-    const metaStart = Math.max(2, n - 14);
+    const priorEvals = 6.0;
+    const priorHits = priorEvals * RANDOM_TWO_DIGIT_BASELINE;
+    const sigHits = Array(K).fill(priorHits);
+    const sigEvals = Array(K).fill(priorEvals);
+    const metaStart = Math.max(2, n - 18);
 
     for (let t = metaStart; t < n; t++) {
       const { channels } = computeSignalChannels(histDraws.slice(0, t));
@@ -854,7 +864,8 @@
       }
     }
 
-    const rawW = sigHits.map((h, k) => Math.pow(h / sigEvals[k], 3));
+    // Smooth Softmax over excess edge above 59.04% random baseline
+    const rawW = sigHits.map((h, k) => Math.exp(6.0 * (h / sigEvals[k] - RANDOM_TWO_DIGIT_BASELINE)));
     const sumW = rawW.reduce((s, x) => s + x, 0) || 1.0;
     const weights = rawW.map((w) => w / sumW);
 
@@ -866,25 +877,25 @@
     });
 
     // Direct 45-pair joint coverage optimization (rewards complementary pairs, penalizes redundant overlap)
-    const w10 = histDraws.slice(-10);
-    const len10 = Math.max(1, w10.length);
+    const w12 = histDraws.slice(-12);
+    const len12 = Math.max(1, w12.length);
     let bestPair = [0, 1];
     let bestPairVal = -1e9;
 
     for (let a = 0; a < 10; a++) {
       for (let b = a + 1; b < 10; b++) {
-        let joint10 = 0;
-        let both10 = 0;
-        for (const dr of w10) {
+        let joint12 = 0;
+        let both12 = 0;
+        for (const dr of w12) {
           const ha = dr.tenUnitDigits.includes(a);
           const hb = dr.tenUnitDigits.includes(b);
-          if (ha || hb) joint10 += 1;
-          if (ha && hb) both10 += 1;
+          if (ha || hb) joint12 += 1;
+          if (ha && hb) both12 += 1;
         }
         const val =
-          (digitScore[a] + digitScore[b]) * 1.45 +
-          (joint10 / len10) * 0.40 -
-          (both10 / len10) * 0.15;
+          (digitScore[a] + digitScore[b]) * 1.50 +
+          (joint12 / len12) * 0.35 -
+          (both12 / len12) * 0.15;
         if (val > bestPairVal) {
           bestPairVal = val;
           bestPair = [a, b];
@@ -1018,7 +1029,7 @@
     const chrono = pack.chrono;
     const n = chrono.length;
 
-    // Table 1 (Top Historical Walk-Forward Audit Table: past -> present without altering historical picks)
+    // Table 1: Historical Walk-Forward Audit Table (strictly causal: past -> present)
     const startIdx = n >= 4 ? 3 : 1;
     const auditLogs = [];
     const auditBool = [];
@@ -1413,7 +1424,7 @@
     coldCandidates.sort((x, y) => y.coldRounds - x.coldRounds || x.formulaCode.localeCompare(y.formulaCode));
     const t10 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
 
-    // Table 11: Quantum consensus & final 2-digit pick (aligned with causal adaptive engine)
+    // Table 11: Quantum consensus & final 2-digit pick (aligned with Bayesian-adaptive causal core)
     const latestPat = (() => {
       if (n === 0) return null;
       const last = chrono[n - 1];
@@ -1500,7 +1511,7 @@
       };
     });
 
-    // Table 13: Markov transition + Adaptive Channel Weight breakdown
+    // Table 13: Markov transition + Bayesian-Adaptive Channel Weight breakdown
     const t13 = Array.from({ length: 10 }, (_, d) => {
       const mkVal = Number(nextModel.markovRaw[d].toFixed(3));
       const adaptVal = nextRanked.find((r) => r.digit === d)?.rawAdaptiveScore ?? 0;
@@ -1880,7 +1891,7 @@
           <div class="hero-note">สถานะปัจจุบัน: ${esc(au.currentStatus)} (${au.currentStreak})</div>
         </div>
         <div class="hero-card">
-          <div class="hero-label">สมดุลน้ำหนักอัตโนมัติ &amp; โมเมนตัมล่าสุด</div>
+          <div class="hero-label">สมดุลน้ำหนัก Bayesian &amp; โมเมนตัมล่าสุด</div>
           <div class="hero-value" style="font-size:12px;">${esc(cur.adaptiveWeightSummary)}</div>
           <div class="hero-note">${esc(s.momentumForecast)} • ${esc(s.latestPat)}</div>
         </div>
@@ -2105,14 +2116,14 @@
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 13 // ตารางแรงส่งการเปลี่ยนผ่าน Markov &amp; คะแนนปรับน้ำหนักอัตโนมัติรายหวย (0–9)</div>
+          <div class="table-title">ตารางที่ 13 // ตารางแรงส่งการเปลี่ยนผ่าน Markov &amp; คะแนน Bayesian-Adaptive (0–9)</div>
           <div class="table-meta">${esc(cur.adaptiveWeightSummary)}</div>
         </div>
         <div class="table-hscroll">
           <table class="lux-grid">
             <thead>
               <tr>
-                <th>อันดับ</th><th>เลข</th><th>ดัชนี Markov เปลี่ยนผ่าน</th><th>คะแนนปรับน้ำหนักอัตโนมัติ</th><th>ระดับแรงส่ง</th>
+                <th>อันดับ</th><th>เลข</th><th>ดัชนี Markov เปลี่ยนผ่าน</th><th>คะแนน Bayesian-Adaptive</th><th>ระดับแรงส่ง</th>
               </tr>
             </thead>
             <tbody>${t13Rows}</tbody>
