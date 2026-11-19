@@ -923,6 +923,30 @@
       .join("\n\n");
   }
 
+  // เบสอ้างอิงเฉพาะข้อมูลที่มีอยู่ใน histDraws เท่านั้น (ห้ามใช้งวดอนาคต)
+  function computeCausalBaseline(histDraws) {
+    const n = histDraws.length;
+    if (n === 0) return 0;
+    const lastDraw = histDraws[n - 1];
+    const baseSeed = lastDraw.tenUnitDigits.reduce((s, x) => s + x, 0);
+    return Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
+  }
+
+  function buildFormulaDefs(baseline) {
+    return [
+      { id: "M01", name: "ผลบวกสิบบน+หน่วยล่าง", fn: (d) => [(d.tensTop + d.unitsBot + baseline) % 10, (d.tensTop + d.unitsBot + 5) % 10] },
+      { id: "M02", name: "ผลต่างสิบล่าง-หน่วยบน", fn: (d) => [Math.abs(d.tensBot - d.unitsTop) % 10, (Math.abs(d.tensBot - d.unitsTop) + baseline) % 10] },
+      { id: "M03", name: "ผลคูณสิบบน*หน่วยบน", fn: (d) => [(d.tensTop * d.unitsTop) % 10, ((d.tensTop * d.unitsTop) + 3 + baseline) % 10] },
+      { id: "M04", name: "ผลรวมสองตัวล่าง+เบส", fn: (d) => [(d.tensBot + d.unitsBot + baseline) % 10, (d.tensBot + d.unitsBot + 7) % 10] },
+      { id: "M05", name: "ผลรวมสามตัวบน mod 10", fn: (d) => [(d.hundredsTop + d.tensTop + d.unitsTop) % 10, (d.hundredsTop + d.tensTop + d.unitsTop + baseline + 1) % 10] },
+      { id: "M06", name: "ผลต่างหน่วยล่าง-สิบตรง", fn: (d) => [Math.abs(d.unitsBot - d.tensTop) % 10, (Math.abs(d.unitsBot - d.tensTop) + 4) % 10] },
+      { id: "M07", name: "ผลบวกสิบล่าง+เบสกลาง", fn: (d) => [(d.tensBot + baseline + 2) % 10, (d.unitsBot + baseline + 6) % 10] },
+      { id: "M08", name: "ผลต่างรวมบน-รวมล่าง", fn: (d) => [Math.abs((d.tensTop + d.unitsTop) - (d.tensBot + d.unitsBot)) % 10, (baseline + 8) % 10] },
+      { id: "M09", name: "ผลคูณสิบล่าง*หน่วยล่าง", fn: (d) => [(d.tensBot * d.unitsBot) % 10, ((d.tensBot * d.unitsBot) + baseline + 2) % 10] },
+      { id: "M10", name: "สมดุลเบสกลาง+หลักหน่วยบน", fn: (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10] }
+    ];
+  }
+
   function rankDigitsFromHistory(histDraws) {
     const n = histDraws.length;
     if (n === 0) {
@@ -943,27 +967,17 @@
     }
 
     const lastDraw = histDraws[n - 1];
-    const baseSeed = lastDraw.tenUnitDigits.reduce((s, x) => s + x, 0);
-    const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
-
-    const formulaDefs = [
-      (d) => [(d.tensTop + d.unitsBot + baseline) % 10, (d.tensTop + d.unitsBot + 5) % 10],
-      (d) => [Math.abs(d.tensBot - d.unitsTop) % 10, (Math.abs(d.tensBot - d.unitsTop) + baseline) % 10],
-      (d) => [(d.tensTop * d.unitsTop) % 10, ((d.tensTop * d.unitsTop) + 3 + baseline) % 10],
-      (d) => [(d.tensBot + d.unitsBot + baseline) % 10, (d.tensBot + d.unitsBot + 7) % 10],
-      (d) => [(d.hundredsTop + d.tensTop + d.unitsTop) % 10, (d.hundredsTop + d.tensTop + d.unitsTop + baseline + 1) % 10],
-      (d) => [Math.abs(d.unitsBot - d.tensTop) % 10, (Math.abs(d.unitsBot - d.tensTop) + 4) % 10],
-      (d) => [(d.tensBot + baseline + 2) % 10, (d.unitsBot + baseline + 6) % 10],
-      (d) => [Math.abs((d.tensTop + d.unitsTop) - (d.tensBot + d.unitsBot)) % 10, (baseline + 8) % 10],
-      (d) => [(d.tensBot * d.unitsBot) % 10, ((d.tensBot * d.unitsBot) + baseline + 2) % 10],
-      (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10]
-    ];
+    const baseline = computeCausalBaseline(histDraws);
+    // ปรับน้ำหนักสถิติระยะยาวให้สอดคล้องกับขนาดข้อมูลจริง (ไม่ฝืนเมื่อข้อมูลน้อย)
+    const sampleScale = Math.min(1, Math.max(0.45, n / 15));
+    const formulaDefs = buildFormulaDefs(baseline);
 
     const formulaWeight = Array(10).fill(0);
     const formulaVotes = Array(10).fill(0);
     const evalStart = Math.max(1, n - 15);
 
-    for (const fn of formulaDefs) {
+    for (const item of formulaDefs) {
+      const fn = item.fn;
       let fHits = 0;
       let evalTotal = 0;
       for (let i = evalStart; i < n; i++) {
@@ -977,8 +991,8 @@
       const accRate = evalTotal > 0 ? fHits / evalTotal : 0.5;
       let [na, nb] = fn(lastDraw);
       if (na === nb) nb = (nb + 1) % 10;
-      formulaWeight[na] += accRate * 11;
-      formulaWeight[nb] += accRate * 11;
+      formulaWeight[na] += accRate * 11 * sampleScale;
+      formulaWeight[nb] += accRate * 11 * sampleScale;
       formulaVotes[na] += 1;
       formulaVotes[nb] += 1;
     }
@@ -991,7 +1005,7 @@
         const pct = (hitsArr.filter(Boolean).length / n) * 100;
         const st = calcStreaks(hitsArr);
         const hitCeilingNow = st.currentStatus === "หลุด" && st.maxMiss > 0 && st.currentStreak >= st.maxMiss;
-        const sc = pct * 1.1 + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
+        const sc = pct * 1.1 * sampleScale + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
         if (sc > bestPairScore) {
           bestPairScore = sc;
           bestPair = [a, b];
@@ -1074,7 +1088,15 @@
       }
 
       const pairVote = bestPair && bestPair.includes(d) ? 1 : 0;
-      const gapBonus = gap >= 2 && gap <= 4 ? 2.4 : gap === 5 ? 1.2 : gap >= 6 ? -1.4 : 0.0;
+      // แยกโซนระยะห่างให้ชัด: 2-4 รอรอบกำลังดี, 5-6 เริ่มลุ้นดีด, 7+ ห่างยาวจัดให้ชั่งน้ำหนัก
+      const gapBonus =
+        gap >= 2 && gap <= 4
+          ? 2.4
+          : gap >= 5 && gap <= 6
+          ? 1.1
+          : gap >= 7
+          ? -1.6
+          : 0.0;
       const satPenalty = r3 >= 2 ? -1.2 : 0.0;
       const shortRateBonus =
         (recent12Hits / shortLen) * 5.2 +
@@ -1095,9 +1117,9 @@
 
       const score = Number(
         (
-          slotCount * 1.3 +
-          drawHits * 2.5 +
-          (drawHits / n) * 13.0 +
+          slotCount * 1.3 * sampleScale +
+          drawHits * 2.5 * sampleScale +
+          (drawHits / n) * 13.0 * sampleScale +
           shortRateBonus +
           formulaWeight[d] * 1.136 +
           formulaVotes[d] * 1.4 +
@@ -1111,7 +1133,9 @@
       );
 
       const confidenceLabel =
-        signalGroups >= 3
+        n < 8
+          ? "ข้อมูลจำกัด (< 8 งวด)"
+          : signalGroups >= 3
           ? "สูง (3+ กลุ่มหนุน)"
           : signalGroups === 2
           ? "ปานกลาง (2 กลุ่มหนุน)"
@@ -1158,6 +1182,7 @@
     function scorePartnerForMain(mainD, partnerD) {
       let exactPairHits = 0;
       let recentPairHits = 0;
+      let coOccurInDraw = 0;
       let pairGap = 0;
       let gapStopped = false;
       const targetKey = canonicalPairKey(mainD, partnerD);
@@ -1173,6 +1198,9 @@
           gapStopped = true;
         } else if (!gapStopped) {
           pairGap += 1;
+        }
+        if (dr.tenUnitDigits.includes(mainD) && dr.tenUnitDigits.includes(partnerD)) {
+          coOccurInDraw += 1;
         }
       }
 
@@ -1191,12 +1219,14 @@
         }
       }
       const boundedTransitionSupport = Math.min(6.0, rawTransitionSupport);
+      const boundedCoOccurBonus = Math.min(4.5, coOccurInDraw * 1.1);
 
       const partnerRankScore = rankScoreMap.get(partnerD) || 0;
       const gapSweetSpot = pairGap >= 3 && pairGap <= 14 ? 2.0 : pairGap <= 2 ? -1.2 : 0.5;
       const totalScore =
         exactPairHits * 6.8 +
         recentPairHits * 4.2 +
+        boundedCoOccurBonus +
         partnerRankScore * 0.45 +
         boundedTransitionSupport +
         gapSweetSpot;
@@ -1277,6 +1307,8 @@
     const drillCanonSet = new Set(selection.allFifteenPairs.map((p) => p.canonKey));
 
     let drillHit = false;
+    let directFifteenHit = false;
+    let selfWinHit = false;
     const drillMatchDetails = [];
 
     if (mainHit) {
@@ -1285,11 +1317,13 @@
         const b = Number(act.val[1]);
         if (drillCanonSet.has(act.canon)) {
           drillHit = true;
+          directFifteenHit = true;
           const matchedObj = selection.allFifteenPairs.find((p) => p.canonKey === act.canon);
           const isReverse = matchedObj && matchedObj.pairText !== act.val;
           drillMatchDetails.push(`${act.val} (${act.pos}${isReverse ? "-กลับ" : "-ตรง"})`);
         } else if (a !== b && mainSet.has(a) && mainSet.has(b)) {
           drillHit = true;
+          selfWinHit = true;
           drillMatchDetails.push(`${act.val} (${act.pos}-เด่นวินกันเอง)`);
         }
       }
@@ -1300,6 +1334,8 @@
       matchedMainDigits,
       drillEligible: mainHit,
       drillHit: mainHit ? drillHit : false,
+      directFifteenHit: mainHit ? directFifteenHit : false,
+      selfWinHit: mainHit ? selfWinHit : false,
       drillMatchDetails
     };
   }
@@ -1312,6 +1348,8 @@
     const auditLogs = [];
     const mainBool = [];
     const drillBoolWhenMainHit = [];
+    const directFifteenBoolWhenMainHit = [];
+    let selfWinOnlyCount = 0;
 
     for (let i = startIdx; i < n; i++) {
       const hist = chrono.slice(0, i);
@@ -1322,6 +1360,10 @@
       mainBool.push(ev.mainHit);
       if (ev.drillEligible) {
         drillBoolWhenMainHit.push(ev.drillHit);
+        directFifteenBoolWhenMainHit.push(ev.directFifteenHit);
+        if (!ev.directFifteenHit && ev.selfWinHit) {
+          selfWinOnlyCount += 1;
+        }
       }
 
       auditLogs.push({
@@ -1353,6 +1395,11 @@
     const drillHitCount = drillBoolWhenMainHit.filter(Boolean).length;
     const drillMissCount = drillEvaluatedCount - drillHitCount;
     const drillHitPct = drillEvaluatedCount > 0 ? Number(((drillHitCount / drillEvaluatedCount) * 100).toFixed(1)) : 0;
+
+    const directFifteenHitCount = directFifteenBoolWhenMainHit.filter(Boolean).length;
+    const directFifteenPct = drillEvaluatedCount > 0
+      ? Number(((directFifteenHitCount / drillEvaluatedCount) * 100).toFixed(1))
+      : 0;
 
     const nextSelection = selectThreeDigitsAndFifteenPairs(chrono);
     const nextRanked = nextSelection.ranked;
@@ -1600,39 +1647,30 @@
     allPairs.sort((x, y) => y.pairScore - x.pairScore || y.hitPct - x.hitPct);
     const t7 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
 
-    const baseSeed = n > 0 ? chrono[n - 1].tenUnitDigits.reduce((s, x) => s + x, 0) : 0;
-    const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
-    const formulaDefs = [
-      { id: "M01", name: "ผลบวกสิบบน+หน่วยล่าง", fn: (d) => [(d.tensTop + d.unitsBot + baseline) % 10, (d.tensTop + d.unitsBot + 5) % 10] },
-      { id: "M02", name: "ผลต่างสิบล่าง-หน่วยบน", fn: (d) => [Math.abs(d.tensBot - d.unitsTop) % 10, (Math.abs(d.tensBot - d.unitsTop) + baseline) % 10] },
-      { id: "M03", name: "ผลคูณสิบบน*หน่วยบน", fn: (d) => [(d.tensTop * d.unitsTop) % 10, ((d.tensTop * d.unitsTop) + 3 + baseline) % 10] },
-      { id: "M04", name: "ผลรวมสองตัวล่าง+เบส", fn: (d) => [(d.tensBot + d.unitsBot + baseline) % 10, (d.tensBot + d.unitsBot + 7) % 10] },
-      { id: "M05", name: "ผลรวมสามตัวบน mod 10", fn: (d) => [(d.hundredsTop + d.tensTop + d.unitsTop) % 10, (d.hundredsTop + d.tensTop + d.unitsTop + baseline + 1) % 10] },
-      { id: "M06", name: "ผลต่างหน่วยล่าง-สิบตรง", fn: (d) => [Math.abs(d.unitsBot - d.tensTop) % 10, (Math.abs(d.unitsBot - d.tensTop) + 4) % 10] },
-      { id: "M07", name: "ผลบวกสิบล่าง+เบสกลาง", fn: (d) => [(d.tensBot + baseline + 2) % 10, (d.unitsBot + baseline + 6) % 10] },
-      { id: "M08", name: "ผลต่างรวมบน-รวมล่าง", fn: (d) => [Math.abs((d.tensTop + d.unitsTop) - (d.tensBot + d.unitsBot)) % 10, (baseline + 8) % 10] },
-      { id: "M09", name: "ผลคูณสิบล่าง*หน่วยล่าง", fn: (d) => [(d.tensBot * d.unitsBot) % 10, ((d.tensBot * d.unitsBot) + baseline + 2) % 10] },
-      { id: "M10", name: "สมดุลเบสกลาง+หลักหน่วยบน", fn: (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10] }
-    ];
-
-    const t8 = formulaDefs.map((f) => {
+    // ตารางที่ 8 ประเมินแบบก้าวทีละงวด (causal rolling baseline ณ แต่ละงวดก่อนหน้า ไม่แอบดูอนาคต)
+    const formulaTemplates = buildFormulaDefs(0);
+    const t8 = formulaTemplates.map((tpl, fIdx) => {
       const hitsArr = [];
       for (let i = 0; i < n; i++) {
+        const histSlice = chrono.slice(0, Math.max(1, i));
+        const causalBase = computeCausalBaseline(histSlice);
         const refDraw = i > 0 ? chrono[i - 1] : chrono[0];
-        let [x, y] = f.fn(refDraw);
+        const fnAtStep = buildFormulaDefs(causalBase)[fIdx].fn;
+        let [x, y] = fnAtStep(refDraw);
         if (x === y) y = (y + 1) % 10;
         const ok = chrono[i].tenUnitDigits.includes(x) || chrono[i].tenUnitDigits.includes(y);
         hitsArr.push(ok);
       }
+      const latestBase = computeCausalBaseline(chrono);
       const lastRef = n > 0 ? chrono[n - 1] : null;
-      let [nextA, nextB] = lastRef ? f.fn(lastRef) : [0, 1];
+      let [nextA, nextB] = lastRef ? buildFormulaDefs(latestBase)[fIdx].fn(lastRef) : [0, 1];
       if (nextA === nextB) nextB = (nextB + 1) % 10;
       const st = calcStreaks(hitsArr);
       const hits = hitsArr.filter(Boolean).length;
       return {
-        id: f.id,
-        name: f.name,
-        baseline,
+        id: tpl.id,
+        name: tpl.name,
+        baseline: latestBase,
         nextPick: `${nextA}-${nextB}`,
         d1: nextA,
         d2: nextB,
@@ -1799,12 +1837,13 @@
       };
     });
 
+    const lowSampleCaution = mainBool.length < 8;
     const stabilityTier =
-      auditHitPct >= 75 && (drillEvaluatedCount === 0 || drillHitPct >= 75)
+      !lowSampleCaution && auditHitPct >= 75 && (drillEvaluatedCount === 0 || drillHitPct >= 75)
         ? { code: "TIER_A", label: "เสถียรสูง", badgeClass: "st-hot" }
-        : auditHitPct >= 70 || drillHitPct >= 75
+        : !lowSampleCaution && (auditHitPct >= 70 || drillHitPct >= 75)
         ? { code: "TIER_B", label: "เกณฑ์ดี / เจาะคม", badgeClass: "st-rebound" }
-        : { code: "TIER_WATCH", label: "ผันผวน / เฝ้าระวัง", badgeClass: "st-cool" };
+        : { code: "TIER_WATCH", label: lowSampleCaution ? "ข้อมูลน้อย / เฝ้าระวัง" : "ผันผวน / เฝ้าระวัง", badgeClass: "st-cool" };
 
     const latestDrawDate = n > 0 ? chrono[n - 1].dateLabel : "-";
     const firstDrawDate = n > 0 ? chrono[0].dateLabel : "-";
@@ -1826,7 +1865,10 @@
         drillMisses: drillMissCount,
         drillHitPct: drillHitPct,
         drillMaxHit: drillStreaks.maxHit,
-        drillMaxMiss: drillStreaks.maxMiss
+        drillMaxMiss: drillStreaks.maxMiss,
+        directFifteenHits: directFifteenHitCount,
+        directFifteenPct,
+        selfWinOnlyCount
       },
       nextSelection,
       t2,
@@ -1857,7 +1899,7 @@
         highPct,
         lowPct,
         momentumForecast,
-        baseline,
+        baseline: computeCausalBaseline(chrono),
         latestPat: latestPat || "-"
       }
     };
@@ -2284,7 +2326,7 @@
         <div class="hero-card">
           <div class="hero-label">ความแม่นยำชุดเจาะ 15 คู่ (นับเฉพาะงวดที่เด่นเข้า)</div>
           <div class="hero-value" style="font-size:14px;">เข้าเจาะ ${au.drillHits}/${au.drillEvaluated} งวด (${au.drillHitPct}%)</div>
-          <div class="hero-note">รวมเด่นวินกันเอง (${esc(sel.selfWinPairs.join(", "))}) • หลุดเจาะติดสูงสุด ${au.drillMaxMiss} งวด (${au.drillMisses} งวด)</div>
+          <div class="hero-note">คู่เจาะตรงตัว/กลับ ${au.directFifteenHits} (${au.directFifteenPct}%) + เด่นวินกันเอง ${au.selfWinOnlyCount} • หลุดเจาะติดสูงสุด ${au.drillMaxMiss} งวด</div>
         </div>
         <div class="hero-card">
           <div class="hero-label">สถิติเข้า/หลุดต่อเนื่อง &amp; โมเมนตัม</div>
@@ -2451,7 +2493,7 @@
       <div class="table-section">
         <div class="table-title-bar">
           <div class="table-title">ตารางที่ 8 // ตารางสูตรคณิตศาสตร์บริสุทธิ์ 10 สูตร (เด่น 2 ตัว • ค่ากลาง ${s.baseline})</div>
-          <div class="table-meta">แต่ละสูตรทดแทนกันได้ • แสดงครบ 10 สูตร</div>
+          <div class="table-meta">ประเมินแบบ Causal ย้อนหลังทีละงวด • แสดงครบ 10 สูตร</div>
         </div>
         <div class="table-hscroll">
           <table class="lux-grid">
