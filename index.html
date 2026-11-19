@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AETHER QUANT v1.1 // Quantum Multi-Table Statistical Lottery Engine (3-Digit + 15-Pair Engine)</title>
+<title>AETHER QUANT v1.2 // Quantum Multi-Table Statistical Lottery Engine (3-Digit + 15-Pair Engine)</title>
 <style>
   :root {
     --bg-void: #07090f;
@@ -441,6 +441,32 @@
     color: var(--cyan);
   }
 
+  .sort-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 10.5px;
+    color: var(--text-muted);
+  }
+
+  .sort-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    background: var(--bg-sub);
+    color: var(--text-main);
+    border: 1px solid var(--border-grid);
+    cursor: pointer;
+  }
+
+  .sort-btn.active {
+    background: var(--cyan-soft);
+    color: var(--cyan);
+    border-color: var(--cyan);
+    font-weight: 700;
+  }
+
   .all-lottery-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
@@ -485,15 +511,15 @@
 <div class="app-shell">
   <div class="top-bar">
     <div>
-      <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE <span class="ver-badge">VERSION v1.1</span></div>
+      <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE <span class="ver-badge">VERSION v1.2</span></div>
       <div class="brand-sub">เลขเด่น 3 ตัว + เจาะเด่นละ 5 คู่ (รวม 15 คู่ กลับได้ • ไม่รวมเบิ้ล • นับเฉพาะ 15 คู่เจาะในงวดที่เด่นเข้าเท่านั้น)</div>
     </div>
-    <div class="status-pill" id="engineStatus">v1.1 พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
+    <div class="status-pill" id="engineStatus">v1.2 พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
   </div>
 
   <div class="input-box">
     <div class="input-header">
-      <span>วางข้อมูลสถิติหวยทั้งหมดในช่องเดียว (รองรับข้อความจาก PDF หรืออัปโหลดไฟล์ .pdf) [v1.1]</span>
+      <span>วางข้อมูลสถิติหวยทั้งหมดในช่องเดียว (รองรับข้อความจาก PDF หรืออัปโหลดไฟล์ .pdf) [v1.2]</span>
       <label class="pdf-upload-label">
         <span>เลือกไฟล์ PDF</span>
         <input type="file" id="pdfFileInput" accept=".pdf,application/pdf" />
@@ -505,13 +531,13 @@
 53
 ..."></textarea>
     <div class="action-row">
-      <button type="button" class="btn-process" id="btnProcess">ประมวลผล (v1.1)</button>
+      <button type="button" class="btn-process" id="btnProcess">ประมวลผล (v1.2)</button>
       <button type="button" class="btn-clear" id="btnClear">ล้างข้อมูล</button>
     </div>
   </div>
 
   <div id="resultsRoot">
-    <div class="empty-state">[v1.1] กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล"</div>
+    <div class="empty-state">[v1.2] กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล"</div>
   </div>
 </div>
 
@@ -520,7 +546,7 @@
 (function () {
   "use strict";
 
-  const ENGINE_VERSION = "v1.1";
+  const ENGINE_VERSION = "v1.2";
 
   if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -545,6 +571,7 @@
 
   let latestAnalysis = null;
   let activeLotteryKey = null;
+  let cardSortMode = "order"; // "order" | "mainPct" | "drillPct"
 
   function normalizeText(str) {
     if (!str) return "";
@@ -561,6 +588,7 @@
 
   function canonicalLotteryName(rawName) {
     let s = normalizeText(rawName).replace(/\s+/g, " ").trim();
+    s = s.replace(/^(?:งดออกผล\s*)+/g, "").trim();
     const map = [
       ["หนุ้", "หุ้น"],
       ["ฮานอยเชา้", "ฮานอยเช้า"],
@@ -649,8 +677,9 @@
       const hm = line.match(headerRegex);
       if (hm) {
         commitCurrent();
-        currentLottery = canonicalLotteryName(hm[1]);
-        currentDateObj = parseThaiDate(hm[2]);
+        const cleanName = canonicalLotteryName(hm[1]);
+        currentLottery = cleanName.length > 0 ? cleanName : null;
+        currentDateObj = currentLottery ? parseThaiDate(hm[2]) : null;
         currentTop3 = null;
         currentBot2 = null;
         currentNoDraw = false;
@@ -1343,7 +1372,7 @@
         ? "โมเมนตัมฝั่งต่ำ (0-4) เด่นกว่า"
         : "โมเมนตัมรวมสมดุล • เน้นตัวเลขที่มีความถี่จริงหนุน";
 
-    // ตารางที่ 7 (ปรับสมดุลคะแนนให้สอดคล้องกับความถี่จริงและเพดานหลุด)
+    // ตารางที่ 7
     const allPairs = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1678,6 +1707,12 @@
       });
     }
 
+    if (cardSortMode === "mainPct") {
+      perLottery.sort((a, b) => b.hitPct - a.hitPct || b.hits - a.hits || a.lotteryName.localeCompare(b.lotteryName, "th"));
+    } else if (cardSortMode === "drillPct") {
+      perLottery.sort((a, b) => b.drillHitPct - a.drillHitPct || b.drillHits - a.drillHits || a.lotteryName.localeCompare(b.lotteryName, "th"));
+    }
+
     const overallPct = totalEvaluated > 0 ? Number(((totalHits / totalEvaluated) * 100).toFixed(1)) : 0;
     const meanLotteryPct = perLottery.length > 0
       ? Number((perLottery.reduce((acc, r) => acc + r.hitPct, 0) / perLottery.length).toFixed(1))
@@ -1973,6 +2008,12 @@
             ชุดเจาะ 15 คู่ (นับเฉพาะงวดเด่นเข้า): เข้า ${overall.totalDrillHits} / หลุด ${overall.totalDrillMisses} (จาก ${overall.totalDrillEvaluated} งวด) = <span class="num-gold">${overall.overallDrillPct}%</span>
           </div>
         </div>
+        <div class="sort-bar">
+          <span>เรียงการ์ดหวย:</span>
+          <button type="button" class="sort-btn ${cardSortMode === "order" ? "active" : ""}" data-sort="order">ตามลำดับข้อมูล</button>
+          <button type="button" class="sort-btn ${cardSortMode === "mainPct" ? "active" : ""}" data-sort="mainPct">% เด่นสูงสุด</button>
+          <button type="button" class="sort-btn ${cardSortMode === "drillPct" ? "active" : ""}" data-sort="drillPct">% เจาะสูงสุด</button>
+        </div>
         <div class="all-lottery-grid">${allLotteryCardsHtml}</div>
       </div>
     `;
@@ -2248,6 +2289,13 @@
         renderAnalysis(latestAnalysis);
       });
     });
+
+    root.querySelectorAll(".sort-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        cardSortMode = this.getAttribute("data-sort") || "order";
+        renderAnalysis(latestAnalysis);
+      });
+    });
   }
 
   function runProcess() {
@@ -2278,6 +2326,7 @@
     document.getElementById("pdfFileInput").value = "";
     latestAnalysis = null;
     activeLotteryKey = null;
+    cardSortMode = "order";
     document.getElementById("engineStatus").textContent = `${ENGINE_VERSION} • ล้างข้อมูลแล้ว • พร้อมประมวลผล`;
     document.getElementById("resultsRoot").innerHTML =
       `<div class="empty-state">[${ENGINE_VERSION}] ล้างข้อมูลเรียบร้อยแล้ว กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล"</div>`;
