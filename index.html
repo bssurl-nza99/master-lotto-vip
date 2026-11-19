@@ -352,6 +352,65 @@
     font-weight: 700;
   }
 
+
+  .all-lottery-banner {
+    background: linear-gradient(90deg, rgba(17, 24, 39, 0.98), rgba(13, 18, 29, 0.98));
+    border: 1px solid var(--border-accent);
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
+  .all-lottery-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .all-lottery-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .all-lottery-overall {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+
+  .all-lottery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 6px;
+  }
+
+  .all-lottery-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-grid);
+    padding: 6px 8px;
+    font-size: 10.5px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-main);
+    width: 100%;
+  }
+
+  .all-lottery-item:hover {
+    border-color: var(--cyan);
+  }
+
+  .all-lottery-item.active {
+    border-color: var(--gold);
+    background: rgba(245, 196, 81, 0.08);
+  }
+
   .empty-state {
     padding: 18px 12px;
     text-align: center;
@@ -1325,6 +1384,57 @@
     };
   }
 
+  function computeOverallAccuracy(analysisMap) {
+    const entries = Object.entries(analysisMap || {});
+    const perLottery = [];
+    let totalEvaluated = 0;
+    let totalHits = 0;
+    let totalMisses = 0;
+    let totalUsedDraws = 0;
+
+    for (const [name, an] of entries) {
+      const evaluated = an && an.audit ? Number(an.audit.totalEvaluated || 0) : 0;
+      const hits = an && an.audit ? Number(an.audit.hits || 0) : 0;
+      const misses = an && an.audit ? Number(an.audit.misses || Math.max(0, evaluated - hits)) : 0;
+      const hitPct = evaluated > 0 ? Number(((hits / evaluated) * 100).toFixed(1)) : 0;
+      const usedDraws = an && an.pack ? Number(an.pack.usedCount || 0) : 0;
+      const nextPick = an && Array.isArray(an.topTwo) && an.topTwo.length >= 2
+        ? `${an.topTwo[0].digit} - ${an.topTwo[1].digit}`
+        : "-";
+
+      totalEvaluated += evaluated;
+      totalHits += hits;
+      totalMisses += misses;
+      totalUsedDraws += usedDraws;
+
+      perLottery.push({
+        lotteryName: name,
+        usedDraws,
+        evaluated,
+        hits,
+        misses,
+        hitPct,
+        nextPick
+      });
+    }
+
+    const overallPct = totalEvaluated > 0 ? Number(((totalHits / totalEvaluated) * 100).toFixed(1)) : 0;
+    const meanLotteryPct = perLottery.length > 0
+      ? Number((perLottery.reduce((acc, r) => acc + r.hitPct, 0) / perLottery.length).toFixed(1))
+      : 0;
+
+    return {
+      lotteryCount: perLottery.length,
+      totalUsedDraws,
+      totalEvaluated,
+      totalHits,
+      totalMisses,
+      overallPct,
+      meanLotteryPct,
+      perLottery
+    };
+  }
+
   function esc(v) {
     return String(v)
       .replace(/&/g, "&amp;")
@@ -1542,7 +1652,30 @@
       )
       .join("");
 
+    const overall = computeOverallAccuracy(analysisMap);
+    const allLotteryCardsHtml = overall.perLottery
+      .map((item) => {
+        const isAct = item.lotteryName === activeLotteryKey ? "active" : "";
+        const pctCls = item.evaluated === 0 ? "" : item.hitPct >= 60 ? "st-hot" : item.hitPct >= 40 ? "st-steady" : "st-cool";
+        return `<button type="button" class="all-lottery-item ${isAct}" data-lottery="${esc(item.lotteryName)}">
+          <span><strong>${esc(item.lotteryName)}</strong> <span style="color:var(--text-muted);">(${item.hits}/${item.evaluated} งวด)</span></span>
+          <span class="${pctCls}" style="padding:2px 6px;">${item.evaluated > 0 ? item.hitPct + "%" : "-"}</span>
+        </button>`;
+      })
+      .join("");
+
+    const allLotteryBannerHtml = `
+      <div class="all-lottery-banner">
+        <div class="all-lottery-header">
+          <div class="all-lottery-title">ความแม่นยำรวมทุกหวย (${overall.lotteryCount} ประเภท • ตรวจรวม ${overall.totalEvaluated} งวด)</div>
+          <div class="all-lottery-overall">รวมเข้า ${overall.totalHits} / หลุด ${overall.totalMisses} งวด = <span class="num-gold">${overall.overallPct}%</span> <span style="font-size:10.5px;color:var(--text-muted);font-weight:400;">(เฉลี่ยต่อหวย ${overall.meanLotteryPct}%)</span></div>
+        </div>
+        <div class="all-lottery-grid">${allLotteryCardsHtml}</div>
+      </div>
+    `;
+
     root.innerHTML = `
+      ${allLotteryBannerHtml}
       <div class="summary-strip">
         <div>ประเภทหวย: <strong class="num-gold">${esc(p.lotteryName)}</strong> • ใช้งวดจริง: <strong>${p.usedCount}</strong> งวด (จากที่มี ${p.totalValidAvailable} งวด) • ข้ามวันงดออกผล: <strong>${p.skippedNoDraw}</strong> วัน</div>
         <div>${p.wasCapped ? `<span class="st-steady">ตัดส่วนเกินเฉพาะ 30 งวดล่าสุด</span>` : `<span>ครบตามจำนวนงวดจริง</span>`}</div>
@@ -1792,6 +1925,13 @@
         renderAnalysis(latestAnalysis);
       });
     });
+
+    root.querySelectorAll(".all-lottery-item").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        activeLotteryKey = this.getAttribute("data-lottery");
+        renderAnalysis(latestAnalysis);
+      });
+    });
   }
 
   function runProcess() {
@@ -1806,7 +1946,10 @@
     }
     latestAnalysis = analyzed;
     const count = Object.keys(analyzed).length;
-    statusEl.textContent = count > 0 ? `ประมวลผลสำเร็จ ${count} ประเภทหวย` : "ไม่พบข้อมูลที่ประมวลผลได้";
+    const overallNow = computeOverallAccuracy(analyzed);
+    statusEl.textContent = count > 0
+      ? `ประมวลผลสำเร็จ ${count} ประเภทหวย • ความแม่นยำรวม ${overallNow.overallPct}% (${overallNow.totalHits}/${overallNow.totalEvaluated})`
+      : "ไม่พบข้อมูลที่ประมวลผลได้";
     renderAnalysis(analyzed);
   }
 
@@ -1880,6 +2023,7 @@
     analyzeLottery,
     rankDigitsFromHistory,
     selectTwoDigitsFromHistory,
+    computeOverallAccuracy,
     runMultiLotteryWalkForwardTest,
     runProcess,
     runClear
