@@ -359,6 +359,13 @@
     background: rgba(34, 211, 238, 0.06);
   }
 
+  table.lux-grid tfoot td {
+    background: #101726;
+    color: var(--gold);
+    font-weight: 700;
+    border-top: 1px solid var(--border-accent);
+  }
+
   .st-hot {
     background: var(--green-soft);
     color: #34d399;
@@ -467,7 +474,7 @@
   <div class="top-bar">
     <div>
       <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
-      <div class="brand-sub">เลขเด่น 3 ตัว + เจาะเด่นละ 5 คู่ (รวม 15 คู่ กลับได้ • ไม่รวมเบิ้ล • ไม่กินโควตาเลขเด่นวินกันเอง)</div>
+      <div class="brand-sub">เลขเด่น 3 ตัว + เจาะเด่นละ 5 คู่ (รวม 15 คู่ กลับได้ • ไม่รวมเบิ้ล • นับเฉพาะ 15 คู่เจาะในงวดที่เด่นเข้าเท่านั้น)</div>
     </div>
     <div class="status-pill" id="engineStatus">พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
   </div>
@@ -914,18 +921,10 @@
     const mainThree = [d1, d2, d3];
     const mainSet = new Set(mainThree);
 
-    // Self-win pairs among the 3 main digits (counted as drill wins automatically without consuming the 15-pair quota)
-    const selfWinPairs = [
-      `${d1}${d2}`, `${d2}${d1}`,
-      `${d1}${d3}`, `${d3}${d1}`,
-      `${d2}${d3}`, `${d3}${d2}`
-    ];
-
     const n = histDraws.length;
     const rankScoreMap = new Map(ranked.map((r) => [r.digit, r.score]));
     const lastDraw = n > 0 ? histDraws[n - 1] : null;
 
-    // Score every valid non-double pair (mainDigit, partner) where partner is NOT in mainThree
     function scorePartnerForMain(mainD, partnerD) {
       let exactPairHits = 0;
       let recentPairHits = 0;
@@ -947,7 +946,6 @@
         }
       }
 
-      // Transition co-occurrence after lastDraw's ten-unit digits
       let transitionSupport = 0;
       if (lastDraw && n >= 2) {
         const prevSumMod = (lastDraw.tensTop + lastDraw.unitsTop + lastDraw.tensBot + lastDraw.unitsBot) % 10;
@@ -981,12 +979,11 @@
       pairs: []
     }));
 
-    // Build candidate lists per main digit (excluding doubles and excluding the other 2 main digits)
     const candidatePools = mainThree.map((md) => {
       const pool = [];
       for (let p = 0; p <= 9; p++) {
-        if (p === md) continue;        // No doubles
-        if (mainSet.has(p)) continue;  // No cross-pairs among the 3 main digits
+        if (p === md) continue;        // ไม่รวมเลขเบิ้ล
+        if (mainSet.has(p)) continue;  // ไม่รวมคู่ที่เกิดจากเลขเด่น 3 ตัวจับคู่กันเอง
         pool.push({
           mainDigit: md,
           partnerDigit: p,
@@ -1000,7 +997,6 @@
       return pool;
     });
 
-    // Allocate 5 unique pairs to each of the 3 main digits (total = 15 pairs)
     for (let round = 0; round < 5; round++) {
       for (let gIdx = 0; gIdx < 3; gIdx++) {
         const pool = candidatePools[gIdx];
@@ -1017,12 +1013,13 @@
       mainThree,
       ranked,
       groups,
-      allFifteenPairs,
-      selfWinPairs
+      allFifteenPairs
     };
   }
 
-  // Evaluate a draw against 3 main digits + 15 drill pairs (reversible + self-win among 3 main digits, capped at 100% per draw)
+  // ตรวจผลตามกติกา:
+  // 1. เลขเด่น 3 ตัว เข้าตัวใดตัวหนึ่งในสิบ/หน่วย (บนหรือล่าง) = เด่นเข้า 100%
+  // 2. เลขเจาะ นับเฉพาะ "15 คู่เจาะ" (ตรง/กลับ) และนับเฉพาะงวดที่เลขเด่น 3 ตัวเข้าเท่านั้น
   function evaluateDrawThreeAndFifteen(targetDraw, selection) {
     const [d1, d2, d3] = selection.mainThree;
     const tu = targetDraw.tenUnitDigits;
@@ -1036,14 +1033,13 @@
     if (hit2) matchedMainDigits.push(d2);
     if (hit3) matchedMainDigits.push(d3);
 
-    const top2 = targetDraw.top2Pair; // e.g. "18"
-    const bot2 = targetDraw.bot2Pair; // e.g. "31"
+    const top2 = targetDraw.top2Pair;
+    const bot2 = targetDraw.bot2Pair;
     const actualTwoDigitPairs = [
       { pos: "2ตัวบน", val: top2, canon: canonicalPairKey(top2[0], top2[1]) },
       { pos: "2ตัวล่าง", val: bot2, canon: canonicalPairKey(bot2[0], bot2[1]) }
     ];
 
-    const mainSet = new Set(selection.mainThree);
     const drillCanonSet = new Set(selection.allFifteenPairs.map((p) => p.canonKey));
 
     let drillHit = false;
@@ -1051,19 +1047,11 @@
 
     if (mainHit) {
       for (const act of actualTwoDigitPairs) {
-        const a = Number(act.val[0]);
-        const b = Number(act.val[1]);
-        // Case A: Matched one of the 15 pairs (straight or reverse)
         if (drillCanonSet.has(act.canon)) {
           drillHit = true;
           const matchedObj = selection.allFifteenPairs.find((p) => p.canonKey === act.canon);
           const isReverse = matchedObj && matchedObj.pairText !== act.val;
           drillMatchDetails.push(`${act.val} (${act.pos}${isReverse ? "-กลับ" : "-ตรง"})`);
-        }
-        // Case B: Two distinct main digits won together (e.g. 1, 5, 7 -> 51, 71, 75)
-        else if (a !== b && mainSet.has(a) && mainSet.has(b)) {
-          drillHit = true;
-          drillMatchDetails.push(`${act.val} (${act.pos}-เด่นวินกันเอง)`);
         }
       }
     }
@@ -1081,7 +1069,7 @@
     const chrono = pack.chrono;
     const n = chrono.length;
 
-    // Table 1: Historical Walk-Forward Audit (past -> present, zero lookahead)
+    // ตารางที่ 1: Walk-Forward Audit (อดีต -> ปัจจุบัน ไม่ย้อนดูอนาคต)
     const startIdx = n >= 4 ? 3 : 1;
     const auditLogs = [];
     const mainBool = [];
@@ -1128,13 +1116,13 @@
     const drillMissCount = drillEvaluatedCount - drillHitCount;
     const drillHitPct = drillEvaluatedCount > 0 ? Number(((drillHitCount / drillEvaluatedCount) * 100).toFixed(1)) : 0;
 
-    // Next draw 3 main digits + 15 drill pairs using all `n` draws
+    // ชุดคาดการณ์งวดถัดไปจากข้อมูลครบ `n` งวด
     const nextSelection = selectThreeDigitsAndFifteenPairs(chrono);
     const nextRanked = nextSelection.ranked;
     const [nextP1, nextP2, nextP3] = nextSelection.mainThree;
     const nextBackup4 = nextRanked[3] ? nextRanked[3].digit : nextP1;
 
-    // Table 2: Overall 0-9 frequency in ten-unit positions
+    // ตารางที่ 2: ความถี่รวม 0–9 (เน้นหลักสิบและหลักหน่วย บน-ล่าง)
     const t2 = [];
     for (let d = 0; d <= 9; d++) {
       const perDrawHits = chrono.map((dr) => dr.tenUnitDigits.includes(d));
@@ -1192,7 +1180,7 @@
     t2.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
     t2.forEach((row, idx) => { row.rank = idx + 1; });
 
-    // Table 3: Per-position (0-9 across 5 positions = 50 rows)
+    // ตารางที่ 3: ความถี่รายหลัก 0–9 (5 ตำแหน่ง ครบ 50 แถว)
     const positions = [
       { key: "hundredsTop", label: "หลักร้อย (บน)" },
       { key: "tensTop", label: "หลักสิบ (บน)" },
@@ -1240,7 +1228,7 @@
     t3.sort((a, b) => b.score - a.score || b.hits - a.hits);
     t3.forEach((row, idx) => { row.rank = idx + 1; });
 
-    // Table 4: Odd / Even table on ten-unit digits
+    // ตารางที่ 4: เลขคู่–เลขคี่
     const oddEvenRows = chrono.map((dr, idx) => {
       const evenCnt = dr.tenUnitDigits.filter((x) => x % 2 === 0).length;
       const oddCnt = dr.tenUnitDigits.length - evenCnt;
@@ -1276,7 +1264,7 @@
       }
     ];
 
-    // Table 5: Double (เบิ้ล) & Sandwich (หาม) detector
+    // ตารางที่ 5: ตรวจจับเลขเบิ้ลและเลขหาม
     const t5 = chrono.map((dr, idx) => {
       const [a, b, c] = dr.top3.split("").map(Number);
       const [u, v] = dr.bot2.split("").map(Number);
@@ -1302,7 +1290,7 @@
     const sinceLastDouble = [...t5].reverse().findIndex((r) => r.hasDouble);
     const sinceLastSandwich = [...t5].reverse().findIndex((r) => r.hasSandwich);
 
-    // Table 6: High (5-9) vs Low (0-4) momentum
+    // ตารางที่ 6: เลขสูง–เลขต่ำ และโมเมนตัมรอบถัดไป
     const t6 = chrono.map((dr, idx) => {
       const highCnt = dr.tenUnitDigits.filter((x) => x >= 5).length;
       const lowCnt = dr.tenUnitDigits.length - highCnt;
@@ -1347,7 +1335,7 @@
         ? "โมเมนตัมฝั่งต่ำ (0-4) เด่นกว่า"
         : "โมเมนตัมก้ำกึ่ง • เน้นตัวเลขที่มีความถี่จริงหนุน";
 
-    // Table 7: Compensating pairs (Top 5 of 45 pairs on ten-unit digits)
+    // ตารางที่ 7: เลขชดเชย (คัด 5 คู่ที่ดีที่สุด)
     const allPairs = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1381,7 +1369,7 @@
     allPairs.sort((x, y) => y.pairScore - x.pairScore || y.hitPct - x.hitPct);
     const t7 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
 
-    // Table 8: 10 Pure Math 2-digit formulas
+    // ตารางที่ 8: สูตรคณิตศาสตร์บริสุทธิ์ 10 สูตร (คำนวณแบบ Causal อ้างอิงงวดก่อนหน้าเท่านั้น i >= 1)
     const baseSeed = n > 0 ? chrono[n - 1].tenUnitDigits.reduce((s, x) => s + x, 0) : 0;
     const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
     const formulaDefs = [
@@ -1399,9 +1387,8 @@
 
     const t8 = formulaDefs.map((f) => {
       const hitsArr = [];
-      for (let i = 0; i < n; i++) {
-        const refDraw = i > 0 ? chrono[i - 1] : chrono[0];
-        let [x, y] = f.fn(refDraw);
+      for (let i = 1; i < n; i++) {
+        let [x, y] = f.fn(chrono[i - 1]);
         if (x === y) y = (y + 1) % 10;
         const ok = chrono[i].tenUnitDigits.includes(x) || chrono[i].tenUnitDigits.includes(y);
         hitsArr.push(ok);
@@ -1419,7 +1406,7 @@
         d1: nextA,
         d2: nextB,
         hits,
-        misses: n - hits,
+        misses: hitsArr.length - hits,
         maxHit: st.maxHit,
         maxMiss: st.maxMiss,
         currentStatus: st.currentStatus,
@@ -1427,7 +1414,7 @@
       };
     });
 
-    // Table 9: Historical pattern learning
+    // ตารางที่ 9: เรียนรู้แพทเทิร์นย้อนหลังสู่รอบถัดไป
     const patternBuckets = new Map();
     for (let i = 0; i < n - 1; i++) {
       const cur = chrono[i];
@@ -1443,20 +1430,19 @@
       for (const dg of nxt.tenUnitDigits) b.digitCounts[dg] += 1;
     }
     const t9 = Array.from(patternBuckets.values()).map((b) => {
-      const rankedDigits = b.digitCounts
+      const topThreeObj = b.digitCounts
         .map((cnt, dg) => ({ dg, cnt }))
         .sort((a, b2) => b2.cnt - a.cnt || a.dg - b2.dg)
-        .slice(0, 3)
-        .map((x) => `${x.dg}(${x.cnt})`)
-        .join(", ");
+        .slice(0, 3);
       return {
         pattern: b.pattern,
         occurrences: b.occurrences,
-        topFollowDigits: rankedDigits || "-"
+        topFollowDigits: topThreeObj.map((x) => `${x.dg}(${x.cnt})`).join(", ") || "-",
+        topFollowDigitList: topThreeObj.map((x) => x.dg)
       };
     });
 
-    // Table 10: Cold streak sweep
+    // ตารางที่ 10: สูตรเลขหลุดยาวนานที่สุด (Top 10 จาก 1,600 สูตร)
     const coldCandidates = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1489,7 +1475,7 @@
     coldCandidates.sort((x, y) => y.coldRounds - x.coldRounds || x.formulaCode.localeCompare(y.formulaCode));
     const t10 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
 
-    // Table 11: Quantum consensus & final 3-digit pick
+    // ตารางที่ 11: ดัชนีแรงปะทะสิบ-หน่วย & ฉันทามติรวมทุกตาราง (0–9)
     const latestPat = (() => {
       if (n === 0) return null;
       const last = chrono[n - 1];
@@ -1507,7 +1493,7 @@
       const formulaVotes = t8.filter((f) => f.d1 === d || f.d2 === d).length;
       const coldVotes = t10.filter((c) => c.d1 === d || c.d2 === d).length;
       const pairVotes = t7.filter((p) => p.a === d || p.b === d).length;
-      const patMention = patEntry && patEntry.topFollowDigits.includes(`${d}(`) ? 1 : 0;
+      const patMention = patEntry && patEntry.topFollowDigitList.includes(d) ? 1 : 0;
       const pickTierBonus =
         d === nextP1 || d === nextP2 || d === nextP3
           ? 30.0
@@ -1550,7 +1536,7 @@
       t11.find((r) => r.digit === nextP3) || t11[2]
     ];
 
-    // Table 12: Confidence Tier & Role
+    // ตารางที่ 12: ดัชนีความมั่นใจ วงรอบสั้น (12 งวด) เทียบวงรอบยาว & เลขสำรอง
     const t12 = nextRanked.map((row, idx) => {
       const roleLabel =
         row.digit === nextP1
@@ -1755,7 +1741,7 @@
         return `<div class="drill-card">
           <div class="drill-card-head">
             <span class="num-gold">ชุดเจาะเด่นตัวที่ #${idx + 1} : เลข ${g.mainDigit}</span>
-            <span style="font-size:10px;color:var(--cyan);">5 คู่เจาะ (ไม่เบิ้ล • ไม่รวมเด่นวิน)</span>
+            <span style="font-size:10px;color:var(--cyan);">5 คู่เจาะ (ไม่เบิ้ล • กลับได้)</span>
           </div>
           <div class="drill-pairs-list">${chips}</div>
         </div>`;
@@ -2000,7 +1986,7 @@
         <div class="hero-card">
           <div class="hero-label">ความแม่นยำชุดเจาะ 15 คู่ (นับเฉพาะงวดที่เด่นเข้า)</div>
           <div class="hero-value" style="font-size:14px;">เข้าเจาะ ${au.drillHits}/${au.drillEvaluated} งวด (${au.drillHitPct}%)</div>
-          <div class="hero-note">รวมเด่นวินกันเอง (${esc(sel.selfWinPairs.join(", "))}) • หลุดเจาะ ${au.drillMisses} งวด</div>
+          <div class="hero-note">นับเฉพาะ 15 คู่เจาะ (ตรง/กลับ) • หลุดเจาะ ${au.drillMisses} งวด (ไม่รวมงวดเด่นหลุด ${au.misses} งวด)</div>
         </div>
         <div class="hero-card">
           <div class="hero-label">สถิติเข้า/หลุดต่อเนื่อง &amp; โมเมนตัม</div>
@@ -2014,7 +2000,7 @@
       <div class="table-section">
         <div class="table-title-bar">
           <div class="table-title">ตารางที่ 1 // ตารางตรวจสอบผลงานย้อนหลังอดีตถึงปัจจุบัน (Walk-Forward Audit • เด่น 3 ตัว + เจาะ 15 คู่)</div>
-          <div class="table-meta">เด่นเข้า ${au.hits}/${au.totalEvaluated} (${au.hitPct}%) • เจาะเข้า ${au.drillHits}/${au.drillEvaluated} (${au.drillHitPct}%) • เด่นวินกันเองนับเข้าเจาะทันที</div>
+          <div class="table-meta">เด่นเข้า ${au.hits}/${au.totalEvaluated} (${au.hitPct}%) • เจาะเข้า ${au.drillHits}/${au.drillEvaluated} (${au.drillHitPct}%) • นับเฉพาะ 15 คู่เจาะในงวดเด่นเข้า</div>
         </div>
         <div class="table-hscroll">
           <table class="lux-grid">
@@ -2026,6 +2012,16 @@
               </tr>
             </thead>
             <tbody>${t1AuditRows}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="7">สรุปผลตรวจย้อนหลังจริง ${au.totalEvaluated} งวด</td>
+                <td>เข้า ${au.hits} / หลุด ${au.misses}</td>
+                <td>${au.hitPct}%</td>
+                <td>คิดฐานเฉพาะงวดเด่นเข้า (${au.drillEvaluated} งวด)</td>
+                <td>เข้า ${au.drillHits} / หลุด ${au.drillMisses}</td>
+                <td>${au.drillHitPct}%</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -2143,7 +2139,7 @@
       <div class="table-section">
         <div class="table-title-bar">
           <div class="table-title">ตารางที่ 8 // ตารางสูตรคณิตศาสตร์บริสุทธิ์ 10 สูตร (เด่น 2 ตัว • ค่ากลาง ${s.baseline})</div>
-          <div class="table-meta">แต่ละสูตรทดแทนกันได้ • แสดงครบ 10 สูตร</div>
+          <div class="table-meta">แต่ละสูตรทดแทนกันได้ • แสดงครบ 10 สูตร (คำนวณย้อนหลังอ้างอิงงวดก่อนหน้าจริง)</div>
         </div>
         <div class="table-hscroll">
           <table class="lux-grid">
@@ -2248,6 +2244,10 @@
   function runProcess() {
     const raw = document.getElementById("rawInput").value;
     const statusEl = document.getElementById("engineStatus");
+    if (!raw || !raw.trim()) {
+      statusEl.textContent = "กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF ก่อนกดประมวลผล";
+      return;
+    }
     const parsed = parseDrawsFromText(raw);
     const analyzed = {};
     for (const [k, v] of Object.entries(parsed)) {
