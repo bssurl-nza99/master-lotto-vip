@@ -188,6 +188,42 @@
     font-size: 11px;
   }
 
+  .filter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-grid);
+    padding: 7px 10px;
+    margin-bottom: 8px;
+  }
+
+  .filter-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .filter-btn {
+    padding: 3px 8px;
+    font-size: 10.5px;
+    color: var(--text-main);
+    background: var(--bg-sub);
+    border: 1px solid var(--border-grid);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .filter-btn.active {
+    color: #061018;
+    background: var(--cyan);
+    border-color: var(--cyan);
+    font-weight: 700;
+  }
+
   .lottery-selector-wrap {
     display: flex;
     flex-wrap: wrap;
@@ -424,7 +460,7 @@
 
   .all-lottery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
     gap: 6px;
   }
 
@@ -450,6 +486,15 @@
   .all-lottery-item.active {
     border-color: var(--gold);
     background: rgba(245, 196, 81, 0.08);
+  }
+
+  .tier-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 9.5px;
+    font-weight: 700;
+    margin-left: 4px;
+    border-radius: 2px;
   }
 
   .empty-state {
@@ -541,7 +586,7 @@
   <div class="top-bar">
     <div>
       <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
-      <div class="brand-sub">เลขเด่น 3 ตัว + เจาะเด่นละ 5 คู่ (รวม 15 คู่ กลับได้ • ไม่รวมเบิ้ล • ไม่กินโควตาเลขเด่นวินกันเอง)</div>
+      <div class="brand-sub">เลขเด่น 3 ตัว + เจาะเด่นละ 5 คู่ (รวม 15 คู่ กลับได้ • ไม่รวมเบิ้ล • ไม่กินโควตาเลขเด่นวินกันเอง • ซื่อสัตย์ไม่เห็นอนาคต)</div>
     </div>
     <div class="status-pill" id="engineStatus">พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
   </div>
@@ -599,6 +644,7 @@
   let latestAnalysis = null;
   let activeLotteryKey = null;
   let processedOrderKeys = [];
+  let activeTierFilter = "ALL";
 
   function normalizeText(str) {
     if (!str) return "";
@@ -635,7 +681,8 @@
     for (const [from, to] of map) {
       s = s.split(from).join(to);
     }
-    return s.replace(/\s+/g, " ").trim();
+    s = s.replace(/\s+(VIP)\b/gi, " VIP").replace(/\s+/g, " ").trim();
+    return s;
   }
 
   function isValidLotteryHeaderName(name) {
@@ -1129,7 +1176,7 @@
         }
       }
 
-      let transitionSupport = 0;
+      let rawTransitionSupport = 0;
       if (lastDraw && n >= 2) {
         const prevSumMod = (lastDraw.tensTop + lastDraw.unitsTop + lastDraw.tensBot + lastDraw.unitsBot) % 10;
         for (let i = 0; i < n - 1; i++) {
@@ -1138,19 +1185,20 @@
             const nxt = histDraws[i + 1];
             const kTop = canonicalPairKey(nxt.tensTop, nxt.unitsTop);
             const kBot = canonicalPairKey(nxt.tensBot, nxt.unitsBot);
-            if (kTop === targetKey || kBot === targetKey) transitionSupport += 2.8;
-            if (nxt.tenUnitDigits.includes(partnerD)) transitionSupport += 0.7;
+            if (kTop === targetKey || kBot === targetKey) rawTransitionSupport += 2.2;
+            if (nxt.tenUnitDigits.includes(partnerD)) rawTransitionSupport += 0.5;
           }
         }
       }
+      const boundedTransitionSupport = Math.min(6.0, rawTransitionSupport);
 
       const partnerRankScore = rankScoreMap.get(partnerD) || 0;
-      const gapSweetSpot = pairGap >= 3 && pairGap <= 14 ? 2.4 : pairGap <= 2 ? -1.5 : 0.6;
+      const gapSweetSpot = pairGap >= 3 && pairGap <= 14 ? 2.0 : pairGap <= 2 ? -1.2 : 0.5;
       const totalScore =
         exactPairHits * 6.8 +
-        recentPairHits * 4.5 +
+        recentPairHits * 4.2 +
         partnerRankScore * 0.45 +
-        transitionSupport +
+        boundedTransitionSupport +
         gapSweetSpot;
 
       return Number(totalScore.toFixed(2));
@@ -1751,6 +1799,16 @@
       };
     });
 
+    const stabilityTier =
+      auditHitPct >= 75 && (drillEvaluatedCount === 0 || drillHitPct >= 75)
+        ? { code: "TIER_A", label: "เสถียรสูง", badgeClass: "st-hot" }
+        : auditHitPct >= 70 || drillHitPct >= 75
+        ? { code: "TIER_B", label: "เกณฑ์ดี / เจาะคม", badgeClass: "st-rebound" }
+        : { code: "TIER_WATCH", label: "ผันผวน / เฝ้าระวัง", badgeClass: "st-cool" };
+
+    const latestDrawDate = n > 0 ? chrono[n - 1].dateLabel : "-";
+    const firstDrawDate = n > 0 ? chrono[0].dateLabel : "-";
+
     return {
       pack,
       audit: {
@@ -1784,6 +1842,13 @@
       t12,
       topThree,
       backupDigit4: nextBackup4,
+      stabilityTier,
+      dataLockInfo: {
+        firstDrawDate,
+        latestDrawDate,
+        usedDraws: n,
+        evaluatedDraws: mainBool.length
+      },
       statsSummary: {
         doubleDraws,
         sandwichDraws,
@@ -1826,6 +1891,11 @@
         ? [...an.topThree.map((x) => x.digit)].sort((a, b) => a - b).join(" - ")
         : "-";
 
+      const tier = an && an.stabilityTier ? an.stabilityTier : { code: "TIER_WATCH", label: "ผันผวน / เฝ้าระวัง", badgeClass: "st-cool" };
+      const maxMissMain = an && an.audit ? Number(an.audit.maxMiss || 0) : 0;
+      const maxMissDrill = an && an.audit ? Number(an.audit.drillMaxMiss || 0) : 0;
+      const latestDate = an && an.dataLockInfo ? an.dataLockInfo.latestDrawDate : "-";
+
       totalEvaluated += evaluated;
       totalHits += hits;
       totalMisses += misses;
@@ -1846,7 +1916,11 @@
         drillHits,
         drillMisses,
         drillHitPct,
-        nextPick
+        nextPick,
+        tier,
+        maxMissMain,
+        maxMissDrill,
+        latestDate
       });
     }
 
@@ -1888,18 +1962,31 @@
       .replace(/"/g, "&quot;");
   }
 
+  function matchesTierFilter(item, filterCode) {
+    if (!filterCode || filterCode === "ALL") return true;
+    if (filterCode === "PASS_70") return item.hitPct >= 70 && (item.drillEvaluated === 0 || item.drillHitPct >= 70);
+    return item.tier && item.tier.code === filterCode;
+  }
+
   function renderAnalysis(analysisMap) {
-    const keys = processedOrderKeys.length > 0
+    const allKeys = processedOrderKeys.length > 0
       ? processedOrderKeys.filter((k) => Boolean(analysisMap[k]))
       : Object.keys(analysisMap);
     const root = document.getElementById("resultsRoot");
-    if (keys.length === 0) {
+    if (allKeys.length === 0) {
       root.innerHTML = `<div class="empty-state">ไม่พบข้อมูลประเภทหวยที่ถูกต้อง กรุณาตรวจสอบรูปแบบข้อความหรือไฟล์ PDF</div>`;
       return;
     }
 
-    if (!activeLotteryKey || !analysisMap[activeLotteryKey]) {
-      activeLotteryKey = keys[0];
+    const overall = computeOverallAccuracy(analysisMap);
+    const filteredKeys = allKeys.filter((k) => {
+      const st = overall.perLottery.find((x) => x.lotteryName === k);
+      return st ? matchesTierFilter(st, activeTierFilter) : true;
+    });
+    const displayKeys = filteredKeys.length > 0 ? filteredKeys : allKeys;
+
+    if (!activeLotteryKey || !analysisMap[activeLotteryKey] || !displayKeys.includes(activeLotteryKey)) {
+      activeLotteryKey = displayKeys[0];
     }
 
     const cur = analysisMap[activeLotteryKey];
@@ -1907,11 +1994,13 @@
     const s = cur.statsSummary;
     const au = cur.audit;
     const sel = cur.nextSelection;
+    const tierInfo = cur.stabilityTier;
+    const lockInfo = cur.dataLockInfo;
     const top3Text = [...sel.mainThree].sort((a, b) => a - b).join(" - ");
-    const allPostText = formatAllLotteriesPostText(analysisMap, keys);
+    const allPostText = formatAllLotteriesPostText(analysisMap, allKeys);
     const singlePostText = formatSingleLotteryPostBlock(cur);
 
-    const selectorHtml = keys
+    const selectorHtml = displayKeys
       .map((k) => {
         const active = k === activeLotteryKey ? "active" : "";
         return `<button type="button" class="lottery-btn ${active}" data-lottery="${esc(k)}">${esc(k)} (${analysisMap[k].pack.usedCount})</button>`;
@@ -2120,8 +2209,7 @@
       )
       .join("");
 
-    const overall = computeOverallAccuracy(analysisMap);
-    const orderedPerLottery = keys
+    const orderedPerLottery = displayKeys
       .map((k) => overall.perLottery.find((x) => x.lotteryName === k))
       .filter(Boolean);
 
@@ -2132,8 +2220,8 @@
         const drillCls = item.drillEvaluated === 0 ? "" : item.drillHitPct >= 45 ? "st-hot" : item.drillHitPct >= 30 ? "st-steady" : "st-cool";
         return `<button type="button" class="all-lottery-item ${isAct}" data-lottery="${esc(item.lotteryName)}">
           <span>
-            <strong>${esc(item.lotteryName)}</strong><br/>
-            <span style="color:var(--text-muted);font-size:10px;">เด่น ${item.hits}/${item.evaluated} | เจาะ ${item.drillHits}/${item.drillEvaluated}</span>
+            <strong>${esc(item.lotteryName)}</strong><span class="tier-badge ${esc(item.tier.badgeClass)}">${esc(item.tier.label)}</span><br/>
+            <span style="color:var(--text-muted);font-size:10px;">เด่น ${item.hits}/${item.evaluated} (หลุดติด ${item.maxMissMain}) | เจาะ ${item.drillHits}/${item.drillEvaluated} (หลุดติด ${item.maxMissDrill})</span>
           </span>
           <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
             <span class="${pctCls}" style="padding:1px 5px;font-size:10px;">เด่น ${item.evaluated > 0 ? item.hitPct + "%" : "-"}</span>
@@ -2141,6 +2229,18 @@
           </span>
         </button>`;
       })
+      .join("");
+
+    const filterButtonsDef = [
+      { code: "ALL", label: `ทั้งหมด (${allKeys.length})` },
+      { code: "PASS_70", label: "เด่นและเจาะ >= 70%" },
+      { code: "TIER_A", label: "เสถียรสูง (Tier A)" },
+      { code: "TIER_B", label: "เกณฑ์ดี / เจาะคม (Tier B)" },
+      { code: "TIER_WATCH", label: "ผันผวน / เฝ้าระวัง" }
+    ];
+
+    const filterButtonsHtml = filterButtonsDef
+      .map((fb) => `<button type="button" class="filter-btn ${activeTierFilter === fb.code ? "active" : ""}" data-tier="${esc(fb.code)}">${esc(fb.label)}</button>`)
       .join("");
 
     const allLotteryBannerHtml = `
@@ -2153,6 +2253,10 @@
             ชุดเจาะ 15 คู่ (นับเฉพาะงวดเด่นเข้า): เข้า ${overall.totalDrillHits} / หลุด ${overall.totalDrillMisses} (จาก ${overall.totalDrillEvaluated} งวด) = <span class="num-gold">${overall.overallDrillPct}%</span>
           </div>
         </div>
+        <div class="filter-toolbar">
+          <div class="filter-btn-group">${filterButtonsHtml}</div>
+          <div style="font-size:10px;color:var(--text-muted);">ล็อกฐานข้อมูล: อ้างอิงเฉพาะงวดก่อนหน้า • ไม่เห็นอนาคต • แสดง ${displayKeys.length}/${allKeys.length} ประเภท</div>
+        </div>
         <div class="all-lottery-grid">${allLotteryCardsHtml}</div>
       </div>
     `;
@@ -2160,7 +2264,12 @@
     root.innerHTML = `
       ${allLotteryBannerHtml}
       <div class="summary-strip">
-        <div>ประเภทหวย: <strong class="num-gold">${esc(p.lotteryName)}</strong> • ใช้งวดจริง: <strong>${p.usedCount}</strong> งวด (จากที่มี ${p.totalValidAvailable} งวด) • ข้ามวันงดออกผล: <strong>${p.skippedNoDraw}</strong> วัน</div>
+        <div>
+          ประเภทหวย: <strong class="num-gold">${esc(p.lotteryName)}</strong>
+          <span class="tier-badge ${esc(tierInfo.badgeClass)}">${esc(tierInfo.label)}</span>
+          • ใช้งวดจริง: <strong>${p.usedCount}</strong> งวด (จากที่มี ${p.totalValidAvailable} งวด • ช่วง ${esc(lockInfo.firstDrawDate)} ถึง ${esc(lockInfo.latestDrawDate)})
+          • ข้ามวันงดออกผล: <strong>${p.skippedNoDraw}</strong> วัน
+        </div>
         <div>${p.wasCapped ? `<span class="st-steady">ตัดส่วนเกินเฉพาะ 30 งวดล่าสุด</span>` : `<span>ครบตามจำนวนงวดจริง</span>`}</div>
       </div>
 
@@ -2175,7 +2284,7 @@
         <div class="hero-card">
           <div class="hero-label">ความแม่นยำชุดเจาะ 15 คู่ (นับเฉพาะงวดที่เด่นเข้า)</div>
           <div class="hero-value" style="font-size:14px;">เข้าเจาะ ${au.drillHits}/${au.drillEvaluated} งวด (${au.drillHitPct}%)</div>
-          <div class="hero-note">รวมเด่นวินกันเอง (${esc(sel.selfWinPairs.join(", "))}) • หลุดเจาะ ${au.drillMisses} งวด</div>
+          <div class="hero-note">รวมเด่นวินกันเอง (${esc(sel.selfWinPairs.join(", "))}) • หลุดเจาะติดสูงสุด ${au.drillMaxMiss} งวด (${au.drillMisses} งวด)</div>
         </div>
         <div class="hero-card">
           <div class="hero-label">สถิติเข้า/หลุดต่อเนื่อง &amp; โมเมนตัม</div>
@@ -2198,9 +2307,9 @@
         </div>
         <div class="copy-box-wrap">
           <div class="copy-box-head">
-            <span>ช่องคัดลอกโพสต์ทั้งหมด (${keys.length} ประเภทหวยเรียงต่อกัน • เว้น 1 บรรทัดระหว่างหวย)</span>
+            <span>ช่องคัดลอกโพสต์ทั้งหมด (${allKeys.length} ประเภทหวยเรียงต่อกัน • เว้น 1 บรรทัดระหว่างหวย)</span>
             <div class="copy-btn-group">
-              <button type="button" class="btn-copy-post" id="btnCopyFormattedPost">คัดลอกทั้งหมด (${keys.length})</button>
+              <button type="button" class="btn-copy-post" id="btnCopyFormattedPost">คัดลอกทั้งหมด (${allKeys.length})</button>
               <button type="button" class="btn-copy-single" id="btnCopySinglePost">คัดลอกเฉพาะหวยนี้</button>
             </div>
           </div>
@@ -2468,6 +2577,13 @@
       });
     }
 
+    root.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        activeTierFilter = this.getAttribute("data-tier") || "ALL";
+        renderAnalysis(latestAnalysis);
+      });
+    });
+
     root.querySelectorAll(".lottery-btn").forEach((btn) => {
       btn.addEventListener("click", function () {
         activeLotteryKey = this.getAttribute("data-lottery");
@@ -2497,6 +2613,7 @@
     }
     latestAnalysis = analyzed;
     processedOrderKeys = orderKeys;
+    activeLotteryKey = orderKeys.length > 0 ? orderKeys[0] : null;
     const count = orderKeys.length;
     const overallNow = computeOverallAccuracy(analyzed);
     statusEl.textContent = count > 0
@@ -2511,6 +2628,7 @@
     latestAnalysis = null;
     activeLotteryKey = null;
     processedOrderKeys = [];
+    activeTierFilter = "ALL";
     document.getElementById("engineStatus").textContent = "ล้างข้อมูลแล้ว • พร้อมประมวลผล";
     document.getElementById("resultsRoot").innerHTML =
       `<div class="empty-state">ล้างข้อมูลเรียบร้อยแล้ว กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล" ทางซ้าย</div>`;
