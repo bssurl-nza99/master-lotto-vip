@@ -657,6 +657,7 @@
       formulaVotes[nb] += 1;
     }
 
+    // Best compensating pair strictly on histDraws
     let bestPair = null;
     let bestPairScore = -1e9;
     for (let a = 0; a <= 9; a++) {
@@ -673,6 +674,7 @@
       }
     }
 
+    // Cold streak top-5 vote on histDraws (capped so cold streak alone never dominates)
     const coldList = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -703,6 +705,7 @@
       coldVote[c.d2] += 1;
     }
 
+    // Pattern follow-up strictly on histDraws
     const patMap = new Map();
     for (let i = 0; i < n - 1; i++) {
       const cur = histDraws[i];
@@ -736,11 +739,12 @@
       }
 
       const pairVote = bestPair && bestPair.includes(d) ? 1 : 0;
-      const gapBonus = gap >= 2 && gap <= 4 ? 3.5 : gap === 5 ? 1.8 : gap >= 6 ? -2.5 : 0.0;
-      const satPenalty = r3 >= 2 ? -2.5 : 0.0;
-      const shortRateBonus = (recent12Hits / shortLen) * 10 + recent12Slots * 0.8;
-      const cappedColdBonus = Math.min(4.0, coldVote[d] * 0.65);
+      const gapBonus = gap >= 2 && gap <= 4 ? 2.0 : gap === 5 ? 1.0 : gap >= 6 ? -1.4 : 0.0;
+      const satPenalty = r3 >= 2 ? -1.2 : 0.0;
+      const shortRateBonus = (recent12Hits / shortLen) * 5.0 + recent12Slots * 0.4;
+      const cappedColdBonus = Math.min(2.5, coldVote[d] * 0.25);
 
+      // Count independent signal groups supporting digit `d`
       let signalGroups = 0;
       if (drawHits / n >= 0.3 || recent12Hits / shortLen >= 0.33) signalGroups += 1;
       if (formulaVotes[d] >= 2) signalGroups += 1;
@@ -749,14 +753,14 @@
 
       const score = Number(
         (
-          slotCount * 1.25 +
-          drawHits * 2.2 +
-          (drawHits / n) * 12 +
+          slotCount * 1.3 +
+          drawHits * 2.5 +
+          (drawHits / n) * 13.0 +
           shortRateBonus +
-          formulaWeight[d] +
+          formulaWeight[d] * 1.136 +
           formulaVotes[d] * 1.4 +
           pairVote * 5.0 +
-          followCounts[d] * 1.3 +
+          followCounts[d] * 1.4 +
           cappedColdBonus +
           gapBonus +
           satPenalty
@@ -799,6 +803,7 @@
     const chrono = pack.chrono;
     const n = chrono.length;
 
+    // Table 1 (Top Historical Walk-Forward Audit Table: past -> present without altering historical picks)
     const startIdx = n >= 4 ? 3 : 1;
     const auditLogs = [];
     const auditBool = [];
@@ -832,11 +837,13 @@
     const auditMissCount = auditBool.length - auditHitCount;
     const auditHitPct = auditBool.length > 0 ? Number(((auditHitCount / auditBool.length) * 100).toFixed(1)) : 0;
 
+    // Next draw ranking using all `n` draws
     const nextRanked = rankDigitsFromHistory(chrono);
     const nextP1 = nextRanked[0].digit;
     const nextP2 = nextRanked[1].digit;
     const nextBackup3 = nextRanked[2] ? nextRanked[2].digit : nextP1;
 
+    // Table 2: Overall 0-9 frequency in ten-unit positions
     const t2 = [];
     for (let d = 0; d <= 9; d++) {
       const perDrawHits = chrono.map((dr) => dr.tenUnitDigits.includes(d));
@@ -894,6 +901,7 @@
     t2.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
     t2.forEach((row, idx) => { row.rank = idx + 1; });
 
+    // Table 3: Per-position (0-9 across 5 positions = 50 rows)
     const positions = [
       { key: "hundredsTop", label: "หลักร้อย (บน)" },
       { key: "tensTop", label: "หลักสิบ (บน)" },
@@ -941,6 +949,7 @@
     t3.sort((a, b) => b.score - a.score || b.hits - a.hits);
     t3.forEach((row, idx) => { row.rank = idx + 1; });
 
+    // Table 4: Odd / Even table on ten-unit digits
     const oddEvenRows = chrono.map((dr, idx) => {
       const evenCnt = dr.tenUnitDigits.filter((x) => x % 2 === 0).length;
       const oddCnt = dr.tenUnitDigits.length - evenCnt;
@@ -976,6 +985,7 @@
       }
     ];
 
+    // Table 5: Double (เบิ้ล) & Sandwich (หาม) detector
     const t5 = chrono.map((dr, idx) => {
       const [a, b, c] = dr.top3.split("").map(Number);
       const [u, v] = dr.bot2.split("").map(Number);
@@ -1001,6 +1011,7 @@
     const sinceLastDouble = [...t5].reverse().findIndex((r) => r.hasDouble);
     const sinceLastSandwich = [...t5].reverse().findIndex((r) => r.hasSandwich);
 
+    // Table 6: High (5-9) vs Low (0-4) momentum
     const t6 = chrono.map((dr, idx) => {
       const highCnt = dr.tenUnitDigits.filter((x) => x >= 5).length;
       const lowCnt = dr.tenUnitDigits.length - highCnt;
@@ -1045,6 +1056,7 @@
         ? "โมเมนตัมฝั่งต่ำ (0-4) เด่นกว่า"
         : "โมเมนตัมก้ำกึ่ง • เน้นตัวเลขที่มีความถี่จริงหนุน";
 
+    // Table 7: Compensating pairs (Top 5 of 45 pairs on ten-unit digits; hundreds excluded)
     const allPairs = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1078,6 +1090,7 @@
     allPairs.sort((x, y) => y.pairScore - x.pairScore || y.hitPct - x.hitPct);
     const t7 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
 
+    // Table 8: 10 Pure Math 2-digit formulas with baseline & cross-compensation
     const baseSeed = n > 0 ? chrono[n - 1].tenUnitDigits.reduce((s, x) => s + x, 0) : 0;
     const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
     const formulaDefs = [
@@ -1123,6 +1136,7 @@
       };
     });
 
+    // Table 9: Historical pattern learning -> next-draw behavior
     const patternBuckets = new Map();
     for (let i = 0; i < n - 1; i++) {
       const cur = chrono[i];
@@ -1151,6 +1165,7 @@
       };
     });
 
+    // Table 10: Cold streak sweep (1,600 pure math 2-digit formulas -> Top 10 longest current cold streak)
     const coldCandidates = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1183,6 +1198,7 @@
     coldCandidates.sort((x, y) => y.coldRounds - x.coldRounds || x.formulaCode.localeCompare(y.formulaCode));
     const t10 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
 
+    // Table 11: Quantum consensus & final 2-digit pick (aligned with causal walk-forward engine)
     const latestPat = (() => {
       if (n === 0) return null;
       const last = chrono[n - 1];
@@ -1237,6 +1253,7 @@
       t11.find((r) => r.digit === nextP2) || t11[1]
     ];
 
+    // Table 12: Confidence Tier, Signal Agreement & Short (12-draw) vs Full Regime
     const t12 = nextRanked.map((row, idx) => {
       const roleLabel =
         row.digit === nextP1
@@ -1829,18 +1846,48 @@
     }
   }
 
-  document.getElementById("btnProcess").addEventListener("click", runProcess);
-  document.getElementById("btnClear").addEventListener("click", runClear);
-  document.getElementById("pdfFileInput").addEventListener("change", handlePdfUpload);
+  function runMultiLotteryWalkForwardTest(rawText) {
+    const parsed = parseDrawsFromText(rawText);
+    const summary = [];
+    for (const [name, pack] of Object.entries(parsed)) {
+      const chrono = pack.chrono;
+      const n = chrono.length;
+      if (n < 4) {
+        summary.push({ lotteryName: name, usedDraws: n, evaluated: 0, hits: 0, hitPct: 0 });
+        continue;
+      }
+      let hits = 0;
+      let evaluated = 0;
+      for (let i = 3; i < n; i++) {
+        const [p1, p2] = selectTwoDigitsFromHistory(chrono.slice(0, i));
+        const tu = chrono[i].tenUnitDigits;
+        evaluated += 1;
+        if (tu.includes(p1) || tu.includes(p2)) hits += 1;
+      }
+      summary.push({
+        lotteryName: name,
+        usedDraws: n,
+        evaluated,
+        hits,
+        hitPct: evaluated > 0 ? Number(((hits / evaluated) * 100).toFixed(1)) : 0
+      });
+    }
+    return summary;
+  }
 
   window.__LOTTERY_ENGINE__ = {
     parseDrawsFromText,
     analyzeLottery,
     rankDigitsFromHistory,
     selectTwoDigitsFromHistory,
+    runMultiLotteryWalkForwardTest,
     runProcess,
     runClear
   };
+
+  document.getElementById("btnProcess").addEventListener("click", runProcess);
+  document.getElementById("btnClear").addEventListener("click", runClear);
+  document.getElementById("pdfFileInput").addEventListener("change", handlePdfUpload);
 })();
 </script>
 </body>
