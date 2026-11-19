@@ -1017,13 +1017,13 @@
     const d1 = ranked[0].digit;
     const d2 = ranked[1].digit;
     const d3 = ranked[2].digit;
-    const mainThree = [d1, d2, d3];
-    const mainSet = new Set(mainThree);
+    const mainThreeSorted = [d1, d2, d3].sort((a, b) => a - b);
+    const mainSet = new Set(mainThreeSorted);
 
     const selfWinPairs = [
-      `${d1}${d2}`, `${d2}${d1}`,
-      `${d1}${d3}`, `${d3}${d1}`,
-      `${d2}${d3}`, `${d3}${d2}`
+      `${mainThreeSorted[0]}${mainThreeSorted[1]}`, `${mainThreeSorted[1]}${mainThreeSorted[0]}`,
+      `${mainThreeSorted[0]}${mainThreeSorted[2]}`, `${mainThreeSorted[2]}${mainThreeSorted[0]}`,
+      `${mainThreeSorted[1]}${mainThreeSorted[2]}`, `${mainThreeSorted[2]}${mainThreeSorted[1]}`
     ];
 
     const n = histDraws.length;
@@ -1079,12 +1079,12 @@
     }
 
     const usedCanonicalKeys = new Set();
-    const groups = mainThree.map((md) => ({
+    const groups = mainThreeSorted.map((md) => ({
       mainDigit: md,
       pairs: []
     }));
 
-    const candidatePools = mainThree.map((md) => {
+    const candidatePools = mainThreeSorted.map((md) => {
       const pool = [];
       for (let p = 0; p <= 9; p++) {
         if (p === md) continue;
@@ -1113,9 +1113,13 @@
       }
     }
 
+    for (const g of groups) {
+      g.pairs.sort((a, b) => Number(a.pairText) - Number(b.pairText));
+    }
+
     const allFifteenPairs = groups.flatMap((g) => g.pairs);
     return {
-      mainThree,
+      mainThree: mainThreeSorted,
       ranked,
       groups,
       allFifteenPairs,
@@ -1740,7 +1744,7 @@
 
       const usedDraws = an && an.pack ? Number(an.pack.usedCount || 0) : 0;
       const nextPick = an && Array.isArray(an.topThree) && an.topThree.length >= 3
-        ? `${an.topThree[0].digit} - ${an.topThree[1].digit} - ${an.topThree[2].digit}`
+        ? [...an.topThree.map((x) => x.digit)].sort((a, b) => a - b).join(" - ")
         : "-";
 
       totalEvaluated += evaluated;
@@ -1822,7 +1826,7 @@
     const s = cur.statsSummary;
     const au = cur.audit;
     const sel = cur.nextSelection;
-    const top3Text = cur.topThree.map((x) => x.digit).join(" - ");
+    const top3Text = [...sel.mainThree].sort((a, b) => a - b).join(" - ");
 
     const selectorHtml = keys
       .map((k) => {
