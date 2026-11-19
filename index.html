@@ -599,6 +599,7 @@
 
   function canonicalLotteryName(rawName) {
     let s = normalizeText(rawName).replace(/\s+/g, " ").trim();
+    s = s.replace(/^(งดออกผล)+/gi, "").trim();
     const map = [
       ["หนุ้", "หุ้น"],
       ["ฮานอยเชา้", "ฮานอยเช้า"],
@@ -619,6 +620,13 @@
       s = s.split(from).join(to);
     }
     return s.replace(/\s+/g, " ").trim();
+  }
+
+  function isValidLotteryHeaderName(name) {
+    if (!name) return false;
+    if (/^(งดออกผล|เด่น\s*\d|เจาะ\s*\d|ความแม่นยำ|ประเภทหวย|ตารางที่)/i.test(name)) return false;
+    if (!/[ก-ฮA-Za-z]/.test(name)) return false;
+    return true;
   }
 
   function parseThaiDate(dateStr) {
@@ -650,7 +658,7 @@
     let currentNoDraw = false;
 
     function commitCurrent() {
-      if (!currentLottery || !currentDateObj) return;
+      if (!currentLottery || !currentDateObj || !isValidLotteryHeaderName(currentLottery)) return;
       if (!grouped.has(currentLottery)) grouped.set(currentLottery, []);
       if (!skippedCount.has(currentLottery)) skippedCount.set(currentLottery, 0);
 
@@ -687,7 +695,21 @@
       const hm = line.match(headerRegex);
       if (hm) {
         commitCurrent();
-        currentLottery = canonicalLotteryName(hm[1]);
+        const candName = canonicalLotteryName(hm[1]);
+        if (isValidLotteryHeaderName(candName)) {
+          currentLottery = candName;
+        } else if (/งดออกผล/i.test(hm[1]) && currentLottery) {
+          currentDateObj = parseThaiDate(hm[2]);
+          currentNoDraw = true;
+          commitCurrent();
+          currentDateObj = null;
+          currentTop3 = null;
+          currentBot2 = null;
+          currentNoDraw = false;
+          continue;
+        } else {
+          currentLottery = null;
+        }
         currentDateObj = parseThaiDate(hm[2]);
         currentTop3 = null;
         currentBot2 = null;
@@ -1640,12 +1662,13 @@
     ];
 
     const t12 = nextRanked.map((row, idx) => {
+      const sortedIdx = nextSelection.mainThree.indexOf(row.digit);
       const roleLabel =
-        row.digit === nextP1
+        sortedIdx === 0
           ? "เด่นหลัก #1"
-          : row.digit === nextP2
+          : sortedIdx === 1
           ? "เด่นหลัก #2"
-          : row.digit === nextP3
+          : sortedIdx === 2
           ? "เด่นหลัก #3"
           : row.digit === nextBackup4
           ? "สำรองอันดับ #4"
