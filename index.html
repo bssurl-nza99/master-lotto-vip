@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AETHER QUANT // 10-Table Statistical Lottery Analytics</title>
+<title>AETHER QUANT // Quantum Multi-Table Statistical Lottery Engine</title>
 <style>
   :root {
     --bg-void: #07090f;
@@ -41,13 +41,13 @@
       var(--bg-void);
     color: var(--text-main);
     font-family: "Noto Sans Thai", "Sarabun", "Inter", system-ui, -apple-system, sans-serif;
-    font-size: 12px;
-    line-height: 1.45;
+    font-size: 11.5px;
+    line-height: 1.4;
     padding: 12px 10px 36px;
   }
 
   .app-shell {
-    max-width: 1480px;
+    max-width: 1520px;
     margin: 0 auto;
   }
 
@@ -64,19 +64,19 @@
   }
 
   .brand-title {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--gold);
   }
 
   .brand-sub {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--cyan);
   }
 
   .status-pill {
-    font-size: 11px;
+    font-size: 10.5px;
     padding: 3px 8px;
     border: 1px solid var(--border-accent);
     background: var(--bg-sub);
@@ -119,14 +119,14 @@
 
   textarea#rawInput {
     width: 100%;
-    min-height: 150px;
+    min-height: 140px;
     background: var(--bg-sub);
     color: var(--text-main);
     border: 1px solid var(--border-accent);
     padding: 8px 10px;
     font-family: "JetBrains Mono", "Noto Sans Thai", monospace;
     font-size: 11px;
-    line-height: 1.4;
+    line-height: 1.38;
     resize: vertical;
     outline: none;
   }
@@ -148,7 +148,7 @@
 
   .btn-process {
     padding: 7px 18px;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
     color: #061018;
     background: linear-gradient(135deg, var(--cyan), #38bdf8);
@@ -163,7 +163,7 @@
 
   .btn-clear {
     padding: 7px 16px;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
     color: var(--gold);
     background: var(--gold-soft);
@@ -238,14 +238,14 @@
   }
 
   .hero-value {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--gold);
     margin-top: 2px;
   }
 
   .hero-note {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--cyan);
     margin-top: 2px;
   }
@@ -268,7 +268,7 @@
   }
 
   .table-title {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
     color: var(--gold);
   }
@@ -289,14 +289,14 @@
   table.lux-grid {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: 10.5px;
     white-space: nowrap;
   }
 
   table.lux-grid th,
   table.lux-grid td {
     border: 1px solid var(--border-grid);
-    padding: 5px 8px;
+    padding: 4.5px 7px;
     text-align: center;
     white-space: nowrap;
   }
@@ -305,7 +305,7 @@
     background: #131c2e;
     color: var(--cyan);
     font-weight: 700;
-    font-size: 10.5px;
+    font-size: 10px;
     border-bottom: 1px solid var(--border-accent);
   }
 
@@ -366,7 +366,7 @@
 <div class="app-shell">
   <div class="top-bar">
     <div>
-      <div class="brand-title">AETHER QUANT // 10-TABLE LOTTERY ANALYTICS</div>
+      <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
       <div class="brand-sub">แยกประเภทหวยอัตโนมัติ • จำกัดสูงสุด 30 งวดล่าสุด • ข้ามวันงดออกผลตามงวดจริง • เลื่อนซ้าย-ขวาเท่านั้น</div>
     </div>
     <div class="status-pill" id="engineStatus">พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
@@ -596,12 +596,165 @@
     };
   }
 
+  // Quantum multi-factor 2-digit selector strictly using data available up to `histDraws` (no lookahead)
+  function selectTwoDigitsFromHistory(histDraws) {
+    const n = histDraws.length;
+    if (n === 0) return [0, 1];
+
+    const lastDraw = histDraws[n - 1];
+    const baseSeed = lastDraw.tenUnitDigits.reduce((s, x) => s + x, 0);
+    const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
+
+    const formulaDefs = [
+      (d) => [(d.tensTop + d.unitsBot + baseline) % 10, (d.tensTop + d.unitsBot + 5) % 10],
+      (d) => [Math.abs(d.tensBot - d.unitsTop) % 10, (Math.abs(d.tensBot - d.unitsTop) + baseline) % 10],
+      (d) => [(d.tensTop * d.unitsTop) % 10, ((d.tensTop * d.unitsTop) + 3 + baseline) % 10],
+      (d) => [(d.tensBot + d.unitsBot + baseline) % 10, (d.tensBot + d.unitsBot + 7) % 10],
+      (d) => [(d.hundredsTop + d.tensTop + d.unitsTop) % 10, (d.hundredsTop + d.tensTop + d.unitsTop + baseline + 1) % 10],
+      (d) => [Math.abs(d.unitsBot - d.tensTop) % 10, (Math.abs(d.unitsBot - d.tensTop) + 4) % 10],
+      (d) => [(d.tensBot + baseline + 2) % 10, (d.unitsBot + baseline + 6) % 10],
+      (d) => [Math.abs((d.tensTop + d.unitsTop) - (d.tensBot + d.unitsBot)) % 10, (baseline + 8) % 10],
+      (d) => [(d.tensBot * d.unitsBot) % 10, ((d.tensBot * d.unitsBot) + baseline + 2) % 10],
+      (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10]
+    ];
+
+    const formulaWeight = Array(10).fill(0);
+    const formulaVotes = Array(10).fill(0);
+
+    for (const fn of formulaDefs) {
+      let fHits = 0;
+      const evalStart = Math.max(1, n - 15);
+      let evalTotal = 0;
+      for (let i = evalStart; i < n; i++) {
+        let [a, b] = fn(histDraws[i - 1]);
+        if (a === b) b = (b + 1) % 10;
+        evalTotal += 1;
+        if (histDraws[i].tenUnitDigits.includes(a) || histDraws[i].tenUnitDigits.includes(b)) {
+          fHits += 1;
+        }
+      }
+      const accRate = evalTotal > 0 ? fHits / evalTotal : 0.5;
+      let [na, nb] = fn(lastDraw);
+      if (na === nb) nb = (nb + 1) % 10;
+      formulaWeight[na] += accRate * 12;
+      formulaWeight[nb] += accRate * 12;
+      formulaVotes[na] += 1;
+      formulaVotes[nb] += 1;
+    }
+
+    let bestPair = null;
+    let bestPairScore = -1e9;
+    for (let a = 0; a <= 9; a++) {
+      for (let b = a + 1; b <= 9; b++) {
+        const hitsArr = histDraws.map((dr) => dr.tenUnitDigits.includes(a) || dr.tenUnitDigits.includes(b));
+        const pct = (hitsArr.filter(Boolean).length / n) * 100;
+        const st = calcStreaks(hitsArr);
+        const hitCeilingNow = st.currentStatus === "หลุด" && st.maxMiss > 0 && st.currentStreak >= st.maxMiss;
+        const sc = pct * 1.1 + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
+        if (sc > bestPairScore) {
+          bestPairScore = sc;
+          bestPair = [a, b];
+        }
+      }
+    }
+
+    const patMap = new Map();
+    for (let i = 0; i < n - 1; i++) {
+      const cur = histDraws[i];
+      const nxt = histDraws[i + 1];
+      const ev = cur.tenUnitDigits.filter((x) => x % 2 === 0).length;
+      const hi = cur.tenUnitDigits.filter((x) => x >= 5).length;
+      const key = `${ev >= 2 ? "คู่เด่น" : "คี่เด่น"}/${hi >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
+      if (!patMap.has(key)) patMap.set(key, Array(10).fill(0));
+      for (const dg of nxt.tenUnitDigits) patMap.get(key)[dg] += 1;
+    }
+    const lastEv = lastDraw.tenUnitDigits.filter((x) => x % 2 === 0).length;
+    const lastHi = lastDraw.tenUnitDigits.filter((x) => x >= 5).length;
+    const lastKey = `${lastEv >= 2 ? "คู่เด่น" : "คี่เด่น"}/${lastHi >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
+    const followCounts = patMap.get(lastKey) || Array(10).fill(0);
+
+    const ranked = [];
+    for (let d = 0; d <= 9; d++) {
+      const slotCount = histDraws.reduce((s, dr) => s + dr.tenUnitDigits.filter((x) => x === d).length, 0);
+      const drawHits = histDraws.filter((dr) => dr.tenUnitDigits.includes(d)).length;
+      const r4 = histDraws.slice(-4).filter((dr) => dr.tenUnitDigits.includes(d)).length;
+
+      let gap = 0;
+      for (let i = n - 1; i >= 0; i--) {
+        if (histDraws[i].tenUnitDigits.includes(d)) break;
+        gap += 1;
+      }
+
+      const pairBonus = bestPair && bestPair.includes(d) ? 6.0 : 0.0;
+      const gapBonus = gap >= 2 && gap <= 4 ? 4.5 : gap === 5 ? 2.5 : gap >= 6 ? -3.0 : 0.0;
+      const satPenalty = r4 >= 3 ? -3.5 : 0.0;
+      const patBonus = followCounts[d] * 1.4;
+
+      const score = Number(
+        (
+          slotCount * 1.3 +
+          drawHits * 2.4 +
+          (drawHits / n) * 15 +
+          formulaWeight[d] +
+          formulaVotes[d] * 1.5 +
+          pairBonus +
+          gapBonus +
+          satPenalty +
+          patBonus
+        ).toFixed(2)
+      );
+
+      ranked.push({
+        digit: d,
+        score,
+        slotCount
+      });
+    }
+
+    ranked.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
+    return [ranked[0].digit, ranked[1].digit];
+  }
+
   function analyzeLottery(pack) {
     const chrono = pack.chrono;
     const n = chrono.length;
 
-    // Table 1: Overall 0-9 frequency in ten-unit positions (4 digits per draw)
-    const t1 = [];
+    const startIdx = n >= 4 ? 3 : 1;
+    const auditLogs = [];
+    const auditBool = [];
+    for (let i = startIdx; i < n; i++) {
+      const hist = chrono.slice(0, i);
+      const target = chrono[i];
+      const [p1, p2] = selectTwoDigitsFromHistory(hist);
+      const hit1 = target.tenUnitDigits.includes(p1);
+      const hit2 = target.tenUnitDigits.includes(p2);
+      const isHit = hit1 || hit2;
+      auditBool.push(isHit);
+
+      const matchedDigits = [];
+      if (hit1) matchedDigits.push(p1);
+      if (hit2) matchedDigits.push(p2);
+
+      auditLogs.push({
+        stepNo: auditLogs.length + 1,
+        prevDate: hist[hist.length - 1].dateLabel,
+        targetDate: target.dateLabel,
+        top3: target.top3,
+        bot2: target.bot2,
+        tenUnitsText: target.tenUnitDigits.join(", "),
+        pickedPair: `${p1} - ${p2}`,
+        matchedText: matchedDigits.length > 0 ? matchedDigits.join(", ") : "-",
+        resultLabel: isHit ? "เข้า" : "หลุด"
+      });
+    }
+    const auditStreaks = calcStreaks(auditBool);
+    const auditHitCount = auditBool.filter(Boolean).length;
+    const auditMissCount = auditBool.length - auditHitCount;
+    const auditHitPct = auditBool.length > 0 ? Number(((auditHitCount / auditBool.length) * 100).toFixed(1)) : 0;
+
+    const [nextP1, nextP2] = selectTwoDigitsFromHistory(chrono);
+
+    const t2 = [];
     for (let d = 0; d <= 9; d++) {
       const perDrawHits = chrono.map((dr) => dr.tenUnitDigits.includes(d));
       const slotCount = chrono.reduce(
@@ -613,6 +766,12 @@
       const recent10Hits = chrono.slice(-10).filter((dr) => dr.tenUnitDigits.includes(d)).length;
       const streak = calcStreaks(perDrawHits);
       const hitPct = n > 0 ? Number(((drawHitCount / n) * 100).toFixed(1)) : 0;
+
+      let gap = 0;
+      for (let i = n - 1; i >= 0; i--) {
+        if (chrono[i].tenUnitDigits.includes(d)) break;
+        gap += 1;
+      }
 
       const recentRate5 = chrono.slice(-5).length > 0 ? recent5Hits / chrono.slice(-5).length : 0;
       const score = Number(
@@ -632,13 +791,14 @@
         statusClass = "st-cool";
       }
 
-      t1.push({
+      t2.push({
         digit: d,
         drawHitCount,
         slotCount,
         hitPct,
         recent5Hits,
         recent10Hits,
+        gap,
         maxHit: streak.maxHit,
         maxMiss: streak.maxMiss,
         currentStatus: streak.currentStatus,
@@ -648,10 +808,9 @@
         statusClass
       });
     }
-    t1.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
-    t1.forEach((row, idx) => { row.rank = idx + 1; });
+    t2.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
+    t2.forEach((row, idx) => { row.rank = idx + 1; });
 
-    // Table 2: Per-position (0-9 across hundredsTop, tensTop, unitsTop, tensBot, unitsBot)
     const positions = [
       { key: "hundredsTop", label: "หลักร้อย (บน)" },
       { key: "tensTop", label: "หลักสิบ (บน)" },
@@ -659,7 +818,7 @@
       { key: "tensBot", label: "หลักสิบ (ล่าง)" },
       { key: "unitsBot", label: "หลักหน่วย (ล่าง)" }
     ];
-    const t2 = [];
+    const t3 = [];
     for (const pos of positions) {
       for (let d = 0; d <= 9; d++) {
         const hitsArr = chrono.map((dr) => dr[pos.key] === d);
@@ -679,7 +838,7 @@
           pStatus = "อ่อนลง";
           pClass = "st-cool";
         }
-        t2.push({
+        t3.push({
           posKey: pos.key,
           posLabel: pos.label,
           digit: d,
@@ -696,10 +855,9 @@
         });
       }
     }
-    t2.sort((a, b) => b.score - a.score || b.hits - a.hits);
-    t2.forEach((row, idx) => { row.rank = idx + 1; });
+    t3.sort((a, b) => b.score - a.score || b.hits - a.hits);
+    t3.forEach((row, idx) => { row.rank = idx + 1; });
 
-    // Table 3: Odd / Even table on ten-unit digits
     const oddEvenRows = chrono.map((dr, idx) => {
       const evenCnt = dr.tenUnitDigits.filter((x) => x % 2 === 0).length;
       const oddCnt = dr.tenUnitDigits.length - evenCnt;
@@ -712,7 +870,7 @@
     const oddPct = Number(((totalOddSlots / totalSlots) * 100).toFixed(1));
     const evenStreak = calcStreaks(oddEvenRows.map((r) => r.evenCnt > r.oddCnt));
     const oddStreak = calcStreaks(oddEvenRows.map((r) => r.oddCnt > r.evenCnt));
-    const t3 = [
+    const t4 = [
       {
         side: "เลขคู่ (0,2,4,6,8)",
         slotCount: totalEvenSlots,
@@ -735,8 +893,7 @@
       }
     ];
 
-    // Table 4: Double (เบิ้ล) & Sandwich/Bookend (หาม) detector
-    const t4 = chrono.map((dr, idx) => {
+    const t5 = chrono.map((dr, idx) => {
       const [a, b, c] = dr.top3.split("").map(Number);
       const [u, v] = dr.bot2.split("").map(Number);
       const isDoubleTop = a === b || b === c || a === c;
@@ -756,13 +913,12 @@
         patternText: patterns.length > 0 ? patterns.join(" + ") : "ปกติ"
       };
     });
-    const doubleDraws = t4.filter((r) => r.hasDouble).length;
-    const sandwichDraws = t4.filter((r) => r.hasSandwich).length;
-    const sinceLastDouble = [...t4].reverse().findIndex((r) => r.hasDouble);
-    const sinceLastSandwich = [...t4].reverse().findIndex((r) => r.hasSandwich);
+    const doubleDraws = t5.filter((r) => r.hasDouble).length;
+    const sandwichDraws = t5.filter((r) => r.hasSandwich).length;
+    const sinceLastDouble = [...t5].reverse().findIndex((r) => r.hasDouble);
+    const sinceLastSandwich = [...t5].reverse().findIndex((r) => r.hasSandwich);
 
-    // Table 5: High (5-9) vs Low (0-4) momentum without blind trend-following
-    const t5 = chrono.map((dr, idx) => {
+    const t6 = chrono.map((dr, idx) => {
       const highCnt = dr.tenUnitDigits.filter((x) => x >= 5).length;
       const lowCnt = dr.tenUnitDigits.length - highCnt;
       return {
@@ -775,22 +931,22 @@
         bias: highCnt > lowCnt ? "สูง (5-9)" : lowCnt > highCnt ? "ต่ำ (0-4)" : "กลาง/เสมอ"
       };
     });
-    const highTotal = t5.reduce((s, r) => s + r.highCnt, 0);
-    const lowTotal = t5.reduce((s, r) => s + r.lowCnt, 0);
+    const highTotal = t6.reduce((s, r) => s + r.highCnt, 0);
+    const lowTotal = t6.reduce((s, r) => s + r.lowCnt, 0);
     const highPct = Number(((highTotal / Math.max(1, highTotal + lowTotal)) * 100).toFixed(1));
     const lowPct = Number((100 - highPct).toFixed(1));
     const lastHighStreak = (() => {
       let c = 0;
-      for (let i = t5.length - 1; i >= 0; i--) {
-        if (t5[i].highCnt > t5[i].lowCnt) c++;
+      for (let i = t6.length - 1; i >= 0; i--) {
+        if (t6[i].highCnt > t6[i].lowCnt) c++;
         else break;
       }
       return c;
     })();
     const lastLowStreak = (() => {
       let c = 0;
-      for (let i = t5.length - 1; i >= 0; i--) {
-        if (t5[i].lowCnt > t5[i].highCnt) c++;
+      for (let i = t6.length - 1; i >= 0; i--) {
+        if (t6[i].lowCnt > t6[i].highCnt) c++;
         else break;
       }
       return c;
@@ -806,7 +962,6 @@
         ? "โมเมนตัมฝั่งต่ำ (0-4) เด่นกว่า"
         : "โมเมนตัมก้ำกึ่ง • เน้นตัวเลขที่มีความถี่จริงหนุน";
 
-    // Table 6: Compensating pairs (Top 5 of 45 pairs on ten-unit digits; hundreds excluded)
     const allPairs = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -838,9 +993,8 @@
       }
     }
     allPairs.sort((x, y) => y.pairScore - x.pairScore || y.hitPct - x.hitPct);
-    const t6 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
+    const t7 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
 
-    // Table 7: 10 Pure Math 2-digit formulas with baseline & cross-compensation
     const baseSeed = n > 0 ? chrono[n - 1].tenUnitDigits.reduce((s, x) => s + x, 0) : 0;
     const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
     const formulaDefs = [
@@ -856,7 +1010,7 @@
       { id: "M10", name: "สมดุลเบสกลาง+หลักหน่วยบน", fn: (d) => [(d.unitsTop + baseline) % 10, (d.unitsTop + 9 - (baseline % 5)) % 10] }
     ];
 
-    const t7 = formulaDefs.map((f) => {
+    const t8 = formulaDefs.map((f) => {
       const hitsArr = [];
       for (let i = 0; i < n; i++) {
         const refDraw = i > 0 ? chrono[i - 1] : chrono[0];
@@ -886,7 +1040,6 @@
       };
     });
 
-    // Table 8: Historical pattern learning -> next-draw behavior
     const patternBuckets = new Map();
     for (let i = 0; i < n - 1; i++) {
       const cur = chrono[i];
@@ -901,7 +1054,7 @@
       b.occurrences += 1;
       for (const dg of nxt.tenUnitDigits) b.digitCounts[dg] += 1;
     }
-    const t8 = Array.from(patternBuckets.values()).map((b) => {
+    const t9 = Array.from(patternBuckets.values()).map((b) => {
       const rankedDigits = b.digitCounts
         .map((cnt, dg) => ({ dg, cnt }))
         .sort((a, b2) => b2.cnt - a.cnt || a.dg - b2.dg)
@@ -915,7 +1068,6 @@
       };
     });
 
-    // Table 9: Cold streak sweep (1,600 pure math 2-digit formulas -> Top 10 longest current cold streak)
     const coldCandidates = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -946,9 +1098,8 @@
       }
     }
     coldCandidates.sort((x, y) => y.coldRounds - x.coldRounds || x.formulaCode.localeCompare(y.formulaCode));
-    const t9 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
+    const t10 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
 
-    // Table 10: Ten-unit impact & Top 2-digit consensus across tables
     const latestPat = (() => {
       if (n === 0) return null;
       const last = chrono[n - 1];
@@ -956,16 +1107,17 @@
       const highC = last.tenUnitDigits.filter((x) => x >= 5).length;
       return `${evenC >= 2 ? "คู่เด่น" : "คี่เด่น"}/${highC >= 2 ? "สูงเด่น" : "ต่ำเด่น"}`;
     })();
-    const patEntry = t8.find((x) => x.pattern === latestPat);
+    const patEntry = t9.find((x) => x.pattern === latestPat);
 
-    const t10 = [];
+    const t11 = [];
     for (let d = 0; d <= 9; d++) {
-      const baseRow = t1.find((r) => r.digit === d);
-      const posHits = t2.filter((r) => r.digit === d).reduce((s, r) => s + r.hits, 0);
-      const formulaVotes = t7.filter((f) => f.d1 === d || f.d2 === d).length;
-      const coldVotes = t9.filter((c) => c.d1 === d || c.d2 === d).length;
-      const pairVotes = t6.filter((p) => p.a === d || p.b === d).length;
+      const baseRow = t2.find((r) => r.digit === d);
+      const posHits = t3.filter((r) => r.digit === d).reduce((s, r) => s + r.hits, 0);
+      const formulaVotes = t8.filter((f) => f.d1 === d || f.d2 === d).length;
+      const coldVotes = t10.filter((c) => c.d1 === d || c.d2 === d).length;
+      const pairVotes = t7.filter((p) => p.a === d || p.b === d).length;
       const patMention = patEntry && patEntry.topFollowDigits.includes(`${d}(`) ? 1 : 0;
+      const isQuantumPick = d === nextP1 || d === nextP2 ? 1 : 0;
 
       const compositeScore = Number(
         (
@@ -974,13 +1126,15 @@
           formulaVotes * 2.5 +
           coldVotes * 1.4 +
           pairVotes * 1.8 +
-          patMention * 2.0
+          patMention * 2.0 +
+          isQuantumPick * 25.0
         ).toFixed(2)
       );
 
-      t10.push({
+      t11.push({
         digit: d,
         tenUnitSlots: baseRow.slotCount,
+        gap: baseRow.gap,
         allPosHits: posHits,
         formulaVotes,
         pairVotes,
@@ -991,14 +1145,27 @@
         statusClass: baseRow.statusClass
       });
     }
-    t10.sort((a, b) => b.compositeScore - a.compositeScore || b.tenUnitSlots - a.tenUnitSlots || a.digit - b.digit);
-    t10.forEach((r, idx) => { r.rank = idx + 1; });
+    t11.sort((a, b) => b.compositeScore - a.compositeScore || b.tenUnitSlots - a.tenUnitSlots || a.digit - b.digit);
+    t11.forEach((r, idx) => { r.rank = idx + 1; });
 
-    const topTwo = t10.slice(0, 2);
+    const topTwo = [
+      t11.find((r) => r.digit === nextP1) || t11[0],
+      t11.find((r) => r.digit === nextP2) || t11[1]
+    ];
 
     return {
       pack,
-      t1,
+      audit: {
+        rows: auditLogs,
+        totalEvaluated: auditBool.length,
+        hits: auditHitCount,
+        misses: auditMissCount,
+        hitPct: auditHitPct,
+        maxHit: auditStreaks.maxHit,
+        maxMiss: auditStreaks.maxMiss,
+        currentStatus: auditStreaks.currentStatus,
+        currentStreak: auditStreaks.currentStreak
+      },
       t2,
       t3,
       t4,
@@ -1008,6 +1175,7 @@
       t8,
       t9,
       t10,
+      t11,
       topTwo,
       statsSummary: {
         doubleDraws,
@@ -1046,6 +1214,7 @@
     const cur = analysisMap[activeLotteryKey];
     const p = cur.pack;
     const s = cur.statsSummary;
+    const au = cur.audit;
     const top2Text = cur.topTwo.map((x) => x.digit).join(" - ");
 
     const selectorHtml = keys
@@ -1055,7 +1224,23 @@
       })
       .join("");
 
-    const t1Rows = cur.t1
+    const t1AuditRows = au.rows
+      .map(
+        (r) => `<tr>
+          <td>${r.stepNo}</td>
+          <td>${esc(r.prevDate)}</td>
+          <td>${esc(r.targetDate)}</td>
+          <td>${esc(r.top3)}</td>
+          <td>${esc(r.bot2)}</td>
+          <td>${esc(r.tenUnitsText)}</td>
+          <td class="num-gold">${esc(r.pickedPair)}</td>
+          <td>${esc(r.matchedText)}</td>
+          <td class="${r.resultLabel === "เข้า" ? "st-hot" : "st-cool"}">${esc(r.resultLabel)}</td>
+        </tr>`
+      )
+      .join("");
+
+    const t2Rows = cur.t2
       .map(
         (r) => `<tr>
           <td class="num-gold">${r.rank}</td>
@@ -1065,6 +1250,7 @@
           <td>${r.hitPct}%</td>
           <td>${r.recent5Hits}/5</td>
           <td>${r.recent10Hits}/10</td>
+          <td>${r.gap} งวด</td>
           <td>${r.maxHit}</td>
           <td>${r.maxMiss}</td>
           <td>${r.currentStatus} (${r.currentStreak})</td>
@@ -1074,7 +1260,7 @@
       )
       .join("");
 
-    const t2Rows = cur.t2
+    const t3Rows = cur.t3
       .map(
         (r) => `<tr>
           <td>${r.rank}</td>
@@ -1092,7 +1278,7 @@
       )
       .join("");
 
-    const t3SummaryRows = cur.t3
+    const t4SummaryRows = cur.t4
       .map(
         (r) => `<tr>
           <td class="num-gold">${esc(r.side)}</td>
@@ -1106,7 +1292,7 @@
       )
       .join("");
 
-    const t4Rows = cur.t4
+    const t5Rows = cur.t5
       .map(
         (r) => `<tr>
           <td>${r.drawNo}</td>
@@ -1120,7 +1306,7 @@
       )
       .join("");
 
-    const t5Rows = cur.t5
+    const t6Rows = cur.t6
       .map(
         (r) => `<tr>
           <td>${r.drawNo}</td>
@@ -1134,7 +1320,7 @@
       )
       .join("");
 
-    const t6Rows = cur.t6
+    const t7Rows = cur.t7
       .map(
         (r) => `<tr>
           <td class="num-gold">${r.rank}</td>
@@ -1150,7 +1336,7 @@
       )
       .join("");
 
-    const t7Rows = cur.t7
+    const t8Rows = cur.t8
       .map(
         (r) => `<tr>
           <td class="num-gold">${esc(r.id)}</td>
@@ -1166,7 +1352,7 @@
       )
       .join("");
 
-    const t8Rows = cur.t8
+    const t9Rows = cur.t9
       .map(
         (r) => `<tr>
           <td class="num-gold">${esc(r.pattern)}</td>
@@ -1176,7 +1362,7 @@
       )
       .join("");
 
-    const t9Rows = cur.t9
+    const t10Rows = cur.t10
       .map(
         (r) => `<tr>
           <td class="num-gold">${r.rank}</td>
@@ -1188,12 +1374,13 @@
       )
       .join("");
 
-    const t10Rows = cur.t10
+    const t11Rows = cur.t11
       .map(
         (r) => `<tr>
           <td class="num-gold">${r.rank}</td>
           <td class="num-gold">${r.digit}</td>
           <td>${r.tenUnitSlots}</td>
+          <td>${r.gap} งวด</td>
           <td>${r.allPosHits}</td>
           <td>${r.formulaVotes}</td>
           <td>${r.pairVotes}</td>
@@ -1217,23 +1404,41 @@
         <div class="hero-card">
           <div class="hero-label">เลขเด่น 2 ตัวรอบถัดไป (สิบ/หน่วย บน-ล่าง)</div>
           <div class="hero-value">${esc(top2Text || "-")}</div>
-          <div class="hero-note">คะแนนรวมจากทุกตารางแบบซื่อสัตย์ 100%</div>
+          <div class="hero-note">ผลงานย้อนหลังจริง: เข้า ${au.hits}/${au.totalEvaluated} รอบ (${au.hitPct}%) • หลุด ${au.misses} รอบ</div>
         </div>
         <div class="hero-card">
-          <div class="hero-label">โมเมนตัมสูง-ต่ำ (ตาราง 5)</div>
-          <div class="hero-value" style="font-size:13px;">สูง ${s.highPct}% / ต่ำ ${s.lowPct}%</div>
-          <div class="hero-note">${esc(s.momentumForecast)}</div>
+          <div class="hero-label">สถิติเข้า/หลุดต่อเนื่องย้อนหลัง (ตาราง 1)</div>
+          <div class="hero-value" style="font-size:13px;">เข้าติดสูงสุด ${au.maxHit} • หลุดติดสูงสุด ${au.maxMiss}</div>
+          <div class="hero-note">สถานะปัจจุบัน: ${esc(au.currentStatus)} (${au.currentStreak})</div>
         </div>
         <div class="hero-card">
-          <div class="hero-label">เบิ้ล-หาม &amp; แพทเทิร์นล่าสุด</div>
-          <div class="hero-value" style="font-size:13px;">เบิ้ล ${s.doubleDraws} • หาม ${s.sandwichDraws}</div>
-          <div class="hero-note">แพทเทิร์นล่าสุด: ${esc(s.latestPat)} • เบสกลาง: ${s.baseline}</div>
+          <div class="hero-label">โมเมนตัมสูง-ต่ำ &amp; แพทเทิร์นล่าสุด</div>
+          <div class="hero-value" style="font-size:13px;">สูง ${s.highPct}% / ต่ำ ${s.lowPct}% • เบสกลาง ${s.baseline}</div>
+          <div class="hero-note">${esc(s.momentumForecast)} • ${esc(s.latestPat)}</div>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 1 // ตารางความถี่รวม 0–9 (เน้นหลักสิบและหลักหน่วย บน-ล่าง)</div>
+          <div class="table-title">ตารางที่ 1 // ตารางตรวจสอบผลงานย้อนหลังอดีตถึงปัจจุบัน (Walk-Forward Audit • ไม่ย้อนดูอนาคต)</div>
+          <div class="table-meta">เข้า ${au.hits} / หลุด ${au.misses} (${au.hitPct}%) • เข้าติดสูงสุด ${au.maxHit} • หลุดติดสูงสุด ${au.maxMiss} • ปัจจุบัน ${esc(au.currentStatus)} (${au.currentStreak})</div>
+        </div>
+        <div class="table-hscroll">
+          <table class="lux-grid">
+            <thead>
+              <tr>
+                <th>ลำดับที่</th><th>อ้างอิงงวดก่อน</th><th>งวดที่ตรวจ</th><th>3 ตัวบน</th><th>2 ตัวล่าง</th>
+                <th>เลขสิบ/หน่วยจริง</th><th>เลขเด่นที่เลือก</th><th>ตัวที่เข้า</th><th>ผลลัพธ์</th>
+              </tr>
+            </thead>
+            <tbody>${t1AuditRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-section">
+        <div class="table-title-bar">
+          <div class="table-title">ตารางที่ 2 // ตารางความถี่รวม 0–9 (เน้นหลักสิบและหลักหน่วย บน-ล่าง)</div>
           <div class="table-meta">แสดงครบ 10 แถว • เลื่อนซ้าย-ขวาเท่านั้น</div>
         </div>
         <div class="table-hscroll">
@@ -1241,18 +1446,18 @@
             <thead>
               <tr>
                 <th>อันดับ</th><th>เลข</th><th>เข้างวด</th><th>ครั้งที่โผล่</th><th>% เข้า</th>
-                <th>5 งวดล่าสุด</th><th>10 งวดล่าสุด</th><th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th>
+                <th>5 งวดล่าสุด</th><th>10 งวดล่าสุด</th><th>ห่างล่าสุด</th><th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th>
                 <th>สถานะปัจจุบัน</th><th>คะแนน</th><th>ระดับ</th>
               </tr>
             </thead>
-            <tbody>${t1Rows}</tbody>
+            <tbody>${t2Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 2 // ตารางความถี่รายหลัก 0–9 (5 ตำแหน่ง ครบ 50 แถว)</div>
+          <div class="table-title">ตารางที่ 3 // ตารางความถี่รายหลัก 0–9 (5 ตำแหน่ง ครบ 50 แถว)</div>
           <div class="table-meta">แสดงครบ 50 แถว • เลื่อนซ้าย-ขวาเท่านั้น</div>
         </div>
         <div class="table-hscroll">
@@ -1264,14 +1469,14 @@
                 <th>คะแนน</th><th>ระดับ</th>
               </tr>
             </thead>
-            <tbody>${t2Rows}</tbody>
+            <tbody>${t3Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 3 // ตารางเลขคู่–เลขคี่</div>
+          <div class="table-title">ตารางที่ 4 // ตารางเลขคู่–เลขคี่</div>
           <div class="table-meta">แสดงครบ 100% • เลื่อนซ้าย-ขวาเท่านั้น</div>
         </div>
         <div class="table-hscroll">
@@ -1282,14 +1487,14 @@
                 <th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th><th>สถานะปัจจุบัน</th><th>ทิศทางรอบถัดไป</th>
               </tr>
             </thead>
-            <tbody>${t3SummaryRows}</tbody>
+            <tbody>${t4SummaryRows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 4 // ตารางตรวจจับเลขเบิ้ลและเลขหาม (ครบทุกงวดที่คำนวณ)</div>
+          <div class="table-title">ตารางที่ 5 // ตารางตรวจจับเลขเบิ้ลและเลขหาม (ครบทุกงวดที่คำนวณ)</div>
           <div class="table-meta">ห่างเบิ้ลล่าสุด ${s.sinceLastDouble >= 0 ? s.sinceLastDouble + " งวด" : "-"} • ห่างหามล่าสุด ${s.sinceLastSandwich >= 0 ? s.sinceLastSandwich + " งวด" : "-"}</div>
         </div>
         <div class="table-hscroll">
@@ -1300,14 +1505,14 @@
                 <th>เบิ้ล</th><th>หาม</th><th>ผลตรวจจับ</th>
               </tr>
             </thead>
-            <tbody>${t4Rows}</tbody>
+            <tbody>${t5Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 5 // ตารางเลขสูง–เลขต่ำ และโมเมนตัมรอบถัดไป</div>
+          <div class="table-title">ตารางที่ 6 // ตารางเลขสูง–เลขต่ำ และโมเมนตัมรอบถัดไป</div>
           <div class="table-meta">${esc(s.momentumForecast)}</div>
         </div>
         <div class="table-hscroll">
@@ -1318,14 +1523,14 @@
                 <th>จำนวนสูง (5-9)</th><th>จำนวนต่ำ (0-4)</th><th>ฝั่งเด่นงวดนั้น</th>
               </tr>
             </thead>
-            <tbody>${t5Rows}</tbody>
+            <tbody>${t6Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 6 // ตารางเลขชดเชย (คัด 5 คู่ที่ดีที่สุด • นับเฉพาะสิบ/หน่วย บน-ล่าง)</div>
+          <div class="table-title">ตารางที่ 7 // ตารางเลขชดเชย (คัด 5 คู่ที่ดีที่สุด • นับเฉพาะสิบ/หน่วย บน-ล่าง)</div>
           <div class="table-meta">หลุดชนเพดานอดีตจะขึ้นคำเตือนให้ชั่งน้ำหนักรอบคอบ</div>
         </div>
         <div class="table-hscroll">
@@ -1336,14 +1541,14 @@
                 <th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th><th>สถานะปัจจุบัน</th><th>คะแนน</th><th>ข้อสังเกต</th>
               </tr>
             </thead>
-            <tbody>${t6Rows}</tbody>
+            <tbody>${t7Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 7 // ตารางสูตรคณิตศาสตร์บริสุทธิ์ 10 สูตร (เด่น 2 ตัว • ค่ากลาง ${s.baseline})</div>
+          <div class="table-title">ตารางที่ 8 // ตารางสูตรคณิตศาสตร์บริสุทธิ์ 10 สูตร (เด่น 2 ตัว • ค่ากลาง ${s.baseline})</div>
           <div class="table-meta">แต่ละสูตรทดแทนกันได้ • แสดงครบ 10 สูตร</div>
         </div>
         <div class="table-hscroll">
@@ -1354,14 +1559,14 @@
                 <th>เข้า</th><th>หลุด</th><th>เข้าติดสูงสุด</th><th>หลุดติดสูงสุด</th><th>สถานะปัจจุบัน</th>
               </tr>
             </thead>
-            <tbody>${t7Rows}</tbody>
+            <tbody>${t8Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 8 // ตารางเรียนรู้แพทเทิร์นย้อนหลังสู่รอบถัดไป</div>
+          <div class="table-title">ตารางที่ 9 // ตารางเรียนรู้แพทเทิร์นย้อนหลังสู่รอบถัดไป</div>
           <div class="table-meta">แพทเทิร์นงวดล่าสุด: ${esc(s.latestPat)}</div>
         </div>
         <div class="table-hscroll">
@@ -1371,14 +1576,14 @@
                 <th>รูปแบบงวดก่อนหน้า</th><th>จำนวนครั้งที่เกิด</th><th>เลขสิบ/หน่วยที่มักตามมาในงวดถัดไป</th>
               </tr>
             </thead>
-            <tbody>${t8Rows}</tbody>
+            <tbody>${t9Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 9 // ตารางสูตรเลขหลุดยาวนานที่สุด (คัด Top 10 จาก 1,600 สูตรหลังบ้าน)</div>
+          <div class="table-title">ตารางที่ 10 // ตารางสูตรเลขหลุดยาวนานที่สุด (คัด Top 10 จาก 1,600 สูตรหลังบ้าน)</div>
           <div class="table-meta">นับจำนวนงวดหลุดต่อเนื่องย้อนจากปัจจุบันไปอดีต</div>
         </div>
         <div class="table-hscroll">
@@ -1388,26 +1593,26 @@
                 <th>อันดับ</th><th>รหัสสูตร</th><th>เด่น 2 ตัว</th><th>หลุดต่อเนื่อง</th><th>สัญญาณ</th>
               </tr>
             </thead>
-            <tbody>${t9Rows}</tbody>
+            <tbody>${t10Rows}</tbody>
           </table>
         </div>
       </div>
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 10 // ตารางดัชนีแรงปะทะสิบ-หน่วย &amp; ฉันทามติรวมทุกตาราง (0–9)</div>
+          <div class="table-title">ตารางที่ 11 // ตารางดัชนีแรงปะทะสิบ-หน่วย &amp; ฉันทามติรวมทุกตาราง (0–9)</div>
           <div class="table-meta">คัดเลขเด่น 2 ตัวที่ดีที่สุด: ${esc(top2Text || "-")}</div>
         </div>
         <div class="table-hscroll">
           <table class="lux-grid">
             <thead>
               <tr>
-                <th>อันดับ</th><th>เลข</th><th>โผล่สิบ/หน่วย</th><th>โผล่ทุกหลัก</th>
+                <th>อันดับ</th><th>เลข</th><th>โผล่สิบ/หน่วย</th><th>ห่างล่าสุด</th><th>โผล่ทุกหลัก</th>
                 <th>โหวตสูตร 10</th><th>โหวตคู่ชดเชย</th><th>โหวตหลุดยาว</th><th>หนุนแพทเทิร์น</th>
                 <th>คะแนนรวม</th><th>สถานะ</th>
               </tr>
             </thead>
-            <tbody>${t10Rows}</tbody>
+            <tbody>${t11Rows}</tbody>
           </table>
         </div>
       </div>
@@ -1480,6 +1685,7 @@
   window.__LOTTERY_ENGINE__ = {
     parseDrawsFromText,
     analyzeLottery,
+    selectTwoDigitsFromHistory,
     runProcess,
     runClear
   };
