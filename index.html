@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AETHER QUANT // Quantum Multi-Table Statistical Lottery Engine (3-Digit + 15-Pair Engine)</title>
+<title>AETHER QUANT v1.1 // Quantum Multi-Table Statistical Lottery Engine (3-Digit + 15-Pair Engine)</title>
 <style>
   :root {
     --bg-void: #07090f;
@@ -68,6 +68,18 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--gold);
+  }
+
+  .ver-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #061018;
+    background: var(--cyan);
+    border-radius: 2px;
+    vertical-align: middle;
   }
 
   .brand-sub {
@@ -473,33 +485,33 @@
 <div class="app-shell">
   <div class="top-bar">
     <div>
-      <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE</div>
+      <div class="brand-title">AETHER QUANT // QUANTUM MULTI-TABLE STATISTICAL LOTTERY ENGINE <span class="ver-badge">VERSION v1.1</span></div>
       <div class="brand-sub">เลขเด่น 3 ตัว + เจาะเด่นละ 5 คู่ (รวม 15 คู่ กลับได้ • ไม่รวมเบิ้ล • นับเฉพาะ 15 คู่เจาะในงวดที่เด่นเข้าเท่านั้น)</div>
     </div>
-    <div class="status-pill" id="engineStatus">พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
+    <div class="status-pill" id="engineStatus">v1.1 พร้อมประมวลผล • ซื่อสัตย์ 100%</div>
   </div>
 
   <div class="input-box">
     <div class="input-header">
-      <span>วางข้อมูลสถิติหวยทั้งหมดในช่องเดียว (รองรับข้อความจาก PDF หรืออัปโหลดไฟล์ .pdf)</span>
+      <span>วางข้อมูลสถิติหวยทั้งหมดในช่องเดียว (รองรับข้อความจาก PDF หรืออัปโหลดไฟล์ .pdf) [v1.1]</span>
       <label class="pdf-upload-label">
         <span>เลือกไฟล์ PDF</span>
         <input type="file" id="pdfFileInput" accept=".pdf,application/pdf" />
       </label>
     </div>
     <textarea id="rawInput" placeholder="วางข้อมูลสถิติหวยที่นี่ เช่น:
-นิเคอิ VISA เช้า | 18 พ.ย. 69
-510
-18
+ลาวพัฒนา | 18 พ.ย. 69
+341
+53
 ..."></textarea>
     <div class="action-row">
-      <button type="button" class="btn-process" id="btnProcess">ประมวลผล</button>
+      <button type="button" class="btn-process" id="btnProcess">ประมวลผล (v1.1)</button>
       <button type="button" class="btn-clear" id="btnClear">ล้างข้อมูล</button>
     </div>
   </div>
 
   <div id="resultsRoot">
-    <div class="empty-state">กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล" ทางซ้าย</div>
+    <div class="empty-state">[v1.1] กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล"</div>
   </div>
 </div>
 
@@ -507,6 +519,8 @@
 <script>
 (function () {
   "use strict";
+
+  const ENGINE_VERSION = "v1.1";
 
   if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -787,7 +801,7 @@
         const pct = (hitsArr.filter(Boolean).length / n) * 100;
         const st = calcStreaks(hitsArr);
         const hitCeilingNow = st.currentStatus === "หลุด" && st.maxMiss > 0 && st.currentStreak >= st.maxMiss;
-        const sc = pct * 1.1 + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 3.0 : 0);
+        const sc = pct * 1.1 + st.maxHit * 2.5 - st.maxMiss * 3.0 + (hitCeilingNow ? 1.5 : 0);
         if (sc > bestPairScore) {
           bestPairScore = sc;
           bestPair = [a, b];
@@ -912,7 +926,6 @@
     return items;
   }
 
-  // Select 3 main digits + 5 drill pairs per main digit (total 15 unique pairs, no doubles, no cross-pairs among the 3 main digits)
   function selectThreeDigitsAndFifteenPairs(histDraws) {
     const ranked = rankDigitsFromHistory(histDraws);
     const d1 = ranked[0].digit;
@@ -982,8 +995,8 @@
     const candidatePools = mainThree.map((md) => {
       const pool = [];
       for (let p = 0; p <= 9; p++) {
-        if (p === md) continue;        // ไม่รวมเลขเบิ้ล
-        if (mainSet.has(p)) continue;  // ไม่รวมคู่ที่เกิดจากเลขเด่น 3 ตัวจับคู่กันเอง
+        if (p === md) continue;
+        if (mainSet.has(p)) continue;
         pool.push({
           mainDigit: md,
           partnerDigit: p,
@@ -1017,9 +1030,6 @@
     };
   }
 
-  // ตรวจผลตามกติกา:
-  // 1. เลขเด่น 3 ตัว เข้าตัวใดตัวหนึ่งในสิบ/หน่วย (บนหรือล่าง) = เด่นเข้า 100%
-  // 2. เลขเจาะ นับเฉพาะ "15 คู่เจาะ" (ตรง/กลับ) และนับเฉพาะงวดที่เลขเด่น 3 ตัวเข้าเท่านั้น
   function evaluateDrawThreeAndFifteen(targetDraw, selection) {
     const [d1, d2, d3] = selection.mainThree;
     const tu = targetDraw.tenUnitDigits;
@@ -1069,7 +1079,6 @@
     const chrono = pack.chrono;
     const n = chrono.length;
 
-    // ตารางที่ 1: Walk-Forward Audit (อดีต -> ปัจจุบัน ไม่ย้อนดูอนาคต)
     const startIdx = n >= 4 ? 3 : 1;
     const auditLogs = [];
     const mainBool = [];
@@ -1116,13 +1125,12 @@
     const drillMissCount = drillEvaluatedCount - drillHitCount;
     const drillHitPct = drillEvaluatedCount > 0 ? Number(((drillHitCount / drillEvaluatedCount) * 100).toFixed(1)) : 0;
 
-    // ชุดคาดการณ์งวดถัดไปจากข้อมูลครบ `n` งวด
     const nextSelection = selectThreeDigitsAndFifteenPairs(chrono);
     const nextRanked = nextSelection.ranked;
     const [nextP1, nextP2, nextP3] = nextSelection.mainThree;
     const nextBackup4 = nextRanked[3] ? nextRanked[3].digit : nextP1;
 
-    // ตารางที่ 2: ความถี่รวม 0–9 (เน้นหลักสิบและหลักหน่วย บน-ล่าง)
+    // ตารางที่ 2
     const t2 = [];
     for (let d = 0; d <= 9; d++) {
       const perDrawHits = chrono.map((dr) => dr.tenUnitDigits.includes(d));
@@ -1180,7 +1188,7 @@
     t2.sort((a, b) => b.score - a.score || b.slotCount - a.slotCount || a.digit - b.digit);
     t2.forEach((row, idx) => { row.rank = idx + 1; });
 
-    // ตารางที่ 3: ความถี่รายหลัก 0–9 (5 ตำแหน่ง ครบ 50 แถว)
+    // ตารางที่ 3
     const positions = [
       { key: "hundredsTop", label: "หลักร้อย (บน)" },
       { key: "tensTop", label: "หลักสิบ (บน)" },
@@ -1228,7 +1236,7 @@
     t3.sort((a, b) => b.score - a.score || b.hits - a.hits);
     t3.forEach((row, idx) => { row.rank = idx + 1; });
 
-    // ตารางที่ 4: เลขคู่–เลขคี่
+    // ตารางที่ 4
     const oddEvenRows = chrono.map((dr, idx) => {
       const evenCnt = dr.tenUnitDigits.filter((x) => x % 2 === 0).length;
       const oddCnt = dr.tenUnitDigits.length - evenCnt;
@@ -1264,7 +1272,7 @@
       }
     ];
 
-    // ตารางที่ 5: ตรวจจับเลขเบิ้ลและเลขหาม
+    // ตารางที่ 5
     const t5 = chrono.map((dr, idx) => {
       const [a, b, c] = dr.top3.split("").map(Number);
       const [u, v] = dr.bot2.split("").map(Number);
@@ -1290,7 +1298,7 @@
     const sinceLastDouble = [...t5].reverse().findIndex((r) => r.hasDouble);
     const sinceLastSandwich = [...t5].reverse().findIndex((r) => r.hasSandwich);
 
-    // ตารางที่ 6: เลขสูง–เลขต่ำ และโมเมนตัมรอบถัดไป
+    // ตารางที่ 6
     const t6 = chrono.map((dr, idx) => {
       const highCnt = dr.tenUnitDigits.filter((x) => x >= 5).length;
       const lowCnt = dr.tenUnitDigits.length - highCnt;
@@ -1326,16 +1334,16 @@
     })();
     const momentumForecast =
       lastHighStreak >= 3
-        ? "สูงติดกันหลายงวด • เฝ้าระวังแรงดีดกลับฝั่งต่ำ (0-4)"
+        ? `ฝั่งสูงเด่นติดกัน ${lastHighStreak} งวดล่าสุด • เฝ้าระวังแรงดีดกลับฝั่งต่ำ (0-4)`
         : lastLowStreak >= 3
-        ? "ต่ำติดกันหลายงวด • เฝ้าระวังแรงดีดกลับฝั่งสูง (5-9)"
+        ? `ฝั่งต่ำเด่นติดกัน ${lastLowStreak} งวดล่าสุด • เฝ้าระวังแรงดีดกลับฝั่งสูง (5-9)`
         : highPct >= 54
         ? "โมเมนตัมฝั่งสูง (5-9) เด่นกว่า"
         : lowPct >= 54
         ? "โมเมนตัมฝั่งต่ำ (0-4) เด่นกว่า"
-        : "โมเมนตัมก้ำกึ่ง • เน้นตัวเลขที่มีความถี่จริงหนุน";
+        : "โมเมนตัมรวมสมดุล • เน้นตัวเลขที่มีความถี่จริงหนุน";
 
-    // ตารางที่ 7: เลขชดเชย (คัด 5 คู่ที่ดีที่สุด)
+    // ตารางที่ 7 (ปรับสมดุลคะแนนให้สอดคล้องกับความถี่จริงและเพดานหลุด)
     const allPairs = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1344,7 +1352,7 @@
         const hitPct = n > 0 ? Number(((hits / n) * 100).toFixed(1)) : 0;
         const st = calcStreaks(hitsArr);
         const hitCeilingNow = st.currentStatus === "หลุด" && st.maxMiss > 0 && st.currentStreak >= st.maxMiss;
-        const pairScore = Number((hitPct * 1.1 + st.maxHit * 4 - st.maxMiss * 3.5 + (hitCeilingNow ? 4 : 0)).toFixed(2));
+        const pairScore = Number((hitPct * 1.0 + st.maxHit * 1.2 - st.maxMiss * 3.0 + (hitCeilingNow ? 1.5 : 0)).toFixed(2));
         allPairs.push({
           pair: `${a}-${b}`,
           a,
@@ -1369,7 +1377,7 @@
     allPairs.sort((x, y) => y.pairScore - x.pairScore || y.hitPct - x.hitPct);
     const t7 = allPairs.slice(0, 5).map((p, i) => ({ rank: i + 1, ...p }));
 
-    // ตารางที่ 8: สูตรคณิตศาสตร์บริสุทธิ์ 10 สูตร (คำนวณแบบ Causal อ้างอิงงวดก่อนหน้าเท่านั้น i >= 1)
+    // ตารางที่ 8
     const baseSeed = n > 0 ? chrono[n - 1].tenUnitDigits.reduce((s, x) => s + x, 0) : 0;
     const baseline = Math.round((baseSeed % 10 + (n % 10)) / 2) % 10;
     const formulaDefs = [
@@ -1414,7 +1422,7 @@
       };
     });
 
-    // ตารางที่ 9: เรียนรู้แพทเทิร์นย้อนหลังสู่รอบถัดไป
+    // ตารางที่ 9
     const patternBuckets = new Map();
     for (let i = 0; i < n - 1; i++) {
       const cur = chrono[i];
@@ -1442,7 +1450,7 @@
       };
     });
 
-    // ตารางที่ 10: สูตรเลขหลุดยาวนานที่สุด (Top 10 จาก 1,600 สูตร)
+    // ตารางที่ 10
     const coldCandidates = [];
     for (let a = 0; a <= 9; a++) {
       for (let b = a + 1; b <= 9; b++) {
@@ -1475,7 +1483,7 @@
     coldCandidates.sort((x, y) => y.coldRounds - x.coldRounds || x.formulaCode.localeCompare(y.formulaCode));
     const t10 = coldCandidates.slice(0, 10).map((item, idx) => ({ rank: idx + 1, ...item }));
 
-    // ตารางที่ 11: ดัชนีแรงปะทะสิบ-หน่วย & ฉันทามติรวมทุกตาราง (0–9)
+    // ตารางที่ 11
     const latestPat = (() => {
       if (n === 0) return null;
       const last = chrono[n - 1];
@@ -1536,7 +1544,7 @@
       t11.find((r) => r.digit === nextP3) || t11[2]
     ];
 
-    // ตารางที่ 12: ดัชนีความมั่นใจ วงรอบสั้น (12 งวด) เทียบวงรอบยาว & เลขสำรอง
+    // ตารางที่ 12
     const t12 = nextRanked.map((row, idx) => {
       const roleLabel =
         row.digit === nextP1
@@ -1571,6 +1579,7 @@
     });
 
     return {
+      version: ENGINE_VERSION,
       pack,
       audit: {
         rows: auditLogs,
@@ -1711,7 +1720,7 @@
     const keys = Object.keys(analysisMap);
     const root = document.getElementById("resultsRoot");
     if (keys.length === 0) {
-      root.innerHTML = `<div class="empty-state">ไม่พบข้อมูลประเภทหวยที่ถูกต้อง กรุณาตรวจสอบรูปแบบข้อความหรือไฟล์ PDF</div>`;
+      root.innerHTML = `<div class="empty-state">[${ENGINE_VERSION}] ไม่พบข้อมูลประเภทหวยที่ถูกต้อง กรุณาตรวจสอบรูปแบบข้อความหรือไฟล์ PDF</div>`;
       return;
     }
 
@@ -1957,7 +1966,7 @@
     const allLotteryBannerHtml = `
       <div class="all-lottery-banner">
         <div class="all-lottery-header">
-          <div class="all-lottery-title">ความแม่นยำรวมทุกหวย (${overall.lotteryCount} ประเภท • ตรวจรวม ${overall.totalEvaluated} งวด)</div>
+          <div class="all-lottery-title">[${ENGINE_VERSION}] ความแม่นยำรวมทุกหวย (${overall.lotteryCount} ประเภท • ตรวจรวม ${overall.totalEvaluated} งวด)</div>
           <div class="all-lottery-overall">
             เด่น 3 ตัว: เข้า ${overall.totalHits} / หลุด ${overall.totalMisses} = <span class="num-gold">${overall.overallPct}%</span>
             &nbsp;|&nbsp;
@@ -1971,7 +1980,7 @@
     root.innerHTML = `
       ${allLotteryBannerHtml}
       <div class="summary-strip">
-        <div>ประเภทหวย: <strong class="num-gold">${esc(p.lotteryName)}</strong> • ใช้งวดจริง: <strong>${p.usedCount}</strong> งวด (จากที่มี ${p.totalValidAvailable} งวด) • ข้ามวันงดออกผล: <strong>${p.skippedNoDraw}</strong> วัน</div>
+        <div>[${ENGINE_VERSION}] ประเภทหวย: <strong class="num-gold">${esc(p.lotteryName)}</strong> • ใช้งวดจริง: <strong>${p.usedCount}</strong> งวด (จากที่มี ${p.totalValidAvailable} งวด) • ข้ามวันงดออกผล: <strong>${p.skippedNoDraw}</strong> วัน</div>
         <div>${p.wasCapped ? `<span class="st-steady">ตัดส่วนเกินเฉพาะ 30 งวดล่าสุด</span>` : `<span>ครบตามจำนวนงวดจริง</span>`}</div>
       </div>
 
@@ -1979,7 +1988,7 @@
 
       <div class="hero-picks">
         <div class="hero-card">
-          <div class="hero-label">เลขเด่น 3 ตัวรอบถัดไป (สิบ/หน่วย บน-ล่าง)</div>
+          <div class="hero-label">เลขเด่น 3 ตัวรอบถัดไป (สิบ/หน่วย บน-ล่าง) • ${ENGINE_VERSION}</div>
           <div class="hero-value">${esc(top3Text || "-")}</div>
           <div class="hero-note">สำรองอันดับ #4: <strong>${cur.backupDigit4}</strong> • Walk-Forward จริง: เข้า ${au.hits}/${au.totalEvaluated} (${au.hitPct}%)</div>
         </div>
@@ -1999,7 +2008,7 @@
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 1 // ตารางตรวจสอบผลงานย้อนหลังอดีตถึงปัจจุบัน (Walk-Forward Audit • เด่น 3 ตัว + เจาะ 15 คู่)</div>
+          <div class="table-title">ตารางที่ 1 // ตารางตรวจสอบผลงานย้อนหลังอดีตถึงปัจจุบัน (Walk-Forward Audit • เด่น 3 ตัว + เจาะ 15 คู่) [${ENGINE_VERSION}]</div>
           <div class="table-meta">เด่นเข้า ${au.hits}/${au.totalEvaluated} (${au.hitPct}%) • เจาะเข้า ${au.drillHits}/${au.drillEvaluated} (${au.drillHitPct}%) • นับเฉพาะ 15 คู่เจาะในงวดเด่นเข้า</div>
         </div>
         <div class="table-hscroll">
@@ -2014,7 +2023,7 @@
             <tbody>${t1AuditRows}</tbody>
             <tfoot>
               <tr>
-                <td colspan="7">สรุปผลตรวจย้อนหลังจริง ${au.totalEvaluated} งวด</td>
+                <td colspan="7">สรุปผลตรวจย้อนหลังจริง ${au.totalEvaluated} งวด (${ENGINE_VERSION})</td>
                 <td>เข้า ${au.hits} / หลุด ${au.misses}</td>
                 <td>${au.hitPct}%</td>
                 <td>คิดฐานเฉพาะงวดเด่นเข้า (${au.drillEvaluated} งวด)</td>
@@ -2120,7 +2129,7 @@
 
       <div class="table-section">
         <div class="table-title-bar">
-          <div class="table-title">ตารางที่ 7 // ตารางเลขชดเชย (คัด 5 คู่ที่ดีที่สุด • นับเฉพาะสิบ/หน่วย บน-ล่าง)</div>
+          <div class="table-title">ตารางที่ 7 // ตารางเลขชดเชย (คัด 5 คู่ที่ดีที่สุด • นับเฉพาะสิบ/หน่วย บน-ล่าง) [${ENGINE_VERSION}]</div>
           <div class="table-meta">หลุดชนเพดานอดีตจะขึ้นคำเตือนให้ชั่งน้ำหนักรอบคอบ</div>
         </div>
         <div class="table-hscroll">
@@ -2245,7 +2254,7 @@
     const raw = document.getElementById("rawInput").value;
     const statusEl = document.getElementById("engineStatus");
     if (!raw || !raw.trim()) {
-      statusEl.textContent = "กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF ก่อนกดประมวลผล";
+      statusEl.textContent = `${ENGINE_VERSION} • กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF ก่อนกดประมวลผล`;
       return;
     }
     const parsed = parseDrawsFromText(raw);
@@ -2259,8 +2268,8 @@
     const count = Object.keys(analyzed).length;
     const overallNow = computeOverallAccuracy(analyzed);
     statusEl.textContent = count > 0
-      ? `ประมวลผลสำเร็จ ${count} ประเภทหวย • เด่น 3 ตัวรวม ${overallNow.overallPct}% (${overallNow.totalHits}/${overallNow.totalEvaluated}) • เจาะ 15 คู่ ${overallNow.overallDrillPct}% (${overallNow.totalDrillHits}/${overallNow.totalDrillEvaluated})`
-      : "ไม่พบข้อมูลที่ประมวลผลได้";
+      ? `${ENGINE_VERSION} • ประมวลผลสำเร็จ ${count} ประเภทหวย • เด่น 3 ตัวรวม ${overallNow.overallPct}% (${overallNow.totalHits}/${overallNow.totalEvaluated}) • เจาะ 15 คู่ ${overallNow.overallDrillPct}% (${overallNow.totalDrillHits}/${overallNow.totalDrillEvaluated})`
+      : `${ENGINE_VERSION} • ไม่พบข้อมูลที่ประมวลผลได้`;
     renderAnalysis(analyzed);
   }
 
@@ -2269,9 +2278,9 @@
     document.getElementById("pdfFileInput").value = "";
     latestAnalysis = null;
     activeLotteryKey = null;
-    document.getElementById("engineStatus").textContent = "ล้างข้อมูลแล้ว • พร้อมประมวลผล";
+    document.getElementById("engineStatus").textContent = `${ENGINE_VERSION} • ล้างข้อมูลแล้ว • พร้อมประมวลผล`;
     document.getElementById("resultsRoot").innerHTML =
-      `<div class="empty-state">ล้างข้อมูลเรียบร้อยแล้ว กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล" ทางซ้าย</div>`;
+      `<div class="empty-state">[${ENGINE_VERSION}] ล้างข้อมูลเรียบร้อยแล้ว กรุณาวางข้อมูลสถิติหรือเลือกไฟล์ PDF แล้วกดปุ่ม "ประมวลผล"</div>`;
   }
 
   async function handlePdfUpload(e) {
@@ -2279,11 +2288,11 @@
     if (!file) return;
     const statusEl = document.getElementById("engineStatus");
     if (!window.pdfjsLib) {
-      statusEl.textContent = "ไม่พบไลบรารีอ่าน PDF • กรุณาวางข้อความจาก PDF โดยตรง";
+      statusEl.textContent = `${ENGINE_VERSION} • ไม่พบไลบรารีอ่าน PDF • กรุณาวางข้อความจาก PDF โดยตรง`;
       return;
     }
     try {
-      statusEl.textContent = "กำลังอ่านข้อความจากไฟล์ PDF...";
+      statusEl.textContent = `${ENGINE_VERSION} • กำลังอ่านข้อความจากไฟล์ PDF...`;
       const buf = await file.arrayBuffer();
       const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
       let fullText = "";
@@ -2294,9 +2303,9 @@
         fullText += pageStr + "\n";
       }
       document.getElementById("rawInput").value = fullText;
-      statusEl.textContent = `อ่านไฟล์ PDF สำเร็จ (${pdf.numPages} หน้า) • กดประมวลผลได้เลย`;
+      statusEl.textContent = `${ENGINE_VERSION} • อ่านไฟล์ PDF สำเร็จ (${pdf.numPages} หน้า) • กดประมวลผลได้เลย`;
     } catch (err) {
-      statusEl.textContent = "อ่าน PDF ไม่สำเร็จ • สามารถก๊อปปี้ข้อความจาก PDF มาวางในช่องได้โดยตรง";
+      statusEl.textContent = `${ENGINE_VERSION} • อ่าน PDF ไม่สำเร็จ • สามารถก๊อปปี้ข้อความจาก PDF มาวางในช่องได้โดยตรง`;
     }
   }
 
@@ -2348,6 +2357,7 @@
   }
 
   window.__LOTTERY_ENGINE__ = {
+    version: ENGINE_VERSION,
     parseDrawsFromText,
     analyzeLottery,
     rankDigitsFromHistory,
