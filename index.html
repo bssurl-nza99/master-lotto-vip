@@ -2,852 +2,1165 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ApexTrade — Paper Trading Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <title>VIP ANALYZER • ระบบวิเคราะห์ตัวเลข 3 ก๊ก v4 Quantum</title>
   <style>
     :root {
-      --bg-app: #0b0f17;
-      --bg-card: #131a26;
-      --bg-card-hover: #192232;
-      --bg-input: #0e141f;
-      --border: #232f44;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #38bdf8;
-      --accent-hover: #0ea5e9;
-      --green: #10b981;
-      --green-bg: rgba(16, 185, 129, 0.14);
-      --red: #f43f5e;
-      --red-bg: rgba(244, 63, 94, 0.14);
-      --radius: 14px;
+      --bg-main: #090c12;
+      --bg-card: #101622;
+      --bg-sub: #151d2d;
+      --gold: #d4af37;
+      --gold-soft: rgba(212, 175, 55, 0.16);
+      --border: rgba(212, 175, 55, 0.22);
+      --text-main: #eef2f7;
+      --text-muted: #94a3b8;
+      --win: #22c55e;
+      --loss: #ef4444;
+      --warn: #f59e0b;
     }
 
     * {
       box-sizing: border-box;
+    }
+
+    html, body {
       margin: 0;
       padding: 0;
+      background: var(--bg-main);
+      color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
-    }
-
-    body {
-      background: var(--bg-app);
-      color: var(--text-primary);
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 28px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(19, 26, 38, 0.85);
-      backdrop-filter: blur(10px);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 1.15rem;
-      letter-spacing: 0.3px;
-    }
-
-    .brand-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--green));
-    }
-
-    .badge-sim {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      font-weight: 600;
-    }
-
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 0.88rem;
-    }
-
-    .avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      font-size: 0.78rem;
-      color: #fff;
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-x: hidden;
     }
 
     .container {
+      width: 100%;
       max-width: 1280px;
-      margin: 24px auto;
-      padding: 0 20px 48px;
-      display: grid;
-      gap: 20px;
+      margin: 0 auto;
+      padding: 12px;
     }
 
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+    .vip-header {
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, #111827 0%, #0b101b 100%);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .vip-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.4px;
+    }
+
+    .vip-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
     }
 
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-
-    .card-label {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-    }
-
-    .card-value {
-      font-size: 1.55rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1.75fr 1fr;
-      gap: 20px;
-      align-items: start;
-    }
-
-    @media (max-width: 920px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .watchlist {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .stock-chip {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: var(--text-primary);
-      padding: 8px 14px;
       border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.88rem;
-      transition: all 0.15s ease;
-    }
-
-    .stock-chip:hover {
-      background: var(--bg-card-hover);
-    }
-
-    .stock-chip.active {
-      border-color: var(--accent);
-      background: rgba(56, 189, 248, 0.12);
-    }
-
-    .stock-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 12px;
+      padding: 12px;
       margin-bottom: 12px;
+      max-width: 100%;
     }
 
-    .stock-title {
-      font-size: 1.35rem;
+    .card-title {
+      font-size: 13px;
       font-weight: 700;
-    }
-
-    .stock-sub {
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-    }
-
-    .price-block {
-      text-align: right;
-    }
-
-    .price-now {
-      font-size: 1.5rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .tf-row {
+      color: var(--gold);
+      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
       gap: 8px;
       flex-wrap: wrap;
     }
 
-    .tf-group {
-      display: flex;
-      gap: 6px;
-    }
-
-    .tf-btn {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      padding: 4px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .tf-btn.active {
-      color: var(--text-primary);
-      border-color: var(--accent);
-      background: rgba(56, 189, 248, 0.15);
-    }
-
-    .sim-tick-btn {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 5px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .sim-tick-btn:hover {
-      background: rgba(16, 185, 129, 0.25);
-    }
-
-    .chart-box {
+    textarea {
       width: 100%;
-      height: 230px;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      min-height: 165px;
+      background: #070a10;
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 8px;
       padding: 10px;
-      position: relative;
+      font-size: 12px;
+      line-height: 1.4;
+      resize: vertical;
     }
 
-    svg.chart {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
+    .action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
     }
 
-    .tabs {
+    button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .btn-run {
+      background: var(--gold);
+      color: #090c12;
+      border-color: var(--gold);
+    }
+
+    .btn-clear {
+      background: var(--bg-sub);
+      color: var(--text-main);
+    }
+
+    .btn-tab {
+      background: var(--bg-sub);
+      color: var(--text-muted);
+      padding: 6px 11px;
+      font-size: 11.5px;
+    }
+
+    .btn-tab.active {
+      background: var(--gold-soft);
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .status-bar {
+      margin-top: 8px;
+      font-size: 11.5px;
+      color: var(--gold);
+    }
+
+    .summary-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
-    .tab-btn {
+    .metric-box {
+      background: var(--bg-sub);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
       padding: 10px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg-input);
-      color: var(--text-secondary);
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .metric-val {
+      font-size: 16px;
       font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s;
+      color: var(--gold);
+      margin-top: 2px;
     }
 
-    .tab-btn.buy.active {
-      background: var(--green-bg);
-      color: var(--green);
-      border-color: var(--green);
+    .pair-line {
+      font-size: 12px;
+      color: var(--text-main);
+      margin-top: 4px;
+      word-break: keep-all;
     }
 
-    .tab-btn.sell.active {
-      background: var(--red-bg);
-      color: var(--red);
-      border-color: var(--red);
-    }
-
-    .field {
-      margin-bottom: 14px;
-    }
-
-    .field label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-    }
-
-    .field input {
+    .table-wrap {
       width: 100%;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg-input);
-      color: var(--text-primary);
-      font-size: 1rem;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .field input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    .order-summary {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 16px;
-      font-size: 0.86rem;
-    }
-
-    .order-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      color: var(--text-secondary);
-    }
-
-    .order-row:last-child {
-      margin-bottom: 0;
-      color: var(--text-primary);
-      font-weight: 700;
-    }
-
-    .submit-order {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.96rem;
-      font-weight: 700;
-      cursor: pointer;
-      color: #fff;
-      transition: opacity 0.15s;
-    }
-
-    .submit-order.buy {
-      background: var(--green);
-    }
-
-    .submit-order.sell {
-      background: var(--red);
-    }
-
-    .submit-order:hover {
-      opacity: 0.92;
-    }
-
-    .status-msg {
-      margin-top: 10px;
-      font-size: 0.84rem;
-      min-height: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 8px;
     }
 
     table {
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       border-collapse: collapse;
-      font-size: 0.88rem;
+      font-size: 11.5px;
     }
 
     th, td {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      white-space: nowrap;
       text-align: left;
-      padding: 12px 10px;
-      border-bottom: 1px solid var(--border);
-      font-variant-numeric: tabular-nums;
     }
 
     th {
-      color: var(--text-secondary);
+      background: #141c2b;
+      color: var(--gold);
       font-weight: 600;
-      font-size: 0.8rem;
+      position: sticky;
+      top: 0;
     }
 
-    tr:last-child td {
-      border-bottom: none;
+    tr:hover td {
+      background: rgba(212, 175, 55, 0.05);
     }
 
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.75rem;
+    .badge-win {
+      color: var(--win);
       font-weight: 700;
     }
 
-    .pill.buy {
-      background: var(--green-bg);
-      color: var(--green);
+    .badge-loss {
+      color: var(--loss);
+      font-weight: 700;
     }
 
-    .pill.sell {
-      background: var(--red-bg);
-      color: var(--red);
+    .badge-warn {
+      color: var(--warn);
+      font-weight: 700;
     }
 
-    .bottom-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 20px;
+    .tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
 
-    @media (max-width: 920px) {
-      .bottom-grid {
-        grid-template-columns: 1fr;
-      }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      <span>ApexTrade</span>
-      <span class="badge-sim">PAPER TRADING</span>
+  <div class="container">
+    <div class="vip-header">
+      <div>
+        <div class="vip-title">VIP ANALYZER • 3 ก๊ก v4 QUANTUM</div>
+        <div class="vip-sub">ระบบวิเคราะห์ตัวเลข 3 มิติ (สูตรหลัก • ความถี่ 0-9 • เลขชดเชย) • ตัดหลักร้อย • ไม่สุ่ม • รองรับ 78+ ประเภทหวย</div>
+      </div>
+      <div class="vip-sub" id="summaryCount">พร้อมประมวลผล</div>
     </div>
-    <div class="user-pill">
-      <span class="avatar">AT</span>
-      <span>Demo Trader · Mock Account</span>
+
+    <div class="card">
+      <div class="card-title">
+        <span>วางข้อมูลผลหวย (งวดละ 3 บรรทัด: ชื่อหวย | วันที่, 3 ตัวบน, 2 ตัวล่าง)</span>
+        <button class="btn-tab" type="button" onclick="loadSampleData()">โหลดตัวอย่าง ลาวประตูชัย</button>
+      </div>
+      <textarea id="rawInput" placeholder="ตัวอย่าง:
+ลาวประตูชัย | 23 พ.ย. 69
+365
+48
+ลาวประตูชัย | 22 พ.ย. 69
+685
+11"></textarea>
+      <div class="action-row">
+        <button class="btn-run" type="button" onclick="runAnalysis()">ประมวลผล</button>
+        <button class="btn-clear" type="button" onclick="clearAll()">ล้างข้อมูล</button>
+      </div>
+      <div class="status-bar" id="statusMessage">รอรับข้อมูล...</div>
     </div>
-  </header>
 
-  <main class="container">
-    <section class="summary-grid">
+    <div id="resultsSection" class="hidden">
       <div class="card">
-        <div class="card-label">มูลค่าพอร์ตทั้งหมด (Total Equity)</div>
-        <div class="card-value" id="totalEquity">฿0.00</div>
-      </div>
-      <div class="card">
-        <div class="card-label">เงินสดจำลองคงเหลือ (Cash Balance)</div>
-        <div class="card-value" id="cashBalance">฿0.00</div>
-      </div>
-      <div class="card">
-        <div class="card-label">มูลค่าหุ้นที่ถือ (Holdings Value)</div>
-        <div class="card-value" id="holdingsValue">฿0.00</div>
-      </div>
-      <div class="card">
-        <div class="card-label">กำไร/ขาดทุนจำลอง (Unrealized P&L)</div>
-        <div class="card-value" id="unrealizedPnl">฿0.00</div>
-      </div>
-    </section>
-
-    <section class="main-grid">
-      <div class="card">
-        <div class="watchlist" id="watchlist"></div>
-
-        <div class="stock-header">
-          <div>
-            <div class="stock-title" id="activeSymbolName">APEX — Apex Robotics Corp.</div>
-            <div class="stock-sub" id="activeSector">Simulated Sector · Mock Exchange</div>
-          </div>
-          <div class="price-block">
-            <div class="price-now" id="activePrice">฿0.00</div>
-            <div class="stock-sub" id="activeChange">+0.00 (0.00%)</div>
-          </div>
+        <div class="card-title">
+          <span>สรุปทุกประเภทหวย</span>
+          <span class="vip-sub">แตะ "ดูวิเคราะห์" เพื่อเจาะลึกแต่ละประเภท</span>
         </div>
-
-        <div class="tf-row">
-          <div class="tf-group" id="timeframeGroup">
-            <button class="tf-btn active" data-tf="1D">1D</button>
-            <button class="tf-btn" data-tf="1W">1W</button>
-            <button class="tf-btn" data-tf="1M">1M</button>
-          </div>
-          <button class="sim-tick-btn" id="simulateTickBtn">↻ จำลองการขยับราคา</button>
-        </div>
-
-        <div class="chart-box">
-          <svg class="chart" id="priceChart" viewBox="0 0 600 200" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35" />
-                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0" />
-              </linearGradient>
-            </defs>
-            <polygon id="chartArea" fill="url(#areaGrad)" points="" />
-            <polyline id="chartLine" fill="none" stroke="#38bdf8" stroke-width="2.5" points="" />
-          </svg>
+        <div class="table-wrap">
+          <table id="allLotteriesTable">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ประเภทหวย</th>
+                <th>งวดล่าสุด</th>
+                <th>จำนวนงวด</th>
+                <th>เลขเด่น (2 ตัว)</th>
+                <th>เลขเจาะ (10 คู่)</th>
+                <th>% เข้าเด่น</th>
+                <th>% เจาะ (เมื่อเด่นเข้า)</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="detailCard">
+        <div class="card-title">
+          <span id="detailTitle">รายละเอียดเชิงลึก</span>
+          <div id="lotterySelector" class="tabs" style="margin-bottom:0;"></div>
+        </div>
+
+        <div class="summary-grid" id="detailSummaryCards"></div>
+
         <div class="tabs">
-          <button class="tab-btn buy active" id="tabBuy">ซื้อ (Buy)</button>
-          <button class="tab-btn sell" id="tabSell">ขาย (Sell)</button>
+          <button class="btn-tab active" data-tab="quantum" onclick="switchTab('quantum')">ภาพรวมควอนตัม (Top 5/10 &amp; สถิติสูงสุด/หลุดล่าสุด)</button>
+          <button class="btn-tab" data-tab="history" onclick="switchTab('history')">ประวัติย้อนหลังตั้งแต่อดีต-ปัจจุบัน</button>
+          <button class="btn-tab" data-tab="formulas" onclick="switchTab('formulas')">ตารางสูตรหลักทั้งหมด</button>
+          <button class="btn-tab" data-tab="freqcomp" onclick="switchTab('freqcomp')">ความถี่ 0-9 &amp; เลขชดเชย</button>
         </div>
 
-        <form id="orderForm">
-          <div class="field">
-            <label>
-              <span>จำนวนหุ้น (Shares)</span>
-              <span id="ownedHint">ถืออยู่: 0 หุ้น</span>
-            </label>
-            <input type="number" id="sharesInput" min="1" step="1" value="10" required />
-          </div>
-
-          <div class="order-summary">
-            <div class="order-row">
-              <span>ราคาต่อหุ้น (จำลอง)</span>
-              <span id="orderUnitPrice">฿0.00</span>
-            </div>
-            <div class="order-row">
-              <span>ยอดรวมคำสั่ง</span>
-              <span id="orderTotal">฿0.00</span>
-            </div>
-          </div>
-
-          <button type="submit" class="submit-order buy" id="submitOrderBtn">ยืนยันคำสั่งซื้อ</button>
-          <div class="status-msg" id="orderStatus"></div>
-        </form>
+        <div id="tab-quantum"></div>
+        <div id="tab-history" class="hidden"></div>
+        <div id="tab-formulas" class="hidden"></div>
+        <div id="tab-freqcomp" class="hidden"></div>
       </div>
-    </section>
-
-    <section class="bottom-grid">
-      <div class="card">
-        <h3 style="margin-bottom: 12px; font-size: 1rem;">พอร์ตหุ้นจำลอง (Holdings)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>หุ้น</th>
-              <th>จำนวน</th>
-              <th>ต้นทุนเฉลี่ย</th>
-              <th>มูลค่าปัจจุบัน</th>
-              <th>P&L</th>
-            </tr>
-          </thead>
-          <tbody id="holdingsBody"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3 style="margin-bottom: 12px; font-size: 1rem;">ประวัติคำสั่งซื้อ-ขายล่าสุด (Orders)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>ประเภท</th>
-              <th>หุ้น</th>
-              <th>จำนวน</th>
-              <th>ราคา</th>
-            </tr>
-          </thead>
-          <tbody id="ordersBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script>
-    const INITIAL_CASH = 1000000; // เงินสดจำลองเริ่มต้น 1,000,000 บาท
+    const THAI_MONTHS = {
+      "ม.ค.": 1, "ก.พ.": 2, "มี.ค.": 3, "เม.ย.": 4, "พ.ค.": 5, "มิ.ย.": 6,
+      "ก.ค.": 7, "ส.ค.": 8, "ก.ย.": 9, "ต.ค.": 10, "พ.ย.": 11, "ธ.ค.": 12
+    };
 
-    const stocks = {
-      APEX: {
-        name: "Apex Robotics Corp.",
-        sector: "Automation & AI · Mock Market",
-        price: 245.0,
-        history: {
-          "1D": [238, 240, 239, 242, 241, 244, 243, 245],
-          "1W": [225, 230, 228, 236, 241, 245],
-          "1M": [205, 212, 220, 218, 232, 245]
-        }
-      },
-      VORTX: {
-        name: "Vortx Cloud Systems",
-        sector: "Cloud Infrastructure · Mock Market",
-        price: 128.5,
-        history: {
-          "1D": [131, 130, 129.5, 130.2, 128.8, 128.5],
-          "1W": [122, 125, 127, 126, 129, 128.5],
-          "1M": [110, 115, 119, 124, 127, 128.5]
-        }
-      },
-      SOLR: {
-        name: "Solaris Grid Energy",
-        sector: "Clean Energy · Mock Market",
-        price: 84.0,
-        history: {
-          "1D": [81.5, 82.0, 82.4, 83.1, 83.6, 84.0],
-          "1W": [78.0, 79.5, 80.2, 81.8, 83.0, 84.0],
-          "1M": [72.0, 74.5, 76.0, 79.0, 81.5, 84.0]
-        }
-      },
-      NEON: {
-        name: "Neon BioLabs",
-        sector: "Biotech · Mock Market",
-        price: 162.0,
-        history: {
-          "1D": [166, 165, 164, 163.5, 162.8, 162.0],
-          "1W": [170, 168, 166, 165, 163, 162.0],
-          "1M": [155, 160, 167, 169, 164, 162.0]
+    const FORMULA_DEFS = [
+      { id: "สูตรที่ 1", name: "ร้อยบน + สิบบน", fn: p => mod10(p.r + p.st), step: 1 },
+      { id: "สูตรที่ 2", name: "ร้อยบน + หน่วยบน", fn: p => mod10(p.r + p.ut), step: 1 },
+      { id: "สูตรที่ 3", name: "สิบบน + หน่วยบน", fn: p => mod10(p.st + p.ut), step: 1 },
+      { id: "สูตรที่ 4", name: "ร้อยบน + สิบล่าง", fn: p => mod10(p.r + p.sb), step: 1 },
+      { id: "สูตรที่ 5", name: "ร้อยบน + หน่วยล่าง", fn: p => mod10(p.r + p.ub), step: 1 },
+      { id: "สูตรที่ 6", name: "สิบบน + สิบล่าง", fn: p => mod10(p.st + p.sb), step: 1 },
+      { id: "สูตรที่ 7", name: "สิบบน + หน่วยล่าง", fn: p => mod10(p.st + p.ub), step: 1 },
+      { id: "สูตรที่ 8", name: "หน่วยบน + สิบล่าง", fn: p => mod10(p.ut + p.sb), step: 1 },
+      { id: "สูตรที่ 9", name: "หน่วยบน + หน่วยล่าง", fn: p => mod10(p.ut + p.ub), step: 1 },
+      { id: "สูตรที่ 10", name: "สิบล่าง + หน่วยล่าง", fn: p => mod10(p.sb + p.ub), step: 1 },
+      { id: "สูตรที่ 11", name: "ผลรวม 3 บน + สิบล่าง", fn: p => mod10(p.sumTop + p.sb), step: 1 },
+      { id: "สูตรที่ 12", name: "ผลรวม 3 บน + หน่วยล่าง", fn: p => mod10(p.sumTop + p.ub), step: 1 },
+      { id: "สูตรที่ 13", name: "ผลรวม 3 บน + ร้อยบน", fn: p => mod10(p.sumTop + p.r), step: 1 },
+      { id: "สูตรที่ 14", name: "ผลรวม 3 บน + สิบบน", fn: p => mod10(p.sumTop + p.st), step: 1 },
+      { id: "สูตรที่ 15", name: "ผลรวม 3 บน + หน่วยบน", fn: p => mod10(p.sumTop + p.ut), step: 1 },
+      { id: "สูตรที่ 16", name: "10 - ร้อยบน", fn: p => mod10(10 - p.r), step: 1 },
+      { id: "สูตรที่ 17", name: "10 - สิบบน", fn: p => mod10(10 - p.st), step: 1 },
+      { id: "สูตรที่ 18", name: "10 - หน่วยบน", fn: p => mod10(10 - p.ut), step: 1 },
+      { id: "สูตรที่ 19", name: "10 - สิบล่าง", fn: p => mod10(10 - p.sb), step: 1 },
+      { id: "สูตรที่ 20", name: "10 - หน่วยล่าง", fn: p => mod10(10 - p.ub), step: 1 },
+      { id: "สูตรที่ 21", "ร้อยบน + สิบบน + สิบล่าง", fn: p => mod10(p.r + p.st + p.sb), step: 1 },
+      { id: "สูตรที่ 22", name: "ร้อยบน + หน่วยบน + หน่วยล่าง", fn: p => mod10(p.r + p.ut + p.ub), step: 1 },
+      { id: "สูตรที่ 23", name: "สิบบน + หน่วยบน + สิบล่าง", fn: p => mod10(p.st + p.ut + p.sb), step: 1 },
+      { id: "สูตรที่ 24", name: "สิบบน + หน่วยบน + หน่วยล่าง", fn: p => mod10(p.st + p.ut + p.ub), step: 1 },
+      { id: "สูตรที่ 25", name: "ร้อยบน + สิบล่าง + หน่วยล่าง", fn: p => mod10(p.r + p.sb + p.ub), step: 1 },
+      { id: "สูตรที่ 26", name: "สิบบน + สิบล่าง + หน่วยล่าง", fn: p => mod10(p.st + p.sb + p.ub), step: 1 },
+      { id: "สูตรที่ 27", name: "ผลรวม 3 บน - สิบล่าง", fn: p => mod10(p.sumTop - p.sb), step: 1 },
+      { id: "สูตรที่ 28", name: "ผลรวม 3 บน - หน่วยล่าง", fn: p => mod10(p.sumTop - p.ub), step: 1 },
+      { id: "สูตรที่ 29", name: "ผลรวม 3 บน + ผลรวม 2 ล่าง", fn: p => mod10(p.sumTop + p.sumBot), step: 1 },
+      { id: "สูตรที่ 30", name: "ผลรวม 3 บน - ผลรวม 2 ล่าง", fn: p => mod10(p.sumTop - p.sumBot), step: 1 },
+      { id: "สูตรที่ 31", name: "(ร้อยบน + สิบบน) - หน่วยล่าง", fn: p => mod10(p.r + p.st - p.ub), step: 1 },
+      { id: "สูตรที่ 32", name: "(สิบบน + หน่วยบน) - สิบล่าง", fn: p => mod10(p.st + p.ut - p.sb), step: 1 },
+      { id: "สูตรที่ 33", name: "(ร้อยบน + หน่วยบน) - สิบล่าง", fn: p => mod10(p.r + p.ut - p.sb), step: 1 },
+      { id: "สูตรที่ 34", name: "20 - (สิบบน + สิบล่าง)", fn: p => mod10(20 - (p.st + p.sb)), step: 1 },
+      { id: "สูตรที่ 35", name: "20 - (หน่วยบน + หน่วยล่าง)", fn: p => mod10(20 - (p.ut + p.ub)), step: 1 },
+      { id: "สูตรที่ 38", name: "10 + สิบบน - หน่วยล่าง", fn: p => mod10(10 + p.st - p.ub), step: 1 },
+      { id: "สูตรที่ 39", name: "10 + หน่วยบน - สิบล่าง", fn: p => mod10(10 + p.ut - p.sb), step: 1 },
+      { id: "สูตรที่ 40", name: "ผลรวม 3 บน + 10 - หน่วยล่าง", fn: p => mod10(p.sumTop + 10 - p.ub), step: 1 },
+      { id: "สูตรที่ 41", name: "ร้อยบน + หน่วยล่าง - สิบบน", fn: p => mod10(p.r + p.ub - p.st), step: 1 },
+      { id: "สูตรที่ 42", name: "สิบบน + หน่วยล่าง - ร้อยบน", fn: p => mod10(p.st + p.ub - p.r), step: 1 },
+      { id: "สูตรที่ 43", name: "หน่วยบน + สิบล่าง - ร้อยบน", fn: p => mod10(p.ut + p.sb - p.r), step: 1 },
+      { id: "สูตรที่ 44", name: "ผลรวม 2 ล่าง + ร้อยบน - สิบบน", fn: p => mod10(p.sumBot + p.r - p.st), step: 1 },
+      { id: "สูตรที่ 45", name: "ผลรวม 2 ล่าง + ร้อยบน - หน่วยบน", fn: p => mod10(p.sumBot + p.r - p.ut), step: 1 },
+      { id: "สูตรที่ 48", name: "สิบบน + ผลรวม 2 ล่าง - ร้อยบน", fn: p => mod10(p.st + p.sumBot - p.r), step: 1 },
+      { id: "สูตรที่ 49", name: "สิบบน + ผลรวม 2 ล่าง - หน่วยบน", fn: p => mod10(p.st + p.sumBot - p.ut), step: 1 },
+      { id: "สูตรที่ 50", name: "หน่วยบน + ผลรวม 2 ล่าง - ร้อยบน", fn: p => mod10(p.ut + p.sumBot - p.r), step: 1 },
+      { id: "สูตรที่ 51", name: "หน่วยบน + ผลรวม 2 ล่าง - สิบบน", fn: p => mod10(p.ut + p.sumBot - p.st), step: 1 },
+      { id: "สูตรที่ 52", name: "30 - (ร้อยบน + สิบบน + สิบล่าง)", fn: p => mod10(30 - (p.r + p.st + p.sb)), step: 1 },
+      { id: "สูตรที่ 53", name: "30 - (ร้อยบน + หน่วยบน + หน่วยล่าง)", fn: p => mod10(30 - (p.r + p.ut + p.ub)), step: 1 },
+      { id: "สูตรที่ 54", name: "30 - (สิบบน + หน่วยบน + สิบล่าง)", fn: p => mod10(30 - (p.st + p.ut + p.sb)), step: 1 },
+      { id: "สูตรที่ 55", name: "30 - (ร้อยบน + สิบล่าง + หน่วยล่าง)", fn: p => mod10(30 - (p.r + p.sb + p.ub)), step: 1 },
+      { id: "สูตรที่ 56", name: "(ร้อยบน + สิบบน) + สิบล่าง - หน่วยล่าง", fn: p => mod10(p.r + p.st + p.sb - p.ub), step: 1 },
+      { id: "สูตรที่ 57", name: "(ร้อยบน + หน่วยบน) + หน่วยล่าง - สิบล่าง", fn: p => mod10(p.r + p.ut + p.ub - p.sb), step: 1 },
+      { id: "สูตรที่ 58", name: "(สิบบน + หน่วยบน) + สิบล่าง - ร้อยบน", fn: p => mod10(p.st + p.ut + p.sb - p.r), step: 1 },
+      { id: "สูตรที่ 59", name: "ผลรวม 3 บน + สิบล่าง - หน่วยล่าง", fn: p => mod10(p.sumTop + p.sb - p.ub), step: 1 },
+      { id: "สูตรที่ 60", name: "ผลรวม 3 บน + หน่วยล่าง - สิบล่าง", fn: p => mod10(p.sumTop + p.ub - p.sb), step: 1 },
+      { id: "สูตรที่ 61", name: "ร้อยบน + สิบบน + ผลรวม 2 ล่าง", fn: p => mod10(p.r + p.st + p.sumBot), step: 1 },
+      { id: "สูตรที่ 62", name: "ร้อยบน + หน่วยบน + ผลรวม 2 ล่าง", fn: p => mod10(p.r + p.ut + p.sumBot), step: 1 },
+      { id: "สูตรที่ 63", name: "สิบบน + หน่วยบน + ผลรวม 2 ล่าง", fn: p => mod10(p.st + p.ut + p.sumBot), step: 1 },
+      { id: "สูตรที่ 64", name: "ร้อยบน + สิบล่าง + ผลรวม 3 บน", fn: p => mod10(p.r + p.sb + p.sumTop), step: 1 },
+      { id: "สูตรที่ 65", name: "ร้อยบน + หน่วยล่าง + ผลรวม 3 บน", fn: p => mod10(p.r + p.ub + p.sumTop), step: 1 },
+      { id: "สูตรที่ 66", name: "สิบบน + สิบล่าง + ผลรวม 3 บน", fn: p => mod10(p.st + p.sb + p.sumTop), step: 1 },
+      { id: "สูตรที่ 67", name: "สิบบน + หน่วยล่าง + ผลรวม 3 บน", fn: p => mod10(p.st + p.ub + p.sumTop), step: 1 },
+      { id: "สูตรที่ 68", name: "หน่วยบน + สิบล่าง + ผลรวม 3 บน", fn: p => mod10(p.ut + p.sb + p.sumTop), step: 1 },
+      { id: "สูตรที่ 69", name: "หน่วยบน + หน่วยล่าง + ผลรวม 3 บน", fn: p => mod10(p.ut + p.ub + p.sumTop), step: 1 },
+      { id: "สูตรที่ 81", name: "(ร้อยบน - สิบบน) + หน่วยล่าง", fn: p => mod10(Math.abs(p.r - p.st) + p.ub), step: 1 },
+      { id: "สูตรที่ 82", name: "(ร้อยบน - หน่วยบน) + สิบล่าง", fn: p => mod10(Math.abs(p.r - p.ut) + p.sb), step: 1 },
+      { id: "สูตรที่ 83", name: "(สิบบน - หน่วยบน) + หน่วยล่าง", fn: p => mod10(Math.abs(p.st - p.ut) + p.ub), step: 1 },
+      { id: "สูตรที่ 84", name: "(สิบล่าง - หน่วยล่าง) + ร้อยบน", fn: p => mod10(Math.abs(p.sb - p.ub) + p.r), step: 1 },
+      { id: "สูตรที่ 85", name: "(สิบล่าง - หน่วยล่าง) + สิบบน", fn: p => mod10(Math.abs(p.sb - p.ub) + p.st), step: 1 },
+      { id: "สูตรที่ 86", name: "(สิบล่าง - หน่วยล่าง) + หน่วยบน", fn: p => mod10(Math.abs(p.sb - p.ub) + p.ut), step: 1 },
+      { id: "สูตรที่ 87", name: "20 - ร้อยบน - สิบบน", fn: p => mod10(20 - p.r - p.st), step: 1 },
+      { id: "สูตรที่ 88", name: "20 - ร้อยบน - หน่วยบน", fn: p => mod10(20 - p.r - p.ut), step: 1 },
+      { id: "สูตรที่ 89", name: "20 - สิบบน - หน่วยบน", fn: p => mod10(20 - p.st - p.ut), step: 1 },
+      { id: "สูตรที่ 90", name: "20 - สิบล่าง - หน่วยล่าง", fn: p => mod10(20 - p.sb - p.ub), step: 1 },
+      { id: "สูตรที่ 91", name: "20 - ร้อยบน - สิบล่าง", fn: p => mod10(20 - p.r - p.sb), step: 1 },
+      { id: "สูตรที่ 92", name: "20 - ร้อยบน - หน่วยล่าง", fn: p => mod10(20 - p.r - p.ub), step: 1 },
+      { id: "สูตรที่ 93", name: "สิบบน + หน่วยล่าง + 2 (+2แต้ม)", fn: p => mod10(p.st + p.ub + 2), step: 2 }
+    ];
+
+    function mod10(n) {
+      return ((n % 10) + 10) % 10;
+    }
+
+    const UNIQUE_FORMULAS = (() => {
+      const sampleDraws = Array.from({ length: 120 }, (_, i) => ({
+        r: i % 10,
+        st: (i * 3 + 1) % 10,
+        ut: (i * 7 + 2) % 10,
+        sb: (i * 9 + 4) % 10,
+        ub: (i * 5 + 6) % 10
+      }));
+      const seen = new Set();
+      const out = [];
+      for (const f of FORMULA_DEFS) {
+        const sig = sampleDraws.map(d => `${f.fn(d)}:${f.step}`).join("|");
+        if (!seen.has(sig)) {
+          seen.add(sig);
+          out.push(f);
         }
       }
-    };
+      return out;
+    })();
 
-    const state = {
-      cash: INITIAL_CASH,
-      activeSymbol: "APEX",
-      timeframe: "1D",
-      side: "buy",
-      holdings: {
-        APEX: { shares: 200, avgCost: 235.0 }
-      },
-      orders: [
-        { side: "buy", symbol: "APEX", shares: 200, price: 235.0 }
-      ]
-    };
+    function parseThaiDate(dateStr) {
+      const m = dateStr.trim().match(/(\d{1,2})\s+([^\s]+)\s+(\d{2,4})/);
+      if (!m) return 0;
+      const day = parseInt(m[1], 10);
+      const month = THAI_MONTHS[m[2]] || 0;
+      let year = parseInt(m[3], 10);
+      if (year < 100) year += 2500;
+      return year * 10000 + month * 100 + day;
+    }
 
-    const fmtTHB = (n) =>
-      "฿" + n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function parseInputText(text) {
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const groups = new Map();
+      let i = 0;
 
-    function renderWatchlist() {
-      const el = document.getElementById("watchlist");
-      el.innerHTML = "";
-      Object.entries(stocks).forEach(([sym, data]) => {
-        const btn = document.createElement("button");
-        btn.className = "stock-chip" + (sym === state.activeSymbol ? " active" : "");
-        btn.innerHTML = `<strong>${sym}</strong> <span>${fmtTHB(data.price)}</span>`;
-        btn.onclick = () => {
-          state.activeSymbol = sym;
-          document.getElementById("orderStatus").textContent = "";
-          renderAll();
+      while (i < lines.length) {
+        if (lines[i].includes("|")) {
+          const parts = lines[i].split("|").map(s => s.trim());
+          const lotName = parts[0] || "ไม่ระบุชื่อหวย";
+          const dateStr = parts[1] || "";
+          const top3 = lines[i + 1] || "";
+          const bot2 = lines[i + 2] || "";
+
+          if (/^\d{3}$/.test(top3) && /^\d{2}$/.test(bot2)) {
+            const r = parseInt(top3[0], 10);
+            const st = parseInt(top3[1], 10);
+            const ut = parseInt(top3[2], 10);
+            const sb = parseInt(bot2[0], 10);
+            const ub = parseInt(bot2[1], 10);
+
+            if (!groups.has(lotName)) groups.set(lotName, []);
+            groups.get(lotName).push({
+              name: lotName,
+              dateStr,
+              dateNum: parseThaiDate(dateStr),
+              top3,
+              bot2,
+              r, st, ut, sb, ub,
+              sumTop: r + st + ut,
+              sumBot: sb + ub,
+              targets: [st, ut, sb, ub],
+              twoDigits: [`${st}${ut}`, `${sb}${ub}`]
+            });
+            i += 3;
+            continue;
+          }
+        }
+        i += 1;
+      }
+
+      const result = [];
+      for (const [name, draws] of groups.entries()) {
+        // Sort oldest -> newest
+        draws.sort((a, b) => a.dateNum - b.dateNum);
+        result.push({ name, draws });
+      }
+      return result;
+    }
+
+    function formulaPairFromDraw(f, p) {
+      const u1 = f.fn(p);
+      const d1 = mod10(u1);
+      const d2 = mod10(u1 + f.step);
+      return [d1, d2].sort((a, b) => a - b);
+    }
+
+    function evalFormulas(hist) {
+      return UNIQUE_FORMULAS.map(f => {
+        let hits = 0;
+        let trials = 0;
+        let curWin = 0, maxWin = 0, curLoss = 0, maxLoss = 0;
+
+        for (let t = 0; t < hist.length - 1; t++) {
+          const [d1, d2] = formulaPairFromDraw(f, hist[t]);
+          const nextSet = new Set(hist[t + 1].targets);
+          const hit = nextSet.has(d1) || nextSet.has(d2);
+          trials += 1;
+          if (hit) {
+            hits += 1;
+            curWin += 1;
+            maxWin = Math.max(maxWin, curWin);
+            curLoss = 0;
+          } else {
+            curLoss += 1;
+            maxLoss = Math.max(maxLoss, curLoss);
+            curWin = 0;
+          }
+        }
+
+        const nextPair = formulaPairFromDraw(f, hist[hist.length - 1]);
+        const hitRate = trials > 0 ? (hits / trials) * 100 : 0;
+        const isRebound = curLoss >= 3 && curLoss >= maxLoss - 1;
+        const isHot = hitRate >= 70 && curWin >= 2;
+        const score = hitRate * 0.25 + curWin * 2.2 + (isRebound ? 12 : 0) + (isHot ? 8 : 0);
+
+        return {
+          id: f.id,
+          name: f.name,
+          hitRate,
+          hits,
+          trials,
+          curWin,
+          maxWin,
+          curLoss,
+          maxLoss,
+          nextPair,
+          status: isRebound ? "จ่อกลับตัว" : (isHot ? "เดินดีต่อเนื่อง" : "ปกติ"),
+          score
         };
-        el.appendChild(btn);
       });
     }
 
-    function renderChart() {
-      const stock = stocks[state.activeSymbol];
-      const series = stock.history[state.timeframe];
-      const min = Math.min(...series);
-      const max = Math.max(...series);
-      const span = max - min || 1;
-      const w = 600;
-      const h = 190;
+    function evalFreqAndComp(hist) {
+      const freq = Array(10).fill(0);
+      const lastIdx = Array(10).fill(-1);
+      const gaps = Array.from({ length: 10 }, () => []);
 
-      const pts = series.map((val, idx) => {
-        const x = (idx / Math.max(series.length - 1, 1)) * w;
-        const y = h - ((val - min) / span) * (h - 24) - 12;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      hist.forEach((dr, idx) => {
+        const tSet = new Set(dr.targets);
+        for (let d = 0; d < 10; d++) {
+          if (tSet.has(d)) {
+            freq[d] += 1;
+            if (lastIdx[d] !== -1) {
+              gaps[d].push(idx - lastIdx[d] - 1);
+            }
+            lastIdx[d] = idx;
+          }
+        }
       });
 
-      document.getElementById("chartLine").setAttribute("points", pts.join(" "));
-      const areaPts = [`0,${h}`, ...pts, `${w},${h}`].join(" ");
-      document.getElementById("chartArea").setAttribute("points", areaPts);
-    }
-
-    function renderActiveStock() {
-      const sym = state.activeSymbol;
-      const stock = stocks[sym];
-      const series = stock.history[state.timeframe];
-      const start = series[0];
-      const diff = stock.price - start;
-      const pct = start ? (diff / start) * 100 : 0;
-
-      document.getElementById("activeSymbolName").textContent = `${sym} — ${stock.name}`;
-      document.getElementById("activeSector").textContent = stock.sector;
-      document.getElementById("activePrice").textContent = fmtTHB(stock.price);
-
-      const changeEl = document.getElementById("activeChange");
-      const sign = diff >= 0 ? "+" : "";
-      changeEl.textContent = `${sign}${diff.toFixed(2)} (${sign}${pct.toFixed(2)}%) ในช่วง ${state.timeframe}`;
-      changeEl.className = "stock-sub " + (diff >= 0 ? "pos" : "neg");
-
-      document.querySelectorAll(".tf-btn").forEach((b) => {
-        b.classList.toggle("active", b.dataset.tf === state.timeframe);
+      const n = hist.length;
+      const digitStats = Array.from({ length: 10 }, (_, d) => {
+        const curGap = lastIdx[d] !== -1 ? (n - 1 - lastIdx[d]) : n;
+        const maxGap = Math.max(curGap, ...(gaps[d].length ? gaps[d] : [0]));
+        return {
+          digit: d,
+          freq: freq[d],
+          curGap,
+          maxGap
+        };
       });
 
-      renderChart();
+      const compPairs = [];
+      for (let a = 0; a < 10; a++) {
+        for (let b = a + 1; b < 10; b++) {
+          let missStreak = 0;
+          let maxMiss = 0;
+          let compHits = 0;
+          for (const dr of hist) {
+            const tSet = new Set(dr.targets);
+            const hasA = tSet.has(a);
+            const hasB = tSet.has(b);
+            if (!hasA && !hasB) {
+              missStreak += 1;
+              maxMiss = Math.max(maxMiss, missStreak);
+            } else {
+              missStreak = 0;
+              if (hasA !== hasB) compHits += 1;
+            }
+          }
+          const compRate = n > 0 ? (compHits / n) * 100 : 0;
+          const triggered = missStreak > 0 && missStreak >= maxMiss;
+          compPairs.push({
+            pair: [a, b],
+            label: `${a}-${b}`,
+            compRate,
+            curMiss: missStreak,
+            maxMiss,
+            triggered
+          });
+        }
+      }
+
+      compPairs.sort((x, y) => {
+        if (y.triggered !== x.triggered) return y.triggered - x.triggered;
+        if (y.compRate !== x.compRate) return y.compRate - x.compRate;
+        return x.maxMiss - y.maxMiss;
+      });
+
+      return { digitStats, compPairs };
     }
 
-    function renderOrderPanel() {
-      const sym = state.activeSymbol;
-      const price = stocks[sym].price;
-      const owned = state.holdings[sym]?.shares || 0;
-      const qty = Math.max(0, parseInt(document.getElementById("sharesInput").value || "0", 10));
+    function predictFromHistory(hist) {
+      const formulas = evalFormulas(hist);
+      const { digitStats, compPairs } = evalFreqAndComp(hist);
+      const scores = Array(10).fill(0);
 
-      document.getElementById("tabBuy").classList.toggle("active", state.side === "buy");
-      document.getElementById("tabSell").classList.toggle("active", state.side === "sell");
-      document.getElementById("ownedHint").textContent = `ถืออยู่: ${owned} หุ้น`;
-      document.getElementById("orderUnitPrice").textContent = fmtTHB(price);
-      document.getElementById("orderTotal").textContent = fmtTHB(qty * price);
+      for (const f of formulas) {
+        const w = (f.hitRate / 100) * 10 + f.curWin * 1.4 + (f.curLoss >= 3 && f.curLoss >= f.maxLoss - 1 ? 4.0 : 0);
+        scores[f.nextPair[0]] += w;
+        scores[f.nextPair[1]] += w;
+      }
 
-      const submitBtn = document.getElementById("submitOrderBtn");
-      submitBtn.className = "submit-order " + state.side;
-      submitBtn.textContent = state.side === "buy" ? `ยืนยันคำสั่งซื้อ ${sym}` : `ยืนยันคำสั่งขาย ${sym}`;
+      const maxF = Math.max(1, ...digitStats.map(x => x.freq));
+      for (const ds of digitStats) {
+        const fNorm = ds.freq / maxF;
+        const gapRatio = ds.maxGap > 0 ? ds.curGap / ds.maxGap : 0;
+        scores[ds.digit] += fNorm * 3.5 + (gapRatio >= 0.8 ? gapRatio * 4.5 : gapRatio * 1.5);
+      }
+
+      for (const cp of compPairs.slice(0, 5)) {
+        const bonus = (cp.compRate / 100) * 5 + (cp.triggered ? 4.5 : 0);
+        scores[cp.pair[0]] += bonus;
+        scores[cp.pair[1]] += bonus;
+      }
+
+      const rankedDigits = Array.from({ length: 10 }, (_, d) => d)
+        .sort((a, b) => scores[b] - scores[a] || a - b);
+
+      const [h1, h2] = [rankedDigits[0], rankedDigits[1]].sort((a, b) => a - b);
+
+      const makePairsFor = (h) => {
+        const partners = Array.from({ length: 10 }, (_, d) => d)
+          .filter(d => d !== h && d !== h1 && d !== h2)
+          .sort((a, b) => scores[b] - scores[a] || a - b)
+          .slice(0, 5);
+        return partners.map(x => `${h}${x}`).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+      };
+
+      const p1 = makePairsFor(h1);
+      const p2 = makePairsFor(h2);
+
+      return {
+        h1, h2,
+        highlights: [h1, h2],
+        p1, p2,
+        allPairs: [...p1, ...p2],
+        formulas,
+        digitStats,
+        compPairs
+      };
     }
 
-    function renderSummaryAndTables() {
-      let holdingsVal = 0;
-      let costBasis = 0;
-      const holdingsBody = document.getElementById("holdingsBody");
-      holdingsBody.innerHTML = "";
+    function checkPredictionHit(pred, nextDraw) {
+      const targetSet = new Set(nextDraw.targets);
+      const twoSet = new Set(nextDraw.twoDigits);
+      const hHit = targetSet.has(pred.h1) || targetSet.has(pred.h2);
+      const bothHighlightHit = targetSet.has(pred.h1) && targetSet.has(pred.h2);
+      const pairHit = bothHighlightHit || pred.allPairs.some(pairStr => twoSet.has(pairStr));
+      return { hHit, pairHit };
+    }
 
-      const entries = Object.entries(state.holdings).filter(([, h]) => h.shares > 0);
-      if (entries.length === 0) {
-        holdingsBody.innerHTML = `<tr><td colspan="5" style="color: var(--text-muted);">ยังไม่มีหุ้นในพอร์ตจำลอง</td></tr>`;
-      } else {
-        entries.forEach(([sym, h]) => {
-          const curPrice = stocks[sym].price;
-          const val = h.shares * curPrice;
-          const cost = h.shares * h.avgCost;
-          const pnl = val - cost;
-          holdingsVal += val;
-          costBasis += cost;
+    function analyzeLottery(lot) {
+      const draws = lot.draws;
+      const startIdx = Math.min(5, Math.max(1, draws.length - 1));
+      const historyLog = [];
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td><strong>${sym}</strong></td>
-            <td>${h.shares}</td>
-            <td>${fmtTHB(h.avgCost)}</td>
-            <td>${fmtTHB(val)}</td>
-            <td class="${pnl >= 0 ? "pos" : "neg"}">${pnl >= 0 ? "+" : ""}${fmtTHB(pnl)}</td>
-          `;
-          holdingsBody.appendChild(tr);
+      let hHits = 0;
+      let pairHitsWhenHHit = 0;
+      let curHWin = 0, maxHWin = 0, curHLoss = 0, maxHLoss = 0;
+
+      for (let i = startIdx; i < draws.length; i++) {
+        const hist = draws.slice(0, i);
+        const actual = draws[i];
+        const pred = predictFromHistory(hist);
+        const { hHit, pairHit } = checkPredictionHit(pred, actual);
+
+        if (hHit) {
+          hHits += 1;
+          curHWin += 1;
+          maxHWin = Math.max(maxHWin, curHWin);
+          curHLoss = 0;
+          if (pairHit) pairHitsWhenHHit += 1;
+        } else {
+          curHLoss += 1;
+          maxHLoss = Math.max(maxHLoss, curHLoss);
+          curHWin = 0;
+        }
+
+        historyLog.push({
+          round: i + 1,
+          dateStr: actual.dateStr,
+          top3: actual.top3,
+          bot2: actual.bot2,
+          highlights: `${pred.h1} - ${pred.h2}`,
+          pairsText: `${pred.p1.join(" ")} | ${pred.p2.join(" ")}`,
+          hHit,
+          pairHit: hHit ? pairHit : null,
+          curHWin,
+          maxHWin,
+          curHLoss,
+          maxHLoss
         });
       }
 
-      const totalEquity = state.cash + holdingsVal;
-      const unrealizedPnl = holdingsVal - costBasis;
+      const latestPred = predictFromHistory(draws);
+      const evalCount = historyLog.length;
+      const hPct = evalCount > 0 ? (hHits / evalCount) * 100 : 0;
+      const pPct = hHits > 0 ? (pairHitsWhenHHit / hHits) * 100 : 0;
 
-      document.getElementById("totalEquity").textContent = fmtTHB(totalEquity);
-      document.getElementById("cashBalance").textContent = fmtTHB(state.cash);
-      document.getElementById("holdingsValue").textContent = fmtTHB(holdingsVal);
-
-      const pnlEl = document.getElementById("unrealizedPnl");
-      pnlEl.textContent = (unrealizedPnl >= 0 ? "+" : "") + fmtTHB(unrealizedPnl);
-      pnlEl.className = "card-value " + (unrealizedPnl >= 0 ? "pos" : "neg");
-
-      const ordersBody = document.getElementById("ordersBody");
-      ordersBody.innerHTML = "";
-      state.orders.slice(0, 8).forEach((o) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><span class="pill ${o.side}">${o.side.toUpperCase()}</span></td>
-          <td><strong>${o.symbol}</strong></td>
-          <td>${o.shares}</td>
-          <td>${fmtTHB(o.price)}</td>
-        `;
-        ordersBody.appendChild(tr);
-      });
+      return {
+        name: lot.name,
+        draws,
+        latestDraw: draws[draws.length - 1],
+        latestPred,
+        historyLog,
+        evalCount,
+        hHits,
+        pairHitsWhenHHit,
+        hPct,
+        pPct,
+        maxHWin,
+        maxHLoss
+      };
     }
 
-    function renderAll() {
-      renderWatchlist();
-      renderActiveStock();
-      renderOrderPanel();
-      renderSummaryAndTables();
-    }
+    let analyzedList = [];
+    let selectedIdx = 0;
+    let activeTab = "quantum";
 
-    document.getElementById("timeframeGroup").addEventListener("click", (e) => {
-      if (e.target.matches(".tf-btn")) {
-        state.timeframe = e.target.dataset.tf;
-        renderActiveStock();
-      }
-    });
-
-    document.getElementById("simulateTickBtn").addEventListener("click", () => {
-      Object.values(stocks).forEach((s) => {
-        const deltaPct = (Math.random() - 0.48) * 0.03; // สุ่มขยับประมาณ -1.4% ถึง +1.5%
-        s.price = Math.max(10, +(s.price * (1 + deltaPct)).toFixed(2));
-        s.history["1D"].push(s.price);
-        if (s.history["1D"].length > 20) s.history["1D"].shift();
-      });
-      renderAll();
-    });
-
-    document.getElementById("tabBuy").addEventListener("click", () => {
-      state.side = "buy";
-      document.getElementById("orderStatus").textContent = "";
-      renderOrderPanel();
-    });
-
-    document.getElementById("tabSell").addEventListener("click", () => {
-      state.side = "sell";
-      document.getElementById("orderStatus").textContent = "";
-      renderOrderPanel();
-    });
-
-    document.getElementById("sharesInput").addEventListener("input", renderOrderPanel);
-
-    document.getElementById("orderForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const sym = state.activeSymbol;
-      const price = stocks[sym].price;
-      const qty = parseInt(document.getElementById("sharesInput").value, 10);
-      const statusEl = document.getElementById("orderStatus");
-
-      if (!qty || qty <= 0) {
-        statusEl.textContent = "กรุณาระบุจำนวนหุ้นที่มากกว่า 0";
-        statusEl.className = "status-msg neg";
+    function runAnalysis() {
+      const text = document.getElementById("rawInput").value;
+      const parsedLotteries = parseInputText(text);
+      if (!parsedLotteries.length) {
+        document.getElementById("statusMessage").textContent = "ไม่พบข้อมูลที่ถูกต้อง กรุณาตรวจสอบรูปแบบงวดละ 3 บรรทัด";
         return;
       }
 
-      if (state.side === "buy") {
-        const totalCost = qty * price;
-        if (totalCost > state.cash) {
-          statusEl.textContent = "เงินสดจำลองไม่เพียงพอสำหรับคำสั่งซื้อนี้";
-          statusEl.className = "status-msg neg";
-          return;
-        }
-        state.cash -= totalCost;
-        const cur = state.holdings[sym] || { shares: 0, avgCost: 0 };
-        const newShares = cur.shares + qty;
-        const newAvg = ((cur.shares * cur.avgCost) + totalCost) / newShares;
-        state.holdings[sym] = { shares: newShares, avgCost: newAvg };
-        state.orders.unshift({ side: "buy", symbol: sym, shares: qty, price });
-        statusEl.textContent = `ซื้อ ${sym} จำนวน ${qty} หุ้น ที่ ${fmtTHB(price)} สำเร็จ`;
-        statusEl.className = "status-msg pos";
-      } else {
-        const cur = state.holdings[sym] || { shares: 0, avgCost: 0 };
-        if (qty > cur.shares) {
-          statusEl.textContent = `จำนวนหุ้นไม่พอขาย (ถืออยู่ ${cur.shares} หุ้น)`;
-          statusEl.className = "status-msg neg";
-          return;
-        }
-        state.cash += qty * price;
-        cur.shares -= qty;
-        state.orders.unshift({ side: "sell", symbol: sym, shares: qty, price });
-        statusEl.textContent = `ขาย ${sym} จำนวน ${qty} หุ้น ที่ ${fmtTHB(price)} สำเร็จ`;
-        statusEl.className = "status-msg pos";
-      }
+      analyzedList = parsedLotteries.map(analyzeLottery);
+      selectedIdx = 0;
 
-      renderAll();
-    });
+      document.getElementById("statusMessage").textContent = `ประมวลผลสำเร็จ ${analyzedList.length} ประเภทหวย`;
+      document.getElementById("summaryCount").textContent = `ทั้งหมด ${analyzedList.length} ประเภท`;
+      document.getElementById("resultsSection").classList.remove("hidden");
 
-    renderAll();
+      renderSummaryTable();
+      renderDetail(0);
+    }
+
+    function renderSummaryTable() {
+      const tbody = document.querySelector("#allLotteriesTable tbody");
+      tbody.innerHTML = "";
+
+      analyzedList.forEach((item, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><strong>${item.name}</strong></td>
+          <td>${item.latestDraw.dateStr}</td>
+          <td>${item.draws.length} งวด</td>
+          <td><strong style="color:var(--gold)">${item.latestPred.h1} - ${item.latestPred.h2}</strong></td>
+          <td>${item.latestPred.p1.join(" ")} | ${item.latestPred.p2.join(" ")}</td>
+          <td>${item.hPct.toFixed(1)}% (${item.hHits}/${item.evalCount})</td>
+          <td>${item.pPct.toFixed(1)}% (${item.pairHitsWhenHHit}/${item.hHits})</td>
+          <td><button class="btn-tab" type="button" onclick="selectLottery(${idx})">ดูวิเคราะห์</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function selectLottery(idx) {
+      selectedIdx = idx;
+      renderDetail(idx);
+      document.getElementById("detailCard").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function renderDetail(idx) {
+      const item = analyzedList[idx];
+      const pred = item.latestPred;
+
+      document.getElementById("detailTitle").textContent = `วิเคราะห์เชิงลึก: ${item.name} (งวดล่าสุด ${item.latestDraw.dateStr} • บน ${item.latestDraw.top3} / ล่าง ${item.latestDraw.bot2})`;
+
+      const selector = document.getElementById("lotterySelector");
+      selector.innerHTML = "";
+      analyzedList.forEach((l, i) => {
+        const b = document.createElement("button");
+        b.className = `btn-tab ${i === idx ? "active" : ""}`;
+        b.textContent = l.name;
+        b.onclick = () => selectLottery(i);
+        selector.appendChild(b);
+      });
+
+      document.getElementById("detailSummaryCards").innerHTML = `
+        <div class="metric-box">
+          <div class="metric-label">เลขเด่น 2 ตัว (งวดถัดไป)</div>
+          <div class="metric-val">${pred.h1} - ${pred.h2}</div>
+          <div class="pair-line">สถิติเด่นเข้า: ${item.hPct.toFixed(1)}% (${item.hHits}/${item.evalCount}) • เข้าสูงสุดติด ${item.maxHWin} • หลุดสูงสุดติด ${item.maxHLoss}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">เลขเจาะ 10 คู่ (เด่นนำ • เรียงน้อยไปมาก • ไม่เบิ้ล • ไม่ชนเด่น)</div>
+          <div class="pair-line"><strong>เด่น ${pred.h1}:</strong> ${pred.p1.join(", ")}</div>
+          <div class="pair-line"><strong>เด่น ${pred.h2}:</strong> ${pred.p2.join(", ")}</div>
+          <div class="pair-line">สถิติเจาะเข้า (เมื่อเด่นเข้า): ${item.pPct.toFixed(1)}% (${item.pairHitsWhenHHit}/${item.hHits})</div>
+        </div>
+      `;
+
+      renderQuantumTab(item);
+      renderHistoryTab(item);
+      renderFormulasTab(item);
+      renderFreqCompTab(item);
+      switchTab(activeTab);
+    }
+
+    function renderQuantumTab(item) {
+      const pred = item.latestPred;
+      const top5Hit = [...pred.formulas].sort((a, b) => b.hitRate - a.hitRate || b.curWin - a.curWin).slice(0, 5);
+      const top10Score = [...pred.formulas].sort((a, b) => b.score - a.score).slice(0, 10);
+      const top5Rebound = [...pred.formulas]
+        .filter(f => f.curLoss > 0)
+        .sort((a, b) => (b.curLoss / Math.max(1, b.maxLoss)) - (a.curLoss / Math.max(1, a.maxLoss)) || b.curLoss - a.curLoss)
+        .slice(0, 5);
+
+      const digitOverdueRank = [...pred.digitStats].sort((a, b) => b.curGap - a.curGap || b.maxGap - a.maxGap);
+      const compOverdueRank = [...pred.compPairs].sort((a, b) => b.curMiss - a.curMiss || b.maxMiss - a.maxMiss);
+
+      document.getElementById("tab-quantum").innerHTML = `
+        <div class="card-title"><span>1. Top 5 สูตรเข้าดีที่สุด &amp; Top 10 คะแนนรวม</span></div>
+        <div class="table-wrap" style="margin-bottom:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>อันดับ</th>
+                <th>Top 5 เข้าดีที่สุด</th>
+                <th>% เข้า</th>
+                <th>เดินติด/สูงสุด</th>
+                <th>เด่นถัดไป</th>
+                <th>อันดับ</th>
+                <th>Top 10 คะแนนรวม</th>
+                <th>สถานะ</th>
+                <th>เด่นถัดไป</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({ length: 10 }, (_, i) => {
+                const h5 = top5Hit[i];
+                const s10 = top10Score[i];
+                return `
+                  <tr>
+                    <td>${i < 5 ? i + 1 : "-"}</td>
+                    <td>${h5 ? `${h5.id} (${h5.name})` : "-"}</td>
+                    <td>${h5 ? `${h5.hitRate.toFixed(1)}%` : "-"}</td>
+                    <td>${h5 ? `${h5.curWin} / ${h5.maxWin}` : "-"}</td>
+                    <td>${h5 ? `${h5.nextPair[0]} - ${h5.nextPair[1]}` : "-"}</td>
+                    <td>${i + 1}</td>
+                    <td>${s10.id} (${s10.name}) [${s10.score.toFixed(1)}]</td>
+                    <td>${s10.status}</td>
+                    <td>${s10.nextPair[0]} - ${s10.nextPair[1]}</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-title"><span>2. สถิติสูงสุด &amp; หลุดล่าสุด (สูตรหลุด • เลข 0-9 ขาดระยะ • คู่ชดเชยหลุดสูงสุด/ล่าสุด)</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Top 5 สูตรหลุด/จ่อกลับตัว</th>
+                <th>หลุดล่าสุด / สูงสุด</th>
+                <th>เด่นถัดไป</th>
+                <th>เลข 0-9 (ล่าสุดยังไม่มา / หลุดสูงสุด / ความถี่)</th>
+                <th>คู่ชดเชย Top 5 (หลุดล่าสุด / หลุดสูงสุด / %ชดเชย)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({ length: 5 }, (_, i) => {
+                const rf = top5Rebound[i];
+                const ds = digitOverdueRank[i];
+                const cp = compOverdueRank[i];
+                return `
+                  <tr>
+                    <td>${rf ? `${rf.id} (${rf.name})` : "-"}</td>
+                    <td>${rf ? `<span class="badge-loss">${rf.curLoss}</span> / ${rf.maxLoss}` : "-"}</td>
+                    <td>${rf ? `${rf.nextPair[0]} - ${rf.nextPair[1]}` : "-"}</td>
+                    <td>เลข <strong>${ds.digit}</strong>: หาย <span class="badge-warn">${ds.curGap}</span> งวด / สูงสุด ${ds.maxGap} / มา ${ds.freq} ครั้ง</td>
+                    <td>คู่ <strong>${cp.label}</strong>: หลุดติด <span class="badge-warn">${cp.curMiss}</span> / สูงสุด ${cp.maxMiss} (${cp.compRate.toFixed(1)}%)</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderHistoryTab(item) {
+      const rows = item.historyLog.slice().reverse().map(log => {
+        const hBadge = log.hHit
+          ? `<span class="badge-win">เข้าเด่น</span>`
+          : `<span class="badge-loss">หลุดเด่น</span>`;
+        const pBadge = !log.hHit
+          ? `-`
+          : (log.pairHit ? `<span class="badge-win">เข้าเจาะ</span>` : `<span class="badge-loss">หลุดเจาะ</span>`);
+        return `
+          <tr>
+            <td>งวดที่ ${log.round} (${log.dateStr})</td>
+            <td>บน ${log.top3} / ล่าง ${log.bot2}</td>
+            <td><strong>${log.highlights}</strong></td>
+            <td>${log.pairsText}</td>
+            <td>${hBadge}</td>
+            <td>${pBadge}</td>
+            <td>ติด ${log.curHWin} / สูงสุด ${log.maxHWin}</td>
+            <td>ติด ${log.curHLoss} / สูงสุด ${log.maxHLoss}</td>
+          </tr>
+        `;
+      }).join("");
+
+      document.getElementById("tab-history").innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>งวด / วันที่</th>
+                <th>ผลออกจริง</th>
+                <th>เด่นที่เลือก</th>
+                <th>เลขเจาะ 10 คู่</th>
+                <th>ผลเด่น</th>
+                <th>ผลเจาะ (เมื่อเด่นเข้า)</th>
+                <th>เข้าติด / สูงสุด</th>
+                <th>หลุดติด / สูงสุด</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderFormulasTab(item) {
+      const sorted = [...item.latestPred.formulas].sort((a, b) => b.score - a.score);
+      const rows = sorted.map((f, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${f.id}</strong></td>
+          <td>${f.name}</td>
+          <td>${f.hitRate.toFixed(1)}% (${f.hits}/${f.trials})</td>
+          <td>${f.curWin}</td>
+          <td>${f.maxWin}</td>
+          <td>${f.curLoss > 0 ? `<span class="badge-loss">${f.curLoss}</span>` : `0`}</td>
+          <td>${f.maxLoss}</td>
+          <td>${f.status}</td>
+          <td><strong>${f.nextPair[0]} - ${f.nextPair[1]}</strong></td>
+        </tr>
+      `).join("");
+
+      document.getElementById("tab-formulas").innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>รหัสสูตร</th>
+                <th>โครงสร้างสูตร</th>
+                <th>% เข้าเป้า</th>
+                <th>เข้าติดปัจจุบัน</th>
+                <th>เข้าติดสูงสุด</th>
+                <th>หลุดติดปัจจุบัน</th>
+                <th>หลุดติดสูงสุด</th>
+                <th>สถานะ</th>
+                <th>เด่นงวดถัดไป</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderFreqCompTab(item) {
+      const freqRows = [...item.latestPred.digitStats]
+        .sort((a, b) => b.freq - a.freq || a.digit - b.digit)
+        .map(d => `
+          <tr>
+            <td><strong>${d.digit}</strong></td>
+            <td>${d.freq} ครั้ง</td>
+            <td>${d.curGap} งวด</td>
+            <td>${d.maxGap} งวด</td>
+          </tr>
+        `).join("");
+
+      const compRows = item.latestPred.compPairs.slice(0, 15).map((cp, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${cp.label}</strong></td>
+          <td>${cp.compRate.toFixed(1)}%</td>
+          <td>${cp.curMiss} งวด</td>
+          <td>${cp.maxMiss} งวด</td>
+          <td>${cp.triggered ? `<span class="badge-warn">ถึงรอบชดเชย</span>` : `เฝ้าดู`}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("tab-freqcomp").innerHTML = `
+        <div class="table-wrap" style="margin-bottom:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>เลข (0-9)</th>
+                <th>ความถี่ (สิบ-หน่วย บน/ล่าง)</th>
+                <th>ล่าสุดยังไม่มา</th>
+                <th>ห่างสูงสุด</th>
+              </tr>
+            </thead>
+            <tbody>${freqRows}</tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>อันดับ</th>
+                <th>คู่เลขชดเชย</th>
+                <th>% ชดเชย</th>
+                <th>หลุดพร้อมกันล่าสุด</th>
+                <th>หลุดพร้อมกันสูงสุด</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>${compRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function switchTab(tabName) {
+      activeTab = tabName;
+      document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-tab") === tabName);
+      });
+      ["quantum", "history", "formulas", "freqcomp"].forEach(name => {
+        document.getElementById(`tab-${name}`).classList.toggle("hidden", name !== tabName);
+      });
+    }
+
+    function clearAll() {
+      document.getElementById("rawInput").value = "";
+      document.getElementById("resultsSection").classList.add("hidden");
+      document.getElementById("statusMessage").textContent = "ล้างข้อมูลเรียบร้อยแล้ว";
+      document.getElementById("summaryCount").textContent = "พร้อมประมวลผล";
+    }
+
+    function loadSampleData() {
+      document.getElementById("rawInput").value = `ลาวประตูชัย | 24 พ.ย. 69
+574
+49
+ลาวประตูชัย | 23 พ.ย. 69
+365
+48
+ลาวประตูชัย | 22 พ.ย. 69
+685
+11
+ลาวประตูชัย | 21 พ.ย. 69
+591
+47
+ลาวประตูชัย | 20 พ.ย. 69
+887
+79
+ลาวประตูชัย | 19 พ.ย. 69
+008
+57
+ลาวประตูชัย | 18 พ.ย. 69
+955
+24
+ลาวประตูชัย | 17 พ.ย. 69
+212
+67
+ลาวประตูชัย | 16 พ.ย. 69
+528
+91
+ลาวประตูชัย | 15 พ.ย. 69
+520
+08
+ลาวประตูชัย | 14 พ.ย. 69
+447
+39
+ลาวประตูชัย | 13 พ.ย. 69
+942
+64
+ลาวประตูชัย | 12 พ.ย. 69
+993
+10
+ลาวประตูชัย | 11 พ.ย. 69
+424
+05
+ลาวประตูชัย | 10 พ.ย. 69
+963
+49
+ลาวประตูชัย | 9 พ.ย. 69
+918
+73
+ลาวประตูชัย | 8 พ.ย. 69
+818
+01
+ลาวประตูชัย | 7 พ.ย. 69
+586
+41
+ลาวประตูชัย | 6 พ.ย. 69
+553
+11
+ลาวประตูชัย | 5 พ.ย. 69
+789
+96
+ลาวประตูชัย | 4 พ.ย. 69
+231
+87
+ลาวประตูชัย | 3 พ.ย. 69
+411
+36
+ลาวประตูชัย | 2 พ.ย. 69
+730
+98
+ลาวประตูชัย | 1 พ.ย. 69
+247
+83
+ลาวประตูชัย | 31 ต.ค. 69
+686
+91
+ลาวประตูชัย | 30 ต.ค. 69
+315
+07
+ลาวประตูชัย | 29 ต.ค. 69
+727
+20
+ลาวประตูชัย | 28 ต.ค. 69
+376
+85
+ลาวประตูชัย | 27 ต.ค. 69
+121
+78
+ลาวประตูชัย | 26 ต.ค. 69
+315
+80
+ลาวประตูชัย | 25 ต.ค. 69
+254
+19`;
+      runAnalysis();
+    }
+
+    window.addEventListener("DOMContentLoaded", loadSampleData);
   </script>
 </body>
 </html>
