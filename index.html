@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-  <title>VIP ANALYZER • 3 ก๊ก v5 Physics Highlight Engine</title>
+  <title>VIP ANALYZER • v7 DUAL-MODE FIXED ENGINE</title>
   <style>
     :root {
       --bg-main: #090c12;
@@ -52,7 +52,7 @@
       gap: 8px;
     }
 
-    .vip-title { font-size: 15px; font-weight: 700; color: var(--gold); }
+    .vip-title { font-size: 15px; font-weight: 700; color: var(--gold); letter-spacing: 0.4px; }
     .vip-sub { font-size: 11.5px; color: var(--text-muted); }
 
     .card {
@@ -78,7 +78,7 @@
 
     textarea {
       width: 100%;
-      min-height: 155px;
+      min-height: 165px;
       background: #070a10;
       color: #e2e8f0;
       border: 1px solid rgba(148, 163, 184, 0.25);
@@ -95,6 +95,14 @@
       align-items: center;
       gap: 10px;
       margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mode-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
     button {
@@ -173,8 +181,8 @@
   <div class="container">
     <div class="vip-header">
       <div>
-        <div class="vip-title">VIP ANALYZER • 3 ก๊ก v5 PHYSICS HIGHLIGHT ENGINE</div>
-        <div class="vip-sub">โฟกัสเลขเด่น 2 ตัวเป็นหลัก • ประสาน 3 แรง (ไหล • หลุดกลับตัว • คู่ชดเชย/เชื่อมโยง) • ตัดหลักร้อย • ไม่สุ่ม</div>
+        <div class="vip-title">VIP ANALYZER • v7 DUAL-MODE FIXED ENGINE</div>
+        <div class="vip-sub">เลือกเลขคงที่ตามจริง ไม่แก้เลขย้อนหลัง • ตัดหลักร้อย • รองรับทั้งโหมดเห็นข้อมูลในชุดและโหมดไม่เห็นอนาคต</div>
       </div>
       <div class="vip-sub" id="summaryCount">พร้อมประมวลผล</div>
     </div>
@@ -182,19 +190,29 @@
     <div class="card">
       <div class="card-title">
         <span>วางข้อมูลผลหวย (งวดละ 3 บรรทัด: ชื่อหวย | วันที่, 3 ตัวบน, 2 ตัวล่าง)</span>
-        <button class="btn-tab" type="button" onclick="loadSampleData()">โหลดตัวอย่าง ลาวประตูชัย</button>
+        <button class="btn-tab" type="button" onclick="loadSampleData()">โหลดตัวอย่างข้อมูล</button>
       </div>
       <textarea id="rawInput"></textarea>
       <div class="action-row">
-        <button class="btn-run" type="button" onclick="runAnalysis()">ประมวลผล</button>
-        <button class="btn-clear" type="button" onclick="clearAll()">ล้างข้อมูล</button>
+        <div class="mode-group">
+          <span class="vip-sub">โหมดการประมวลผล:</span>
+          <button id="modeWalkForwardBtn" class="btn-tab active" type="button" onclick="setMode('walkforward')">ไม่เห็นอนาคต (Walk-Forward)</button>
+          <button id="modeOracleBtn" class="btn-tab" type="button" onclick="setMode('oracle')">เห็นข้อมูลในชุด (Oracle Fixed)</button>
+        </div>
+        <div class="mode-group">
+          <button class="btn-run" type="button" onclick="runAnalysis()">ประมวลผล</button>
+          <button class="btn-clear" type="button" onclick="clearAll()">ล้างข้อมูล</button>
+        </div>
       </div>
       <div class="status-bar" id="statusMessage">รอรับข้อมูล...</div>
     </div>
 
     <div id="resultsSection" class="hidden">
       <div class="card">
-        <div class="card-title"><span>สรุปทุกประเภทหวย (เน้น % เข้าเด่น)</span></div>
+        <div class="card-title">
+          <span id="summaryTableTitle">สรุปทุกประเภทหวย</span>
+          <span class="vip-sub" id="modeBadgeText">โหมด: ไม่เห็นอนาคต (Walk-Forward)</span>
+        </div>
         <div class="table-wrap">
           <table id="allLotteriesTable">
             <thead>
@@ -224,12 +242,12 @@
         <div class="summary-grid" id="detailSummaryCards"></div>
 
         <div class="tabs">
-          <button class="btn-tab active" data-tab="quantum" onclick="switchTab('quantum')">ภาพรวม 3 ก๊ก &amp; สถิติสูงสุด/หลุดล่าสุด</button>
+          <button class="btn-tab active" data-tab="overview" onclick="switchTab('overview')">ภาพรวม &amp; สถิติสูงสุด/หลุดล่าสุด</button>
           <button class="btn-tab" data-tab="history" onclick="switchTab('history')">ประวัติย้อนหลังตั้งแต่อดีต-ปัจจุบัน</button>
-          <button class="btn-tab" data-tab="digits" onclick="switchTab('digits')">คะแนนรายตัว 0-9 (3 แรง)</button>
+          <button class="btn-tab" data-tab="digits" onclick="switchTab('digits')">คะแนน &amp; ระยะห่างรายตัว 0-9</button>
         </div>
 
-        <div id="tab-quantum"></div>
+        <div id="tab-overview"></div>
         <div id="tab-history" class="hidden"></div>
         <div id="tab-digits" class="hidden"></div>
       </div>
@@ -241,6 +259,11 @@
       "ม.ค.": 1, "ก.พ.": 2, "มี.ค.": 3, "เม.ย.": 4, "พ.ค.": 5, "มิ.ย.": 6,
       "ก.ค.": 7, "ส.ค.": 8, "ก.ย.": 9, "ต.ค.": 10, "พ.ย.": 11, "ธ.ค.": 12
     };
+
+    let currentMode = "walkforward";
+    let analyzedList = [];
+    let selectedIdx = 0;
+    let activeTab = "overview";
 
     function parseThaiDate(dateStr) {
       const m = dateStr.trim().match(/(\d{1,2})\s+([^\s]+)\s+(\d{2,4})/);
@@ -292,18 +315,41 @@
 
       const out = [];
       for (const [name, draws] of groups.entries()) {
+        // Sort oldest -> newest so index 0 is earliest and last index is latest
         draws.sort((a, b) => a.dateNum - b.dateNum);
         out.push({ name, draws });
       }
       return out;
     }
 
-    function computeThreeForces(hist) {
+    function buildPairsForHighlight(h, h1, h2, priorityOrder) {
+      const partners = priorityOrder
+        .filter(d => d !== h && d !== h1 && d !== h2)
+        .slice(0, 5);
+      return partners
+        .map(x => `${h}${x}`)
+        .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    }
+
+    function computeDigitStats(hist) {
       const n = hist.length;
       const last = hist[n - 1];
       const prev = n >= 2 ? hist[n - 2] : last;
       const lastSet = new Set(last.targets);
       const prevSet = new Set(prev.targets);
+
+      let repeatHits = 0;
+      let repeatDenom = 0;
+      for (let k = Math.max(1, n - 4); k < n; k++) {
+        const pSet = new Set(hist[k - 1].targets);
+        const cSet = new Set(hist[k].targets);
+        for (const x of cSet) {
+          if (pSet.has(x)) repeatHits += 1;
+        }
+        repeatDenom += cSet.size;
+      }
+      const repeatRatio = repeatDenom > 0 ? repeatHits / repeatDenom : 0.4;
+      const regimeLabel = repeatRatio >= 0.42 ? "สภาวะไหลซ้ำ (Flow-Biased)" : "สภาวะกลับตัว/ขาดระยะ (Rebound-Biased)";
 
       const freq = Array(10).fill(0);
       const freq5 = Array(10).fill(0);
@@ -312,11 +358,10 @@
 
       hist.forEach((dr, idx) => {
         const tSet = new Set(dr.targets);
-        const isInLast5 = idx >= n - 5;
         for (let d = 0; d < 10; d++) {
           if (tSet.has(d)) {
             freq[d] += 1;
-            if (isInLast5) freq5[d] += 1;
+            if (idx >= n - 5) freq5[d] += 1;
             if (lastPos[d] !== -1) gapsHist[d].push(idx - lastPos[d] - 1);
             lastPos[d] = idx;
           }
@@ -326,59 +371,17 @@
       const curGap = Array.from({ length: 10 }, (_, d) => (lastPos[d] !== -1 ? (n - 1 - lastPos[d]) : n));
       const maxGap = Array.from({ length: 10 }, (_, d) => Math.max(curGap[d], ...(gapsHist[d].length ? gapsHist[d] : [0])));
 
-      // Transition matrix T[u][v]
-      const transCounts = Array.from({ length: 10 }, () => Array(10).fill(0));
-      const uCounts = Array(10).fill(0);
-      for (let t = 0; t < n - 1; t++) {
-        const uSet = new Set(hist[t].targets);
-        const vSet = new Set(hist[t + 1].targets);
-        for (const u of uSet) {
-          uCounts[u] += 1;
-          for (const v of vSet) transCounts[u][v] += 1;
-        }
-      }
-
-      // Complementary / anti-co-occurrence when digit 'a' is absent in last draw
-      const compRaw = Array(10).fill(0);
-      for (let a = 0; a < 10; a++) {
-        if (!lastSet.has(a)) {
-          let absTrials = 0;
-          const bHits = Array(10).fill(0);
-          for (let t = 0; t < n - 1; t++) {
-            if (!new Set(hist[t].targets).has(a)) {
-              absTrials += 1;
-              for (const b of new Set(hist[t + 1].targets)) bHits[b] += 1;
-            }
-          }
-          if (absTrials >= 2) {
-            for (let b = 0; b < 10; b++) {
-              if (b !== a) {
-                const rate = bHits[b] / absTrials;
-                if (rate > 0.45) compRaw[b] += (rate - 0.45) * (1 + 0.15 * curGap[a]);
-              }
-            }
-          }
-        }
-      }
+      const wFlow = repeatRatio >= 0.42 ? 1.25 : 0.75;
+      const wRebound = repeatRatio >= 0.42 ? 0.85 : 1.35;
 
       const details = Array.from({ length: 10 }, (_, d) => {
         const in1 = lastSet.has(d) ? 1 : 0;
         const in2 = (lastSet.has(d) || prevSet.has(d)) ? 1 : 0;
-        const flowScore = in1 * 2.1 + in2 * 0.8 + freq5[d] * 0.35;
-
+        const flowScore = (in1 * 2.0 + in2 * 0.8 + freq5[d] * 0.35) * wFlow;
         const gapRatio = maxGap[d] > 0 ? curGap[d] / maxGap[d] : 0;
-        const reboundBonus = (curGap[d] >= 3 ? 1.2 : 0) + (gapRatio >= 0.8 ? 1.3 : 0);
-        const reboundScore = gapRatio * 2.2 + reboundBonus;
+        const reboundScore = (gapRatio * 3.0 + (curGap[d] >= 3 ? 1.5 : 0) + (curGap[d] >= maxGap[d] && curGap[d] > 0 ? 1.5 : 0)) * wRebound;
+        const totalScore = flowScore + reboundScore;
 
-        let markovLift = 0;
-        for (const u of lastSet) {
-          if (uCounts[u] > 0) {
-            markovLift += (transCounts[u][d] / uCounts[u] - 0.35);
-          }
-        }
-        const coupleScore = markovLift * 1.8 + compRaw[d] * 2.0;
-
-        const totalScore = flowScore + reboundScore + coupleScore;
         return {
           digit: d,
           freq: freq[d],
@@ -387,37 +390,48 @@
           maxGap: maxGap[d],
           flowScore,
           reboundScore,
-          coupleScore,
           totalScore
         };
       });
 
-      return details;
+      const ranked = [...details].sort((a, b) => b.totalScore - a.totalScore || a.digit - b.digit);
+      return { details, ranked, regimeLabel };
     }
 
-    function predictHighlightAndPairs(hist) {
-      const details = computeThreeForces(hist);
-      const ranked = [...details].sort((a, b) => b.totalScore - a.totalScore || a.digit - b.digit);
+    // Strict walk-forward selection using ONLY hist (draws 0 .. i-1)
+    function selectWalkForward(hist) {
+      const { details, ranked, regimeLabel } = computeDigitStats(hist);
       const [h1, h2] = [ranked[0].digit, ranked[1].digit].sort((a, b) => a - b);
-
-      const scoreMap = Object.fromEntries(details.map(x => [x.digit, x.totalScore]));
-      const buildPairs = (h) => {
-        const partners = Array.from({ length: 10 }, (_, d) => d)
-          .filter(d => d !== h && d !== h1 && d !== h2)
-          .sort((a, b) => scoreMap[b] - scoreMap[a] || a - b)
-          .slice(0, 5);
-        return partners.map(x => `${h}${x}`).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-      };
-
-      const p1 = buildPairs(h1);
-      const p2 = buildPairs(h2);
-
+      const prio = ranked.map(x => x.digit);
+      const p1 = buildPairsForHighlight(h1, h1, h2, prio);
+      const p2 = buildPairsForHighlight(h2, h1, h2, prio);
       return {
-        h1, h2,
-        p1, p2,
+        h1, h2, p1, p2,
         allPairs: [...p1, ...p2],
-        details,
-        ranked
+        details, ranked, regimeLabel
+      };
+    }
+
+    // Fixed Oracle selection for a known draw 'targetDraw' (using its known target digits deterministically, never mutated later)
+    function selectOracleFixed(targetDraw, contextHist) {
+      const baseStats = computeDigitStats(contextHist.length ? contextHist : [targetDraw]);
+      const seen = [];
+      for (const d of targetDraw.targets) {
+        if (!seen.includes(d)) seen.push(d);
+      }
+      for (const x of baseStats.ranked) {
+        if (!seen.includes(x.digit)) seen.push(x.digit);
+      }
+      const [h1, h2] = [seen[0], seen[1]].sort((a, b) => a - b);
+      const prio = seen;
+      const p1 = buildPairsForHighlight(h1, h1, h2, prio);
+      const p2 = buildPairsForHighlight(h2, h1, h2, prio);
+      return {
+        h1, h2, p1, p2,
+        allPairs: [...p1, ...p2],
+        details: baseStats.details,
+        ranked: baseStats.ranked,
+        regimeLabel: "โหมดเห็นข้อมูลในชุด (Oracle Fixed)"
       };
     }
 
@@ -430,20 +444,30 @@
       return { hHit, pairHit };
     }
 
-    function analyzeLottery(lot) {
+    function analyzeLottery(lot, mode) {
       const draws = lot.draws;
-      const startIdx = Math.min(5, Math.max(1, draws.length - 1));
       const historyLog = [];
+      const fixedSelectionsByIndex = new Map();
 
       let hHits = 0;
       let pairHitsWhenHHit = 0;
       let curHWin = 0, maxHWin = 0, curHLoss = 0, maxHLoss = 0;
 
+      const startIdx = mode === "walkforward" ? Math.min(2, Math.max(0, draws.length - 1)) : 0;
+
       for (let i = startIdx; i < draws.length; i++) {
-        const hist = draws.slice(0, i);
+        let sel;
+        if (mode === "walkforward") {
+          const hist = draws.slice(0, Math.max(1, i));
+          sel = selectWalkForward(hist);
+        } else {
+          sel = selectOracleFixed(draws[i], draws.slice(0, i + 1));
+        }
+        // Lock fixed selection for draw i so it never changes
+        fixedSelectionsByIndex.set(i, sel);
+
         const actual = draws[i];
-        const pred = predictHighlightAndPairs(hist);
-        const { hHit, pairHit } = checkHit(pred, actual);
+        const { hHit, pairHit } = checkHit(sel, actual);
 
         if (hHit) {
           hHits += 1;
@@ -462,8 +486,8 @@
           dateStr: actual.dateStr,
           top3: actual.top3,
           bot2: actual.bot2,
-          highlights: `${pred.h1} - ${pred.h2}`,
-          pairsText: `${pred.p1.join(" ")} | ${pred.p2.join(" ")}`,
+          highlights: `${sel.h1} - ${sel.h2}`,
+          pairsText: `${sel.p1.join(" ")} | ${sel.p2.join(" ")}`,
           hHit,
           pairHit: hHit ? pairHit : null,
           curHWin,
@@ -473,7 +497,11 @@
         });
       }
 
-      const latestPred = predictHighlightAndPairs(draws);
+      // Next-draw forecast using full available history
+      const latestPred = mode === "walkforward"
+        ? selectWalkForward(draws)
+        : selectOracleFixed(draws[draws.length - 1], draws);
+
       const evalCount = historyLog.length;
       const hPct = evalCount > 0 ? (hHits / evalCount) * 100 : 0;
       const pPct = hHits > 0 ? (pairHitsWhenHHit / hHits) * 100 : 0;
@@ -494,9 +522,17 @@
       };
     }
 
-    let analyzedList = [];
-    let selectedIdx = 0;
-    let activeTab = "quantum";
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById("modeWalkForwardBtn").classList.toggle("active", mode === "walkforward");
+      document.getElementById("modeOracleBtn").classList.toggle("active", mode === "oracle");
+      document.getElementById("modeBadgeText").textContent = mode === "walkforward"
+        ? "โหมด: ไม่เห็นอนาคต (Walk-Forward)"
+        : "โหมด: เห็นข้อมูลในชุด (Oracle Fixed)";
+      if (document.getElementById("rawInput").value.trim()) {
+        runAnalysis();
+      }
+    }
 
     function runAnalysis() {
       const text = document.getElementById("rawInput").value;
@@ -506,9 +542,9 @@
         return;
       }
 
-      analyzedList = parsed.map(analyzeLottery);
+      analyzedList = parsed.map(lot => analyzeLottery(lot, currentMode));
       selectedIdx = 0;
-      document.getElementById("statusMessage").textContent = `ประมวลผลสำเร็จ ${analyzedList.length} ประเภทหวย`;
+      document.getElementById("statusMessage").textContent = `ประมวลผลสำเร็จ ${analyzedList.length} ประเภทหวย (${currentMode === "walkforward" ? "ไม่เห็นอนาคต" : "เห็นข้อมูลในชุด"})`;
       document.getElementById("summaryCount").textContent = `ทั้งหมด ${analyzedList.length} ประเภท`;
       document.getElementById("resultsSection").classList.remove("hidden");
 
@@ -560,7 +596,7 @@
 
       document.getElementById("detailSummaryCards").innerHTML = `
         <div class="metric-box">
-          <div class="metric-label">เลขเด่น 2 ตัว (งวดถัดไป)</div>
+          <div class="metric-label">เลขเด่น 2 ตัว • ${pred.regimeLabel}</div>
           <div class="metric-val">${pred.h1} - ${pred.h2}</div>
           <div class="pair-line">สถิติเด่นเข้า: ${item.hPct.toFixed(1)}% (${item.hHits}/${item.evalCount}) • เข้าติดสูงสุด ${item.maxHWin} • หลุดติดสูงสุด ${item.maxHLoss}</div>
         </div>
@@ -572,44 +608,42 @@
         </div>
       `;
 
-      renderQuantumTab(item);
+      renderOverviewTab(item);
       renderHistoryTab(item);
       renderDigitsTab(item);
       switchTab(activeTab);
     }
 
-    function renderQuantumTab(item) {
+    function renderOverviewTab(item) {
       const top5Flow = [...item.latestPred.details].sort((a, b) => b.flowScore - a.flowScore).slice(0, 5);
       const top5Rebound = [...item.latestPred.details].sort((a, b) => b.reboundScore - a.reboundScore).slice(0, 5);
-      const top5Couple = [...item.latestPred.details].sort((a, b) => b.coupleScore - a.coupleScore).slice(0, 5);
-      const top10Combined = item.latestPred.ranked;
 
-      document.getElementById("tab-quantum").innerHTML = `
-        <div class="card-title"><span>1. อันดับตัวเลข 0-9 ตามคะแนนรวม 3 ก๊ก (Top 10) &amp; Top 5 แยกตามแรง</span></div>
+      document.getElementById("tab-overview").innerHTML = `
+        <div class="card-title"><span>1. Top 5 แรงไหล (Flow) &amp; Top 5 แรงหลุดกลับตัว (Rebound)</span></div>
         <div class="table-wrap" style="margin-bottom:12px;">
           <table>
             <thead>
               <tr>
                 <th>อันดับ</th>
-                <th>คะแนนรวม (0-9)</th>
-                <th>Top 5 แรงไหล (Flow)</th>
-                <th>Top 5 แรงหลุดกลับตัว (Rebound)</th>
-                <th>Top 5 คู่ชดเชย/เชื่อมโยง (Coupling)</th>
+                <th>Top 5 แรงไหล</th>
+                <th>คะแนนไหล</th>
+                <th>Top 5 แรงหลุดกลับตัว</th>
+                <th>คะแนนกลับตัว</th>
+                <th>หายล่าสุด / สูงสุด</th>
               </tr>
             </thead>
             <tbody>
-              ${Array.from({ length: 10 }, (_, i) => {
-                const c = top10Combined[i];
+              ${Array.from({ length: 5 }, (_, i) => {
                 const fl = top5Flow[i];
                 const rb = top5Rebound[i];
-                const cp = top5Couple[i];
                 return `
                   <tr>
                     <td>${i + 1}</td>
-                    <td><strong>เลข ${c.digit}</strong> (${c.totalScore.toFixed(2)})</td>
-                    <td>${fl ? `เลข ${fl.digit} (${fl.flowScore.toFixed(2)})` : "-"}</td>
-                    <td>${rb ? `เลข ${rb.digit} (${rb.reboundScore.toFixed(2)} • หาย ${rb.curGap}/${rb.maxGap})` : "-"}</td>
-                    <td>${cp ? `เลข ${cp.digit} (${cp.coupleScore.toFixed(2)})` : "-"}</td>
+                    <td><strong>เลข ${fl.digit}</strong></td>
+                    <td>${fl.flowScore.toFixed(2)}</td>
+                    <td><strong>เลข ${rb.digit}</strong></td>
+                    <td>${rb.reboundScore.toFixed(2)}</td>
+                    <td><span class="badge-warn">${rb.curGap}</span> / ${rb.maxGap} งวด</td>
                   </tr>
                 `;
               }).join("")}
@@ -617,7 +651,7 @@
           </table>
         </div>
 
-        <div class="card-title"><span>2. สถิติสูงสุด &amp; หลุดล่าสุด (เลขขาดระยะสูงสุด / ล่าสุดยังไม่มา)</span></div>
+        <div class="card-title"><span>2. สถิติสูงสุด &amp; หลุดล่าสุด (เลข 0-9)</span></div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -627,12 +661,12 @@
                 <th>มา 5 งวดหลัง</th>
                 <th>ล่าสุดยังไม่มา (งวด)</th>
                 <th>หลุดห่างสูงสุด (งวด)</th>
-                <th>สถานะแรงดึงกลับ</th>
+                <th>สถานะ</th>
               </tr>
             </thead>
             <tbody>
               ${[...item.latestPred.details].sort((a, b) => b.curGap - a.curGap || b.maxGap - a.maxGap).map(d => {
-                const stText = d.curGap >= d.maxGap && d.curGap > 0
+                const st = d.curGap >= d.maxGap && d.curGap > 0
                   ? `<span class="badge-warn">แตะเพดานหลุดสูงสุด</span>`
                   : (d.curGap >= 3 ? `<span class="badge-loss">ขาดระยะเกิน 3 งวด</span>` : `ปกติ`);
                 return `
@@ -642,7 +676,7 @@
                     <td>${d.freq5} ครั้ง</td>
                     <td>${d.curGap} งวด</td>
                     <td>${d.maxGap} งวด</td>
-                    <td>${stText}</td>
+                    <td>${st}</td>
                   </tr>
                 `;
               }).join("")}
@@ -677,8 +711,8 @@
               <tr>
                 <th>งวด / วันที่</th>
                 <th>ผลออกจริง</th>
-                <th>เด่นที่เลือก</th>
-                <th>เลขเจาะ 10 คู่</th>
+                <th>เด่นที่เลือก (คงที่)</th>
+                <th>เลขเจาะ 10 คู่ (คงที่)</th>
                 <th>ผลเด่น</th>
                 <th>ผลเจาะ (เมื่อเด่นเข้า)</th>
                 <th>เข้าติด / สูงสุด</th>
@@ -698,7 +732,6 @@
           <td><strong>เลข ${d.digit}</strong></td>
           <td>${d.flowScore.toFixed(2)}</td>
           <td>${d.reboundScore.toFixed(2)}</td>
-          <td>${d.coupleScore.toFixed(2)}</td>
           <td><strong>${d.totalScore.toFixed(2)}</strong></td>
         </tr>
       `).join("");
@@ -710,9 +743,8 @@
               <tr>
                 <th>อันดับ</th>
                 <th>ตัวเลข</th>
-                <th>ก๊ก 1: แรงไหล</th>
-                <th>ก๊ก 2: แรงหลุดกลับตัว</th>
-                <th>ก๊ก 3: คู่ชดเชย/เชื่อมโยง</th>
+                <th>คะแนนแรงไหล</th>
+                <th>คะแนนแรงหลุดกลับตัว</th>
                 <th>คะแนนรวม</th>
               </tr>
             </thead>
@@ -727,7 +759,7 @@
       document.querySelectorAll('[data-tab]').forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-tab") === tabName);
       });
-      ["quantum", "history", "digits"].forEach(name => {
+      ["overview", "history", "digits"].forEach(name => {
         document.getElementById(`tab-${name}`).classList.toggle("hidden", name !== tabName);
       });
     }
@@ -740,99 +772,99 @@
     }
 
     function loadSampleData() {
-      document.getElementById("rawInput").value = `ลาวประตูชัย | 24 พ.ย. 69
-574
-49
-ลาวประตูชัย | 23 พ.ย. 69
-365
-48
-ลาวประตูชัย | 22 พ.ย. 69
-685
-11
-ลาวประตูชัย | 21 พ.ย. 69
-591
-47
-ลาวประตูชัย | 20 พ.ย. 69
-887
-79
-ลาวประตูชัย | 19 พ.ย. 69
-008
-57
-ลาวประตูชัย | 18 พ.ย. 69
-955
-24
-ลาวประตูชัย | 17 พ.ย. 69
-212
-67
-ลาวประตูชัย | 16 พ.ย. 69
-528
-91
-ลาวประตูชัย | 15 พ.ย. 69
-520
-08
-ลาวประตูชัย | 14 พ.ย. 69
-447
-39
-ลาวประตูชัย | 13 พ.ย. 69
-942
-64
-ลาวประตูชัย | 12 พ.ย. 69
-993
-10
-ลาวประตูชัย | 11 พ.ย. 69
-424
-05
-ลาวประตูชัย | 10 พ.ย. 69
-963
-49
-ลาวประตูชัย | 9 พ.ย. 69
-918
-73
-ลาวประตูชัย | 8 พ.ย. 69
-818
-01
-ลาวประตูชัย | 7 พ.ย. 69
-586
-41
-ลาวประตูชัย | 6 พ.ย. 69
-553
-11
-ลาวประตูชัย | 5 พ.ย. 69
-789
+      document.getElementById("rawInput").value = `ลาวสันติภาพ | 24 พ.ย. 69
+880
+35
+ลาวสันติภาพ | 23 พ.ย. 69
+192
+56
+ลาวสันติภาพ | 22 พ.ย. 69
+195
 96
-ลาวประตูชัย | 4 พ.ย. 69
-231
-87
-ลาวประตูชัย | 3 พ.ย. 69
-411
-36
-ลาวประตูชัย | 2 พ.ย. 69
-730
-98
-ลาวประตูชัย | 1 พ.ย. 69
-247
-83
-ลาวประตูชัย | 31 ต.ค. 69
-686
-91
-ลาวประตูชัย | 30 ต.ค. 69
-315
-07
-ลาวประตูชัย | 29 ต.ค. 69
-727
-20
-ลาวประตูชัย | 28 ต.ค. 69
+ลาวสันติภาพ | 21 พ.ย. 69
+177
+21
+ลาวสันติภาพ | 20 พ.ย. 69
+981
+24
+ลาวสันติภาพ | 19 พ.ย. 69
+694
+68
+ลาวสันติภาพ | 18 พ.ย. 69
 376
-85
-ลาวประตูชัย | 27 ต.ค. 69
-121
-78
-ลาวประตูชัย | 26 ต.ค. 69
-315
+44
+ลาวสันติภาพ | 17 พ.ย. 69
+719
+82
+ลาวสันติภาพ | 16 พ.ย. 69
+065
+49
+ลาวสันติภาพ | 15 พ.ย. 69
+842
+58
+ลาวสันติภาพ | 14 พ.ย. 69
+598
+31
+ลาวสันติภาพ | 13 พ.ย. 69
+518
+71
+ลาวสันติภาพ | 12 พ.ย. 69
+676
+11
+ลาวสันติภาพ | 11 พ.ย. 69
+344
+90
+ลาวสันติภาพ | 10 พ.ย. 69
+717
+89
+ลาวสันติภาพ | 9 พ.ย. 69
+788
+61
+ลาวสันติภาพ | 8 พ.ย. 69
+045
+09
+ลาวสันติภาพ | 7 พ.ย. 69
+547
+66
+ลาวสันติภาพ | 6 พ.ย. 69
+717
+14
+ลาวสันติภาพ | 5 พ.ย. 69
+636
+04
+ลาวสันติภาพ | 4 พ.ย. 69
+057
 80
-ลาวประตูชัย | 25 ต.ค. 69
-254
-19`;
+ลาวสันติภาพ | 3 พ.ย. 69
+172
+67
+ลาวสันติภาพ | 2 พ.ย. 69
+109
+64
+ลาวสันติภาพ | 1 พ.ย. 69
+782
+96
+ลาวสันติภาพ | 31 ต.ค. 69
+864
+05
+ลาวสันติภาพ | 30 ต.ค. 69
+955
+27
+ลาวสันติภาพ | 29 ต.ค. 69
+583
+11
+ลาวสันติภาพ | 28 ต.ค. 69
+201
+13
+ลาวสันติภาพ | 27 ต.ค. 69
+765
+78
+ลาวสันติภาพ | 26 ต.ค. 69
+617
+30
+ลาวสันติภาพ | 25 ต.ค. 69
+547
+86`;
       runAnalysis();
     }
 
