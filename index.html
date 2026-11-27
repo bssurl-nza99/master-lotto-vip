@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- V84.1: adds validated V80.8 prospective-ledger backup/restore and outcome reconciliation. V84.0 data audit/rolling reports retained; Production lead scorer and pair generator preserved. -->
+<!-- V84.0: source/opportunity/warm-up/Pending reconciliation; strict chronology fail-closed rolling windows; per-type scoring and pair-structure audit. Production lead scorer and pair generator preserved. -->
 <!-- V80.9 additive release: prospective ledger/hash controls only; Production scorer and pair generator unchanged. -->
 <!-- V80.8: Nikkei all-day lead research checkpoint; clean interface retained; production prediction/scoring logic unchanged. -->
 <!-- V80.8: prospective ledger for D1/D2 + exact 10-pair forecasts; Production scoring and pair generation unchanged. -->
@@ -24,7 +26,7 @@ V66.0 research scope: lead D1/D2 only; pair system remains untouched. Build date
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>เศรษฐีเงินล้าน · V82.0 Controlled Hybrid · V81.9 Base + V55.07 Shadow</title>
+<title>V84.1 Ledger Recovery & Data Integrity — เศรษฐีเงินล้าน</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -681,15 +683,15 @@ table.audit-table th {
     <div class="brand">
       <div class="logo">เศรษฐี</div>
       <div>
-        <b>เศรษฐีเงินล้าน Mobile (V80.8 Clean Tables)</b>
+        <b>เศรษฐีเงินล้าน Mobile (V84.0 Rolling Accuracy & Day Integrity)</b>
         <small>True Honest & Calibrated Master</small>
       </div>
     </div>
-    <div class="pill">เศรษฐีเงินล้าน V80.8</div>
+    <div class="pill">เศรษฐีเงินล้าน V84.0</div>
   </div>
 
   <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V80.8 CLEAN TABLES · PRODUCTION ENGINE PRESERVED</div>
+    <div class="hero-tag">เศรษฐีเงินล้าน · V84.0 ROLLING WINDOWS · PRODUCTION ENGINE PRESERVED</div>
     <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
     <p>ระบบวิเคราะห์สถิติย้อนหลังและทดสอบแบบ Walk-Forward โดยแสดงผลตามข้อมูลที่มีจริง ไม่รับประกันผลลัพธ์ในอนาคต</p>
   </div>
@@ -2174,9 +2176,9 @@ function analyzeLotteryRecords(records, lotteryType, researchOptions = {}) {
       let crossPair1 = `${d1Str}${d2Str}`;
       let crossPair2 = `${d2Str}${d1Str}`;
       
-      // Audit rule: listed pairs are scored as usual, and the user-confirmed d1-d2 cross-pair exception
+      // Scoring rule: listed pairs are scored as usual, and the user-confirmed d1-d2 cross-pair exception
       // is counted as a success if it appears in the actual top-two result or bottom-two result.
-      // User-confirmed audit rule: when the actual two-digit result is the two predicted lead digits
+      // User-confirmed scoring rule: when the actual two-digit result is the two predicted lead digits
       // in either order, count it as a pair success even though that cross-pair is intentionally
       // excluded from the ten displayed pair predictions. This changes audit accounting only;
       // pair generation, ten-pair quota, ranking, and display remain unchanged.
@@ -2264,7 +2266,7 @@ function analyzeLotteryRecords(records, lotteryType, researchOptions = {}) {
     if (isLeadShadowHit) currentLeadShadowLossStreak = 0;
     else currentLeadShadowLossStreak++;
 
-    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), predDigits: topCandidates.map(String), frequencyShadowDigits: frequencyShadowDigits.map(String), frequencyShadowHit: isFrequencyShadowHit, predTop3Digits: pastMaster.slice(0,3).map(x => String(x.digit)), rank1Hit: validDigits.includes(String(pastMaster[0].digit)), rank2Hit: validDigits.includes(String(pastMaster[1].digit)), rank3Hit: validDigits.includes(String(pastMaster[2].digit)), top3CoverageHit: pastMaster.slice(0,3).some(x => validDigits.includes(String(x.digit))), scoreMargin12: Number((Number(pastMaster[0].netScore || 0) - Number(pastMaster[1].netScore || 0)).toFixed(4)), scoreVector: scoreTrace?.scoreVector || null, collisionScoreVector: collisionScoreTrace?.scoreVector || null, collisionScoreWindowSize: collisionScoreTrace?.windowSize || null, scoreWindowSize: scoreTrace?.windowSize || null, scoreAblationMode: scoreTrace?.ablationMode || 'NONE', predPairs: walkForwardPairs, isDigitHit: isDigitHit, isPairHit: isPairHit, pairEvaluated: isDigitHit, collisionGateOpen, gatePriorPairEvaluated, gatePriorPairHits, baselinePairs, baselinePairHit: isDigitHit ? isBaselinePairHit : null, pairHitDefinition: 'คู่ตรงแบบไม่สนลำดับใน 2 ตัวท้ายของ 3 ตัวบน หรือ 2 ตัวล่าง; ประเมินเฉพาะงวดที่เลขเด่นเข้า', predictionMode: 'SIMULATED_WALK_FORWARD', formulaVersion: 'V55.07_WEAK_LEAD_RESCUE_SHADOW_GUARDED', noVetoPredDigits: noVetoCandidates.map(String), isNoVetoDigitHit: isNoVetoDigitHit, leadTunedShadowDigits: leadShadowCandidates.map(String), leadTunedShadowHit: isLeadShadowHit, leadTunedShadowMode: 'NO_RECENCY_GAP40', leadTunedShadowPairs: shadowWalkForwardPairs, leadTunedShadowPairHit: isLeadShadowHit ? isLeadShadowPairHit : null, leadTunedShadowPairGateOpen: shadowGateOpen, adaptiveLeadShadowSelected: useAdaptiveLeadShadow, adaptiveLeadShadowDigits: adaptiveLeadDigits, adaptiveLeadShadowPairs: adaptivePairPredictions, adaptiveLeadShadowHit: adaptiveLeadHit, adaptiveLeadShadowPairHit: adaptivePairHit, adaptiveLeadShadowPriorNet: adaptiveLeadNet, adaptiveLeadShadowPriorPairRateEdge: Number((adaptiveShadowPairRate-adaptiveBasePairRate).toFixed(4)), baselineLeadDigits:topCandidates.map(String), baselineLeadHit:isDigitHit, collisionLeadDigits:leadChallengerCandidates.map(String), collisionLeadHit:isCollisionLeadHit, collisionLeadPairs:collisionWalkForwardPairs, collisionPairHit:(researchOptions.captureScoreTrace&&isCollisionLeadHit)?isCollisionPairHit:null, collisionPairEvaluated:!!(researchOptions.captureScoreTrace&&isCollisionLeadHit), baselinePairs });
+    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), predDigits: topCandidates.map(String), frequencyShadowDigits: frequencyShadowDigits.map(String), frequencyShadowHit: isFrequencyShadowHit, predTop3Digits: pastMaster.slice(0,3).map(x => String(x.digit)), rank1Hit: validDigits.includes(String(pastMaster[0].digit)), rank2Hit: validDigits.includes(String(pastMaster[1].digit)), rank3Hit: validDigits.includes(String(pastMaster[2].digit)), top3CoverageHit: pastMaster.slice(0,3).some(x => validDigits.includes(String(x.digit))), scoreMargin12: Number((Number(pastMaster[0].netScore || 0) - Number(pastMaster[1].netScore || 0)).toFixed(4)), scoreVector: scoreTrace?.scoreVector || null, collisionScoreVector: collisionScoreTrace?.scoreVector || null, collisionScoreWindowSize: collisionScoreTrace?.windowSize || null, scoreWindowSize: scoreTrace?.windowSize || null, scoreAblationMode: scoreTrace?.ablationMode || 'NONE', predPairs: walkForwardPairs, isDigitHit: isDigitHit, isPairHit: isPairHit, pairEvaluated: isDigitHit, collisionGateOpen, gatePriorPairEvaluated, gatePriorPairHits, baselinePairs, baselinePairHit: isDigitHit ? isBaselinePairHit : null, pairHitDefinition: 'คู่ตรงหรือกลับใน 2 ตัวท้ายของ 3 ตัวบน หรือ 2 ตัวล่าง; ประเมินเฉพาะงวดที่เลขเด่นเข้า; คู่ D1D2/D2D1 นับเป็นเลขจ่อเข้าได้โดยไม่เพิ่มในชุด 10 คู่', predictionMode: 'SIMULATED_WALK_FORWARD', formulaVersion: 'V55.07_WEAK_LEAD_RESCUE_SHADOW_GUARDED', noVetoPredDigits: noVetoCandidates.map(String), isNoVetoDigitHit: isNoVetoDigitHit, leadTunedShadowDigits: leadShadowCandidates.map(String), leadTunedShadowHit: isLeadShadowHit, leadTunedShadowMode: 'NO_RECENCY_GAP40', leadTunedShadowPairs: shadowWalkForwardPairs, leadTunedShadowPairHit: isLeadShadowHit ? isLeadShadowPairHit : null, leadTunedShadowPairGateOpen: shadowGateOpen, adaptiveLeadShadowSelected: useAdaptiveLeadShadow, adaptiveLeadShadowDigits: adaptiveLeadDigits, adaptiveLeadShadowPairs: adaptivePairPredictions, adaptiveLeadShadowHit: adaptiveLeadHit, adaptiveLeadShadowPairHit: adaptivePairHit, adaptiveLeadShadowPriorNet: adaptiveLeadNet, adaptiveLeadShadowPriorPairRateEdge: Number((adaptiveShadowPairRate-adaptiveBasePairRate).toFixed(4)), baselineLeadDigits:topCandidates.map(String), baselineLeadHit:isDigitHit, collisionLeadDigits:leadChallengerCandidates.map(String), collisionLeadHit:isCollisionLeadHit, collisionLeadPairs:collisionWalkForwardPairs, collisionPairHit:(researchOptions.captureScoreTrace&&isCollisionLeadHit)?isCollisionPairHit:null, collisionPairEvaluated:!!(researchOptions.captureScoreTrace&&isCollisionLeadHit), baselinePairs });
     
     if (!isDigitHit || !isPairHit) {
       telemetryLogs.push({
@@ -2497,10 +2499,4 @@ function scorePersonalizedBehavior(records,targetDate) {
   const scores=[];
   for(let d=0;d<10;d++){
     const long=p.rates[d];
-    const r5=rows.slice(0,5).filter(r=>behaviorDigits(r).includes(String(d))).length/Math.max(1,Math.min(5,n));
-    const r10=rows.slice(0,10).filter(r=>behaviorDigits(r).includes(String(d))).length/Math.max(1,Math.min(10,n));
-    const positionRate=p.pos.reduce((sum,a,i)=>sum+((p.posDen[i]?a[d]/p.posDen[i]:long)),0)/4;
-    let trans=long;
-    if(latestSet.includes(String(d)) && p.transitionDen[d]>0) trans=(p.transitions[d]+long*5)/(p.transitionDen[d]+5);
-    let weekday=long;
-    if(target){const w=p.weekdayCounts[target.weekday];if(w.draws)weekday=(w.
+    const r5=rows.slice(0,5).filter(r=>behaviorDigits(r).includes(String(d))).length/Ma
