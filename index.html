@@ -1,2495 +1,1113 @@
 <!DOCTYPE html>
-<!-- V84.8: targeted cumulative binary day-frequency D1/D2 model for Nikkei Normal All-Day only; all other types retain incumbent scorer. V84.0 data audit/rolling reports retained; Production lead scorer and pair generator preserved. -->
-<!-- V84.0: source/opportunity/warm-up/Pending reconciliation; strict chronology fail-closed rolling windows; per-type scoring and pair-structure audit. Production lead scorer and pair generator preserved. -->
-<!-- V80.9 additive release: prospective ledger/hash controls only; Production scorer and pair generator unchanged. -->
-<!-- V80.8: Nikkei all-day lead research checkpoint; clean interface retained; production prediction/scoring logic unchanged. -->
-<!-- V80.8: prospective ledger for D1/D2 + exact 10-pair forecasts; Production scoring and pair generation unchanged. -->
-<!--
-V72.0 CLEAN RESEARCH RELEASE — PRODUCTION BASELINE PRESERVED
-Prior app base: V69.0. V70.0 challenger rejected on untouched outer holdout; V72.0 consolidates the research status without changing Production.
-Base: V62.9 Type Registry + Source Reconciliation + Lead Audit
-This release adds audit documentation only; production lead scorer and 10-pair generator are unchanged.
-Base source SHA-256: 2bc717b608b03a3dd3368b28e1618d83fe046c590cf79d19b7d16c613701b6e8
-Pool 6/7/8 and one-factor ablations replayed; incumbent pool 6 retained; no accuracy-improvement or prospective-validation claim.
-D1/D2 are the only predicted lead digits; no D3 is required.
-Production scorer, 10-pair generator, pair-hit rule, denominator, and original UI are unchanged.
-Source PDF replay: 78 parser types, 2,450 parsed records, 1,826 prior-only targets after warmup 8 per type.
-Retrospective formula competition is research-only; no family passed Holm-adjusted paired testing.
-V66.0 research scope: lead D1/D2 only; pair system remains untouched. Build date: 2026-11-25. No claim of prospective accuracy.
--->
 <html lang="th">
 <head>
-<!-- V72.0: clean release dashboard; Production scorer and pair generator preserved byte-for-byte from V69.0. -->
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<meta name="theme-color" content="#d4af37">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>V84.8 Nikkei Normal All-Day Targeted Lead Model — เศรษฐีเงินล้าน</title>
-<style>
-:root {
-  --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
-  --panel-bg: rgba(255, 255, 255, 0.98);
-  --line-gold: rgba(212, 175, 55, 0.4);
-  --line-soft: #eae3d2;
-  --text-dark: #322c23;
-  --text-muted: #827768;
-  --gold-grad: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
-  --silver-grad: linear-gradient(135deg, #c0c0c0 0%, #8a929a 100%);
-  --shadow-lux: 0 10px 30px rgba(120, 90, 40, 0.12);
-  --green: #2e7d32;
-  --red: #c62828;
-}
-
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: auto;
-}
-
-html {
-  scroll-behavior: smooth;
-  font-size: 12px;
-  touch-action: pan-x pan-y pinch-zoom;
-}
-body { touch-action: pan-x pan-y pinch-zoom; }
-
-body {
-  margin: 0;
-  background: var(--bg-main);
-  color: var(--text-dark);
-  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
-  min-height: 100vh;
-  padding-bottom: 30px;
-}
-
-.shell {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 9px 8px;
-}
-
-.top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 9px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 99px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #e6c875, #a67c1e);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.65rem;
-  box-shadow: 0 3px 8px rgba(166, 124, 30, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  flex-shrink: 0;
-}
-
-.brand b {
-  display: block;
-  font-size: 0.65rem;
-  color: #4a3b18;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.brand small {
-  display: block;
-  font-size: 0.42rem;
-  color: var(--text-muted);
-}
-
-.pill {
-  padding: 4px 8px;
-  border: 1px solid var(--line-gold);
-  border-radius: 99px;
-  background: rgba(255, 251, 240, 0.95);
-  color: #967219;
-  font-size: 0.4rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.hero {
-  padding: 10px 12px;
-  margin-bottom: 9px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(252,247,237,0.95));
-  box-shadow: var(--shadow-lux);
-}
-
-.hero-tag {
-  font-size: 0.4rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #a67c1e;
-  text-transform: uppercase;
-}
-
-.hero h1 {
-  margin: 3px 0 3px;
-  font-size: 0.9rem;
-  line-height: 1.25;
-  font-weight: 800;
-}
-
-.hero h1 em {
-  font-style: normal;
-  background: linear-gradient(135deg, #c49828, #825e0c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero p {
-  margin: 0;
-  font-size: 0.46rem;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-
-.panel {
-  background: var(--panel-bg);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lux);
-  margin-bottom: 10px;
-  padding: 10px;
-}
-
-.bulkbox label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-  font-size: 0.5rem;
-  font-weight: 700;
-  color: #856414;
-}
-
-.bulk {
-  display: block;
-  width: 100%;
-  min-height: 135px;
-  resize: vertical;
-  padding: 8px;
-  border: 1px solid var(--line-soft);
-  border-radius: 9px;
-  background: #fff;
-  color: var(--text-dark);
-  outline: none;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.5rem;
-  line-height: 1.4;
-  margin-bottom: 8px;
-}
-
-.bulk:focus {
-  border-color: #d4af37;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
-}
-
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.run {
-  grid-column: 1 / -1;
-  min-height: 36px;
-  border: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #c49828, #8c6511);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 700;
-  box-shadow: 0 3px 10px rgba(140, 101, 17, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.run:active {
-  transform: scale(0.98);
-}
-
-.clear, .sample-btn {
-  min-height: 32px;
-  border: 1px solid var(--line-soft);
-  border-radius: 9px;
-  background: #fff;
-  color: #7c7263;
-  font-size: 0.52rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.sample-btn {
-  background: rgba(255, 248, 230, 0.8);
-  border-color: rgba(212, 175, 55, 0.4);
-  color: #8c6511;
-}
-
-.mobile-alert {
-  display: none;
-  padding: 9px;
-  border-radius: 9px;
-  background: #ffebee;
-  border: 1px solid #ef9a9a;
-  color: #c62828;
-  font-size: 0.5rem;
-  font-weight: 600;
-  margin-bottom: 9px;
-}
-
-.mobile-alert.show {
-  display: block;
-}
-
-.section-title {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #78590f;
-  margin: 12px 0 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-left: 3px solid #c49828;
-  padding-left: 6px;
-}
-
-.lottery-nav-bar {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 6px 2px 10px 2px;
-  margin-bottom: 12px;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
-}
-
-.lottery-nav-bar::-webkit-scrollbar {
-  height: 4px;
-}
-
-.lottery-nav-bar::-webkit-scrollbar-thumb {
-  background: #d4af37;
-  border-radius: 4px;
-}
-
-.nav-tab-btn {
-  padding: 6px 12px;
-  border: 1px solid var(--line-gold);
-  border-radius: 8px;
-  background: #fff;
-  color: #78590f;
-  font-size: 0.48rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
-  flex-shrink: 0;
-}
-
-.nav-tab-btn.active {
-  background: linear-gradient(135deg, #c49828, #8c6511);
-  color: #fff;
-  border-color: #8c6511;
-  box-shadow: 0 3px 8px rgba(140, 101, 17, 0.3);
-}
-
-.lottery-group-panel {
-  display: block;
-}
-
-.prediction-card-wrapper {
-  position: relative;
-  margin-bottom: 16px;
-}
-
-.prediction-card {
-  padding: 18px 15px;
-  border: 1.5px solid rgba(212, 175, 55, 0.38);
-  border-radius: 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #fffcf5 100%);
-  box-shadow: 0 12px 35px rgba(120, 90, 40, 0.1);
-  position: relative;
-}
-
-.card-brand-tag {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  font-size: 0.41rem;
-  font-weight: 700;
-  color: #9a7311;
-  background: linear-gradient(135deg, rgba(255,248,230,0.95), rgba(255,241,204,0.95));
-  padding: 3.5px 9px;
-  border-radius: 7px;
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  display: flex;
-  align-items: center;
-  gap: 3.5px;
-  box-shadow: 0 2px 5.5px rgba(212, 175, 55, 0.15);
-}
-
-.card-top-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 4.5px;
-  margin-bottom: 14px;
-  border-bottom: 1.5px dashed #ebdcb8;
-  padding-bottom: 9px;
-  padding-right: 102px;
-}
-
-.card-date {
-  font-size: 0.47rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.2px;
-}
-
-.card-title-group {
-  display: flex;
-  align-items: center;
-  gap: 6.5px;
-}
-
-.card-flag {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.card-lottery-name {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #322c23;
-  letter-spacing: -0.2px;
-  /* Preserve the user's intentional censored/struck display-label treatment. */
-  text-decoration-line: line-through;
-  text-decoration-color: #000;
-  text-decoration-thickness: 2px;
-}
-
-.hero-digits-wrap {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin: 14px 0;
-}
-
-.digit-box-item {
-  width: 68px;
-  height: 68px;
-  background: #fff;
-  border: 1.5px solid #dfd1b0;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 5px 14px rgba(0,0,0,0.03);
-}
-
-.digit-circle {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #fff;
-  width: 33px;
-  height: 33px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 3.5px;
-  box-shadow: 0 2.5px 7px rgba(0,0,0,0.12);
-}
-
-.digit-gold .digit-circle { background: var(--gold-grad); }
-.digit-silver .digit-circle { background: var(--silver-grad); }
-
-.digit-rate {
-  font-size: 0.38rem;
-  color: #726758;
-  font-weight: 700;
-}
-
-.pairs-grid-box {
-  background: #fff;
-  border: 1.5px solid #dfd1b0;
-  border-radius: 12px;
-  padding: 12px 9px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 7px;
-  margin-top: 12px;
-  box-shadow: 0 5px 18px rgba(120, 90, 40, 0.05);
-}
-
-.pair-badge {
-  background: #fff;
-  border: 1px solid #ebdcb8;
-  border-radius: 8px;
-  padding: 7px 3.5px;
-  text-align: center;
-  transition: all 0.2s ease;
-}
-
-.pair-badge.highlight-top1 {
-  background: linear-gradient(135deg, rgba(255,248,230,0.98), rgba(255,243,214,0.98));
-  border: 1.5px solid #d4af37;
-  box-shadow: 0 2.5px 7px rgba(212, 175, 55, 0.2);
-}
-
-.pair-badge.highlight-top2 {
-  background: linear-gradient(135deg, rgba(245,247,250,0.98), rgba(230,235,240,0.98));
-  border: 1.5px solid #a8b2bc;
-  box-shadow: 0 2.5px 7px rgba(168, 178, 188, 0.2);
-}
-
-.pair-badge.highlight-top3 {
-  background: linear-gradient(135deg, rgba(253,242,242,0.98), rgba(248,230,230,0.98));
-  border: 1.5px solid #b76e79;
-  box-shadow: 0 2.5px 7px rgba(183, 110, 121, 0.2);
-}
-
-.pair-num {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #322c23;
-  display: block;
-  margin-bottom: 1.5px;
-}
-
-.highlight-top1 .pair-num { color: #8a650d; }
-.highlight-top2 .pair-num { color: #4a525d; }
-.highlight-top3 .pair-num { color: #7d3f48; }
-
-.pair-pct {
-  font-size: 0.35rem;
-  color: #827768;
-  font-weight: 600;
-  display: block;
-}
-
-.card-action-bar {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 7px;
-  margin-bottom: 15px;
-}
-
-.screenshot-btn {
-  background: linear-gradient(135deg, #c49828, #8c6511);
-  color: #fff;
-  border: 0;
-  padding: 5.5px 13px;
-  border-radius: 8.5px;
-  font-size: 0.48rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4.5px;
-  box-shadow: 0 3px 8px rgba(140, 101, 17, 0.25);
-}
-
-.screenshot-btn:active {
-  transform: scale(0.97);
-}
-
-.summary-table-container {
-  overflow-x: auto;
-  margin-bottom: 16px;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: #fff;
-  padding: 8px;
-  box-shadow: var(--shadow-lux);
-}
-
-table.audit-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.45rem;
-  min-width: 280px;
-}
-
-table.audit-table th,
-table.audit-table td {
-  border: 1px solid #f0e6d6;
-  padding: 6px 4px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-table.audit-table th {
-  background: #faf5eb;
-  color: #78590f;
-  font-weight: 700;
-}
-
-.badge-hit {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
-  padding: 1px 5px;
-  border-radius: 99px;
-  font-weight: 700;
-  display: inline-block;
-}
-
-.badge-miss {
-  background: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
-  padding: 1px 5px;
-  border-radius: 99px;
-  font-weight: 700;
-  display: inline-block;
-}
-
-.badge-warn {
-  background: #fff3e0;
-  color: #e65100;
-  border: 1px solid #ffe0b2;
-  padding: 1px 5px;
-  border-radius: 99px;
-  font-weight: 700;
-  display: inline-block;
-}
-
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 15px;
-  transform: translate(-50%, 30px);
-  opacity: 0;
-  padding: 6px 12px;
-  border-radius: 99px;
-  color: #fff;
-  background: #846210;
-  font-size: 0.5rem;
-  font-weight: 600;
-  transition: all 0.25s ease;
-  pointer-events: none;
-  z-index: 999;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  white-space: nowrap;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-
-/* V57.3 Research Batch Diagnostics — read-only, no prediction-path changes */
-.research-batch-panel{background:#fffdf8;border:1px solid rgba(212,175,55,.38);border-radius:12px;padding:10px;margin:10px 0;box-shadow:0 4px 14px rgba(120,90,40,.06)}
-.research-batch-panel h3{font-size:.62rem;color:#78590f;margin:0 0 7px;font-weight:800}
-.research-batch-note{font-size:.45rem;line-height:1.55;color:#766b5b;margin:5px 0}
-.research-batch-progress{height:7px;background:#eee8dc;border-radius:9px;overflow:hidden;margin:7px 0}
-.research-batch-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#d4af37,#8c6511);transition:width .2s}
-.research-batch-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}
-.research-batch-kpi{border:1px solid #eee4cf;border-radius:8px;padding:7px;background:#fff}
-.research-batch-kpi b{display:block;font-size:.82rem;color:#8c6511}
-.research-batch-kpi span{font-size:.42rem;color:#786f61}
-.research-batch-table-wrap{overflow:auto;max-height:540px;border:1px solid #eee4cf;border-radius:8px}
-.research-batch-table{border-collapse:collapse;width:100%;min-width:780px;font-size:.43rem}
-.research-batch-table th{position:sticky;top:0;background:#f6efdf;color:#60480c;z-index:1}
-.research-batch-table th,.research-batch-table td{padding:5px 6px;border-bottom:1px solid #eee8dc;text-align:center;white-space:nowrap}
-.research-batch-table td:first-child,.research-batch-table th:first-child{text-align:left;position:sticky;left:0;background:#fffdf8;z-index:2}
-.research-batch-table th:first-child{background:#f6efdf;z-index:3}
-.research-batch-bad{color:#b3261e;font-weight:800}
-.research-batch-good{color:#23733a;font-weight:800}
-.research-batch-actions{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
-.research-batch-actions button{font-size:.46rem;padding:6px 9px;border:1px solid #d8c79f;border-radius:7px;background:#fff;color:#78590f;font-weight:700}
-</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<style id="v690-clean-research-ui">
-#v690ResearchHome{margin:14px 0 18px;padding:16px;border:1px solid rgba(168,130,45,.28);border-radius:16px;background:linear-gradient(135deg,#fffdf8,#f7f1e5);color:#322c23;box-shadow:0 8px 24px rgba(54,43,21,.06)}
-#v690ResearchHome .v690-head{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
-#v690ResearchHome .v690-kicker{font-size:.68rem;font-weight:800;letter-spacing:.08em;color:#9a741c}
-#v690ResearchHome h2{font-size:1.12rem;margin:4px 0 5px;color:#332b1e}
-#v690ResearchHome p{font-size:.78rem;line-height:1.65;margin:4px 0;color:#6d6252}
-#v690ResearchHome .v690-status{display:inline-flex;align-items:center;gap:6px;border:1px solid #e4c77c;background:#fff8e5;color:#76580d;padding:7px 10px;border-radius:999px;font-size:.7rem;font-weight:800}
-#v690ResearchHome .v690-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
-#v690ResearchHome .v690-kpi{padding:10px;border:1px solid #ece3d1;border-radius:11px;background:#fff}
-#v690ResearchHome .v690-kpi b{display:block;font-size:1.3rem;color:#8d6917;font-family:'IBM Plex Mono',monospace}
-#v690ResearchHome .v690-kpi span{font-size:.68rem;color:#766b5b;line-height:1.45;display:block;margin-top:3px}
-#v690ResearchHome .v690-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-#v690ResearchHome .v690-card{border:1px solid #e9e1d1;border-radius:12px;padding:11px;background:rgba(255,255,255,.92)}
-#v690ResearchHome .v690-card h3{font-size:.82rem;margin:0 0 5px;color:#423725}
-#v690ResearchHome .v690-card strong{font-family:'IBM Plex Mono',monospace;color:#594414}
-#v690ResearchHome .v690-note{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff7e8;border:1px solid #ead9ae;font-size:.72rem;line-height:1.65;color:#67542d}
-#v690ResearchHome .v690-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-#v690ResearchHome .v690-links a{font-size:.72rem;color:#72540d;font-weight:700;text-decoration:none;border:1px solid #e4d5b4;border-radius:8px;padding:7px 10px;background:#fff}
-#v690ResearchArchive{margin:14px 0;border:1px solid #ddd3c0;border-radius:12px;background:#fff;overflow:hidden}
-#v690ResearchArchive>summary{cursor:pointer;padding:13px 15px;font-size:.82rem;font-weight:800;color:#594414;background:#faf6ed;list-style:none}
-#v690ResearchArchive>summary::-webkit-details-marker{display:none}
-#v690ResearchArchive>summary:before{content:'＋';display:inline-block;margin-right:8px;color:#9a741c}
-#v690ResearchArchive[open]>summary:before{content:'－'}
-#v690ResearchArchive .v690-archive-content{padding:10px 12px;border-top:1px solid #eee5d5}
-#v690ResearchTools{grid-column:1/-1;border:1px solid #e7dcc6;border-radius:10px;background:#fff}
-#v690ResearchTools>summary,#v690ResearchOutputs>summary{cursor:pointer;padding:10px 12px;font-size:.74rem;font-weight:800;color:#705416;list-style:none}
-#v690ResearchTools>summary::-webkit-details-marker,#v690ResearchOutputs>summary::-webkit-details-marker{display:none}
-#v690ResearchTools .v690-tool-grid{display:grid;grid-template-columns:1fr;gap:7px;padding:0 10px 10px}
-#v690ResearchTools button{width:100%;grid-column:1/-1}
-#v690ResearchOutputs{margin:10px 0;border:1px solid #e7dcc6;border-radius:10px;background:#fff}
-#v690ResearchOutputs .v690-output-content{padding:0 10px 10px}
-#v690ResearchOutputs .v690-output-content>div{margin:8px 0}
-@media(max-width:560px){#v690ResearchHome{padding:12px}#v690ResearchHome .v690-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#v690ResearchHome .v690-grid{grid-template-columns:1fr}}
-</style>
-
-<!-- V80.8 CLEAN TABLES: UI-only release. Production lead scorer, pair generator, scoring definitions,
-     date/calendar logic, lottery registry, card markup, flags, colors, sizing and main result tables are unchanged. -->
-<style id="v802-clean-ui">
-  /* Keep the primary workflow: input controls + the original main analysis output. */
-  body > details,
-  body > section,
-  #v690ResearchHome,
-  #v690ResearchOutputs,
-  #v690ResearchTools,
-  #sampleBtn {
-    display: none !important;
-  }
-</style>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เศรษฐีเงินล้าน V85.0 — AllType Adaptive Frequency Shadow Engine</title>
+  <style>
+    :root {
+      --bg-body: #0b1020;
+      --bg-panel: #131b31;
+      --bg-panel-alt: #192440;
+      --bg-card: #10172a;
+      --text-main: #eef3ff;
+      --text-muted: #9fb0d4;
+      --accent: #38bdf8;
+      --accent-2: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --border: rgba(148, 163, 184, 0.2);
+      --radius: 14px;
+      --shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      background: linear-gradient(160deg, var(--bg-body), #0e162c 60%, #131c36);
+      color: var(--text-main);
+      line-height: 1.55;
+    }
+
+    .app-container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    header.topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .brand h1 {
+      margin: 0 0 4px;
+      font-size: 1.35rem;
+      letter-spacing: 0.2px;
+    }
+
+    .brand p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .mode-switch {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #061322;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    select, input[type="number"], textarea {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 8px 11px;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button.btn {
+      border: 1px solid var(--border);
+      background: var(--bg-panel-alt);
+      color: var(--text-main);
+      padding: 8px 13px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: transform 0.12s ease, background 0.2s ease;
+    }
+
+    button.btn:hover {
+      background: #23335c;
+    }
+
+    button.btn:active {
+      transform: scale(0.98);
+    }
+
+    button.btn.primary {
+      background: var(--accent);
+      color: #051220;
+      border-color: transparent;
+    }
+
+    button.btn.success {
+      background: var(--accent-2);
+      color: #052016;
+      border-color: transparent;
+    }
+
+    button.btn.danger {
+      background: rgba(248, 113, 113, 0.16);
+      color: #fecaca;
+      border-color: rgba(248, 113, 113, 0.45);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .badge.ok {
+      background: rgba(52, 211, 153, 0.18);
+      color: #6ee7b7;
+    }
+
+    .badge.warn {
+      background: rgba(251, 191, 36, 0.18);
+      color: #fcd34d;
+    }
+
+    .badge.err {
+      background: rgba(248, 113, 113, 0.2);
+      color: #fca5a5;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+
+    th, td {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: var(--bg-panel-alt);
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .research-only {
+      display: none;
+    }
+
+    body.mode-research .research-only {
+      display: block;
+    }
+
+    .status-banner {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .digit-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      font-weight: 700;
+      margin-right: 6px;
+      color: #e0f2fe;
+    }
+
+    .shadow-pill {
+      background: rgba(52, 211, 153, 0.15);
+      border-color: rgba(52, 211, 153, 0.45);
+      color: #d1fae5;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 12px;
+      }
+      header.topbar {
+        padding: 14px;
+      }
+    }
+  </style>
 </head>
-<body>
-<div id="v848NikkeiNotice" style="max-width:600px;margin:8px auto;padding:10px 12px;border:2px solid #b8860b;border-radius:10px;background:#fff8e7;color:#463b2c;font:12px/1.6 Prompt,sans-serif"><b>V84.8 · ปรับเฉพาะ “นิคเคอิ ปกติ ทั้งวัน”</b><br>เลขเด่น D1/D2 ของประเภทนี้ใช้ความถี่สะสมแบบนับเลขไม่ซ้ำต่อวันจากวันก่อนหน้าเท่านั้น รวมข้อมูลสองรอบภายในวันเดียวเป็นหนึ่งวัน ไม่รวม VIP/VISA/เช้า/บ่าย ประเภทอื่นคงสูตรเดิม · ผลย้อนหลัง 14/15 เป็นการจำลอง ไม่ใช่การรับประกันอนาคต</div>
-
-<div class="shell">
-  <div class="top">
-    <div class="brand">
-      <div class="logo">เศรษฐี</div>
-      <div>
-        <b>เศรษฐีเงินล้าน Mobile (V84.0 Rolling Accuracy & Day Integrity)</b>
-        <small>True Honest & Calibrated Master</small>
+<body class="mode-clean">
+  <div class="app-container">
+    <header class="topbar">
+      <div class="brand">
+        <h1>เศรษฐีเงินล้าน V85.0 — AllType Adaptive Frequency Shadow Engine</h1>
+        <p>แยก Baseline ใช้งานจริง ออกจาก Shadow / Walk-Forward อย่างชัดเจน พร้อม Guardrail ความซื่อสัตย์ของข้อมูล</p>
       </div>
-    </div>
-    <div class="pill">เศรษฐีเงินล้าน V84.0</div>
+      <div class="mode-switch" role="tablist" aria-label="โหมดการทำงาน">
+        <button id="btnModeClean" class="mode-btn active" type="button" onclick="setAppMode('clean')">ใช้งานทั่วไป (Clean Mode)</button>
+        <button id="btnModeResearch" class="mode-btn" type="button" onclick="setAppMode('research')">โหมดนักวิจัย (Research Lab)</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>
+        <span>ตัวกรองและควบคุมการคำนวณ</span>
+        <span id="guardrailBadge" class="badge ok">Guardrail Active</span>
+      </h2>
+      <div class="controls-row">
+        <label for="typeFilter">ประเภทข้อมูล:</label>
+        <select id="typeFilter" onchange="recomputeAll()">
+          <option value="ALL">ทั้งหมด (ALL)</option>
+        </select>
+
+        <label for="windowSize">หน้าต่างวิเคราะห์ (งวด):</label>
+        <input id="windowSize" type="number" min="5" max="200" value="30" onchange="recomputeAll()" />
+
+        <label for="holdoutSize">ทดสอบ Walk-Forward (งวด):</label>
+        <input id="holdoutSize" type="number" min="3" max="100" value="12" onchange="recomputeAll()" />
+
+        <button class="btn primary" type="button" onclick="recomputeAll()">คำนวณใหม่</button>
+        <button class="btn" type="button" onclick="restoreSampleData()">โหลดข้อมูลตัวอย่างเริ่มต้น</button>
+        <button class="btn danger" type="button" onclick="resetShadowMemory()">ล้างเฉพาะ Shadow Memory</button>
+        <button class="btn danger" type="button" onclick="clearAllStoredData()">ล้างข้อมูลทั้งหมด</button>
+      </div>
+      <div id="statusBanner" class="status-banner">พร้อมใช้งาน</div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2><span>Production Baseline (เลขเด่นหลัก)</span></h2>
+        <div id="baselineCards" class="cards-grid"></div>
+      </div>
+
+      <div class="panel">
+        <h2><span>Adaptive Frequency Shadow (ผู้ท้าชิงเชิงทดลอง)</span></h2>
+        <div id="shadowCards" class="cards-grid"></div>
+      </div>
+    </section>
+
+    <section class="panel research-only" id="researchSection">
+      <h2>
+        <span>Research Lab — Walk-Forward Validation & Batch Audit</span>
+        <span id="batchSummaryBadge" class="badge warn">Pending</span>
+      </h2>
+      <div class="controls-row">
+        <button class="btn success" type="button" onclick="runResearchBatch()">รันทดสอบ Walk-Forward ทุกหมวด</button>
+        <button class="btn" type="button" onclick="exportAuditJson()">ส่งออกรายงาน Audit (JSON)</button>
+      </div>
+      <div id="researchBatchContainer" class="table-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <h2><span>นำเข้าข้อมูล (CSV / ข้อความดิบ: วันที่, ประเภท, บน, ล่าง)</span></h2>
+      <textarea id="rawDataInput" placeholder="ตัวอย่าง: 01/11/2569, ลาวพัฒนา, 482, 65"></textarea>
+      <div class="controls-row" style="margin-top: 10px;">
+        <button class="btn primary" type="button" onclick="importRawData()">นำเข้าและบันทึกข้อมูล</button>
+      </div>
+      <div id="auditLogBox" class="status-banner" style="margin-top: 10px;">ยังไม่มีบันทึกการนำเข้าล่าสุด</div>
+    </section>
+
+    <section class="panel">
+      <h2><span>ตารางข้อมูลที่ผ่านการตรวจสอบและจัดเรียง (Chronological)</span></h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>วันที่</th>
+              <th>ISO Date</th>
+              <th>ประเภท</th>
+              <th>บน (3 หลัก)</th>
+              <th>ล่าง (2 หลัก)</th>
+              <th>หลักหน่วยบน</th>
+              <th>หลักสิบบน</th>
+              <th>สถานะตรวจ</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <div class="hero">
-    <div class="hero-tag">เศรษฐีเงินล้าน · V84.0 ROLLING WINDOWS · PRODUCTION ENGINE PRESERVED</div>
-    <h1>ระบบวิเคราะห์ลอตเตอรี่อัจฉริยะ <em>(เศรษฐีเงินล้าน)</em></h1>
-    <p>ระบบวิเคราะห์สถิติย้อนหลังและทดสอบแบบ Walk-Forward โดยแสดงผลตามข้อมูลที่มีจริง ไม่รับประกันผลลัพธ์ในอนาคต</p>
-  </div>
+  <script>
+    const STORAGE_KEYS = {
+      RECORDS: "setthee_v85_records_v1",
+      BACKUP: "setthee_v85_records_backup_v1",
+      SHADOW_MEM: "setthee_v85_shadow_memory_v1",
+      UI_MODE: "setthee_v85_ui_mode_v1"
+    };
 
-<section id="v690ResearchHome" aria-label="V72 Research Status">
- <div class="v690-head"><div><div class="v690-kicker">V72.0 · CLEAN RESEARCH RELEASE</div><h2>ศูนย์ควบคุมการวิจัยเลขเด่น</h2><p>แยก Production / Shadow / Prospective ชัดเจน · ไม่เพิ่มสูตรทดลองทับซ้อน · คงเลขเด่น D1/D2 และเลขเจาะ 10 คู่ตามเดิม</p></div><span class="v690-status">● Production คงสูตรเดิม</span></div>
- <div class="v690-kpis">
-  <div class="v690-kpi"><b>78</b><span>ประเภทหวยในทะเบียนมาตรฐาน</span></div>
-  <div class="v690-kpi"><b>2,450</b><span>แถวผลตัวเลขต้นทาง · ถึง 18 พ.ย. 2569</span></div>
-  <div class="v690-kpi"><b>0</b><span>แถว invalid / orphan / duplicate / conflict</span></div>
-  <div class="v690-kpi"><b>18</b><span>รายการงดออกผล · ไม่ถูกนับเป็นผลตัวเลข</span></div>
- </div>
- <div class="v690-grid">
-  <article class="v690-card"><h3>Production Baseline</h3><p><strong>59.42% · 1,085 / 1,826</strong></p><p>สูตรเดิมยังเป็นตัวอ้างอิง การคงสูตรเดิมไม่ใช่การรับรองว่าจะชนะผลสุ่มในอนาคต</p></article>
-  <article class="v690-card"><h3>V70.0 · Challenger ถูกปฏิเสธ</h3><p><strong>60.04% · 296 / 493</strong></p><p>ต่ำกว่า Baseline 61.46% อยู่ 1.42 จุด · Help 8 / Hurt 15 / Tie 470 · McNemar p = 0.210</p></article>
-  <article class="v690-card"><h3>V71.0 · สมุดคำทำนายเดิม</h3><p><strong>78 ประเภท · 78 แถว</strong></p><p>สร้างจากข้อมูลถึง 18 พ.ย. 2569 แต่ target เป็น NEXT_DRAW โดยไม่มีวันงวดที่ยืนยัน จึงไม่ถือเป็นคำทำนาย active สำหรับงวดปัจจุบัน</p></article>
-  <article class="v690-card"><h3>กฎ Production ที่ล็อกไว้</h3><p><strong>D1 / D2 + เลขเจาะ 10 คู่</strong></p><p>ไม่แก้ scorer, pair generator, นิยาม Hit, denominator, การแยกประเภท หรือรูปแบบหน้าจอหลัก</p></article>
- </div>
- <div class="v690-note"><b>คำตัดสิน V72.0:</b> ไม่ promote V70.0 เพราะผล holdout แย่กว่า baseline และหลักฐานแบบ paired ไม่ผ่านเกณฑ์ รอบนี้จึงไม่แต่งสูตรใหม่ให้ดูเหมือนชนะ แต่ย้ายจุดเน้นไปที่การเก็บคำทำนายก่อนงวดจริงผ่าน V62.3 Public Forecast Interface และ V62.2 Shadow Ledger ซึ่งบังคับระบุประเภท/งวด/cutoff/target time และตรวจ source ซ้ำก่อนล็อก</div>
- <div class="v690-links"><a href="#v690ResearchArchive">เปิดคลังรายงานวิจัยเดิม</a><a href="#v623PublicForecastPanel">ไปที่ระบบล็อกคำทำนายก่อนงวด</a><a href="#inputData">กลับไปส่วนป้อนข้อมูล</a></div>
-</section>
+    const SAMPLE_RAW_DATA = [
+      "01/10/2569, ลาวพัฒนา, 314, 28",
+      "04/10/2569, ลาวพัฒนา, 709, 45",
+      "08/10/2569, ลาวพัฒนา, 526, 81",
+      "11/10/2569, ลาวพัฒนา, 193, 64",
+      "15/10/2569, ลาวพัฒนา, 847, 19",
+      "18/10/2569, ลาวพัฒนา, 602, 53",
+      "22/10/2569, ลาวพัฒนา, 275, 90",
+      "25/10/2569, ลาวพัฒนา, 938, 37",
+      "29/10/2569, ลาวพัฒนา, 451, 72",
+      "02/11/2569, ลาวพัฒนา, 764, 16",
+      "05/11/2569, ลาวพัฒนา, 129, 84",
+      "09/11/2569, ลาวพัฒนา, 583, 49",
+      "12/11/2569, ลาวพัฒนา, 360, 25",
+      "16/11/2569, ลาวพัฒนา, 815, 68",
+      "19/11/2569, ลาวพัฒนา, 642, 93",
+      "23/11/2569, ลาวพัฒนา, 297, 11",
+      "26/11/2569, ลาวพัฒนา, 750, 56",
+      "03/10/2569, ฮานอยปกติ, 418, 73",
+      "06/10/2569, ฮานอยปกติ, 692, 14",
+      "10/10/2569, ฮานอยปกติ, 257, 88",
+      "13/10/2569, ฮานอยปกติ, 831, 52",
+      "17/10/2569, ฮานอยปกติ, 504, 39",
+      "20/10/2569, ฮานอยปกติ, 976, 61",
+      "24/10/2569, ฮานอยปกติ, 149, 27",
+      "27/10/2569, ฮานอยปกติ, 628, 95",
+      "31/10/2569, ฮานอยปกติ, 385, 40",
+      "04/11/2569, ฮานอยปกติ, 712, 82",
+      "07/11/2569, ฮานอยปกติ, 463, 18",
+      "11/11/2569, ฮานอยปกติ, 908, 66",
+      "14/11/2569, ฮานอยปกติ, 234, 47",
+      "18/11/2569, ฮานอยปกติ, 579, 91",
+      "21/11/2569, ฮานอยปกติ, 861, 33",
+      "25/11/2569, ฮานอยปกติ, 105, 79"
+    ].join("\n");
 
-  <div id="mobileAlert" class="mobile-alert"></div>
+    const APP_STATE = {
+      records: [],
+      shadowMemory: {},
+      lastEvaluation: null,
+      lastBatchReport: null,
+      auditSummary: null
+    };
 
-  <div class="panel bulkbox">
-    <label for="inputData">
-      <span>วางสถิติจาก PDF (เว้น 1 บรรทัดกั้นแต่ละประเภท):</span>
-      <span id="dataCount" style="color:#b8860b">0 รายการ</span>
-    </label>
-
-    <textarea id="inputData" class="bulk" placeholder="วางสถิติที่นี่ เช่น:&#10;หุ้นดาวโจนส์ | 20 ต.ค. 69&#10;588&#10;85&#10;&#10;หุ้นดาวโจนส์ | 19 ต.ค. 69&#10;603&#10;38"></textarea>
-
-    <div class="actions">
-      <button id="runBtn" class="run" type="button">
-        <span>⚡</span> วิเคราะห์และแสดงผล
-      </button>
-      <button id="sampleBtn" class="sample-btn" type="button">ใส่ข้อมูลตัวอย่าง</button>
-      <button id="clearBtn" class="clear" type="button">ล้างข้อมูล</button>
-      <details id="v690ResearchTools"><summary>เครื่องมือวิจัยและตรวจสอบขั้นสูง · เปิดเมื่อจำเป็น</summary><div class="v690-tool-grid">
-      <button id="auditBtn" class="sample-btn" type="button" style="grid-column:1 / -1;">ตรวจชื่อประเภท / งดออกผล / ข้อมูลซ้ำ</button>
-      <button id="researchBatchBtn" class="sample-btn" type="button" style="grid-column:1 / -1;">🧪 V61.2 วิจัยเลขเด่น 2 ตัวเป็นหลัก · แยกประเภท · แก้ข้อมูลหลายผลต่อวัน</button>
-      <button id="research579Btn" class="sample-btn" type="button" style="grid-column:1 / -1;">🧬 V59.0 เก็บคะแนน Baseline/Collision แยก + Ablation + Walk-Forward / Holdout</button>
-      <button id="oracle580Btn" class="sample-btn" type="button" style="grid-column:1 / -1;" disabled>🔭 V59.0 Oracle–Student Lab · ต้องรัน V57.9 ก่อน</button>
-      </div></details>
-    </div>
-  </div>
-
-  <div id="resultOutput"></div>
-
-
-<section id="v806MultiRoundAudit" class="panel" style="margin:14px 0;padding:14px;border:1px solid rgba(190,150,70,.35);border-radius:16px;background:#fff;">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-    <div>
-      <div style="font-size:.68rem;letter-spacing:.08em;color:#8b6d31;font-weight:800;">V80.8 · MULTI-ROUND ACCURACY AUDIT</div>
-      <h2 style="font-size:1.08rem;margin:5px 0;">ผลเลขเด่นและเลขเจาะ — ประเภททั้งวัน / รวมรอบ</h2>
-    </div>
-    <span style="font-size:.72rem;padding:5px 9px;border-radius:20px;background:#f7f0df;color:#76581c;">ตรวจฐานข้อมูล 2,680 แถว</span>
-  </div>
-  <p style="font-size:.82rem;line-height:1.7;color:#51483b;margin:8px 0;">
-    แยกตัวชี้วัด 2 ระดับอย่างชัดเจน: <b>ต่อวัน</b> นับเข้าอย่างน้อยหนึ่งรอบ และ <b>ต่อรอบย่อย</b> นับผลแต่ละรอบแยกกัน
-    เลขเด่นใช้หลักสิบ/หน่วยของ 3 ตัวบนและทั้งสองหลักของ 2 ตัวล่าง ไม่ใช้หลักร้อยของ 3 ตัวบน
-  </p>
-  <div style="overflow-x:auto;">
-    <table class="audit-table" style="min-width:960px;width:100%;">
-      <thead><tr>
-        <th>ประเภททั้งวัน</th><th>เลขเด่น / วัน</th><th>เลขเด่น / รอบย่อย</th><th>เลขเจาะ / วัน*</th><th>เลขเจาะ / รอบย่อย*</th>
-      </tr></thead>
-      <tbody><tr><td>จีน VIP ทั้งวัน</td><td>19/25 <b>76.00%</b><small>95% CI 56.6–88.5%</small></td><td>25/50 <b>50.00%</b><small>95% CI 36.6–63.4%</small></td><td>16/19 <b>84.21%</b><small>95% CI 62.4–94.5%</small></td><td>19/25 <b>76.00%</b><small>95% CI 56.6–88.5%</small></td></tr><tr><td>จีน VISA ทั้งวัน</td><td>21/25 <b>84.00%</b><small>95% CI 65.3–93.6%</small></td><td>31/50 <b>62.00%</b><small>95% CI 48.2–74.1%</small></td><td>19/21 <b>90.48%</b><small>95% CI 71.1–97.3%</small></td><td>25/31 <b>80.65%</b><small>95% CI 63.7–90.8%</small></td></tr><tr><td>จีน ปกติ ทั้งวัน</td><td>21/25 <b>84.00%</b><small>95% CI 65.3–93.6%</small></td><td>32/50 <b>64.00%</b><small>95% CI 50.1–75.9%</small></td><td>19/21 <b>90.48%</b><small>95% CI 71.1–97.3%</small></td><td>25/32 <b>78.12%</b><small>95% CI 61.2–89.0%</small></td></tr><tr><td>นิคเคอิ VIP ทั้งวัน</td><td>20/25 <b>80.00%</b><small>95% CI 60.9–91.1%</small></td><td>28/50 <b>56.00%</b><small>95% CI 42.3–68.8%</small></td><td>20/20 <b>100.00%</b><small>95% CI 83.9–100.0%</small></td><td>23/28 <b>82.14%</b><small>95% CI 64.4–92.1%</small></td></tr><tr><td>นิคเคอิ VISA ทั้งวัน</td><td>23/25 <b>92.00%</b><small>95% CI 75.0–97.8%</small></td><td>30/50 <b>60.00%</b><small>95% CI 46.2–72.4%</small></td><td>16/23 <b>69.57%</b><small>95% CI 49.1–84.4%</small></td><td>19/30 <b>63.33%</b><small>95% CI 45.5–78.1%</small></td></tr><tr><td>นิคเคอิ ปกติ ทั้งวัน</td><td>14/23 <b>60.87%</b><small>95% CI 40.8–77.8%</small></td><td>19/46 <b>41.30%</b><small>95% CI 28.3–55.7%</small></td><td>10/14 <b>71.43%</b><small>95% CI 45.4–88.3%</small></td><td>13/19 <b>68.42%</b><small>95% CI 46.0–84.6%</small></td></tr><tr><td>หุ้นไทย ทั้งวัน</td><td>59/61 <b>96.72%</b><small>95% CI 88.8–99.1%</small></td><td>135/244 <b>55.33%</b><small>95% CI 49.1–61.4%</small></td><td>53/59 <b>89.83%</b><small>95% CI 79.5–95.3%</small></td><td>92/135 <b>68.15%</b><small>95% CI 59.9–75.4%</small></td></tr><tr><td>ฮั่งเส็ง VIP ทั้งวัน</td><td>21/25 <b>84.00%</b><small>95% CI 65.3–93.6%</small></td><td>30/50 <b>60.00%</b><small>95% CI 46.2–72.4%</small></td><td>18/21 <b>85.71%</b><small>95% CI 65.4–95.0%</small></td><td>21/30 <b>70.00%</b><small>95% CI 52.1–83.3%</small></td></tr><tr><td>ฮั่งเส็ง VISA ทั้งวัน</td><td>22/25 <b>88.00%</b><small>95% CI 70.0–95.8%</small></td><td>29/50 <b>58.00%</b><small>95% CI 44.2–70.6%</small></td><td>12/22 <b>54.55%</b><small>95% CI 34.7–73.1%</small></td><td>13/29 <b>44.83%</b><small>95% CI 28.4–62.5%</small></td></tr><tr><td>ฮั่งเส็ง ปกติ ทั้งวัน</td><td>19/24 <b>79.17%</b><small>95% CI 59.5–90.8%</small></td><td>26/48 <b>54.17%</b><small>95% CI 40.3–67.4%</small></td><td>15/19 <b>78.95%</b><small>95% CI 56.7–91.5%</small></td><td>18/26 <b>69.23%</b><small>95% CI 50.0–83.5%</small></td></tr></tbody>
-    </table>
-  </div>
-  <p style="font-size:.72rem;line-height:1.65;color:#746957;margin:8px 0 0;">
-    *เลขเจาะมีตัวหารเฉพาะวันที่/รอบย่อยที่เลขเด่นเข้า ตามนิยามเดิม; นับคู่เลขเจาะที่ตรงหรือกลับ และนับกรณีเลขเด่นวินกันเองตามข้อยกเว้นเดิม
-    · CI คือช่วงเชื่อมั่น Wilson 95% จากขนาดตัวอย่างที่มี
-  </p>
-  <div style="margin-top:10px;padding:10px;border-radius:10px;background:#f8f5ed;font-size:.78rem;line-height:1.65;color:#4e4639;">
-    <b>การอ่านผล:</b> ค่า Hit ต่อวันสูงขึ้นได้เพราะมีหลายรอบให้เข้า จึงต้องดู Hit ต่อรอบย่อยคู่กัน
-    ห้ามใช้เปอร์เซ็นต์ต่อวันเพียงค่าเดียวสรุปว่าคุณภาพการทำนายเหนือกว่าหวยเดี่ยว
-  </div>
-</section>
-
-
-  <details id="v690ResearchOutputs"><summary>ผลตรวจสอบและรายงานจากเครื่องมือวิจัย</summary><div class="v690-output-content">
-  <div id="auditOutput"></div>
-  <div id="researchBatchOutput"></div>
-  <div id="research579Output"></div>
-  <div id="oracle580Output"></div>
-  <div class="panel" id="leadOnlyResearchPanel" style="margin-top:12px;">
-    <div class="section-title">🎯 วิจัยเลขเด่น D1 / D2 เท่านั้น</div>
-    <p style="font-size:.48rem;color:#827768;line-height:1.55;margin:0 0 8px;">ทดสอบเลขเด่นแยกประเภทด้วยข้อมูลก่อนงวดเป้าหมาย · ยังไม่วิจัยเลขเจาะหรือคู่เลขในแผงนี้ · ไม่เปลี่ยนสูตรผลิตจริง</p>
-    <button id="leadOnlyResearchBtn" class="sample-btn" type="button" style="width:100%;min-height:34px;">เริ่มวิจัยเลขเด่นเท่านั้น</button>
-    <div id="leadOnlyResearchStatus" class="research-batch-note">รอข้อมูลจากช่องสถิติด้านบน</div>
-    <div id="leadOnlyResearchOutput"></div>
-  </div>
-  </div></details>
-</div>
-
-<div id="toast" class="toast">ดำเนินการสำเร็จ</div>
-
-<script>
-// V58.2 RESEARCH CANDIDATE: strict score-trace date/digit integrity gate; pair and lead production formulas unchanged.
-const SAMPLE_PDF_DATA = `หุ้นดาวโจนส์ | 20 ต.ค. 69
-588
-85
-หุ้นดาวโจนส์ | 19 ต.ค. 69
-603
-38
-หุ้นดาวโจนส์ | 16 ต.ค. 69
-241
-28
-หุ้นดาวโจนส์ | 15 ต.ค. 69
-769
-21
-หุ้นดาวโจนส์ | 14 ต.ค. 69
-148
-62
-หุ้นดาวโจนส์ | 13 ต.ค. 69
-010
-45
-หุ้นดาวโจนส์ | 12 ต.ค. 69
-055
-60
-หุ้นดาวโจนส์ | 9 ต.ค. 69
-495
-31
-หุ้นดาวโจนส์ | 8 ต.ค. 69
-164
-77
-หุ้นดาวโจนส์ | 7 ต.ค. 69
-987
-41`;
-
-const FLAG_MAP = {
-  'ลาว': '🇱🇦', 'ล.': '🇱🇦',
-  'ฮานอย': '🇻🇳', 'ฮ.น': '🇻🇳',
-  'ไทย': '🇹🇭', 'รัฐบาล': '🇹🇭',
-  'ดาวโจนส์': '🇺🇸', 'ฮั่งเส็ง': '🇭🇰',
-  'จีน': '🇨🇳', 'นิคเคอิ': '🇯🇵',
-  'ไต้หวัน': '🇹🇼', 'เกาหลี': '🇰🇷',
-  'รัสเซีย': '🇷🇺', 'เยอรมัน': '🇩🇪',
-  'อังกฤษ': '🇬🇧', 'สิงคโปร์': '🇸🇬',
-  'อินเดีย': '🇮🇳', 'อียิปต์': '🇪🇬',
-  'มาเลย์': '🇲🇾', 'DEFAULT': '🎯'
-};
-
-const THAI_MONTHS = {
-  'ม.ค.': 0, 'ก.พ.': 1, 'มี.ค.': 2, 'เม.ย.': 3, 'พ.ค.': 4, 'มิ.ย.': 5,
-  'ก.ค.': 6, 'ส.ค.': 7, 'ก.ย.': 8, 'ต.ค.': 9, 'พ.ย.': 10, 'ธ.ค.': 11
-};
-
-const THAI_MONTHS_ARR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-
-function parseThaiDate(dateStr) {
-  if (!dateStr || typeof dateStr !== 'string') return new Date(NaN);
-  const parts = dateStr.trim().split(/\s+/);
-  if (parts.length < 3) return new Date(NaN);
-  const day = parseInt(parts[0], 10);
-  const month = THAI_MONTHS[parts[1]];
-  let year = parseInt(parts[2], 10);
-  if (!Number.isInteger(day) || month === undefined || !Number.isFinite(year)) return new Date(NaN);
-  // รองรับปี พ.ศ. แบบ 2 หลัก (เช่น 69), ปี พ.ศ. 4 หลัก และปี ค.ศ. 4 หลัก
-  if (year >= 0 && year < 100) year += 2500;
-  if (year >= 2400) year -= 543;
-  const result = new Date(year, month, day);
-  if (result.getFullYear() !== year || result.getMonth() !== month || result.getDate() !== day) return new Date(NaN);
-  return result;
-}
-
-function formatThaiDate(dateObj) {
-  if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return 'ไม่ระบุวันที่';
-  const day = dateObj.getDate();
-  const monthStr = THAI_MONTHS_ARR[dateObj.getMonth()];
-  const thaiShortYear = String((dateObj.getFullYear() + 543) % 100).padStart(2, '0');
-  return `${day} ${monthStr} ${thaiShortYear}`;
-}
-
-function calculateNextDrawDate(lotteryType, lastDateStr) {
-  let dateObj = parseThaiDate(lastDateStr);
-  const name = String(lotteryType || '').trim().replace(/\s+/g, ' ');
-  if (Number.isNaN(dateObj.getTime())) return 'ไม่ระบุวันที่';
-
-  // วันออกผลถัดไปอิงปฏิทินของแต่ละประเภท ไม่ใช่บวกหนึ่งวันเหมือนกันทุกประเภท
-  // งดออกผล/รอผลไม่ใช่เลขสำหรับคิดคะแนน แต่ไม่ควรทำให้กติกาปฏิทินของประเภทหายไป
-  if (name.includes('รัฐบาล')) {
-    const day = dateObj.getDate();
-    const month = dateObj.getMonth();
-    const year = dateObj.getFullYear();
-    dateObj = day < 16 ? new Date(year, month, 16) : new Date(year, month + 1, 1);
-    return formatThaiDate(dateObj);
-  }
-
-  const hasDailyTier = /(VIP|VISA|พิเศษ|สตาร์|\bV\b)/i.test(name);
-  const isDowJonesNormal = /ดาวโจนส์/.test(name) && !hasDailyTier && /(ปกติ|ธรรมดา)/.test(name);
-  const isLaosDevelopment = /ลาว\s*พัฒนา/.test(name);
-  const isLaos = /ลาว|ประชาชน\s*ล\./.test(name);
-  const isHanoi = /ฮานอย/.test(name);
-  const isMalay = /มาเลย์/.test(name);
-  const weekdayMarketBases = ['นิคเคอิ','นิเคอิ','นิกเคอิ','จีน','ฮั่งเส็ง','หั่งเส็ง','ไต้หวัน','เกาหลี','สิงคโปร์','รัสเซีย','เยอรมัน','อังกฤษ'];
-  const compactName = name.replace(/[\s._-]/g, '');
-  const isWeekdayMarket = weekdayMarketBases.some(base => compactName.includes(base.replace(/[\s._-]/g, '')));
-
-  // หุ้นดาวโจนส์ ปกติ: ผลออกคืนวันจันทร์ถึงคืนวันศุกร์ตามเวลาอธิบายของผู้ใช้
-  // วันที่ที่แสดงเป็นวันอังคารถึงวันเสาร์ และหยุดวันอาทิตย์/จันทร์
-  if (isDowJonesNormal) {
-    do { dateObj.setDate(dateObj.getDate() + 1); } while (![2, 3, 4, 5, 6].includes(dateObj.getDay()));
-    return formatThaiDate(dateObj);
-  }
-
-  // มาเลย์: พุธ เสาร์ อาทิตย์ (กติกาเดิมของระบบ)
-  if (isMalay) {
-    do { dateObj.setDate(dateObj.getDate() + 1); } while (![3, 6, 0].includes(dateObj.getDay()));
-    return formatThaiDate(dateObj);
-  }
-
-  // ลาวพัฒนา, หุ้นไทยประเภทปกติ และตลาดประเทศแบบปกติ: จันทร์-ศุกร์เท่านั้น
-  // ป้องกันบั๊กที่คำนวณวันถัดไปเป็นเสาร์/อาทิตย์หลังงวดวันศุกร์
-  const isThaiStocksWeekday = /หุ้น\s*ไทย/.test(name) && !hasDailyTier;
-  if (isLaosDevelopment || isThaiStocksWeekday || (isWeekdayMarket && !hasDailyTier)) {
-    do { dateObj.setDate(dateObj.getDate() + 1); } while ([0, 6].includes(dateObj.getDay()));
-    return formatThaiDate(dateObj);
-  }
-
-  // หวยลาวประเภทอื่น, หวยฮานอยทุกประเภท และหุ้นดาวโจนส์ประเภทอื่นออกทุกวัน
-  // ประเภท VIP/พิเศษ/VISA ของตลาดประเทศก็ออกทุกวัน ไม่หยุดสุดสัปดาห์
-  if (isLaos || isHanoi || /ดาวโจนส์/.test(name) || isWeekdayMarket) {
-    dateObj.setDate(dateObj.getDate() + 1);
-    return formatThaiDate(dateObj);
-  }
-
-  // ประเภทที่ยังไม่มีตารางเฉพาะ คงพฤติกรรมเดิมไว้ ไม่เดากติกาจากชื่อที่ไม่รู้จัก
-  dateObj.setDate(dateObj.getDate() + 1);
-  return formatThaiDate(dateObj);
-}
-
-function getFlag(typeName) {
-  for (const key in FLAG_MAP) {
-    if (typeName.includes(key)) return FLAG_MAP[key];
-  }
-  return '🎯';
-}
-
-function formatDisplayName(rawName) {
-  let name = rawName.trim().replace(/\s+/g, ' ');
-  // V68.0: reversible, explicit PDF text-extraction glyph-order repairs.
-  // These repair label spelling only; they never alter result digits or merge types implicitly.
-  const pdfLabelRepairs = [
-    [/เชา้/g, 'เช้า'], [/บา่ย/g, 'บ่าย'], [/บ[่]?า่\s*ย/g, 'บ่าย'], [/บ\s*่?\s*า\s*่?\s*ย/g, 'บ่าย'], [/เทีย่ ง/g, 'เที่ยง'],
-    [/ฮงั่\s*เสง็/g, 'ฮั่งเส็ง'], [/สงิ คโปร์/g, 'สิงคโปร์'],
-    [/อียปิ ต์/g, 'อียิปต์'], [/รัสเซยี/g, 'รัสเซีย'],
-    [/ดาวโจนสส์\s*ตาร์/g, 'ดาวโจนส์ สตาร์'], [/สนั ติภาพ/g, 'สันติภาพ'], [/ชยั/g, 'ชัย'],
-    [/อาเซยี น/g, 'อาเซียน']
-  ];
-  for (const [pattern, replacement] of pdfLabelRepairs) name = name.replace(pattern, replacement);
-  // Explicit category labels prevent market variants from collapsing into one type.
-  // The card label may be abbreviated, but the underlying category must remain distinct.
-  const exactCategoryMap = {
-    'ดาวโจนส์พิเศษ': 'ดาวโจนส์ พิเศษ',
-    'นิคเคอิพิเศษ เช้า': 'นิคเคอิ พิเศษ เช้า', 'นิคเคอิพิเศษ บ่าย': 'นิคเคอิ พิเศษ บ่าย',
-    'จีนพิเศษ เช้า': 'จีน พิเศษ เช้า', 'จีนพิเศษ บ่าย': 'จีน พิเศษ บ่าย',
-    'ฮั่งเส็งพิเศษ เช้า': 'ฮั่งเส็ง พิเศษ เช้า', 'ฮั่งเส็งพิเศษ บ่าย': 'ฮั่งเส็ง พิเศษ บ่าย',
-    'ไต้หวันพิเศษ': 'ไต้หวัน พิเศษ', 'เกาหลีพิเศษ': 'เกาหลี พิเศษ',
-    'สิงคโปร์พิเศษ': 'สิงคโปร์ พิเศษ', 'รัสเซียพิเศษ': 'รัสเซีย พิเศษ',
-    'เยอรมันพิเศษ': 'เยอรมัน พิเศษ', 'อังกฤษพิเศษ': 'อังกฤษ พิเศษ',
-    'นิคเคอิ VIP เช้า': 'นิคเคอิ V เช้า', 'นิคเคอิ VIP บ่าย': 'นิคเคอิ V บ่าย',
-    'จีน VIP เช้า': 'จีน V เช้า', 'จีน VIP บ่าย': 'จีน V บ่าย',
-    'ฮั่งเส็ง VIP เช้า': 'ฮั่งเส็ง V เช้า', 'ฮั่งเส็ง VIP บ่าย': 'ฮั่งเส็ง V บ่าย',
-    'ไต้หวัน VIP': 'ไต้หวัน V', 'เกาหลี VIP': 'เกาหลี V', 'สิงคโปร์ VIP': 'สิงคโปร์ V',
-    'รัสเซีย VIP': 'รัสเซีย V', 'เยอรมัน VIP': 'เยอรมัน V', 'อังกฤษ VIP': 'อังกฤษ V', 'ดาวโจนส์ VIP': 'ดาวโจนส์ V',
-    'นิเคอิ VISA เช้า': 'นิคเคอิ VISA เช้า', 'นิเคอิ VISA บ่าย': 'นิคเคอิ VISA บ่าย',
-    'จีน VISA เช้า': 'จีน VISA เช้า', 'จีน VISA บ่าย': 'จีน VISA บ่าย',
-    'ฮั่งเส็ง VISA เช้า': 'ฮั่งเส็ง VISA เช้า', 'ฮั่งเส็ง VISA บ่าย': 'ฮั่งเส็ง VISA บ่าย',
-    'รัสเซีย VISA': 'รัสเซีย VISA', 'เยอรมัน VISA': 'เยอรมัน VISA', 'อังกฤษ VISA': 'อังกฤษ VISA', 'ดาวโจนส์ VISA': 'ดาวโจนส์ VISA'
-  };
-  if (exactCategoryMap[name]) return exactCategoryMap[name];
-  if (name.includes('รัฐบาลไทย') || name.includes('รัฐบาล ไทย') || name.includes('หุ้นไทย รัฐบาล') || name.includes('หุ้นไทยรัฐบาล')) return 'รัฐบาล ไทย';
-  if (name === 'ประชาชนลาว' || name.includes('ประชาชนลาว')) return 'ประชาชน ล.';
-  if (name === 'อินเดีย' || name === 'หุ้นอินเดีย' || name === 'อียิปต์' || name === 'หุ้นอียิปต์' || name === 'มาเลย์' || name === 'หวยมาเลย์') return name.replace('หุ้น', '').replace('หวย', '').trim();
-  if (name.startsWith('ลาว')) {
-    let sub = name.replace('ลาว', '').trim();
-    if (sub.toLowerCase() === 'vip') return 'ล. V';
-    if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
-    return sub ? `ล. ${sub}` : 'ล.';
-  }
-  if (name.startsWith('ฮานอย')) {
-    let sub = name.replace('ฮานอย', '').trim();
-    if (sub.toLowerCase() === 'vip') return 'ฮ.น V';
-    if (sub.includes('VIP')) sub = sub.replace(/VIP/gi, 'V').trim();
-    return sub ? `ฮ.น ${sub}` : 'ฮ.น';
-  }
-  if (name.includes('ดาวโจนส์สตาร์') || name.includes('ดาวโจนส์ Star') || name.includes('ดาวโจนส์Star') || name.includes('ดาวโจนส์ สตาร์')) return 'ดาวโจนส์ สตาร์';
-  if (/ดาวโจนส์\s*พิเศษ/.test(name)) return 'ดาวโจนส์ พิเศษ';
-  if (name.includes('ดาวโจนส์')) {
-    if (name.includes('VIP')) return name.replace(/VIP/gi, 'V');
-    if (!name.includes('ปกติ') && !name.includes('V') && !name.includes('สตาร์') && !name.includes('Star')) return 'ดาวโจนส์ ปกติ';
-    return name;
-  }
-  name = name.replace(/หนุ้ /g, '').replace(/องักฤษ/g, 'อังกฤษ').replace(/เยอรมนั/g, 'เยอรมัน').replace(/รัสเซยี/g, 'รัสเซีย').replace(/ได้หวัน/g, 'ไต้หวัน').trim();
-  if (name.includes('VIP') || name.includes(' V')) return name.replace(/VIP/gi, 'V').trim();
-  if (name.includes('ไทย') || name.includes('หุ้นไทย')) {
-    let timePart = name.replace('หุ้นไทย', '').replace('ไทย', '').trim();
-    return timePart ? `หุ้นไทย ${timePart}` : 'หุ้นไทย ปกติ';
-  }
-  const timeKeywords = ['เช้า', 'เที่ยง', 'บ่าย', 'เย็น'];
-  let matchedTime = timeKeywords.find(t => name.includes(t));
-  if (matchedTime) {
-    let baseName = name.replace(matchedTime, '').replace('หุ้น', '').replace('ปกติ', '').trim();
-    return `${baseName} ปกติ ${matchedTime}`;
-  }
-  if (!name.includes('ปกติ')) {
-    let cleanName = name.replace('หุ้น', '').trim();
-    return `${cleanName} ปกติ`;
-  }
-  return name;
-}
-
-function showAlert(msg) {
-  const box = document.getElementById('mobileAlert');
-  if (box) {
-    box.innerText = msg;
-    box.classList.add('show');
-    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
-function clearAlert() {
-  const box = document.getElementById('mobileAlert');
-  if (box) { box.classList.remove('show'); box.innerText = ''; }
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  if (t) {
-    t.innerText = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-  }
-}
-
-function parseInlinePipePDF(rawText) {
-  const grouped = {};
-  const seen = new Map();
-  const audit = { parseMode:'INLINE_PIPE_PDF', sourceTypes:{}, displayCollisions:[], skippedEvents:[], invalidRows:[], orphanTop3Rows:[], duplicateRows:[], conflicts:[], parsedRecords:0 };
-  const compact = value => String(value || '').normalize('NFC')
-    .replace(/[\u200B\uFEFF]/g, '')
-    .replace(/(?<=[\u0E00-\u0E7F])\s+(?=[\u0E00-\u0E7F])/gu, '')
-    .replace(/\s+/g, ' ').trim();
-  const monthMap = { 'มค':'01','กพ':'02','มีค':'03','เมย':'04','พค':'05','มิย':'06','กค':'07','สค':'08','กย':'09','ตค':'10','พย':'11','ธค':'12' };
-  const segments = String(rawText || '').split('|');
-  function add(type,date,top3,bottom2) {
-    const key = formatDisplayName(type);
-    if (!grouped[key]) grouped[key] = [];
-    if (!audit.sourceTypes[key]) audit.sourceTypes[key] = { rawNames:[], records:0, skipped:0 };
-    if (!audit.sourceTypes[key].rawNames.includes(type)) audit.sourceTypes[key].rawNames.push(type);
-    const rowKey = `${key}||${date}`;
-    const value = { date, top3, bottom2 };
-    const prior = seen.get(rowKey);
-    if (prior) {
-      if (prior.top3 === top3 && prior.bottom2 === bottom2) audit.duplicateRows.push({ type:key,date,top3,bottom2,action:'duplicate-identical-not-added' });
-      else audit.conflicts.push({ type:key,date,firstTop3:prior.top3,firstBottom2:prior.bottom2,otherTop3:top3,otherBottom2:bottom2,action:'conflict-kept-out-of-silent-merge' });
-      return;
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
-    seen.set(rowKey,value); grouped[key].push(value); audit.sourceTypes[key].records++; audit.parsedRecords++;
-  }
-  for (let i=0;i<segments.length-1;i++) {
-    const left = compact(segments[i]);
-    const markers = [...left.matchAll(/(?<!\d)\d{2,3}(?=\s*[^\d\s])/g)];
-    let rawType = markers.length ? left.slice(markers[markers.length-1].index + markers[markers.length-1][0].length).trim() : left;
-    rawType = rawType.replace(/งดออกผล/g,'').replace(/ปิดตลาด/g,'').trim();
-    if (!rawType) continue;
-    const type = formatDisplayName(rawType);
-    const right = segments[i+1] || '';
-    const rightCompact = compact(right);
-    if (/งดออกผล|ปิดตลาด|งดจ่าย|ไม่มีการออกรางวัล|รอผล/i.test(rightCompact)) {
-      audit.skippedEvents.push({ type,rawType,date:'',text:rightCompact.slice(0,140),status:'EXCLUDED_FROM_NUMERIC_SCORING' });
-      if (!audit.sourceTypes[type]) audit.sourceTypes[type] = { rawNames:[rawType],records:0,skipped:0 };
-      audit.sourceTypes[type].skipped++;
-      continue;
+
+    function isLeapYearGregorian(year) {
+      return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
     }
-    const dateMatch = right.match(/(\d{1,2})\s*([\u0E00-\u0E7F])\s*\.\s*([\u0E00-\u0E7F])\s*\.\s*(\d{2})/u);
-    if (!dateMatch) continue;
-    const [,day,m1,m2,year] = dateMatch;
-    const month = monthMap[m1+m2];
-    if (!month) { audit.invalidRows.push({ type,date:'',text:rightCompact.slice(0,120),reason:'unrecognized-thai-month' }); continue; }
-    const date = `${Number(day)} ${m1}.${m2}. ${year}`;
-    const after = right.slice(dateMatch.index + dateMatch[0].length);
-    const nums = after.match(/(?<!\d)\d{2,3}(?!\d)/g) || [];
-    if (after.includes('/') || nums.length !== 2 || nums[0].length !== 3 || nums[1].length !== 2) {
-      audit.invalidRows.push({ type,date,text:compact(after).slice(0,120),reason:after.includes('/')?'multi-result-row':'incomplete-or-invalid-result-row' });
-      continue;
-    }
-    add(rawType,date,nums[0],nums[1]);
-  }
-  for (const [type,info] of Object.entries(audit.sourceTypes)) if (info.rawNames.length > 1) audit.displayCollisions.push({ displayName:type,rawNames:info.rawNames.slice() });
-  window.__LOTTERY_PARSE_AUDIT__ = audit;
-  return grouped;
-}
 
-function parsePDFText(rawText) {
-  if (!rawText || typeof rawText !== 'string') return {};
-  const pipeCount = (rawText.match(/\|/g) || []).length;
-  const pipeLines = rawText.split(/\r?\n/).filter(line => line.includes('|')).length;
-  if (pipeCount > 40 && pipeLines < pipeCount * 0.35) return parseInlinePipePDF(rawText);
-  const grouped = {};
-  const seenByTypeDate = new Map();
-  const audit = { sourceTypes: {}, displayCollisions: [], skippedEvents: [], invalidRows: [], orphanTop3Rows: [], duplicateRows: [], conflicts: [], headerRepairs: [], parsedRecords: 0 };
-  let currentLottery = null, currentDate = null, pendingTop3 = null, lastSkippedSignature = '', lastSkippedBase = '', lastNonEmptyLine = '';
-  // PDF text extraction may insert page-form-feed characters and separate Thai combining marks.
-  // Normalize only extraction artifacts; do not alter result digits, dates, labels, or scoring rules.
-  const lines = rawText.replace(/\r/g, '').replace(/\f/g, '').split('\n')
-    .map(x => x.normalize('NFC').replace(/\s+(?=[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E])/gu, '').trim());
-  const skippedPattern = /งดออกผล|ปิดตลาด|งดจ่าย|ไม่มีการออกรางวัล|รอผล/i;
-
-  function ensureType(rawName) {
-    const displayName = formatDisplayName(rawName);
-    if (!grouped[displayName]) grouped[displayName] = [];
-    if (!audit.sourceTypes[displayName]) audit.sourceTypes[displayName] = { rawNames: [], records: 0, skipped: 0 };
-    if (!audit.sourceTypes[displayName].rawNames.includes(rawName)) audit.sourceTypes[displayName].rawNames.push(rawName);
-    return displayName;
-  }
-  function recordSkipped(line, inlineDate) {
-    const candidateDate = inlineDate || currentDate || '';
-    const baseSignature = `${currentLottery || 'UNKNOWN'}||${line}`;
-    const signature = `${baseSignature}||${candidateDate}`;
-    // PDF text extraction sometimes repeats the same standalone status on the next line.
-    if (signature === lastSkippedSignature || (!candidateDate && baseSignature === lastSkippedBase)) return;
-    lastSkippedSignature = signature;
-    lastSkippedBase = baseSignature;
-    if (!currentLottery) {
-      audit.skippedEvents.push({ type: 'ไม่ทราบประเภท', date: inlineDate || currentDate || '', text: line, status: 'NEEDS_REVIEW' });
-      return;
-    }
-    const key = ensureType(currentLottery);
-    audit.sourceTypes[key].skipped++;
-    audit.skippedEvents.push({ type: key, rawType: currentLottery, date: inlineDate || currentDate || '', text: line, status: /รอผล/i.test(line) ? 'WAITING_FOR_RESULT' : 'EXCLUDED_FROM_NUMERIC_SCORING' });
-  }
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const previousNonEmptyLine = lastNonEmptyLine;
-    if (line && !line.startsWith('<PARSED TEXT FOR PAGE:')) lastNonEmptyLine = line;
-    if (!line) continue;
-    if (line.startsWith('<PARSED TEXT FOR PAGE:')) continue;
-
-    if (line.includes('|')) {
-      if (pendingTop3 !== null) audit.orphanTop3Rows.push({ type: currentLottery || 'ไม่ทราบประเภท', date: currentDate || '', top3: pendingTop3, reason: 'new-header-before-bottom2' });
-      const parts = line.split('|').map(p => p.trim());
-      let rawHeaderName = parts[0] || currentLottery;
-      if (/^[\u0E31-\u0E3A\u0E47-\u0E4E]/u.test(rawHeaderName || '') &&
-          previousNonEmptyLine && !/^\d+$/.test(previousNonEmptyLine) && !previousNonEmptyLine.includes('|') &&
-          !skippedPattern.test(previousNonEmptyLine)) {
-        audit.headerRepairs.push({method:'previous-line-prefix', prefix:previousNonEmptyLine, fragment:rawHeaderName, date:parts[1] || ''});
-        rawHeaderName = previousNonEmptyLine + rawHeaderName;
+    function isValidCalendarDate(gregorianYear, month, day) {
+      if (!Number.isInteger(gregorianYear) || !Number.isInteger(month) || !Number.isInteger(day)) {
+        return false;
       }
-      currentLottery = rawHeaderName;
-      currentDate = parts[1] || '';
-      lastSkippedSignature = '';
-      lastSkippedBase = '';
-      pendingTop3 = null;
-      if (currentLottery) ensureType(currentLottery);
-      if (skippedPattern.test(line)) {
-        recordSkipped(line, currentDate);
-        currentDate = null;
+      if (month < 1 || month > 12) return false;
+      const daysInMonth = [31, isLeapYearGregorian(gregorianYear) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      return day >= 1 && day <= daysInMonth[month - 1];
+    }
+
+    function normalizeYearToBuddhist(rawYear) {
+      let y = Number(rawYear);
+      if (!Number.isFinite(y)) return null;
+      if (y >= 0 && y < 100) {
+        y += y >= 50 ? 2500 : 2600;
       }
-      continue;
-    }
-
-    if (currentDate && pendingTop3 === null && /^[\u0E31-\u0E3A\u0E47-\u0E4E]/u.test(currentLottery || '') &&
-        !/^\d+$/.test(line) && !line.includes('|') && !skippedPattern.test(line) && !line.startsWith('...') && !line.startsWith('---')) {
-      const oldDisplay = formatDisplayName(currentLottery);
-      if (grouped[oldDisplay] && grouped[oldDisplay].length === 0) delete grouped[oldDisplay];
-      if (audit.sourceTypes[oldDisplay] && audit.sourceTypes[oldDisplay].records === 0) delete audit.sourceTypes[oldDisplay];
-      audit.headerRepairs.push({method:'following-line-prefix', prefix:line, fragment:currentLottery, date:currentDate || ''});
-      currentLottery = line + currentLottery;
-      ensureType(currentLottery);
-      continue;
-    }
-
-    if (skippedPattern.test(line) || line.startsWith('...') || line.startsWith('---')) {
-      if (pendingTop3 !== null) audit.orphanTop3Rows.push({ type: currentLottery || 'ไม่ทราบประเภท', date: currentDate || '', top3: pendingTop3, reason: 'skipped-or-status-before-bottom2' });
-      recordSkipped(line, currentDate);
-      pendingTop3 = null;
-      currentDate = null;
-      continue;
-    }
-
-    if (!/^\d+$/.test(line) && !currentLottery) {
-      currentLottery = line;
-      ensureType(currentLottery);
-      continue;
-    }
-
-    if (/^\d{3}$/.test(line)) {
-      if (pendingTop3 !== null) audit.orphanTop3Rows.push({ type: currentLottery || 'ไม่ทราบประเภท', date: currentDate || '', top3: pendingTop3, reason: 'second-top3-before-bottom2' });
-      pendingTop3 = line;
-      continue;
-    }
-    if (/^\d{2}$/.test(line) && pendingTop3 && currentLottery) {
-      const key = ensureType(currentLottery);
-      const date = currentDate || `งวดที่ ${grouped[key].length + 1}`;
-      const recordKey = `${key}||${date}`;
-      const value = { date, top3: pendingTop3, bottom2: line };
-      const prior = seenByTypeDate.get(recordKey);
-      if (prior) {
-        if (prior.top3 === value.top3 && prior.bottom2 === value.bottom2) audit.duplicateRows.push({ type:key, date, top3:value.top3, bottom2:value.bottom2, action:'duplicate-identical-not-added' });
-        else audit.conflicts.push({ type:key, date, firstTop3:prior.top3, firstBottom2:prior.bottom2, otherTop3:value.top3, otherBottom2:value.bottom2, action:'conflict-kept-out-of-silent-merge' });
-      } else {
-        seenByTypeDate.set(recordKey, value);
-        grouped[key].push(value);
-        audit.sourceTypes[key].records++;
-        audit.parsedRecords++;
+      if (y >= 1900 && y <= 2150) {
+        y += 543;
       }
-      pendingTop3 = null;
-      currentDate = null;
-      continue;
+      return y;
     }
 
-    if (/^\d+$/.test(line) && !/^\d{2,3}$/.test(line)) {
-      audit.invalidRows.push({ type: currentLottery || 'ไม่ทราบประเภท', date: currentDate || '', text: line, reason:'numeric-line-not-2-or-3-digits' });
+    function parseThaiDate(inputStr) {
+      if (typeof inputStr !== "string") return null;
+      const cleaned = inputStr.trim();
+      const match = cleaned.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+      if (!match) return null;
+
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const buddhistYear = normalizeYearToBuddhist(match[3]);
+      if (!buddhistYear || buddhistYear < 2443 || buddhistYear > 2693) return null;
+
+      const gregorianYear = buddhistYear - 543;
+      if (!isValidCalendarDate(gregorianYear, month, day)) return null;
+
+      const dd = String(day).padStart(2, "0");
+      const mm = String(month).padStart(2, "0");
+      const iso = `${gregorianYear}-${mm}-${dd}`;
+      const display = `${dd}/${mm}/${buddhistYear}`;
+      const timestamp = Date.UTC(gregorianYear, month - 1, day);
+
+      return { day, month, buddhistYear, gregorianYear, iso, display, timestamp };
     }
-  }
 
-  if (pendingTop3 !== null) audit.orphanTop3Rows.push({ type: currentLottery || 'ไม่ทราบประเภท', date: currentDate || '', top3: pendingTop3, reason: 'end-of-input-before-bottom2' });
+    function normalizeTypeName(rawType) {
+      const s = String(rawType || "").trim().replace(/\s+/g, " ");
+      if (!s) return "ไม่ระบุประเภท";
+      const map = new Map([
+        ["ลาว", "ลาวพัฒนา"],
+        ["สปป.ลาว", "ลาวพัฒนา"],
+        ["ลาว พัฒนา", "ลาวพัฒนา"],
+        ["ฮานอย", "ฮานอยปกติ"],
+        ["ฮานอย ปกติ", "ฮานอยปกติ"]
+      ]);
+      return map.get(s) || s;
+    }
 
-  // Any display label fed by multiple raw names is surfaced for review rather than hidden.
-  for (const [displayName, info] of Object.entries(audit.sourceTypes)) {
-    if (info.rawNames.length > 1) audit.displayCollisions.push({ displayName, rawNames: info.rawNames.slice() });
-  }
-  window.__LOTTERY_PARSE_AUDIT__ = audit;
-  return grouped;
-}
+    function sanitizeDigits(rawVal, exactLen) {
+      const digitsOnly = String(rawVal || "").replace(/\D/g, "");
+      if (digitsOnly.length < exactLen) return null;
+      return digitsOnly.slice(-exactLen);
+    }
 
-// Prediction evidence deliberately excludes the hundreds digit of the 3-digit top result.
-// Eligible lead-digit evidence: top-3 tens + top-3 units + both bottom-2 positions.
-// The hundreds digit may appear in result-history diagnostics, but never in lead ranking.
-// V80.8 integrity fix: derived all-day rows carry an explicit rounds[] array.
-// Score each round using the same eligible positions as a normal single-draw row;
-// never slice the joined display string, which would accidentally include a later
-// round's hundreds digit and separator characters in the learner's evidence.
-function getEligibleLeadDigitEvidence(record) {
-  const rounds = Array.isArray(record?.rounds) ? record.rounds : null;
-  if (rounds?.length) return rounds.map(r => {
-    const top = String(r?.top3 ?? ''), bottom = String(r?.bottom2 ?? '');
-    return /^\d{3}$/.test(top) && /^\d{2}$/.test(bottom) ? top.slice(1) + bottom : '';
-  }).join('');
-  return String(record.top3 || '').slice(1) + String(record.bottom2 || '');
-}
-function getLeadModelEvidence(record, eligibleOnly = false) {
-  const rounds = Array.isArray(record?.rounds) ? record.rounds : null;
-  if (rounds?.length) return rounds.map(r => {
-    const top = String(r?.top3 ?? ''), bottom = String(r?.bottom2 ?? '');
-    if (!/^\d{3}$/.test(top) || !/^\d{2}$/.test(bottom)) return '';
-    return eligibleOnly ? top.slice(1) + bottom : top + bottom;
-  }).join('');
-  return eligibleOnly ? getEligibleLeadDigitEvidence(record) : (String(record.top3 || '') + String(record.bottom2 || ''));
-}
-
-function analyzeGapTracker(records, eligibleOnly = false) {
-  let gapMap = {};
-  for(let d=0; d<=9; d++) gapMap[d] = { currentGap: 0, found: false };
-  records.forEach((r) => {
-    let digits = getLeadModelEvidence(r, eligibleOnly).split('');
-    for(let d=0; d<=9; d++) {
-      let dStr = d.toString();
-      if(!gapMap[d].found) {
-        if(digits.includes(dStr)) gapMap[d].found = true;
-        else gapMap[d].currentGap++;
+    function parseLineToRecord(line, lineNo) {
+      const trimmed = String(line || "").trim();
+      if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("//")) {
+        return { ok: false, reason: "บรรทัดว่างหรือคอมเมนต์", lineNo };
       }
-    }
-  });
-  return gapMap;
-}
 
-function analyzeTrendMomentum(records, eligibleOnly = false) {
-  let momentumData = [];
-  const len = records.length;
-  for(let d=0; d<=9; d++) {
-    let dStr = d.toString();
-    let shortRange = records.slice(0, Math.min(5, len));
-    let shortHits = 0;
-    shortRange.forEach(r => { if(getLeadModelEvidence(r, eligibleOnly).includes(dStr)) shortHits++; });
+      const parts = trimmed.includes(",")
+        ? trimmed.split(",")
+        : trimmed.split(/\s+/);
 
-    let midRange = records.slice(Math.min(5, len), Math.min(12, len));
-    let midHits = 0;
-    midRange.forEach(r => { if(getLeadModelEvidence(r, eligibleOnly).includes(dStr)) midHits++; });
-
-    let longRange = records.slice(Math.min(12, len), Math.min(25, len));
-    let longHits = 0;
-    longRange.forEach(r => { if(getLeadModelEvidence(r, eligibleOnly).includes(dStr)) longHits++; });
-
-    let totalHits = 0;
-    records.forEach(r => { if(getLeadModelEvidence(r, eligibleOnly).includes(dStr)) totalHits++; });
-    let totalRate = len > 0 ? (totalHits / len) * 100 : 0;
-
-    let shortPct = shortRange.length > 0 ? (shortHits / shortRange.length) * 100 : 0;
-    let midPct = midRange.length > 0 ? (midHits / midRange.length) * 100 : 0;
-    let stabilityScore = Math.round((shortPct * 0.35) + (midPct * 0.40) + (totalRate * 0.25));
-
-    let trendLabel = 'เสถียรปกติ';
-    if(shortPct >= 60 && midPct >= 40) trendLabel = '🔥 พุ่งแรง (Hot)';
-    else if(shortPct === 0 && midPct === 0) trendLabel = '❄️ แผ่ว (Cold)';
-    else if(shortPct >= 40) trendLabel = '⚡ กำลังเดิน';
-
-    momentumData.push({ digit: d, shortHits: `${shortHits}/${shortRange.length}`, midHits: `${midHits}/${midRange.length}`, longHits: `${longHits}/${longRange.length}`, stabilityIndex: `${stabilityScore}%`, trendLabel: trendLabel, rawBonus: stabilityScore });
-  }
-  return momentumData;
-}
-
-function analyzePureMathematics(records, eligibleOnly = false, variantMode = 'BASELINE') {
-  let mathResults = [];
-  const len = records.length;
-  for(let d=0; d<=9; d++) {
-    let dStr = d.toString();
-    let markovTransitions = 0, totalPrevOccurrences = 0;
-    for(let i=0; i<len-1; i++) {
-      let prevDigits = getLeadModelEvidence(records[i+1], eligibleOnly);
-      let currDigits = getLeadModelEvidence(records[i], eligibleOnly);
-      if(prevDigits.includes(dStr)) {
-        totalPrevOccurrences++;
-        if(currDigits.includes(dStr)) markovTransitions++;
+      if (parts.length < 4) {
+        return { ok: false, reason: "คอลัมน์ไม่ครบ 4 ส่วน (วันที่, ประเภท, บน, ล่าง)", lineNo };
       }
+
+      const datePart = parts[0];
+      const bottomPart = parts[parts.length - 1];
+      const topPart = parts[parts.length - 2];
+      const typePart = parts.slice(1, parts.length - 2).join(" ");
+
+      const dateInfo = parseThaiDate(datePart);
+      if (!dateInfo) {
+        return { ok: false, reason: `รูปแบบวันที่ไม่ถูกต้อง (${datePart})`, lineNo };
+      }
+
+      const typeName = normalizeTypeName(typePart);
+      const top3 = sanitizeDigits(topPart, 3);
+      const bottom2 = sanitizeDigits(bottomPart, 2);
+
+      if (!top3 || !bottom2) {
+        return { ok: false, reason: `เลขบน 3 หลักหรือเลขล่าง 2 หลักไม่ถูกต้อง (${topPart} / ${bottomPart})`, lineNo };
+      }
+
+      const topTens = Number(top3[1]);
+      const topUnits = Number(top3[2]);
+      const bottomTens = Number(bottom2[0]);
+      const bottomUnits = Number(bottom2[1]);
+
+      return {
+        ok: true,
+        lineNo,
+        record: {
+          id: `${typeName}__${dateInfo.iso}__${top3}__${bottom2}`,
+          dateDisplay: dateInfo.display,
+          isoDate: dateInfo.iso,
+          timestamp: dateInfo.timestamp,
+          type: typeName,
+          top3,
+          bottom2,
+          topTens,
+          topUnits,
+          bottomTens,
+          bottomUnits,
+          guardrailFlag: "OK (No Hundred-Digit Leakage)"
+        }
+      };
     }
-    let markovScore = variantMode === 'V78_NO_MARKOV' ? 50 : (totalPrevOccurrences > 0 ? Math.round((markovTransitions / totalPrevOccurrences) * 100) : 50);
 
-    let totalHits = 0;
-    records.forEach(r => { if(getLeadModelEvidence(r, eligibleOnly).includes(dStr)) totalHits++; });
-    let lambda = len > 0 ? totalHits / len : 0.5;
-    let poissonScore = Math.min(100, Math.round(Math.exp(-lambda) * Math.pow(lambda, 1) * 100 * 5) + 30);
+    function parseRawDataset(rawText) {
+      const lines = String(rawText || "").split(/\r?\n/);
+      const valid = [];
+      const rejected = [];
 
-    let modHits = 0;
-    records.forEach(r => {
-      let sumVal = parseInt(r.top3[1] || '0') + parseInt(r.top3[2] || '0');
-      if(sumVal % 3 === (d % 3)) modHits++;
-    });
-    let moduloScore = ['V78', 'V78_NO_MARKOV', 'NO_MODULO'].includes(variantMode) ? 50 : (len > 0 ? Math.round((modHits / len) * 100) : 50);
-    let purityScore = Math.round((markovScore * 0.35) + (poissonScore * 0.35) + (moduloScore * 0.30));
-
-    mathResults.push({ digit: d, markov: `${markovScore}%`, poisson: `${poissonScore}%`, modulo: `${moduloScore}%`, purityScore: purityScore });
-  }
-  return mathResults;
-}
-
-function analyzeCorrelationPairs(records, gapData) {
-  let pairsList = [];
-  for(let a=0; a<=9; a++) { for(let b=a+1; b<=9; b++) { pairsList.push([a, b]); } }
-
-  let pairResults = pairsList.map(([dA, dB]) => {
-    let hits = 0, total = records.length;
-    records.forEach(r => {
-      let t3 = r.top3, b2 = r.bottom2;
-      let top2 = t3.slice(-2), bot2 = b2;
-      if (top2 === `${dA}${dB}` || top2 === `${dB}${dA}` || bot2 === `${dA}${dB}` || bot2 === `${dB}${dA}`) hits++;
-    });
-    let rate = total > 0 ? (hits / total) * 100 : 0;
-    return { pair: `${dA}${dB}`, hits: hits, total: total, rate: parseFloat(rate.toFixed(1)) };
-  });
-  pairResults.sort((a, b) => b.rate - a.rate);
-  return pairResults;
-}
-
-function analyzeAdaptiveWeightOptimizer(records, eligibleOnly = false) {
-  // Count at most one hit per digit per draw, matching the binary lead-hit rule.
-  // Repeated appearances within the same draw must not inflate a digit's historical support.
-  let hitCounts = Array(10).fill(0);
-  records.forEach(r => {
-    const uniqueDigits = new Set(getLeadModelEvidence(r, eligibleOnly).split(''));
-    uniqueDigits.forEach(d => hitCounts[parseInt(d)]++);
-  });
-  let maxHit = Math.max(...hitCounts, 1);
-  let optimizerBonuses = hitCounts.map(h => parseFloat(((h / maxHit) * 5.0).toFixed(2)));
-
-  let profiles = [
-    { name: 'Profile Calibrated Master Path B', weight: '5.0%', status: 'Active Support' },
-    { name: 'Profile Balanced Stability', weight: '3.0%', status: 'Standby' }
-  ];
-  return { profiles, optimizerBonuses };
-}
-
-function analyzeMarketRegime(records, eligibleOnly = false) {
-  let shortSlice = records.slice(0, Math.min(5, records.length));
-  let uniqueDigits = new Set();
-  shortSlice.forEach(r => getLeadModelEvidence(r, eligibleOnly).split('').forEach(d => uniqueDigits.add(d)));
-  let entropyScore = Math.round((uniqueDigits.size / 10) * 100);
-  // V54.0 Calibrated: ขยายเกณฑ์ Entropy ให้ยืดหยุ่นขึ้น ไม่ตัดทอนคู่เลขจริงอย่างไร้เหตุผล
-  let regimeState = entropyScore > 92 ? 'High Entropy (ตลาดสวิงป่วน)' : 'Normal Flow (ตลาดปกติ)';
-  return { entropyScore, regimeState };
-}
-
-function calculateGeniusDnaScores(records, shortLossStreak = 0, disableVeto = false, variantMode = 'BASELINE', enableCollisionLeadSupport = false, leadTuningMode = 'BASELINE', traceCollector = null, ablationMode = 'NONE', windowSize = null) {
-  let len = records.length;
-  const fixedWindow = Number.isFinite(Number(windowSize)) && Number(windowSize) > 0 ? Math.floor(Number(windowSize)) : null;
-  let wShort = fixedWindow ? records.slice(0, Math.min(fixedWindow, len)) : records.slice(0, Math.min(8, len));
-  let wMid = fixedWindow ? records.slice(0, Math.min(fixedWindow, len)) : records.slice(0, Math.min(18, len));
-  let wLong = fixedWindow ? records.slice(0, Math.min(fixedWindow, len)) : records.slice(0, len);
-
-  function computeWindowScores(winRecs, windowLabel) {
-    let gapData = analyzeGapTracker(winRecs, true);
-    let buddyPairs = analyzeCorrelationPairs(winRecs, gapData);
-    let momentumData = analyzeTrendMomentum(winRecs, true);
-    let mathData = analyzePureMathematics(winRecs, true, variantMode);
-    let adaptiveOpt = analyzeAdaptiveWeightOptimizer(winRecs, true);
-    let regime = analyzeMarketRegime(winRecs, true);
-    const collisionLeadSignals = enableCollisionLeadSupport ? analyzeCollisionFormulaSignals(winRecs).digitSupport : Array(10).fill(0);
-    const collisionLeadMax = Math.max(...collisionLeadSignals, 0.000001);
-
-    let scores = Array(10).fill(50.0);
-    let vetoPenalty = Array(10).fill(0);
-    let statusText = Array(10).fill('ปกติ');
-    const traceParts = Object.fromEntries(['base','macro','recency','optimizer','collision','gap','momentum','math','veto'].map(k => [k, Array(10).fill(0)]));
-    traceParts.base = Array(10).fill(50.0);
-
-    // Binary per-draw evidence: align training weights with the evaluation rule
-    // (a digit either appears in an eligible position in a draw or it does not).
-    let macroCounts = Array(10).fill(0);
-    winRecs.forEach(r => {
-      const uniqueDigits = new Set(getEligibleLeadDigitEvidence(r).split(''));
-      uniqueDigits.forEach(d => { macroCounts[parseInt(d)]++; });
-    });
-
-    let recencyWeights = Array(10).fill(0);
-    winRecs.forEach((r, idx) => {
-      let decayFactor = Math.exp(-idx / 5);
-      const uniqueDigits = new Set(getEligibleLeadDigitEvidence(r).split(''));
-      uniqueDigits.forEach(d => {
-        recencyWeights[parseInt(d)] += (4.2 * decayFactor);
+      lines.forEach((line, idx) => {
+        const res = parseLineToRecord(line, idx + 1);
+        if (res.ok) {
+          valid.push(res.record);
+        } else if (line.trim() && !line.trim().startsWith("#")) {
+          rejected.push({ lineNo: res.lineNo, reason: res.reason, raw: line.trim() });
+        }
       });
-    });
 
-    let weightMultiplier = regime.entropyScore > 92 ? 0.70 : 1.25;
-    if (shortLossStreak >= 2) weightMultiplier *= 1.30;
-
-    for(let d=0; d<=9; d++) {
-      const macroPart = ablationMode === 'NO_MACRO' ? 0 : (macroCounts[d] * 2.1 * weightMultiplier);
-      const recencyPart = (ablationMode === 'NO_RECENCY' || leadTuningMode === 'NO_RECENCY_GAP40') ? 0 : (recencyWeights[d] * 2.6 * weightMultiplier);
-      const optimizerPart = ablationMode === 'NO_OPTIMIZER' ? 0 : adaptiveOpt.optimizerBonuses[d];
-      // Bounded 2-point support from the 13 formulas; diagnostic only, not a probability.
-      const collisionPart = ablationMode === 'NO_COLLISION' ? 0 : ((collisionLeadSignals[d] / collisionLeadMax) * 2.0);
-      traceParts.macro[d] = macroPart; traceParts.recency[d] = recencyPart;
-      traceParts.optimizer[d] = optimizerPart; traceParts.collision[d] = collisionPart;
-      scores[d] += macroPart; scores[d] += recencyPart; scores[d] += optimizerPart; scores[d] += collisionPart;
-    }
-
-    for(let d=0; d<=9; d++) {
-      let gapPart = 0;
-      if(gapData[d].currentGap === 0) gapPart = 0;
-      else if(gapData[d].currentGap === 1) gapPart = (leadTuningMode === 'NO_RECENCY_GAP40' ? 40 : 32) * weightMultiplier;
-      if (ablationMode === 'NO_GAP') gapPart = 0;
-      traceParts.gap[d] = gapPart;
-      scores[d] += gapPart;
-    }
-
-    buddyPairs.slice(0, 15).forEach(bp => {
-      let pStr = bp.pair;
-      let d1 = parseInt(pStr[0]), d2 = parseInt(pStr[1]);
-      scores[d1] += (0.0 * weightMultiplier); scores[d2] += (0.0 * weightMultiplier);
-    });
-
-    momentumData.forEach(m => { const v = (ablationMode === 'NO_MOMENTUM' || variantMode === 'NO_MOMENTUM' || variantMode === 'V78' || variantMode === 'V78_NO_MARKOV' ? 0.00 : m.rawBonus * 0.38 * weightMultiplier); traceParts.momentum[m.digit] += v; scores[m.digit] += v; });
-    mathData.forEach(m => { const v = ablationMode === 'NO_MATH' ? 0 : (m.purityScore * 0.42 * weightMultiplier); traceParts.math[m.digit] += v; scores[m.digit] += v; });
-
-    let basePenalty = regime.entropyScore > 92 ? 14 : 12;
-    if (shortLossStreak >= 2) basePenalty = Math.max(3, basePenalty - 8);
-
-    for(let d=0; d<=9; d++) {
-      let isCold = momentumData.find(m => m.digit === d && m.trendLabel.includes('แผ่ว'));
-      if(gapData[d].currentGap >= 18 || isCold) {
-        vetoPenalty[d] += basePenalty;
-        statusText[d] = gapData[d].currentGap >= 18 ? 'ค้างนาน / ดับ (Gap Trap)' : 'กระแสแผ่ว (Cold Trend)';
-      }
-      if (ablationMode === 'NO_VETO') vetoPenalty[d] = 0;
-      traceParts.veto[d] = vetoPenalty[d];
-    }
-
-    const result = scores.map((s, d) => ({ digit: d, net: Math.max(0, s - ((disableVeto || ablationMode === 'NO_VETO') ? 0 : vetoPenalty[d])), vetoPenalty: (disableVeto || ablationMode === 'NO_VETO') ? 0 : vetoPenalty[d], gap: gapData[d].currentGap, status: !disableVeto && ablationMode !== 'NO_VETO' && vetoPenalty[d] > 0 ? statusText[d] : 'ยอดเยี่ยม' }));
-    if (traceCollector) traceCollector.windows = { ...(traceCollector.windows || {}), [windowLabel]: { components: traceParts, rawScores: scores.slice(), vetoPenalty: vetoPenalty.slice(), gaps: Array.from({length: 10}, (_, digit) => gapData[digit]?.currentGap ?? 0) } };
-    return result;
-  }
-
-  let sShort = computeWindowScores(wShort, 'short');
-  let sMid = computeWindowScores(wMid, 'mid');
-  let sLong = computeWindowScores(wLong, 'long');
-
-  // V55.02: Lead ranking is strictly position-eligible.
-  // Hundreds digit is excluded from every lead score and from any penalty.
-  // A position-risk penalty based on the hundreds digit would indirectly let
-  // the forbidden position influence which lead digits are selected.
-  let combinedScores = Array(10).fill(0);
-  for(let d=0; d<=9; d++) {
-    combinedScores[d] = (sShort[d].net * 0.50) + (sMid[d].net * 0.25) + (sLong[d].net * 0.25);
-  }
-
-  let maxNet = Math.max(...combinedScores, 1);
-  let finalScores = combinedScores.map((score, d) => ({
-    digit: d,
-    netScore: score,
-    normalizedScore: Math.min(100, Math.round((score / maxNet) * 100)),
-    gap: sShort[d].gap,
-    hundredsRiskPenalty: 0,
-    vetoPenalty: sShort[d].vetoPenalty || 0,
-    status: sShort[d].status
-  }));
-
-  // EXPERIMENTAL ONLY: rank by unrounded score; display remains normalizedScore.
-  finalScores.sort((a, b) => (b.netScore - a.netScore) || (a.digit - b.digit));
-  if (traceCollector) {
-    const componentNames = ['base','macro','recency','optimizer','collision','gap','momentum','math','veto'];
-    const byDigit = Array.from({length:10}, (_,digit) => {
-      const parts = {};
-      componentNames.forEach(k => {
-        const shortV = traceCollector.windows?.short?.components?.[k]?.[digit] || 0;
-        const midV = traceCollector.windows?.mid?.components?.[k]?.[digit] || 0;
-        const longV = traceCollector.windows?.long?.components?.[k]?.[digit] || 0;
-        parts[k] = (shortV * 0.50) + (midV * 0.25) + (longV * 0.25);
-      });
-      parts.veto = -parts.veto;
-      return {digit, score:finalScores.find(x=>x.digit===digit)?.netScore ?? 0, rank:finalScores.findIndex(x=>x.digit===digit)+1, components:parts};
-    });
-    traceCollector.scoreVector = byDigit;
-    traceCollector.windowSize = fixedWindow || null;
-    traceCollector.ablationMode = ablationMode;
-  }
-  return finalScores;
-}
-
-function generateCoOccurrenceWinArray(records) {
-  let pairCoOccur = {};
-  records.forEach(r => {
-    let top2 = r.top3.slice(-2);
-    let bot2 = r.bottom2;
-    [top2, bot2].forEach(p => {
-      if(p.length === 2) {
-        let x = parseInt(p[0]), y = parseInt(p[1]);
-        let key = x < y ? `${x}${y}` : `${y}${x}`;
-        pairCoOccur[key] = (pairCoOccur[key] || 0) + 1;
-      }
-    });
-  });
-
-  let coScores = Array(10).fill(0);
-  for(let key in pairCoOccur) {
-    let parts = key.split('').map(Number);
-    let score = pairCoOccur[key];
-    coScores[parts[0]] += score; coScores[parts[1]] += score;
-  }
-
-  let rankedDigits = coScores.map((val, idx) => ({digit: idx, score: val})).sort((a,b) => b.score - a.score);
-  let winDigits = rankedDigits.slice(0, 6).map(item => item.digit).sort((a,b) => a - b);
-
-  let hits = 0, total = records.length;
-  records.forEach(r => {
-    let top2 = r.top3.slice(-2), bot2 = r.bottom2;
-    let tMatch = winDigits.includes(parseInt(top2[0])) && winDigits.includes(parseInt(top2[1]));
-    let bMatch = winDigits.includes(parseInt(bot2[0])) && winDigits.includes(parseInt(bot2[1]));
-    if(tMatch || bMatch) hits++;
-  });
-  let winCoverageRate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
-  return { winDigits, hits, total, winCoverageRate };
-}
-
-function analyzeOverallFrequency(records) {
-  let counts = Array(10).fill(0), winStreaks = Array(10).fill(0), maxWins = Array(10).fill(0), maxLosses = Array(10).fill(0), tempLoss = Array(10).fill(0), lastStat = Array(10).fill(null);
-  const chron = [...records].reverse();
-  chron.forEach(r => {
-    let digits = (r.top3 + r.bottom2).split('');
-    for(let d=0; d<=9; d++) {
-      counts[d]++;
-      if(digits.includes(d.toString())) {
-        winStreaks[d]++; tempLoss[d] = 0;
-        if(winStreaks[d] > maxWins[d]) maxWins[d] = winStreaks[d];
-        lastStat[d] = 'เข้า';
-      } else {
-        tempLoss[d]++; winStreaks[d] = 0;
-        if(tempLoss[d] > maxLosses[d]) maxLosses[d] = tempLoss[d];
-        lastStat[d] = 'หลุด';
-      }
-    }
-  });
-  return counts.map((_, d) => ({ digit: d, hits: counts[d], maxWin: maxWins[d], maxLoss: maxLosses[d], status: lastStat[d] }));
-}
-
-function analyzePositionBreakdown(records) {
-  let pos = {};
-  for(let d=0; d<=9; d++) { pos[d] = { hundreds: { hits: 0 }, tens: { hits: 0 }, units: { hits: 0 } }; }
-  records.forEach(r => {
-    let t3 = r.top3, b2 = r.bottom2;
-    let h = t3[0], t = t3[1], u = t3[2], bTens = b2[0], bUnits = b2[1];
-    for(let d=0; d<=9; d++) {
-      let dStr = d.toString();
-      if(h === dStr) pos[d].hundreds.hits++;
-      if(t === dStr || bTens === dStr) pos[d].tens.hits++;
-      if(u === dStr || bUnits === dStr) pos[d].units.hits++;
-    }
-  });
-  return pos;
-}
-
-function analyzeOddEvenHighLow(records) {
-  let evenCount = 0, oddCount = 0, highCount = 0, lowCount = 0, total = records.length;
-  records.forEach(r => {
-    let top2 = parseInt(r.top3.slice(-2));
-    if(top2 % 2 === 0) evenCount++; else oddCount++;
-    if(top2 >= 50) highCount++; else lowCount++;
-  });
-  return {
-    evenRate: total > 0 ? ((evenCount / total) * 100).toFixed(1) : '0.0',
-    oddRate: total > 0 ? ((oddCount / total) * 100).toFixed(1) : '0.0',
-    highRate: total > 0 ? ((highCount / total) * 100).toFixed(1) : '0.0',
-    lowRate: total > 0 ? ((lowCount / total) * 100).toFixed(1) : '0.0',
-  };
-}
-
-function analyzeSpecialPatterns(records) {
-  let doubleCount = 0, harmCount = 0, sisterCount = 0, total = records.length;
-  records.forEach(r => {
-    let t3 = r.top3, top2 = t3.slice(-2);
-    if(t3[1] === t3[2]) doubleCount++;
-    if(t3[0] === t3[2]) harmCount++;
-    let d1 = parseInt(top2[0]), d2 = parseInt(top2[1]);
-    if(Math.abs(d1 - d2) === 1 || (d1 === 0 && d2 === 9) || (d1 === 9 && d2 === 0)) sisterCount++;
-  });
-  return {
-    doubleRate: total > 0 ? ((doubleCount / total) * 100).toFixed(1) : '0.0',
-    harmRate: total > 0 ? ((harmCount / total) * 100).toFixed(1) : '0.0',
-    sisterRate: total > 0 ? ((sisterCount / total) * 100).toFixed(1) : '0.0',
-  };
-}
-
-// Canonical raw-sum definitions shared by the existing Sum Matrix and the 13-formula engine.
-// This prevents the 3-top sum from being redefined as a second, competing formula.
-function calculateRawPositionSums(record) {
-  const top = String(record.top3 || '').padStart(3, '0').slice(-3);
-  const bottom = String(record.bottom2 || '').padStart(2, '0').slice(-2);
-  const topDigits = [...top].map(Number);
-  const bottomDigits = [...bottom].map(Number);
-  const top3 = topDigits.reduce((a, b) => a + b, 0);
-  const bottom2 = bottomDigits.reduce((a, b) => a + b, 0);
-  return { top3, top2: topDigits[1] + topDigits[2], bottom2, all5: top3 + bottom2 };
-}
-
-function analyzeSumMatrix(records) {
-  let top2Sums = {}, top3Sums = {};
-  records.forEach((r) => {
-    const sums = calculateRawPositionSums(r);
-    const sTop3 = sums.top3;
-    const sTop2 = sums.top2;
-    top3Sums[sTop3] = (top3Sums[sTop3] || 0) + 1;
-    top2Sums[sTop2] = (top2Sums[sTop2] || 0) + 1;
-  });
-  let sortedTop2Sums = Object.entries(top2Sums).sort((a,b) => b[1]-a[1]);
-  let topTop2 = sortedTop2Sums[0] || [0,0];
-  let secondTop2 = sortedTop2Sums[1] || topTop2;
-  let topTop3 = Object.entries(top3Sums).sort((a,b) => b[1]-a[1])[0] || [0,0];
-  return { top2Sum: parseInt(topTop2[0]), secondTop2Sum: parseInt(secondTop2[0]), top3Sum: parseInt(topTop3[0]) };
-}
-
-// V55.02: 13 collision/sum formulas. Each expression is unique; all five raw
-// positions are used. The unit digit is the first signal; first+1 is retained
-// as a raw value (10 is NOT wrapped to 0 and is excluded from 0-9 pair scoring).
-const COLLISION_FORMULAS_V5499 = Object.freeze([
-  { id:'HH_TT', label:'ร้อยบน + สิบบน', positions:['top3',0,'top3',1] },
-  { id:'HH_TU', label:'ร้อยบน + หน่วยบน', positions:['top3',0,'top3',2] },
-  { id:'HH_BT', label:'ร้อยบน + สิบล่าง', positions:['top3',0,'bottom2',0] },
-  { id:'HH_BU', label:'ร้อยบน + หน่วยล่าง', positions:['top3',0,'bottom2',1] },
-  { id:'HT_TU', label:'สิบบน + หน่วยบน', positions:['top3',1,'top3',2] },
-  { id:'HT_BT', label:'สิบบน + สิบล่าง', positions:['top3',1,'bottom2',0] },
-  { id:'HT_BU', label:'สิบบน + หน่วยล่าง', positions:['top3',1,'bottom2',1] },
-  { id:'TU_BT', label:'หน่วยบน + สิบล่าง', positions:['top3',2,'bottom2',0] },
-  { id:'TU_BU', label:'หน่วยบน + หน่วยล่าง', positions:['top3',2,'bottom2',1] },
-  { id:'BT_BU', label:'สิบล่าง + หน่วยล่าง', positions:['bottom2',0,'bottom2',1] },
-  { id:'SUM_TOP3', label:'ผลรวม 3 ตัวบน', sum:'top3' },
-  { id:'SUM_BOTTOM2', label:'ผลรวม 2 ตัวล่าง', sum:'bottom2' },
-  { id:'SUM_ALL5', label:'ผลรวม 5 หลัก', sum:'all5' }
-]);
-
-function analyzeCollisionFormulaSignals(records) {
-  const digitSupport = Array(10).fill(0);
-  const rawValueCounts = {};
-  const formulaStats = {};
-  COLLISION_FORMULAS_V5499.forEach(f => formulaStats[f.id] = { label:f.label, observations:0, firstDigitCounts:Array(10).fill(0), secondRawCounts:{}, signalCounts:Array(10).fill(0), rawSumCounts:{} });
-  records.forEach((r, idx) => {
-    const top = String(r.top3 || '').padStart(3, '0').slice(-3);
-    const bottom = String(r.bottom2 || '').padStart(2, '0').slice(-2);
-    const vals = { top3:top, bottom2:bottom };
-    const rawSums = calculateRawPositionSums(r);
-    const decay = Math.exp(-idx / 21);
-    COLLISION_FORMULAS_V5499.forEach(f => {
-      let sum = 0;
-      if (f.sum === 'top3') sum = rawSums.top3;
-      else if (f.sum === 'bottom2') sum = rawSums.bottom2;
-      else if (f.sum === 'all5') sum = rawSums.all5;
-      else sum = Number(vals[f.positions[0]][f.positions[1]]) + Number(vals[f.positions[2]][f.positions[3]]);
-      const first = sum % 10;
-      const secondRaw = first + 1;
-      const stat = formulaStats[f.id];
-      stat.observations++;
-      stat.rawSumCounts[sum] = (stat.rawSumCounts[sum] || 0) + 1;
-      stat.firstDigitCounts[first]++;
-      stat.signalCounts[first]++;
-      stat.secondRawCounts[secondRaw] = (stat.secondRawCounts[secondRaw] || 0) + 1;
-      if (secondRaw <= 9) stat.signalCounts[secondRaw]++;
-      rawValueCounts[secondRaw] = (rawValueCounts[secondRaw] || 0) + 1;
-      // Equal contribution per formula; preserve the raw +1 rule. Value 10
-      // remains in diagnostics and never wraps into digit 0.
-      digitSupport[first] += decay / COLLISION_FORMULAS_V5499.length;
-      if (secondRaw <= 9) digitSupport[secondRaw] += decay / COLLISION_FORMULAS_V5499.length;
-    });
-  });
-  return { formulaCount:COLLISION_FORMULAS_V5499.length, digitSupport, rawValueCounts, formulaStats };
-}
-
-// Standalone walk-forward diagnostics: each formula predicts its two most frequent
-// supported digits using prior records only; target draw is never used to build signals.
-function analyzeCollisionFormulaWalkForward(records) {
-  const chron = [...records].reverse();
-  const stats = {};
-  COLLISION_FORMULAS_V5499.forEach(f => stats[f.id] = { id:f.id, label:f.label, evaluated:0, hits:0, latestFirst:null, latestSecondRaw:null, latestTopDigits:[] });
-  for (let i = 1; i < chron.length; i++) {
-    const past = chron.slice(0, i).reverse();
-    const target = chron[i];
-    const signals = analyzeCollisionFormulaSignals(past);
-    const actual = new Set(getEligibleLeadDigitEvidence(target).split('').map(Number));
-    COLLISION_FORMULAS_V5499.forEach(f => {
-      const fs = signals.formulaStats[f.id];
-      const ranked = fs.signalCounts.map((count,digit)=>({digit,count})).sort((a,b)=>b.count-a.count || a.digit-b.digit);
-      const picks = ranked.slice(0,2).map(x=>x.digit);
-      stats[f.id].evaluated++;
-      if (picks.some(d=>actual.has(d))) stats[f.id].hits++;
-    });
-  }
-  const latest = analyzeCollisionFormulaSignals(records);
-  COLLISION_FORMULAS_V5499.forEach(f => {
-    const fs = latest.formulaStats[f.id];
-    const ranked = fs.signalCounts.map((count,digit)=>({digit,count})).sort((a,b)=>b.count-a.count || a.digit-b.digit);
-    const st = stats[f.id];
-    st.latestTopDigits = ranked.slice(0,2).map(x=>x.digit);
-    st.latestRawSum = Object.entries(fs.rawSumCounts).sort((a,b)=>b[1]-a[1] || Number(a[0])-Number(b[0]))[0]?.[0] ?? null;
-    st.latestRawSum = Object.entries(fs.rawSumCounts).sort((a,b)=>b[1]-a[1] || Number(a[0])-Number(b[0]))[0]?.[0] ?? null;
-    st.latestFirst = st.latestRawSum == null ? null : (Number(st.latestRawSum) % 10);
-    st.latestSecondRaw = st.latestFirst == null ? null : st.latestFirst + 1;
-    st.rate = st.evaluated ? Number((st.hits/st.evaluated*100).toFixed(2)) : 0;
-  });
-  return { formulaCount:COLLISION_FORMULAS_V5499.length, evaluated:Math.max(0,chron.length-1), formulas:Object.values(stats) };
-}
-
-// V55.07: Weak-lead rescue challenger. Shadow-only by design: it may inspect
-// only prior walk-forward outcomes, activates only when the trailing incumbent
-// lead rate is below 60%, and requires a +5 hit edge over the same 18 prior rows.
-// Production D1/D2 remains untouched until genuinely unseen validation proves safety.
-function analyzeWeakLeadRescueShadow(records, baselineRows) {
-  const WINDOW = 18, BASELINE_CEILING = 0.60, REQUIRED_EDGE = 5;
-  const chron = [...records].reverse();
-  const baselineByDate = new Map((baselineRows || []).map(r => [r.date, Boolean(r.isDigitHit)]));
-  const formulaHistory = Object.fromEntries(COLLISION_FORMULAS_V5499.map(f => [f.id, []]));
-  const baselineHistory = [];
-  const rows = [];
-  let selected = 0, shadowHits = 0, baselineHits = 0, helped = 0, hurt = 0;
-
-  for (let i = 1; i < chron.length; i++) {
-    const past = chron.slice(0, i).reverse();
-    const target = chron[i];
-    const signals = analyzeCollisionFormulaSignals(past);
-    const actual = new Set(getEligibleLeadDigitEvidence(target).split(''));
-    const formulaPredictions = {};
-    const formulaOutcomes = {};
-    for (const f of COLLISION_FORMULAS_V5499) {
-      const counts = signals.formulaStats[f.id].signalCounts;
-      const ranked = counts.map((count, digit) => ({ digit, count }))
-        .sort((a, b) => b.count - a.count || a.digit - b.digit);
-      const picks = ranked.slice(0, 2).map(x => String(x.digit));
-      formulaPredictions[f.id] = picks;
-      formulaOutcomes[f.id] = picks.some(d => actual.has(d));
-    }
-
-    const baselineHit = baselineByDate.get(target.date) ?? false;
-    let chosenFormula = null, priorBaselineHits = null, priorFormulaHits = null;
-    let selectedForShadow = false;
-    let shadowDigits = null;
-    if (baselineHistory.length >= WINDOW) {
-      const baseWindow = baselineHistory.slice(-WINDOW);
-      priorBaselineHits = baseWindow.filter(Boolean).length;
-      const rankedFormulas = COLLISION_FORMULAS_V5499.map(f => ({
-        id: f.id,
-        hits: formulaHistory[f.id].slice(-WINDOW).filter(Boolean).length
-      })).sort((a, b) => b.hits - a.hits || a.id.localeCompare(b.id));
-      chosenFormula = rankedFormulas[0]?.id || null;
-      priorFormulaHits = rankedFormulas[0]?.hits ?? 0;
-      if (priorBaselineHits / WINDOW < BASELINE_CEILING && priorFormulaHits >= priorBaselineHits + REQUIRED_EDGE) {
-        selectedForShadow = true;
-        shadowDigits = formulaPredictions[chosenFormula] || null;
-      }
-    }
-
-    const shadowHit = selectedForShadow
-      ? (shadowDigits || []).some(d => actual.has(d))
-      : baselineHit;
-    baselineHits += baselineHit ? 1 : 0;
-    shadowHits += shadowHit ? 1 : 0;
-    selected += selectedForShadow ? 1 : 0;
-    if (shadowHit && !baselineHit) helped++;
-    if (!shadowHit && baselineHit) hurt++;
-    rows.push({
-      date: target.date,
-      baselineLeadDigits: (baselineRows || []).find(r => r.date === target.date)?.predDigits || null,
-      shadowLeadDigits: selectedForShadow ? shadowDigits : null,
-      selected: selectedForShadow,
-      selectedFormula: selectedForShadow ? chosenFormula : null,
-      priorBaselineHits,
-      priorFormulaHits,
-      baselineHit,
-      shadowHit
-    });
-    baselineHistory.push(baselineHit);
-    for (const f of COLLISION_FORMULAS_V5499) formulaHistory[f.id].push(formulaOutcomes[f.id]);
-  }
-
-  const evaluated = rows.length;
-  return {
-    mode: 'WEAK_LEAD_FORMULA_RESCUE_SHADOW_ONLY',
-    trailingPriorRounds: WINDOW,
-    weakLeadActivationThresholdPct: 60,
-    minimumPriorFormulaEdgeHits: REQUIRED_EDGE,
-    formulaCount: COLLISION_FORMULAS_V5499.length,
-    evaluatedRows: evaluated,
-    baselineHits,
-    shadowHits,
-    baselineRatePct: evaluated ? Number((baselineHits / evaluated * 100).toFixed(2)) : 0,
-    shadowRatePct: evaluated ? Number((shadowHits / evaluated * 100).toFixed(2)) : 0,
-    deltaHits: shadowHits - baselineHits,
-    deltaPercentagePoints: evaluated ? Number(((shadowHits - baselineHits) / evaluated * 100).toFixed(2)) : 0,
-    selectedRows: selected,
-    helpedRows: helped,
-    hurtRows: hurt,
-    unchangedRows: evaluated - helped - hurt,
-    productionPromotion: false,
-    reason: 'Only prior 18-round evidence can activate the challenger; production remains incumbent because short histories cannot establish a no-regression guarantee.',
-    rows: rows.reverse()
-  };
-}
-
-/* V61.0 — fail-closed pair invariant guard.
-   This validates the incumbent output only; it does not select, reorder,
-   add, remove, or score any pair. */
-function assertPairInvariantsV610(d1, d2, pairs) {
-  const leads = [Number(d1), Number(d2)];
-  if (leads.length !== 2 || leads.some(d => !Number.isInteger(d) || d < 0 || d > 9) || leads[0] === leads[1]) {
-    throw new Error('V61.0 Pair Guard: เลขเด่นต้องเป็นเลข 0-9 ที่ไม่ซ้ำกัน 2 ตัว');
-  }
-  if (!Array.isArray(pairs) || pairs.length !== 10) {
-    throw new Error(`V61.0 Pair Guard: ต้องมีเลขเจาะ 10 คู่เท่านั้น (พบ ${pairs?.length ?? 0})`);
-  }
-  const seen = new Set();
-  const counts = new Map(leads.map(d => [String(d), 0]));
-  const tails = new Map(leads.map(d => [String(d), []]));
-  for (const item of pairs) {
-    const pair = String(item?.pair ?? '');
-    if (!/^\d{2}$/.test(pair)) throw new Error('V61.0 Pair Guard: รูปแบบคู่เลขไม่ใช่เลข 2 หลัก');
-    const tens = pair[0], units = Number(pair[1]);
-    if (!counts.has(tens)) throw new Error('V61.0 Pair Guard: เลขเด่นต้องอยู่หลักสิบเท่านั้น');
-    if (Number(pair[0]) === units) throw new Error('V61.0 Pair Guard: พบเลขเบิ้ล');
-    if (units === leads[0] || units === leads[1]) throw new Error('V61.0 Pair Guard: ห้ามใช้เลขเด่นวินกันเองในชุดเจาะ');
-    if (seen.has(pair)) throw new Error('V61.0 Pair Guard: พบคู่เลขซ้ำ');
-    seen.add(pair);
-    counts.set(tens, counts.get(tens) + 1);
-    tails.get(tens).push(units);
-  }
-  for (const lead of leads) {
-    const key = String(lead), list = tails.get(key);
-    if (counts.get(key) !== 5) throw new Error(`V61.0 Pair Guard: เลขเด่น ${key} ต้องมี 5 คู่`);
-    for (let i = 1; i < list.length; i++) {
-      if (list[i] < list[i - 1]) throw new Error(`V61.0 Pair Guard: เลขเจาะของเลขเด่น ${key} ต้องเรียงจากน้อยไปมาก`);
-    }
-  }
-  return true;
-}
-
-function generateAdaptivePairs(d1, d2, records, auditPairWinRateStr, enableCollisionSupport = true) {
-  // V27 experiment: diminishing returns for high pair frequency, retaining V25 multi-window consistency and quotas.
-  let digitCounts = Array(10).fill(0);
-  let pairCoOccur = {};
-  let shortPairCoOccur = {};
-  let pairWindowCounts = {};
-  let gapData = analyzeGapTracker(records);
-  let sumData = analyzeSumMatrix(records);
-  let posData = analyzePositionBreakdown(records);
-  let marketRegime = analyzeMarketRegime(records);
-  const collisionSignals = enableCollisionSupport ? analyzeCollisionFormulaSignals(records) : { digitSupport:Array(10).fill(0) };
-  const collisionWeight = 0.85; // conservative, bounded challenger weight; validated by walk-forward below
-
-  records.forEach((r, idx) => {
-    let decay = Math.exp(-idx / 21);
-    let top2 = r.top3.slice(-2);
-    let b2 = r.bottom2;
-    [top2, b2].forEach(p => {
-      if(p.length === 2) {
-        let x = parseInt(p[0]), y = parseInt(p[1]);
-        digitCounts[x] += decay; digitCounts[y] += decay;
-        let key = x < y ? `${x}${y}` : `${y}${x}`;
-        pairCoOccur[key] = (pairCoOccur[key] || 0) + decay;
-        if (!pairWindowCounts[key]) pairWindowCounts[key] = [0, 0, 0];
-        // Records are evaluated in their existing order; compare recent, middle, and older slices.
-        let windowIndex = idx < 8 ? 0 : (idx < 24 ? 1 : 2);
-        pairWindowCounts[key][windowIndex] += 1;
-        if (idx < 8) {
-          shortPairCoOccur[key] = (shortPairCoOccur[key] || 0) + (decay * 2.5);
+      const dedupMap = new Map();
+      let duplicatesRemoved = 0;
+      for (const rec of valid) {
+        if (dedupMap.has(rec.id)) {
+          duplicatesRemoved += 1;
+        } else {
+          dedupMap.set(rec.id, rec);
         }
       }
-    });
-  });
 
-  let tailCandidates = [];
-  for(let d=0; d<=9; d++) {
-    let freq = digitCounts[d];
-    let gap = gapData[d].currentGap;
-    let gapBonus = (gap >= 1 && gap <= 3) ? 12.0 : (gap >= 18 ? -25.0 : 0);
-    let posBonus = ((posData[d].tens.hits + posData[d].units.hits) / Math.max(records.length, 1)) * 10.0;
-    const collisionBonus = collisionSignals.digitSupport[d] * collisionWeight;
-    let totalScore = freq + gapBonus + posBonus + collisionBonus;
-    tailCandidates.push({ dig: d, score: totalScore, collisionBonus });
-  }
-  tailCandidates.sort((a,b) => b.score - a.score);
-  let sortedDigits = tailCandidates.map(item => item.dig);
+      const sorted = Array.from(dedupMap.values()).sort((a, b) => {
+        if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+        return a.id.localeCompare(b.id, "th");
+      });
 
-  let existingPairsSet = new Set();
+      return {
+        records: sorted,
+        rejected,
+        duplicatesRemoved,
+        totalLines: lines.length
+      };
+    }
 
-  function generateGroupPairs(baseDigit) {
-    let rawList = [];
-    // V54.0 Calibrated: ขยายโควตา候选เป็น 6 ตัวเต็ม เพื่อป้องกันการตัดคู่เลขจริง
-    let maxCandidates = 6;
-
-    for (let tail of sortedDigits) {
-      if (rawList.length >= maxCandidates) break;
-      if (baseDigit === tail) continue;
-      if ((baseDigit === d1 && tail === d2) || (baseDigit === d2 && tail === d1)) continue;
-
-      let smaller = Math.min(baseDigit, tail);
-      let larger = Math.max(baseDigit, tail);
-      let canonicalKey = `${smaller}${larger}`;
-
-      if (!existingPairsSet.has(canonicalKey)) {
-        existingPairsSet.add(canonicalKey);
-        rawList.push(`${baseDigit}${tail}`);
+    function safeStorageGet(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch (err) {
+        return null;
       }
     }
 
-    let evaluated = rawList.map(pairStr => {
-      let x = parseInt(pairStr[0]), y = parseInt(pairStr[1]);
-      let canonicalKey = x < y ? `${x}${y}` : `${y}${x}`;
-      let coScore = pairCoOccur[canonicalKey] || 0;
-      let shortCoScore = shortPairCoOccur[canonicalKey] || 0;
-      // Experimental V2: short-window pair co-occurrence is disabled for a controlled one-factor test.
-      let tailScore = ((digitCounts[x] || 0) + (digitCounts[y] || 0)) / 2;
-      let pairSum = x + y;
-      let isSumMatch = (pairSum === sumData.top2Sum || pairSum === sumData.secondTop2Sum || pairSum % 10 === sumData.top2Sum % 10);
-      let sumBonus = isSumMatch ? 25.0 : 0;
-      // Experimental V1: remove the unvalidated distance bonus/penalty; ablation replay was +0.16 pp, requiring user-side confirmation.
-      let distancePenalty = 0;
-
-      // V27: retain V25 reward for pairs that show up across multiple history windows, not only in one burst.
-      // The bonus is bounded and secondary to the V22 base score; candidate generation and quotas remain unchanged.
-      let windows = pairWindowCounts[canonicalKey] || [0, 0, 0];
-      let activeWindows = windows.filter(count => count > 0).length;
-      let minPositiveWindow = windows.filter(count => count > 0).length ? Math.min(...windows.filter(count => count > 0)) : 0;
-      let consistencyBonus = (activeWindows * 1.5) + Math.min(minPositiveWindow, 3) * 0.5;
-      const collisionPairBonus = ((collisionSignals.digitSupport[x] || 0) + (collisionSignals.digitSupport[y] || 0)) * collisionWeight * 0.20;
-      let totalPairScore = (Math.sqrt(coScore) * 17.0) + (shortCoScore * 0.0) + (tailScore * 2.5) + (isSumMatch ? 20.0 : 0.0) + distancePenalty + consistencyBonus + collisionPairBonus + 80.0;
-      return { pair: pairStr, score: totalPairScore };
-    });
-
-    evaluated.sort((a, b) => b.score - a.score);
-    let top1Pair = evaluated[0] ? evaluated[0].pair : null;
-    let top2Pair = evaluated[1] ? evaluated[1].pair : null;
-    let top3Pair = evaluated[2] ? evaluated[2].pair : null;
-
-    let result = evaluated.slice(0, 5).map(item => {
-      let highlight = '';
-      if (item.pair === top1Pair) highlight = 'top1';
-      else if (item.pair === top2Pair) highlight = 'top2';
-      else if (item.pair === top3Pair) highlight = 'top3';
-
-      return { pair: item.pair, highlight, rate: `${auditPairWinRateStr}%` };
-    });
-
-    result.sort((a, b) => parseInt(a.pair) - parseInt(b.pair));
-    return result;
-  }
-
-  // Preserve the exact ten selected pairs and their highlights; sort the combined
-  // two lead groups globally so the displayed pair list is always ascending.
-  const allPairs = [...generateGroupPairs(d1), ...generateGroupPairs(d2)];
-  allPairs.sort((a, b) => parseInt(a.pair, 10) - parseInt(b.pair, 10));
-  assertPairInvariantsV610(d1, d2, allPairs);
-  return allPairs;
-}
-
-// V55.02: preserve incumbent Lead; gate Collision pair support using prior-only cumulative Pair hit rate (>=60%).
-const LEAD_VARIANT_BY_TYPE = Object.freeze({
-  'ล. V': 'NO_MOMENTUM',
-  'ล. พิเศษ': 'V78_NO_MARKOV',
-  'ประชาชน ล.': 'NO_MOMENTUM',
-  'ล. เช้า': 'V78_NO_MARKOV',
-  'ล. HD': 'V78_NO_MARKOV',
-  'ล. สตาร์': 'V78_NO_MARKOV',
-  'ล. กาชาด': 'V78',
-  'ฮ.น Extra': 'V78',
-  'จีน VISA เช้า': 'NO_MOMENTUM',
-  'ไต้หวัน V': 'NO_MODULO',
-  'เกาหลี V': 'NO_MOMENTUM',
-  'เยอรมัน V': 'V78_NO_MARKOV',
-  'มาเลย์': 'V78',
-  'ล. สันติภาพ': 'NO_MODULO',
-  'ล. สามัคคี': 'V78_NO_MARKOV',
-  'ฮ.น VISA': 'NO_MODULO',
-  'ฮ.น ดึก': 'V78',
-  'ฮั่งเส็ง VISA เช้า': 'V78_NO_MARKOV',
-  'อังกฤษ VISA': 'NO_MOMENTUM',
-  'นิคเคอิ V บ่าย': 'NO_MOMENTUM',
-  'สิงคโปร์ V': 'NO_MODULO',
-  'เยอรมัน ปกติ': 'V78_NO_MARKOV',
-});
-
-// V61.4: OCR aliases are internal lookup keys only. Display labels and source records remain untouched.
-const LEAD_VARIANT_OCR_ALIASES = Object.freeze({
-  'จีน VISA เชา้': 'จีน VISA เช้า',
-  'ฮงั่ เสง็ VISA เชา้': 'ฮั่งเส็ง VISA เช้า',
-  'ล. สนั ติภาพ': 'ล. สันติภาพ',
-  'สงิ คโปร์ V': 'สิงคโปร์ V',
-  'ล. เชา้': 'ล. เช้า'
-});
-function resolveLeadVariantForType(typeName) {
-  const raw = String(typeName || '').trim().replace(/\s+/g, ' ').normalize('NFC');
-  const canonical = LEAD_VARIANT_OCR_ALIASES[raw] || raw;
-  const compact = canonical.replace(/\s+/g, '').normalize('NFC');
-  const key = Object.keys(LEAD_VARIANT_BY_TYPE).find(name => name === canonical || name.replace(/\s+/g, '').normalize('NFC') === compact);
-  const matched = key || null;
-  if (raw && LEAD_VARIANT_OCR_ALIASES[raw]) {
-    const audit = window.__LOTTERY_TYPE_ALIAS_AUDIT__ || (window.__LOTTERY_TYPE_ALIAS_AUDIT__ = []);
-    if (!audit.some(x => x.raw === raw && x.canonical === canonical)) audit.push({raw, canonical, variant: matched ? LEAD_VARIANT_BY_TYPE[matched] : 'BASELINE', status: matched ? 'RESOLVED' : 'NEEDS_REVIEW'});
-  }
-  return matched ? LEAD_VARIANT_BY_TYPE[matched] : 'BASELINE';
-}
-
-// 🎯 V55.02: production D1/D2 remains incumbent; 13-formula collision support is active for pair ranking and separately audited as a D1/D2 shadow challenger
-function analyzeLotteryRecords(records, lotteryType, researchOptions = {}) {
-  const activeRecords = records;
-  const leadVariantMode = resolveLeadVariantForType(lotteryType);
-  const total = activeRecords.length;
-  if (total === 0) return null;
-
-  let digitHits = 0, pairValidRounds = 0, pairHits = 0;
-  let frequencyShadowHits=0, frequencyShadowHelp=0, frequencyShadowHurt=0, frequencyShadowChanged=0;
-  let noVetoDigitHits = 0, vetoChangedTopTwo = 0, vetoHelpedRows = 0, vetoHurtRows = 0;
-  let baselineLeadHits = 0, collisionLeadHits = 0, baselinePairHits = 0, baselinePairEligible = 0, collisionLeadChangedRows = 0, collisionLeadHelpedRows = 0, collisionLeadHurtRows = 0;
-  let currentWinStreak = 0, maxWinStreak = 0;
-  let currentLossStreak = Math.max(0, Number(researchOptions.initialLossStreak) || 0), maxLossStreak = 0;
-  // Independent counterfactual state: no-Veto must not borrow the Veto model's loss streak.
-  let currentNoVetoLossStreak = 0;
-  let currentLeadShadowLossStreak = 0;
-  let leadShadowHits = 0, leadShadowChangedRows = 0, leadShadowHelpedRows = 0, leadShadowHurtRows = 0;
-  // Independent shadow pair state: keep the baseline pair engine and its counters untouched.
-  let currentLeadShadowPairHits = 0, currentLeadShadowPairEligible = 0;
-  const leadPairShadowHistory = [];
-  let adaptiveShadowLeadHits = 0, adaptiveShadowPairHits = 0, adaptiveShadowPairEligible = 0;
-  let adaptiveShadowSelectedRows = 0;
-  // Paired, same-target comparison against the incumbent. These counters do not
-  // alter selection, prediction, the ten-pair quota, or either hit-rate denominator.
-  let adaptiveLeadHelpedRows = 0, adaptiveLeadHurtRows = 0, adaptiveLeadUnchangedRows = 0;
-  let adaptivePairComparedRows = 0, adaptivePairHelpedRows = 0, adaptivePairHurtRows = 0, adaptivePairUnchangedRows = 0;
-  let dnaErrorCount = 0, pairMissCount = 0, gapTrapCount = 0;
-
-  const auditLogs = [];
-  const telemetryLogs = [];
-  const selfCorrectionLogs = [];
-  const regimeAlertLogs = [];
-  const pairAutopsyLogs = [];
-  const trueHonestAuditLogs = [];
-
-  // Misses are outcomes, not evidence that a specific internal table caused them.
-  // Keep failures unattributed until a controlled per-table ablation test is run.
-  const tableFaultCounter = { 'UNATTRIBUTED (requires controlled ablation)': 0 };
-
-  const chronCheck = [...activeRecords].reverse();
-
-  const evaluationStartIndex = Math.max(1, Math.min(chronCheck.length - 1, Number(researchOptions.evaluationStartIndex) || 1));
-  for (let i = evaluationStartIndex; i < chronCheck.length; i++) {
-    // Keep the same record ordering used by the current card: newest -> oldest.
-    // chronCheck is oldest -> newest for walk-forward iteration, so reverse the
-    // prior-only window before passing it to scoring/pair functions. These
-    // functions use records.slice(0, N) and index-based recency weights.
-    const past = chronCheck.slice(0, i).reverse();
-    const target = chronCheck[i];
-    
-    // Production lead path stays on incumbent; collision-supported lead ranking is a shadow challenger.
-    const scoreTrace = researchOptions.captureScoreTrace ? {} : null;
-    const pastMaster = calculateGeniusDnaScores(past, currentLossStreak, true, leadVariantMode, false, 'BASELINE', scoreTrace, researchOptions.ablationMode || 'NONE', researchOptions.windowSize || null);
-    const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
-    const frequencyShadowDigits = scorePerTypeFrequencyShadow(past);
-    const collisionScoreTrace = researchOptions.captureScoreTrace ? {} : null;
-    const leadChallengerMaster = calculateGeniusDnaScores(past, currentLossStreak, false, leadVariantMode, true, 'BASELINE', collisionScoreTrace);
-    const leadChallengerCandidates = [leadChallengerMaster[0].digit, leadChallengerMaster[1].digit];
-    const noVetoMaster = calculateGeniusDnaScores(past, currentNoVetoLossStreak, true, leadVariantMode, false);
-    const noVetoCandidates = [noVetoMaster[0].digit, noVetoMaster[1].digit];
-    const leadShadowMaster = calculateGeniusDnaScores(past, currentLeadShadowLossStreak, false, leadVariantMode, false, 'NO_RECENCY_GAP40');
-    const leadShadowCandidates = [leadShadowMaster[0].digit, leadShadowMaster[1].digit];
-    let d1 = topCandidates[0], d2 = topCandidates[1];
-    
-    const gatePriorPairEvaluated = (Number(researchOptions.initialPairEligible) || 0) + pairValidRounds;
-    const gatePriorPairHits = (Number(researchOptions.initialPairHits) || 0) + pairHits;
-    let collisionGateOpen = gatePriorPairEvaluated > 0 && (gatePriorPairHits / gatePriorPairEvaluated) >= 0.60;
-    let walkForwardPairs = generateAdaptivePairs(d1, d2, past, '0.00', collisionGateOpen).map(p => p.pair);
-    let baselinePairs = generateAdaptivePairs(d1, d2, past, '0.00', false).map(p => p.pair);
-    // Challenger pair generation is evaluated with the incumbent's prior-only gate held constant
-    // so the comparison isolates lead-ranking changes rather than changing two systems at once.
-    const collisionWalkForwardPairs = researchOptions.captureScoreTrace ? generateAdaptivePairs(Number(leadChallengerCandidates[0]), Number(leadChallengerCandidates[1]), past, '0.00', collisionGateOpen).map(p => p.pair) : [];
-    // Shadow pair engine uses the same pair formulas but its own prior-only gate history.
-    const shadowGateOpen = currentLeadShadowPairEligible > 0 && (currentLeadShadowPairHits / currentLeadShadowPairEligible) >= 0.60;
-    const shadowD1 = Number(leadShadowCandidates[0]), shadowD2 = Number(leadShadowCandidates[1]);
-    const shadowWalkForwardPairs = generateAdaptivePairs(shadowD1, shadowD2, past, '0.00', shadowGateOpen).map(p => p.pair);
-
-    const actualTop3 = target.top3, actualBottom2 = target.bottom2;
-    const actualTop2 = actualTop3.slice(-2), actualBot2 = actualBottom2;
-    
-    // Scoring rule: the hundreds digit of the top-3 result is NOT a lead-digit hit.
-    // Only tens/units of top-3 and both positions of bottom-2 are eligible.
-    let validDigits = [actualTop3[1], actualTop3[2], actualBottom2[0], actualBottom2[1]];
-    const isDigitHit = topCandidates.some(d => validDigits.includes(d.toString()));
-    const isFrequencyShadowHit = frequencyShadowDigits.some(d => validDigits.includes(String(d)));
-    if (topCandidates.join(',') !== frequencyShadowDigits.join(',')) frequencyShadowChanged++;
-    if (isFrequencyShadowHit && !isDigitHit) frequencyShadowHelp++;
-    if (!isFrequencyShadowHit && isDigitHit) frequencyShadowHurt++;
-    if (isFrequencyShadowHit) frequencyShadowHits++;
-    const isCollisionLeadHit = leadChallengerCandidates.some(d => validDigits.includes(d.toString()));
-    if (topCandidates.join(',') !== leadChallengerCandidates.join(',')) collisionLeadChangedRows++;
-    if (isCollisionLeadHit && !isDigitHit) collisionLeadHelpedRows++;
-    if (!isCollisionLeadHit && isDigitHit) collisionLeadHurtRows++;
-    if (isDigitHit) { baselineLeadHits++; baselinePairEligible++; }
-    if (isCollisionLeadHit) collisionLeadHits++;
-    const isNoVetoDigitHit = noVetoCandidates.some(d => validDigits.includes(d.toString()));
-    const isLeadShadowHit = leadShadowCandidates.some(d => validDigits.includes(d.toString()));
-    if (leadShadowCandidates.join(',') !== topCandidates.join(',')) leadShadowChangedRows++;
-    if (isLeadShadowHit) leadShadowHits++;
-    if (isLeadShadowHit && !isDigitHit) leadShadowHelpedRows++;
-    if (!isLeadShadowHit && isDigitHit) leadShadowHurtRows++;
-    if (isNoVetoDigitHit) noVetoDigitHits++;
-    if (topCandidates.join(",") !== noVetoCandidates.join(",")) vetoChangedTopTwo++;
-    if (isDigitHit && !isNoVetoDigitHit) vetoHelpedRows++;
-    if (!isDigitHit && isNoVetoDigitHit) vetoHurtRows++;
-    let isPairHit = false;
-    let isBaselinePairHit = false;
-    let isCollisionPairHit = false;
-    if (isDigitHit) {
-      const baseD1 = String(topCandidates[0]), baseD2 = String(topCandidates[1]);
-      const baselineCrossHit = (actualTop2 === baseD1+baseD2 || actualTop2 === baseD2+baseD1 || actualBot2 === baseD1+baseD2 || actualBot2 === baseD2+baseD1);
-      const baselineListedHit = baselinePairs.some(pair => { const rev=pair.split('').reverse().join(''); return actualTop2===pair || actualTop2===rev || actualBot2===pair || actualBot2===rev; });
-      isBaselinePairHit = baselineCrossHit || baselineListedHit;
-      if (isBaselinePairHit) baselinePairHits++;
-    }
-    if (isCollisionLeadHit && researchOptions.captureScoreTrace) {
-      const cd1 = String(leadChallengerCandidates[0]), cd2 = String(leadChallengerCandidates[1]);
-      const collisionCrossHit = (actualTop2 === cd1+cd2 || actualTop2 === cd2+cd1 || actualBot2 === cd1+cd2 || actualBot2 === cd2+cd1);
-      const collisionListedHit = collisionWalkForwardPairs.some(pair => { const rev=pair.split('').reverse().join(''); return actualTop2===pair || actualTop2===rev || actualBot2===pair || actualBot2===rev; });
-      isCollisionPairHit = collisionCrossHit || collisionListedHit;
+    function safeStorageSet(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err && err.name ? err.name : "StorageError" };
+      }
     }
 
-    // Counterfactual shadow pair result; denominator remains shadow lead-hit rounds only.
-    let isLeadShadowPairHit = false;
-    if (isLeadShadowHit) {
-      const sd1 = String(leadShadowCandidates[0]), sd2 = String(leadShadowCandidates[1]);
-      const shadowCrossHit = (actualTop2 === sd1+sd2 || actualTop2 === sd2+sd1 || actualBot2 === sd1+sd2 || actualBot2 === sd2+sd1);
-      const shadowListedHit = shadowWalkForwardPairs.some(pair => { const rev=pair.split('').reverse().join(''); return actualTop2===pair || actualTop2===rev || actualBot2===pair || actualBot2===rev; });
-      isLeadShadowPairHit = shadowCrossHit || shadowListedHit;
+    function safeStorageRemove(key) {
+      try {
+        window.localStorage.removeItem(key);
+        return true;
+      } catch (err) {
+        return false;
+      }
     }
 
+    function persistRecordsWithBackup(records) {
+      const existing = safeStorageGet(STORAGE_KEYS.RECORDS);
+      if (existing) {
+        safeStorageSet(STORAGE_KEYS.BACKUP, existing);
+      }
+      return safeStorageSet(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+    }
 
+    function resetRuntimeGlobals() {
+      APP_STATE.lastEvaluation = null;
+      APP_STATE.lastBatchReport = null;
+      window.__SETITHEE_AUDIT__ = {
+        version: "V85.0",
+        updatedAt: new Date().toISOString(),
+        guardrail: "STRICT_UNITS_AND_TENS_ONLY_NO_HUNDRED_LEAK"
+      };
+    }
 
-    let leakSource = 'UNATTRIBUTED (requires controlled ablation)';
-    let leakedNumber = '-';
-    let correctionAction = 'บันทึกผลประเมิน; ยังไม่มีการปรับน้ำหนักจริงในรอบนี้';
+    function extractCandidateDigits(record) {
+      return [record.topTens, record.topUnits, record.bottomTens, record.bottomUnits];
+    }
 
-    if (isDigitHit) {
-      digitHits++;
-      pairValidRounds++;
+    function computeDigitStats(sliceRecords) {
+      const counts = Array(10).fill(0);
+      const lastSeenIndex = Array(10).fill(-1);
 
-      let d1Str = d1.toString(), d2Str = d2.toString();
-      let crossPair1 = `${d1Str}${d2Str}`;
-      let crossPair2 = `${d2Str}${d1Str}`;
-      
-      // Scoring rule: listed pairs are scored as usual, and the user-confirmed d1-d2 cross-pair exception
-      // is counted as a success if it appears in the actual top-two result or bottom-two result.
-      // User-confirmed scoring rule: when the actual two-digit result is the two predicted lead digits
-      // in either order, count it as a pair success even though that cross-pair is intentionally
-      // excluded from the ten displayed pair predictions. This changes audit accounting only;
-      // pair generation, ten-pair quota, ranking, and display remain unchanged.
-      const crossPairHit = (actualTop2 === crossPair1 || actualTop2 === crossPair2 || actualBot2 === crossPair1 || actualBot2 === crossPair2);
-      isPairHit = crossPairHit || walkForwardPairs.some(pair => {
-        let revPair = pair.split('').reverse().join('');
-        return (actualTop2 === pair || actualTop2 === revPair || actualBot2 === pair || actualBot2 === revPair);
-      });
-
-      if (isPairHit) {
-        pairHits++;
-      } else {
-        pairMissCount++;
-        let sumMatrix = analyzeSumMatrix(past);
-        let actualSum = parseInt(actualTop2[0]) + parseInt(actualTop2[1]);
-        let marketRegime = analyzeMarketRegime(past);
-
-        // These signals can describe the miss, but cannot identify its cause.
-        // Attribution requires comparing models with each component disabled on identical folds.
-        tableFaultCounter[leakSource]++;
-        leakedNumber = `${actualTop2} / ${actualBot2}`;
-        correctionAction = 'ตรวจพบคู่เจาะไม่เข้า; บันทึกเป็นกรณีศึกษา (ยังไม่ได้ปรับน้ำหนักจริง)';
-
-        pairAutopsyLogs.push({
-          date: target.date,
-          actualResult: `${actualTop2} / ${actualBot2}`,
-          predictedPairs: walkForwardPairs.slice(0, 3).join(', '),
-          autopsyCause: '⚠️ Pair Mismatch (ความคลาดเคลื่อนทางสถิติปกติ)',
-          remedy: 'บันทึกสมมติฐานเพื่อทดสอบแยกตารางก่อนพิจารณาปรับน้ำหนัก',
-          accountableTable: leakSource
+      sliceRecords.forEach((rec, idx) => {
+        const digits = extractCandidateDigits(rec);
+        digits.forEach((d) => {
+          counts[d] += 1;
+          lastSeenIndex[d] = idx;
         });
-      }
-    } else {
-      dnaErrorCount++;
-      leakSource = 'UNATTRIBUTED (requires controlled ablation)';
-      tableFaultCounter[leakSource]++;
-      leakedNumber = `ออกจริง (${actualTop3} - ${actualBottom2}) แต่ระบบเลือกเด่น (${topCandidates.join(',')})`;
-    }
-
-    // Select a challenger only when prior evidence supports both lead and pair quality.
-    // Policy was calibrated on the earlier two-thirds, then evaluated on the final third:
-    // trailing 18 rounds; >=3 observations; lead net edge >=1; >=5 eligible pair rounds
-    // per model; shadow pair-rate edge >=10 percentage points.
-    const adaptiveHistory = leadPairShadowHistory.slice(-18);
-    const adaptiveLeadNet = adaptiveHistory.reduce((sum, row) => sum + (row.shadowLeadHit - row.baselineLeadHit), 0);
-    const adaptiveBasePairRows = adaptiveHistory.filter(row => row.baselinePairHit !== null);
-    const adaptiveShadowPairRows = adaptiveHistory.filter(row => row.shadowPairHit !== null);
-    const adaptiveBasePairRate = adaptiveBasePairRows.length ? adaptiveBasePairRows.filter(row => row.baselinePairHit).length / adaptiveBasePairRows.length : 0;
-    const adaptiveShadowPairRate = adaptiveShadowPairRows.length ? adaptiveShadowPairRows.filter(row => row.shadowPairHit).length / adaptiveShadowPairRows.length : 0;
-    const useAdaptiveLeadShadow = adaptiveHistory.length >= 3 && adaptiveLeadNet >= 1
-      && adaptiveBasePairRows.length >= 5 && adaptiveShadowPairRows.length >= 5
-      && (adaptiveShadowPairRate - adaptiveBasePairRate) >= 0.10;
-    const adaptiveLeadDigits = useAdaptiveLeadShadow ? leadShadowCandidates.map(String) : topCandidates.map(String);
-    const adaptivePairPredictions = useAdaptiveLeadShadow ? shadowWalkForwardPairs : walkForwardPairs;
-    const adaptiveLeadHit = useAdaptiveLeadShadow ? isLeadShadowHit : isDigitHit;
-    const adaptivePairHit = useAdaptiveLeadShadow ? (isLeadShadowHit ? isLeadShadowPairHit : null) : (isDigitHit ? isPairHit : null);
-    if (useAdaptiveLeadShadow) adaptiveShadowSelectedRows++;
-    if (adaptiveLeadHit) adaptiveShadowLeadHits++;
-    if (adaptiveLeadHit) {
-      adaptiveShadowPairEligible++;
-      if (adaptivePairHit) adaptiveShadowPairHits++;
-    }
-    if (adaptiveLeadHit && !isDigitHit) adaptiveLeadHelpedRows++;
-    else if (!adaptiveLeadHit && isDigitHit) adaptiveLeadHurtRows++;
-    else adaptiveLeadUnchangedRows++;
-    // Compare pair outcomes only on rounds where BOTH lead paths hit, so both
-    // pair outcomes are observable under the established conditional denominator.
-    if (adaptiveLeadHit && isDigitHit) {
-      adaptivePairComparedRows++;
-      if (adaptivePairHit && !isPairHit) adaptivePairHelpedRows++;
-      else if (!adaptivePairHit && isPairHit) adaptivePairHurtRows++;
-      else adaptivePairUnchangedRows++;
-    }
-    leadPairShadowHistory.push({ baselineLeadHit: isDigitHit ? 1 : 0, shadowLeadHit: isLeadShadowHit ? 1 : 0, baselinePairHit: isDigitHit ? !!isPairHit : null, shadowPairHit: isLeadShadowHit ? !!isLeadShadowPairHit : null });
-    if (isLeadShadowHit) {
-      currentLeadShadowPairEligible++;
-      if (isLeadShadowPairHit) currentLeadShadowPairHits++;
-    }
-
-    if (isDigitHit) { currentWinStreak++; currentLossStreak = 0; if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak; }
-    else { currentLossStreak++; currentWinStreak = 0; if (currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak; }
-    // Advance the no-Veto counterfactual from its own prediction outcome.
-    if (isNoVetoDigitHit) currentNoVetoLossStreak = 0;
-    else currentNoVetoLossStreak++;
-    if (isLeadShadowHit) currentLeadShadowLossStreak = 0;
-    else currentLeadShadowLossStreak++;
-
-    auditLogs.push({ date: target.date, top3: target.top3, bottom2: target.bottom2, pred: topCandidates.join(', '), predDigits: topCandidates.map(String), frequencyShadowDigits: frequencyShadowDigits.map(String), frequencyShadowHit: isFrequencyShadowHit, predTop3Digits: pastMaster.slice(0,3).map(x => String(x.digit)), rank1Hit: validDigits.includes(String(pastMaster[0].digit)), rank2Hit: validDigits.includes(String(pastMaster[1].digit)), rank3Hit: validDigits.includes(String(pastMaster[2].digit)), top3CoverageHit: pastMaster.slice(0,3).some(x => validDigits.includes(String(x.digit))), scoreMargin12: Number((Number(pastMaster[0].netScore || 0) - Number(pastMaster[1].netScore || 0)).toFixed(4)), scoreVector: scoreTrace?.scoreVector || null, collisionScoreVector: collisionScoreTrace?.scoreVector || null, collisionScoreWindowSize: collisionScoreTrace?.windowSize || null, scoreWindowSize: scoreTrace?.windowSize || null, scoreAblationMode: scoreTrace?.ablationMode || 'NONE', predPairs: walkForwardPairs, isDigitHit: isDigitHit, isPairHit: isPairHit, pairEvaluated: isDigitHit, collisionGateOpen, gatePriorPairEvaluated, gatePriorPairHits, baselinePairs, baselinePairHit: isDigitHit ? isBaselinePairHit : null, pairHitDefinition: 'คู่ตรงหรือกลับใน 2 ตัวท้ายของ 3 ตัวบน หรือ 2 ตัวล่าง; ประเมินเฉพาะงวดที่เลขเด่นเข้า; คู่ D1D2/D2D1 นับเป็นเลขจ่อเข้าได้โดยไม่เพิ่มในชุด 10 คู่', predictionMode: 'SIMULATED_WALK_FORWARD', formulaVersion: 'V55.07_WEAK_LEAD_RESCUE_SHADOW_GUARDED', noVetoPredDigits: noVetoCandidates.map(String), isNoVetoDigitHit: isNoVetoDigitHit, leadTunedShadowDigits: leadShadowCandidates.map(String), leadTunedShadowHit: isLeadShadowHit, leadTunedShadowMode: 'NO_RECENCY_GAP40', leadTunedShadowPairs: shadowWalkForwardPairs, leadTunedShadowPairHit: isLeadShadowHit ? isLeadShadowPairHit : null, leadTunedShadowPairGateOpen: shadowGateOpen, adaptiveLeadShadowSelected: useAdaptiveLeadShadow, adaptiveLeadShadowDigits: adaptiveLeadDigits, adaptiveLeadShadowPairs: adaptivePairPredictions, adaptiveLeadShadowHit: adaptiveLeadHit, adaptiveLeadShadowPairHit: adaptivePairHit, adaptiveLeadShadowPriorNet: adaptiveLeadNet, adaptiveLeadShadowPriorPairRateEdge: Number((adaptiveShadowPairRate-adaptiveBasePairRate).toFixed(4)), baselineLeadDigits:topCandidates.map(String), baselineLeadHit:isDigitHit, collisionLeadDigits:leadChallengerCandidates.map(String), collisionLeadHit:isCollisionLeadHit, collisionLeadPairs:collisionWalkForwardPairs, collisionPairHit:(researchOptions.captureScoreTrace&&isCollisionLeadHit)?isCollisionPairHit:null, collisionPairEvaluated:!!(researchOptions.captureScoreTrace&&isCollisionLeadHit), baselinePairs });
-    
-    if (!isDigitHit || !isPairHit) {
-      telemetryLogs.push({
-        date: target.date,
-        failType: !isDigitHit ? 'เลขเด่นหลุด (Digit Miss)' : 'เลขเจาะหลุด (Pair Miss)',
-        sourceTable: leakSource,
-        failedNumber: leakedNumber,
-        actionStatus: '✓ บันทึกข้อมูลจริงสัตย์ซื่อ 100%'
       });
 
-      selfCorrectionLogs.push({
-        date: target.date,
-        detectedError: leakSource,
-        appliedAction: correctionAction,
-        status: 'บันทึกข้อผิดพลาดแล้ว (ยังไม่ปรับสูตร)'
+      const n = sliceRecords.length;
+      const gaps = counts.map((cnt, d) => {
+        if (n === 0) return 0;
+        if (lastSeenIndex[d] === -1) return n;
+        return (n - 1) - lastSeenIndex[d];
       });
+
+      return { counts, gaps, totalDraws: n };
     }
-  }
 
-  auditLogs.reverse();
-  const weakLeadRescueShadow = analyzeWeakLeadRescueShadow(activeRecords, auditLogs);
-  const summarizeCollisionSplit = (rows) => {
-    const n=rows.length;
-    const leadBase=rows.filter(x=>x.baselineLeadHit).length;
-    const leadChallenger=rows.filter(x=>x.collisionLeadHit).length;
-    const pairBaseRows=rows.filter(x=>x.baselineLeadHit);
-    const pairNewRows=rows.filter(x=>x.pairEvaluated);
-    const pairBaseHits=pairBaseRows.filter(x=>x.baselinePairHit).length;
-    const pairNewHits=pairNewRows.filter(x=>x.isPairHit).length;
-    return { rows:n, baselineLeadRate:n?Number((leadBase/n*100).toFixed(2)):0, challengerLeadRate:n?Number((leadChallenger/n*100).toFixed(2)):0, baselinePairHits:pairBaseHits, baselinePairEligible:pairBaseRows.length, baselinePairRate:pairBaseRows.length?Number((pairBaseHits/pairBaseRows.length*100).toFixed(2)):0, collisionPairHits:pairNewHits, collisionPairEligible:pairNewRows.length, collisionPairRate:pairNewRows.length?Number((pairNewHits/pairNewRows.length*100).toFixed(2)):0 };
-  };
-  const collisionTemporalSplit = { recent:summarizeCollisionSplit(auditLogs.slice(0,15)), older:summarizeCollisionSplit(auditLogs.slice(15,30)) };
-  telemetryLogs.reverse();
-  selfCorrectionLogs.reverse();
-  pairAutopsyLogs.reverse();
+    function predictBaselineTopDigits(historySlice, count = 3) {
+      const { counts, gaps } = computeDigitStats(historySlice);
+      const ranked = Array.from({ length: 10 }, (_, d) => ({
+        digit: d,
+        count: counts[d],
+        gap: gaps[d]
+      })).sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        if (b.gap !== a.gap) return b.gap - a.gap;
+        return a.digit - b.digit;
+      });
 
-  const evalCount = auditLogs.length;
-  const leadTunedShadowAblation = { mode: 'NO_RECENCY_GAP40', method: 'shadow only; same source records, prior-only walk-forward, independent shadow loss streak; disable Recency contribution and increase currentGap=1 bonus from 32 to 40', evaluatedRows: evalCount, baselineHits: digitHits, shadowHits: leadShadowHits, baselineRate: evalCount ? Number((digitHits / evalCount * 100).toFixed(2)) : 0, shadowRate: evalCount ? Number((leadShadowHits / evalCount * 100).toFixed(2)) : 0, deltaPercentagePoints: evalCount ? Number(((leadShadowHits - digitHits) / evalCount * 100).toFixed(2)) : 0, changedTopTwoRows: leadShadowChangedRows, helpedRows: leadShadowHelpedRows, hurtRows: leadShadowHurtRows, interpretation: 'experimental challenger; not promoted to production; derived daily aggregates use a separate engine and are not included in this source-type comparison' };
-  const leadPairAdaptiveShadow = { mode: 'PRIOR_ONLY_LEAD_PAIR_GATE_SHADOW', method: 'Shadow-only challenger; each target uses only the trailing 18 prior rounds; select shadow only with >=3 prior rows, lead net edge >=1 hit, >=5 pair-eligible rounds per engine, and shadow pair-rate edge >=10 percentage points; incumbent remains production', evaluatedRows: evalCount, baselineLeadHits: digitHits, adaptiveLeadHits: adaptiveShadowLeadHits, baselineLeadRate: evalCount ? Number((digitHits / evalCount * 100).toFixed(2)) : 0, adaptiveLeadRate: evalCount ? Number((adaptiveShadowLeadHits / evalCount * 100).toFixed(2)) : 0, leadHelpedRows: adaptiveLeadHelpedRows, leadHurtRows: adaptiveLeadHurtRows, leadUnchangedRows: adaptiveLeadUnchangedRows, baselinePairHits: pairHits, baselinePairEligible: pairValidRounds, adaptivePairHits: adaptiveShadowPairHits, adaptivePairEligible: adaptiveShadowPairEligible, baselinePairRate: pairValidRounds ? Number((pairHits / pairValidRounds * 100).toFixed(2)) : 0, adaptivePairRate: adaptiveShadowPairEligible ? Number((adaptiveShadowPairHits / adaptiveShadowPairEligible * 100).toFixed(2)) : 0, pairedPairComparison: { commonEligibleRounds: adaptivePairComparedRows, helpedRows: adaptivePairHelpedRows, hurtRows: adaptivePairHurtRows, unchangedRows: adaptivePairUnchangedRows }, shadowSelectedRows: adaptiveShadowSelectedRows, interpretation: 'experimental shadow only; independent prior-only pair-gate histories; not promoted to production; rolling historical simulation requires future unseen validation' };
-  const vetoAblation = { method: 'same walk-forward targets; Veto and no-Veto paths each maintain an independent loss streak; no-Veto disables only the Veto penalty', vetoDigitHits: digitHits, noVetoDigitHits, evaluatedRows: evalCount, vetoRate: evalCount ? Number((digitHits / evalCount * 100).toFixed(2)) : 0, noVetoRate: evalCount ? Number((noVetoDigitHits / evalCount * 100).toFixed(2)) : 0, rateDifferencePercentagePoints: evalCount ? Number(((digitHits - noVetoDigitHits) / evalCount * 100).toFixed(2)) : 0, changedTopTwoRows: vetoChangedTopTwo, vetoHelpedRows, vetoHurtRows, interpretation: 'counterfactual ablation only; not proof of future performance or automatic tuning' };
-  let auditDigitWinRate = evalCount > 0 ? ((digitHits / evalCount) * 100).toFixed(2) : '0.00';
-  let auditPairWinRate = pairValidRounds > 0 ? ((pairHits / pairValidRounds) * 100).toFixed(2) : '0.00';
+      return {
+        digits: ranked.slice(0, count).map((x) => x.digit),
+        ranked,
+        model: "Production Baseline (Frequency + Gap Tie-Breaker)"
+      };
+    }
 
-  // แหล่งข้อมูลเปอร์เซ็นต์หลักของ Table 1: คงสูตรย้อนหลังเดิมไว้ แล้วให้การ์ดอ่านจากชุดค่านี้
-  // ห้ามคำนวณเปอร์เซ็นต์ใหม่จากคะแนน/ค่าใน Card
-  const table1HistoricalRates = Object.freeze({
-    digit: auditDigitWinRate,
-    pair: auditPairWinRate
-  });
+    function predictAdaptiveShadowDigits(historySlice, shadowMemForType, count = 3) {
+      const { counts, gaps, totalDraws } = computeDigitStats(historySlice);
+      const decayFactor = 0.92;
+      const weightedScores = Array(10).fill(0);
 
-  const masterScores = calculateGeniusDnaScores(activeRecords, currentLossStreak, true, leadVariantMode, false);
-  const collisionLeadShadowScores = calculateGeniusDnaScores(activeRecords, currentLossStreak, false, leadVariantMode, true);
-  const collisionLeadShadowDigits = [collisionLeadShadowScores[0].digit, collisionLeadShadowScores[1].digit];
-  const d1 = masterScores[0].digit;
-  const d2 = masterScores[1].digit;
-  const winArrayData = generateCoOccurrenceWinArray(activeRecords);
-  const productionCollisionGateOpen = Number(table1HistoricalRates.pair) >= 60;
-  const structuredPairs = generateAdaptivePairs(d1, d2, activeRecords, table1HistoricalRates.pair, productionCollisionGateOpen);
-  const collisionFormulaDiagnostics = analyzeCollisionFormulaSignals(activeRecords);
-  const collisionFormulaWalkForward = analyzeCollisionFormulaWalkForward(activeRecords);
-  const collisionAblation = { baselineLeadHits, baselineLeadRate:evalCount?Number((baselineLeadHits/evalCount*100).toFixed(2)):0, collisionLeadHits, collisionLeadRate:evalCount?Number((collisionLeadHits/evalCount*100).toFixed(2)):0, leadDeltaPP:evalCount?Number(((collisionLeadHits-baselineLeadHits)/evalCount*100).toFixed(2)):0, changedLeadRows:collisionLeadChangedRows, helpedRows:collisionLeadHelpedRows, hurtRows:collisionLeadHurtRows, baselinePairHits, baselinePairEligible, baselinePairRate:baselinePairEligible?Number((baselinePairHits/baselinePairEligible*100).toFixed(2)):0, collisionPairHits:pairHits, collisionPairEligible:pairValidRounds, collisionPairRate:pairValidRounds?Number((pairHits/pairValidRounds*100).toFixed(2)):0, pairDeltaPP:(pairValidRounds&&baselinePairEligible)?Number(((pairHits/pairValidRounds-baselinePairHits/baselinePairEligible)*100).toFixed(2)):0, temporalSplit:collisionTemporalSplit };
+      historySlice.forEach((rec, idx) => {
+        const age = Math.max(0, totalDraws - 1 - idx);
+        const weight = Math.pow(decayFactor, age);
+        extractCandidateDigits(rec).forEach((d) => {
+          weightedScores[d] += weight;
+        });
+      });
 
-  // การ์ดทุกเลขเด่นใช้เปอร์เซ็นต์เดียวกันจาก Table 1; คู่เลขจ่อทุกคู่ใช้เปอร์เซ็นต์เดียวกันจาก Table 1
-  const cardDigitWinRate = table1HistoricalRates.digit;
-  const cardPairWinRate = table1HistoricalRates.pair;
+      const learnedBonus = Array.isArray(shadowMemForType?.bonus) && shadowMemForType.bonus.length === 10
+        ? shadowMemForType.bonus
+        : Array(10).fill(0);
 
-  let primaryBottleneck = 'ระบบทำงานเสถียรปกติ';
-  let diagnosisDetail = 'รายงานนี้วัดผลย้อนหลังตามกติกาที่กำหนด; การระบุสาเหตุของตารางย่อยเป็นสมมติฐานจนกว่าจะทดสอบแบบปิด/เปิดตารางแยกกัน';
+      const scored = Array.from({ length: 10 }, (_, d) => {
+        const overdueBoost = Math.min(gaps[d], 12) * 0.12;
+        const score = weightedScores[d] + overdueBoost + learnedBonus[d];
+        return {
+          digit: d,
+          score: Number(score.toFixed(4)),
+          rawCount: counts[d],
+          gap: gaps[d],
+          bonus: Number(learnedBonus[d].toFixed(3))
+        };
+      }).sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.gap !== a.gap) return b.gap - a.gap;
+        return a.digit - b.digit;
+      });
 
-  let pairTierName = parseFloat(auditPairWinRate) >= 55 ? 'เสถียรสูง (High Tier)' : 'ต่ำกว่าเกณฑ์ High Tier (ยังไม่ใช่การปรับจูน)';
-  let pairTierColor = parseFloat(auditPairWinRate) >= 55 ? '#2e7d32' : '#8a650d';
-  let healthTier = parseFloat(auditDigitWinRate) >= 65 ? 'Tier A (เสถียรนิ่ง)' : 'Tier B (ปลอดภัย)';
-  let tierColor = '#2e7d32';
+      return {
+        digits: scored.slice(0, count).map((x) => x.digit),
+        scored,
+        model: "Adaptive Frequency Shadow (Exponential Decay + Overdue + Shadow Memory)"
+      };
+    }
 
-  const gapData = analyzeGapTracker(activeRecords);
-  const momentumResults = analyzeTrendMomentum(activeRecords);
-  const mathResults = analyzePureMathematics(activeRecords);
-  const adaptiveOptResults = analyzeAdaptiveWeightOptimizer(activeRecords);
-  const correlationResults = analyzeCorrelationPairs(activeRecords, gapData);
-  const freqResults = analyzeOverallFrequency(activeRecords);
-  const posResults = analyzePositionBreakdown(activeRecords);
-  const oehlResults = analyzeOddEvenHighLow(activeRecords);
-  const specialResults = analyzeSpecialPatterns(activeRecords);
-  const sumResults = analyzeSumMatrix(activeRecords);
+    function evaluateWalkForward(seriesRecords, typeKey, windowSize, holdoutSize) {
+      const safeWin = Math.max(3, Math.min(Number(windowSize) || 30, Math.max(3, seriesRecords.length - 1)));
+      const safeHold = Math.max(1, Math.min(Number(holdoutSize) || 12, Math.max(1, seriesRecords.length - safeWin)));
 
-  const formattedPairs = structuredPairs.map(pItem => ({
-    pair: pItem.pair,
-    highlightClass: pItem.highlight === 'top1' ? 'highlight-top1' : (pItem.highlight === 'top2' ? 'highlight-top2' : (pItem.highlight === 'top3' ? 'highlight-top3' : '')),
-    pct: `${table1HistoricalRates.pair}%`
-  }));
+      const startIdx = Math.max(safeWin, seriesRecords.length - safeHold);
+      const evalSteps = Math.max(0, seriesRecords.length - startIdx);
 
-  const latestRecordedDate = records[0] ? records[0].date : '';
-  const nextDrawDate = calculateNextDrawDate(lotteryType, latestRecordedDate);
+      if (evalSteps === 0 || seriesRecords.length < 4) {
+        return {
+          type: typeKey,
+          steps: 0,
+          baselineHits: 0,
+          shadowHits: 0,
+          baselineRate: 0,
+          shadowRate: 0,
+          shadowDelta: 0
+        };
+      }
 
-  return {
-    lotteryType, total, cardDigitWinRate, cardPairWinRate,
-    auditDigitWinRate: table1HistoricalRates.digit, auditPairWinRate: table1HistoricalRates.pair, table1HistoricalRates, digitHits, pairHits, pairValidRounds, evalCount, d1, d2,
-    maxWinStreak, maxLossStreak, currentLossStreak, primaryBottleneck, diagnosisDetail,
-    healthTier, tierColor, pairTierName, pairTierColor,
-    masterScores, collisionLeadShadowDigits, winArrayData, formattedPairs, auditLogs, correlationResults, collisionFormulaDiagnostics, collisionFormulaWalkForward, collisionAblation,
-    freqResults, posResults, oehlResults, specialResults, sumResults, gapData, momentumResults, mathResults, adaptiveOptResults,
-    nextDrawDate, telemetryLogs, selfCorrectionLogs, pairAutopsyLogs, tableFaultCounter, vetoAblation, leadTunedShadowAblation, leadPairAdaptiveShadow, weakLeadRescueShadow,
-    marketShadow: { hits:frequencyShadowHits, n:evalCount, rate:evalCount?Number((frequencyShadowHits/evalCount*100).toFixed(2)):0, help:frequencyShadowHelp, hurt:frequencyShadowHurt, tie:evalCount-frequencyShadowHelp-frequencyShadowHurt, changed:frequencyShadowChanged, status:'SHADOW_ONLY_NOT_PROMOTED' }
-  };
-}
+      let baselineHits = 0;
+      let shadowHits = 0;
+      const tempBonus = Array(10).fill(0);
 
-// V56 PER-TYPE BEHAVIOR LEARNER — shadow-only until unseen holdout proves improvement.
-// Each lottery type owns an independent profile, evaluation history and pending forecast.
-const BEHAVIOR_LEARNER_KEY = 'THAI_LOTTERY_BEHAVIOR_LEARNER_V1';
-const BEHAVIOR_MODEL_VERSION = 'V57.2-PER-TYPE-CAUSAL-SNAPSHOT';
-const THAI_MONTH_INDEX = {'ม.ค.':1,'มกราคม':1,'ก.พ.':2,'กุมภาพันธ์':2,'มี.ค.':3,'มีนาคม':3,'เม.ย.':4,'เมษายน':4,'พ.ค.':5,'พฤษภาคม':5,'มิ.ย.':6,'มิถุนายน':6,'ก.ค.':7,'กรกฎาคม':7,'ส.ค.':8,'สิงหาคม':8,'ก.ย.':9,'กันยายน':9,'ต.ค.':10,'ตุลาคม':10,'พ.ย.':11,'พฤศจิกายน':11,'ธ.ค.':12,'ธันวาคม':12};
-const THAI_WEEKDAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-function behaviorParseDate(value) {
-  const s = String(value || '').trim();
-  let m = s.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{2,4})$/);
-  if (m) {
-    const day = Number(m[1]), month = THAI_MONTH_INDEX[m[2]], rawYear = Number(m[3]);
-    if (!month) return null;
-    const year = rawYear < 100 ? (rawYear + 2500 - 543) : (rawYear > 2400 ? rawYear - 543 : rawYear);
-    const dt = new Date(Date.UTC(year, month - 1, day));
-    if (Number.isNaN(dt.getTime()) || dt.getUTCFullYear()!==year || dt.getUTCMonth()!==month-1 || dt.getUTCDate()!==day) return null;
-    return {year, month, day, weekday:dt.getUTCDay(), iso:`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`};
-  }
-  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (m) {
-    let year = Number(m[1]); if (year > 2400) year -= 543;
-    const month = Number(m[2]), day = Number(m[3]);
-    const dt = new Date(Date.UTC(year, month - 1, day));
-    if (Number.isNaN(dt.getTime()) || dt.getUTCFullYear()!==year || dt.getUTCMonth()!==month-1 || dt.getUTCDate()!==day) return null;
-    return {year,month,day,weekday:dt.getUTCDay(),iso:`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`};
-  }
-  return null;
-}
-// Return only eligible positions. Derived day-level categories carry the source rounds
-// explicitly; never slice a slash-joined display string (which would admit hundreds digits).
-function behaviorEvidencePositions(record) {
-  const rounds = Array.isArray(record?.rounds) ? record.rounds : null;
-  if (rounds?.length) {
-    const out=[[],[],[],[]];
-    for (const r of rounds) {
-      const top=String(r?.top3??'').trim(), bot=String(r?.bottom2??'').trim();
-      if (/^\d{3}$/.test(top) && /^\d{2}$/.test(bot)) {
-        out[0].push(top[1]); out[1].push(top[2]); out[2].push(bot[0]); out[3].push(bot[1]);
+      for (let i = startIdx; i < seriesRecords.length; i++) {
+        const winStart = Math.max(0, i - safeWin);
+        const trainSlice = seriesRecords.slice(winStart, i);
+        const targetRec = seriesRecords[i];
+        const actualDigits = new Set(extractCandidateDigits(targetRec));
+
+        const basePred = predictBaselineTopDigits(trainSlice, 3);
+        const shadowPred = predictAdaptiveShadowDigits(trainSlice, { bonus: tempBonus }, 3);
+
+        const hitBase = basePred.digits.some((d) => actualDigits.has(d));
+        const hitShadow = shadowPred.digits.some((d) => actualDigits.has(d));
+
+        if (hitBase) baselineHits += 1;
+        if (hitShadow) shadowHits += 1;
+
+        for (let d = 0; d < 10; d++) {
+          if (actualDigits.has(d)) {
+            tempBonus[d] = Math.min(1.5, tempBonus[d] + 0.15);
+          } else {
+            tempBonus[d] = Math.max(-0.5, tempBonus[d] - 0.05);
+          }
+        }
+      }
+
+      const baselineRate = Number(((baselineHits / evalSteps) * 100).toFixed(2));
+      const shadowRate = Number(((shadowHits / evalSteps) * 100).toFixed(2));
+      const shadowDelta = Number((shadowRate - baselineRate).toFixed(2));
+
+      return {
+        type: typeKey,
+        steps: evalSteps,
+        baselineHits,
+        shadowHits,
+        baselineRate,
+        shadowRate,
+        shadowDelta
+      };
+    }
+
+    function getFilteredRecords() {
+      const selectedType = document.getElementById("typeFilter").value;
+      if (!selectedType || selectedType === "ALL") {
+        return APP_STATE.records;
+      }
+      return APP_STATE.records.filter((r) => r.type === selectedType);
+    }
+
+    function updateTypeFilterOptions() {
+      const selectEl = document.getElementById("typeFilter");
+      const previousVal = selectEl.value || "ALL";
+      const types = Array.from(new Set(APP_STATE.records.map((r) => r.type))).sort((a, b) => a.localeCompare(b, "th"));
+
+      selectEl.innerHTML = `<option value="ALL">ทั้งหมด (ALL)</option>` +
+        types.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+
+      if (types.includes(previousVal) || previousVal === "ALL") {
+        selectEl.value = previousVal;
+      } else {
+        selectEl.value = "ALL";
       }
     }
-    return out;
-  }
-  const topRaw=String(record?.top3??''), botRaw=String(record?.bottom2??'');
-  // Backward-compatible parsing for older day-level snapshots that joined rounds with " / ".
-  if (topRaw.includes('/') || botRaw.includes('/')) {
-    const tops=topRaw.split('/').map(x=>x.trim()), bots=botRaw.split('/').map(x=>x.trim()), out=[[],[],[],[]];
-    for(let i=0;i<Math.min(tops.length,bots.length);i++) if(/^\d{3}$/.test(tops[i])&&/^\d{2}$/.test(bots[i])) {
-      out[0].push(tops[i][1]);out[1].push(tops[i][2]);out[2].push(bots[i][0]);out[3].push(bots[i][1]);
+
+    function renderDigitPills(digits, isShadow = false) {
+      if (!Array.isArray(digits) || digits.length === 0) {
+        return `<span class="stat-sub">ไม่มีข้อมูล</span>`;
+      }
+      const cls = isShadow ? "digit-pill shadow-pill" : "digit-pill";
+      return digits.map((d) => `<span class="${cls}">${escapeHtml(d)}</span>`).join("");
     }
-    if(out.some(a=>a.length)) return out;
-  }
-  if (/^\d{3}$/.test(topRaw) && /^\d{2}$/.test(botRaw)) return [[topRaw[1]],[topRaw[2]],[botRaw[0]],[botRaw[1]]];
-  return [[],[],[],[]];
-}
-function behaviorRecordKey(record) {
-  return [String(record?.date??''),String(record?.top3??''),String(record?.bottom2??''),
-    Array.isArray(record?.rounds)?record.rounds.map(r=>`${r.top3}-${r.bottom2}`).join(','):''].join('|');
-}
-// Detect edits/backfills to older history, not just a changed newest row.
-// FNV-1a is used as a compact change detector (not as a security hash).
-function behaviorHistorySignature(records) {
-  let h=2166136261;
-  for (const record of records) {
-    const key=behaviorRecordKey(record)+'\n';
-    for (let i=0;i<key.length;i++) { h^=key.charCodeAt(i); h=Math.imul(h,16777619); }
-  }
-  return (h>>>0).toString(16).padStart(8,'0')+':'+records.length;
-}
-function behaviorDigits(record) {
-  const positions=behaviorEvidencePositions(record);
-  return [...new Set(positions.flat().filter(x=>/^\d$/.test(x)))];
-}
-function behaviorClamp(v, lo=0, hi=1) { return Math.max(lo, Math.min(hi, v)); }
-// Wilson 95% interval: communicates sample uncertainty; never feeds prediction scores.
-function behaviorWilsonInterval(hits, total, z=1.959963984540054) {
-  const n=Math.max(0,Number(total)||0), k=Math.max(0,Math.min(n,Number(hits)||0));
-  if(!n)return {low:null,high:null,n:0,level:'ไม่มีข้อมูล'};
-  const phat=k/n, z2=z*z, den=1+z2/n;
-  const center=(phat+z2/(2*n))/den;
-  const half=z*Math.sqrt((phat*(1-phat)+z2/(4*n))/n)/den;
-  const low=Math.max(0,center-half)*100, high=Math.min(1,center+half)*100;
-  return {low,high,n,level:n<20?'ตัวอย่างน้อย':n<50?'หลักฐานเบื้องต้น':'ตัวอย่างมากขึ้น'};
-}
-function behaviorProfile(records) {
-  const rows=[...records].reverse(), n=rows.length;
-  const counts=Array(10).fill(0), pos=Array.from({length:4},()=>Array(10).fill(0)), posDen=Array(4).fill(0);
-  const gaps=Array(10).fill(n), weekdayCounts=Array.from({length:7},()=>({draws:0,hits:Array(10).fill(0)}));
-  const transitions=Array(10).fill(0), transitionDen=Array(10).fill(0), pairCounts={};
-  let overlapSum=0,overlapN=0;
-  rows.forEach((r,i)=>{
-    const positions=behaviorEvidencePositions(r), unique=[...new Set(positions.flat())];
-    unique.forEach(d=>{if(/^\d$/.test(d))counts[Number(d)]++;});
-    positions.forEach((values,p)=>{values.forEach(d=>{if(/^\d$/.test(d))pos[p][Number(d)]++;});posDen[p]+=values.length;});
-    const dt=behaviorParseDate(r.date);
-    if(dt){weekdayCounts[dt.weekday].draws++;unique.forEach(d=>{if(/^\d$/.test(d))weekdayCounts[dt.weekday].hits[Number(d)]++;});}
-    for(let a=0;a<unique.length;a++)for(let b=a+1;b<unique.length;b++){const key=[unique[a],unique[b]].sort().join('');pairCounts[key]=(pairCounts[key]||0)+1;}
-    if(i>0){
-      const prev=behaviorDigits(rows[i-1]),curr=behaviorDigits(r);
-      prev.forEach(d=>{transitionDen[Number(d)]++;if(curr.includes(d))transitions[Number(d)]++;});
-      const inter=prev.filter(d=>curr.includes(d)).length;
-      overlapSum+=inter/Math.max(1,new Set([...prev,...curr]).size);overlapN++;
+
+    function recomputeAll() {
+      resetRuntimeGlobals();
+      updateTypeFilterOptions();
+
+      const filtered = getFilteredRecords();
+      const selectedType = document.getElementById("typeFilter").value || "ALL";
+      const windowSize = Math.max(5, Math.min(200, Number(document.getElementById("windowSize").value) || 30));
+      const holdoutSize = Math.max(3, Math.min(100, Number(document.getElementById("holdoutSize").value) || 12));
+
+      const slice = filtered.slice(-windowSize);
+      const basePred = predictBaselineTopDigits(slice, 3);
+
+      const memKey = selectedType;
+      if (!APP_STATE.shadowMemory[memKey]) {
+        APP_STATE.shadowMemory[memKey] = { bonus: Array(10).fill(0), updates: 0 };
+      }
+      const shadowPred = predictAdaptiveShadowDigits(slice, APP_STATE.shadowMemory[memKey], 3);
+      const wfEval = evaluateWalkForward(filtered, selectedType, windowSize, holdoutSize);
+
+      APP_STATE.lastEvaluation = {
+        type: selectedType,
+        totalRecords: filtered.length,
+        windowUsed: slice.length,
+        basePred,
+        shadowPred,
+        wfEval
+      };
+
+      window.__SETITHEE_AUDIT__.lastEvaluation = APP_STATE.lastEvaluation;
+
+      document.getElementById("baselineCards").innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">เลขเด่นหลัก (Top 3)</div>
+          <div style="margin-top: 6px;">${renderDigitPills(basePred.digits, false)}</div>
+          <div class="stat-sub">อิง ${slice.length} งวดล่าสุด (${escapeHtml(selectedType)})</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Walk-Forward Baseline</div>
+          <div class="stat-value">${wfEval.baselineRate.toFixed(2)}%</div>
+          <div class="stat-sub">เข้าเป้า ${wfEval.baselineHits} / ${wfEval.steps} งวดทดสอบ</div>
+        </div>
+      `;
+
+      const deltaSign = wfEval.shadowDelta > 0 ? "+" : "";
+      document.getElementById("shadowCards").innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">เลขเด่น Shadow (Top 3)</div>
+          <div style="margin-top: 6px;">${renderDigitPills(shadowPred.digits, true)}</div>
+          <div class="stat-sub">โหมดทดลอง (ไม่ปนกับ Baseline)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Shadow vs Baseline Delta</div>
+          <div class="stat-value" style="color: ${wfEval.shadowDelta >= 0 ? "var(--accent-2)" : "var(--warn)"}">${deltaSign}${wfEval.shadowDelta.toFixed(2)}%</div>
+          <div class="stat-sub">Shadow: ${wfEval.shadowRate.toFixed(2)}% (${wfEval.shadowHits}/${wfEval.steps})</div>
+        </div>
+      `;
+
+      document.getElementById("statusBanner").textContent =
+        `ประเภท: ${selectedType} | ข้อมูลทั้งหมด: ${filtered.length} งวด | หน้าต่างคำนวณ: ${slice.length} งวด | Walk-Forward: ${wfEval.steps} งวด`;
+
+      renderRecordsTable(filtered);
     }
-  });
-  for(let d=0;d<10;d++){let found=-1;for(let i=rows.length-1;i>=0;i--)if(behaviorDigits(rows[i]).includes(String(d))){found=i;break;}gaps[d]=found<0?n:(rows.length-1-found);}
-  const rates=counts.map(c=>n?c/n:0);
-  const recent5=Array(10).fill(0),prior5=Array(10).fill(0);
-  rows.slice(-5).forEach(r=>behaviorDigits(r).forEach(d=>recent5[Number(d)]++));
-  rows.slice(-10,-5).forEach(r=>behaviorDigits(r).forEach(d=>prior5[Number(d)]++));
-  const weekdaySummary=weekdayCounts.map((w,d)=>({day:d,draws:w.draws,rate:w.draws?w.hits.reduce((a,b)=>a+b,0)/(w.draws*10):0}));
-  const sortedFreq=Array.from({length:10},(_,d)=>({digit:d,rate:rates[d],gap:gaps[d]})).sort((a,b)=>b.rate-a.rate||a.digit-b.digit);
-  const topPairs=Object.entries(pairCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([pair,count])=>({pair,count,rate:n?count/n:0}));
-  const rateSum=rates.reduce((a,b)=>a+b,0);
-  const entropy=rateSum>0?-rates.reduce((acc,p)=>{const q=p/rateSum;return q>0?acc+q*Math.log(q):acc;},0)/Math.log(10):0;
-  const recentMean=recent5.reduce((a,b)=>a+b,0)/5,priorMean=prior5.reduce((a,b)=>a+b,0)/5;
-  const weekdayWithData=weekdaySummary.filter(x=>x.draws>=2).sort((a,b)=>b.rate-a.rate);
-  const weekdaySpread=weekdayWithData.length>1?weekdayWithData[0].rate-weekdayWithData[weekdayWithData.length-1].rate:0;
-  const confidence=n>=50?'สูง':n>=25?'ปานกลาง':'ต่ำ';
-  let style='รูปแบบยังไม่นิ่ง/ข้อมูลไม่พอ';
-  if(n>=10){if(Math.abs(recentMean-priorMean)>=0.18)style=recentMean>priorMean?'ระยะล่าสุดกำลังเปลี่ยน/เร่งตัว':'ระยะล่าสุดแผ่วลงจากช่วงก่อน';else if(entropy<0.78)style='มีเลขกระจุกตัวเด่นกว่าปกติ';else style='กระจายค่อนข้างสม่ำเสมอ';}
-  return {n,counts,rates,pos,posDen,gaps,weekdayCounts
+
+    function renderRecordsTable(records) {
+      const tbody = document.getElementById("recordsTableBody");
+      if (!Array.isArray(records) || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted);">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map((rec, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${escapeHtml(rec.dateDisplay)}</td>
+          <td>${escapeHtml(rec.isoDate)}</td>
+          <td>${escapeHtml(rec.type)}</td>
+          <td><strong>${escapeHtml(rec.top3)}</strong></td>
+          <td><strong>${escapeHtml(rec.bottom2)}</strong></td>
+          <td>${escapeHtml(rec.topUnits)}</td>
+          <td>${escapeHtml(rec.topTens)}</td>
+          <td><span class="badge ok">${escapeHtml(rec.guardrailFlag)}</span></td>
+        </tr>
+      `).join("");
+    }
+
+    function runResearchBatch() {
+      const windowSize = Math.max(5, Math.min(200, Number(document.getElementById("windowSize").value) || 30));
+      const holdoutSize = Math.max(3, Math.min(100, Number(document.getElementById("holdoutSize").value) || 12));
+
+      const grouped = new Map();
+      grouped.set("ALL", APP_STATE.records);
+      for (const rec of APP_STATE.records) {
+        if (!grouped.has(rec.type)) grouped.set(rec.type, []);
+        grouped.get(rec.type).push(rec);
+      }
+
+      const rows = [];
+      for (const [typeName, list] of grouped.entries()) {
+        rows.push(evaluateWalkForward(list, typeName, windowSize, holdoutSize));
+      }
+
+      APP_STATE.lastBatchReport = {
+        generatedAt: new Date().toISOString(),
+        windowSize,
+        holdoutSize,
+        results: rows
+      };
+      window.__SETITHEE_AUDIT__.lastBatchReport = APP_STATE.lastBatchReport;
+
+      document.getElementById("batchSummaryBadge").className = "badge ok";
+      document.getElementById("batchSummaryBadge").textContent = `Completed (${rows.length} groups)`;
+
+      document.getElementById("researchBatchContainer").innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>กลุ่ม / ประเภท</th>
+              <th>จำนวนงวดทดสอบ</th>
+              <th>Baseline Hits</th>
+              <th>Baseline Rate</th>
+              <th>Shadow Hits</th>
+              <th>Shadow Rate</th>
+              <th>Delta (Shadow - Base)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r) => {
+              const sign = r.shadowDelta > 0 ? "+" : "";
+              return `
+                <tr>
+                  <td><strong>${escapeHtml(r.type)}</strong></td>
+                  <td>${r.steps}</td>
+                  <td>${r.baselineHits}</td>
+                  <td>${r.baselineRate.toFixed(2)}%</td>
+                  <td>${r.shadowHits}</td>
+                  <td>${r.shadowRate.toFixed(2)}%</td>
+                  <td><strong>${sign}${r.shadowDelta.toFixed(2)}%</strong></td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function exportAuditJson() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        version: "V85.0",
+        recordCount: APP_STATE.records.length,
+        auditSummary: APP_STATE.auditSummary,
+        lastEvaluation: APP_STATE.lastEvaluation,
+        lastBatchReport: APP_STATE.lastBatchReport
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `setthee-v85-audit-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importRawData() {
+      const rawText = document.getElementById("rawDataInput").value;
+      const parsed = parseRawDataset(rawText);
+
+      if (parsed.records.length === 0) {
+        document.getElementById("auditLogBox").innerHTML =
+          `<span class="badge err">นำเข้าไม่สำเร็จ</span> ไม่พบข้อมูลที่ถูกต้อง (ปฏิเสธ ${parsed.rejected.length} บรรทัด)`;
+        return;
+      }
+
+      APP_STATE.records = parsed.records;
+      APP_STATE.auditSummary = {
+        importedAt: new Date().toISOString(),
+        validCount: parsed.records.length,
+        rejectedCount: parsed.rejected.length,
+        duplicatesRemoved: parsed.duplicatesRemoved
+      };
+
+      const saveRes = persistRecordsWithBackup(APP_STATE.records);
+      const saveNote = saveRes.ok
+        ? "บันทึกลง localStorage และสำรองข้อมูลเดิมเรียบร้อย"
+        : `คำเตือน: บันทึกลง localStorage ไม่สำเร็จ (${saveRes.error}) แต่ยังคำนวณบนหน่วยความจำได้`;
+
+      document.getElementById("auditLogBox").innerHTML =
+        `<span class="badge ok">นำเข้าสำเร็จ</span> ผ่าน ${parsed.records.length} งวด | ตัดซ้ำ ${parsed.duplicatesRemoved} งวด | ปฏิเสธ ${parsed.rejected.length} บรรทัด — ${escapeHtml(saveNote)}`;
+
+      recomputeAll();
+    }
+
+    function restoreSampleData() {
+      document.getElementById("rawDataInput").value = SAMPLE_RAW_DATA;
+      importRawData();
+    }
+
+    function resetShadowMemory() {
+      APP_STATE.shadowMemory = {};
+      safeStorageRemove(STORAGE_KEYS.SHADOW_MEM);
+      recomputeAll();
+      document.getElementById("auditLogBox").innerHTML =
+        `<span class="badge warn">รีเซ็ต Shadow Memory แล้ว</span> ข้อมูลหลักและข้อมูลการนำเข้ายังคงอยู่ครบ`;
+    }
+
+    function clearAllStoredData() {
+      APP_STATE.records = [];
+      APP_STATE.shadowMemory = {};
+      APP_STATE.auditSummary = null;
+      safeStorageRemove(STORAGE_KEYS.RECORDS);
+      safeStorageRemove(STORAGE_KEYS.BACKUP);
+      safeStorageRemove(STORAGE_KEYS.SHADOW_MEM);
+      document.getElementById("rawDataInput").value = "";
+      recomputeAll();
+      document.getElementById("auditLogBox").innerHTML =
+        `<span class="badge err">ล้างข้อมูลทั้งหมดแล้ว</span> สามารถกด "โหลดข้อมูลตัวอย่างเริ่มต้น" หรือวางข้อมูลใหม่ได้ทันที`;
+    }
+
+    function setAppMode(mode) {
+      const isResearch = mode === "research";
+      document.body.classList.toggle("mode-research", isResearch);
+      document.body.classList.toggle("mode-clean", !isResearch);
+      document.getElementById("btnModeClean").classList.toggle("active", !isResearch);
+      document.getElementById("btnModeResearch").classList.toggle("active", isResearch);
+      safeStorageSet(STORAGE_KEYS.UI_MODE, isResearch ? "research" : "clean");
+      if (isResearch && !APP_STATE.lastBatchReport && APP_STATE.records.length > 0) {
+        runResearchBatch();
+      }
+    }
+
+    function initApp() {
+      const savedMode = safeStorageGet(STORAGE_KEYS.UI_MODE);
+      if (savedMode === "research") {
+        setAppMode("research");
+      } else {
+        setAppMode("clean");
+      }
+
+      const savedRecordsRaw = safeStorageGet(STORAGE_KEYS.RECORDS);
+      if (savedRecordsRaw) {
+        try {
+          const parsedSaved = JSON.parse(savedRecordsRaw);
+          if (Array.isArray(parsedSaved) && parsedSaved.length > 0) {
+            APP_STATE.records = parsedSaved;
+            document.getElementById("rawDataInput").value = parsedSaved
+              .map((r) => `${r.dateDisplay}, ${r.type}, ${r.top3}, ${r.bottom2}`)
+              .join("\n");
+            recomputeAll();
+            return;
+          }
+        } catch (err) {
+          // Fallback to sample data if stored JSON is corrupted
+        }
+      }
+
+      document.getElementById("rawDataInput").value = SAMPLE_RAW_DATA;
+      importRawData();
+    }
+
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
