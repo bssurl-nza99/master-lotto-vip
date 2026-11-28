@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V84.1: adds validated V80.8 prospective-ledger backup/restore and outcome reconciliation. V84.0 data audit/rolling reports retained; Production lead scorer and pair generator preserved. -->
+<!-- V84.8: targeted cumulative binary day-frequency D1/D2 model for Nikkei Normal All-Day only; all other types retain incumbent scorer. V84.0 data audit/rolling reports retained; Production lead scorer and pair generator preserved. -->
 <!-- V84.0: source/opportunity/warm-up/Pending reconciliation; strict chronology fail-closed rolling windows; per-type scoring and pair-structure audit. Production lead scorer and pair generator preserved. -->
 <!-- V80.9 additive release: prospective ledger/hash controls only; Production scorer and pair generator unchanged. -->
 <!-- V80.8: Nikkei all-day lead research checkpoint; clean interface retained; production prediction/scoring logic unchanged. -->
@@ -26,7 +26,7 @@ V66.0 research scope: lead D1/D2 only; pair system remains untouched. Build date
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<title>V84.1 Ledger Recovery & Data Integrity — เศรษฐีเงินล้าน</title>
+<title>V84.8 Nikkei Normal All-Day Targeted Lead Model — เศรษฐีเงินล้าน</title>
 <style>
 :root {
   --bg-main: linear-gradient(135deg, #fcfbfa 0%, #f4efe6 100%);
@@ -677,6 +677,7 @@ table.audit-table th {
 
 </head>
 <body>
+<div id="v848NikkeiNotice" style="max-width:600px;margin:8px auto;padding:10px 12px;border:2px solid #b8860b;border-radius:10px;background:#fff8e7;color:#463b2c;font:12px/1.6 Prompt,sans-serif"><b>V84.8 · ปรับเฉพาะ “นิคเคอิ ปกติ ทั้งวัน”</b><br>เลขเด่น D1/D2 ของประเภทนี้ใช้ความถี่สะสมแบบนับเลขไม่ซ้ำต่อวันจากวันก่อนหน้าเท่านั้น รวมข้อมูลสองรอบภายในวันเดียวเป็นหนึ่งวัน ไม่รวม VIP/VISA/เช้า/บ่าย ประเภทอื่นคงสูตรเดิม · ผลย้อนหลัง 14/15 เป็นการจำลอง ไม่ใช่การรับประกันอนาคต</div>
 
 <div class="shell">
   <div class="top">
@@ -2083,7 +2084,7 @@ function analyzeLotteryRecords(records, lotteryType, researchOptions = {}) {
     
     // Production lead path stays on incumbent; collision-supported lead ranking is a shadow challenger.
     const scoreTrace = researchOptions.captureScoreTrace ? {} : null;
-    const pastMaster = calculateGeniusDnaScores(past, currentLossStreak, false, leadVariantMode, false, 'BASELINE', scoreTrace, researchOptions.ablationMode || 'NONE', researchOptions.windowSize || null);
+    const pastMaster = calculateGeniusDnaScores(past, currentLossStreak, true, leadVariantMode, false, 'BASELINE', scoreTrace, researchOptions.ablationMode || 'NONE', researchOptions.windowSize || null);
     const topCandidates = [pastMaster[0].digit, pastMaster[1].digit];
     const frequencyShadowDigits = scorePerTypeFrequencyShadow(past);
     const collisionScoreTrace = researchOptions.captureScoreTrace ? {} : null;
@@ -2317,7 +2318,7 @@ function analyzeLotteryRecords(records, lotteryType, researchOptions = {}) {
     pair: auditPairWinRate
   });
 
-  const masterScores = calculateGeniusDnaScores(activeRecords, currentLossStreak, false, leadVariantMode, false);
+  const masterScores = calculateGeniusDnaScores(activeRecords, currentLossStreak, true, leadVariantMode, false);
   const collisionLeadShadowScores = calculateGeniusDnaScores(activeRecords, currentLossStreak, false, leadVariantMode, true);
   const collisionLeadShadowDigits = [collisionLeadShadowScores[0].digit, collisionLeadShadowScores[1].digit];
   const d1 = masterScores[0].digit;
@@ -2491,12 +2492,4 @@ function behaviorProfile(records) {
   const confidence=n>=50?'สูง':n>=25?'ปานกลาง':'ต่ำ';
   let style='รูปแบบยังไม่นิ่ง/ข้อมูลไม่พอ';
   if(n>=10){if(Math.abs(recentMean-priorMean)>=0.18)style=recentMean>priorMean?'ระยะล่าสุดกำลังเปลี่ยน/เร่งตัว':'ระยะล่าสุดแผ่วลงจากช่วงก่อน';else if(entropy<0.78)style='มีเลขกระจุกตัวเด่นกว่าปกติ';else style='กระจายค่อนข้างสม่ำเสมอ';}
-  return {n,counts,rates,pos,posDen,gaps,weekdayCounts,weekdaySummary,weekdaySpread,transitions,transitionDen,pairCounts,topPairs,overlapRate:overlapN?overlapSum/overlapN:0,sortedFreq,entropy,style,confidence};
-}
-function scorePersonalizedBehavior(records,targetDate) {
-  const p=behaviorProfile(records),n=p.n,rows=[...records],target=behaviorParseDate(targetDate);
-  const latestSet=rows.length?behaviorDigits(rows[0]):[];
-  const scores=[];
-  for(let d=0;d<10;d++){
-    const long=p.rates[d];
-    const r5=rows.slice(0,5).filter(r=>behaviorDigits(r).includes(String(d))).length/Ma
+  return {n,counts,rates,pos,posDen,gaps,weekdayCounts
